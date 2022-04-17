@@ -13,7 +13,7 @@ type RegisterReturn = Promise<[string | null, {path: string, message: string} | 
 export const registerUser = async (opts: RegisterOpts): RegisterReturn => {
   const account = await AccountModel.findOne({ email: opts.email });
   if (account) {
-    return [null, {path: 'email', message: 'Email already exists'}];
+    return [null, {path: 'email', message: 'Email already exists.'}];
   }
 
   const tag = generateTag();
@@ -52,12 +52,12 @@ interface LoginOpts {
 export const loginUser = async (opts: LoginOpts) => {
   const account = await AccountModel.findOne({ email: opts.email });
   if (!account) {
-    return [null, {path: 'email', message: 'Invalid Email'}];
+    return [null, {path: 'email', message: 'Invalid email.'}];
   }
 
   const isPasswordValid = await bcrypt.compare(opts.password, account.password);
   if (!isPasswordValid) {
-    return [null, {path: 'password', message: 'Invalid Password'}];
+    return [null, {path: 'password', message: 'Invalid password.'}];
   }
 
   const token = generateToken(account.user.toString(), account.passwordVersion);
