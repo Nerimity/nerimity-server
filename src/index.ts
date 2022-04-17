@@ -4,14 +4,33 @@ import express from 'express';
 import http from 'http';
 import mongoose from 'mongoose';
 import env from './common/env';
+import { Log } from './common/Log';
+import { connectRedis } from './common/redis';
+import cors from 'cors';
 
 import {createIO} from './common/socket';
+import { UsersRouter } from './routes/users/Router';
 
 const app = express();
 const server = http.createServer(app);
 createIO(server);
 
-server.listen(80, async () => {
-  console.log('listening on *:80');
-  await mongoose.connect(env.MONGODB_URI);
+mongoose.connect(env.MONGODB_URI, () => {
+  Log.info('Connected to mongodb');
+});
+
+connectRedis().then(() => {
+  Log.info('Connected to Redis');
+});
+
+
+app.use(cors());
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use('/api', UsersRouter);
+
+
+server.listen(env.PORT, async () => {
+  Log.info('listening on *:' + env.PORT);
 });

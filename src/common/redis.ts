@@ -11,7 +11,7 @@ export const redisClient = createClient({
 });
 
 
-export function connect(): Promise<typeof redisClient> {
+export function connectRedis(): Promise<typeof redisClient> {
   return new Promise((resolve, reject)  => {
     redisClient.connect();
 

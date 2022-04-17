@@ -5,13 +5,15 @@ interface Account {
   user: Types.ObjectId
   email: string
   password: string
+  passwordVersion: number
   ipAddress: string
 }
 
 const schema = new Schema<Account>({
   user: { type: Schema.Types.ObjectId, ref: 'User' },
-  email: String,
+  email: {type: String, unique: true},
   password: String,
+  passwordVersion: Number,
   ipAddress: String
 });
 
