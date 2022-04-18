@@ -3,15 +3,16 @@ import { UserModel } from '../models/UserModel';
 import bcrypt from 'bcrypt';
 import { generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
-import { generateError } from '../common/errorHandler';
+import { CustomError, generateError } from '../common/errorHandler';
+import { CustomResult } from '../common/CustomResult';
 
 interface RegisterOpts {
   email: string;
   username: string;
   password: string;  
 }
-type RegisterReturn = Promise<[string | null, ReturnType<typeof generateError> | null]>
-export const registerUser = async (opts: RegisterOpts): RegisterReturn => {
+
+export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<string, CustomError>> => {
   const account = await AccountModel.findOne({ email: opts.email });
   if (account) {
     return [null, generateError('Email already exists.', 'email')];
@@ -50,7 +51,7 @@ interface LoginOpts {
   password: string;
 }
 
-export const loginUser = async (opts: LoginOpts) => {
+export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, CustomError>> => {
   const account = await AccountModel.findOne({ email: opts.email });
   if (!account) {
     return [null, generateError('Invalid email address.', 'email')];

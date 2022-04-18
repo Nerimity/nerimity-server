@@ -14,7 +14,7 @@ export async function authenticate (opts: Options) {
     }
   
     const [cachedAccount, error] = await authenticateUser(token);
-    if (error || !cachedAccount) {
+    if (error !== null) {
       return res.status(401).json(generateError(error));
     }
     req.accountCache = cachedAccount;

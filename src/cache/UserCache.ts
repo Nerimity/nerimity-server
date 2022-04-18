@@ -1,3 +1,4 @@
+import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { AccountModel } from '../models/AccountModel';
@@ -44,7 +45,9 @@ export async function getAccountCache(userId: string): Promise<AccountCache | nu
 
 }
 
-export async function authenticateUser(token: string): Promise<[AccountCache | null, string | null]> {
+
+
+export async function authenticateUser(token: string): Promise<CustomResult<AccountCache, string>> {
   const decryptedToken = decryptToken(token);
   if (!decryptedToken) {
     return [null, 'Invalid token.'];
