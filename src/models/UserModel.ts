@@ -1,6 +1,6 @@
 import {Schema, model, Types} from 'mongoose';
 
-interface User {
+export interface User {
   _id: Types.ObjectId
   account: Types.ObjectId
   username: string

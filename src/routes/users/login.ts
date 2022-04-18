@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { loginUser } from '../../services/User';
 import {body} from 'express-validator';
-import { customValidateResult } from '../../common/expressValidator';
+import { customExpressValidatorResult } from '../../common/errorHandler';
 
 export function login(Router: Router) {
   Router.post('/users/login', 
@@ -29,7 +29,7 @@ interface Body {
 async function route (req: Request, res: Response) {
   const body = req.body as Body;
 
-  const validateError = customValidateResult(req);
+  const validateError = customExpressValidatorResult(req);
 
   if (validateError) {
     return res.status(400).json(validateError);
