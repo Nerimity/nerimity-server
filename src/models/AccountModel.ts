@@ -14,7 +14,7 @@ const schema = new Schema<Account>({
   email: {type: String, unique: true},
   password: String,
   passwordVersion: Number,
-  ipAddress: String
+  ipAddress: String,
 });
 
 export const AccountModel = model<Account>('Account', schema);

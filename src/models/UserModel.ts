@@ -7,6 +7,7 @@ export interface User {
   tag: string
   avatar?: string
   bot?: boolean
+  createdAt: number
 }
 
 const schema = new Schema<User>({
@@ -14,7 +15,8 @@ const schema = new Schema<User>({
   username: String,
   tag: String,
   avatar: String,
-  bot: Boolean
+  bot: Boolean,
+  createdAt: { type: Number, default: Date.now },
 });
 
 export const UserModel = model<User>('User', schema);

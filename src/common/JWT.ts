@@ -10,9 +10,13 @@ export function generateToken(userId: string, passwordVersion: number) {
 }
 
 export function decryptToken(token: string) {
-  const tokenWithHeader = jwtHeader + token;
-  const decrypted = jwt.verify(tokenWithHeader, env.JWT_SECRET) as string;
-  if (!decrypted) return null;
-  const [userId, passwordVersion] = decrypted.split('-');
-  return { userId, passwordVersion: parseInt(passwordVersion) };
+  try {
+    const tokenWithHeader = jwtHeader + token;
+    const decrypted = jwt.verify(tokenWithHeader, env.JWT_SECRET) as string;
+    if (!decrypted) return null;
+    const [userId, passwordVersion] = decrypted.split('-');
+    return { userId, passwordVersion: parseInt(passwordVersion) };
+  } catch (error) {
+    return null;
+  }
 }

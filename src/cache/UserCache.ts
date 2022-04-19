@@ -12,6 +12,7 @@ export interface AccountCache {
   _id: string;
   passwordVersion: number;
   user: {
+    _id: string
     username: string;
     tag: string;
     avatar?: string;
@@ -35,6 +36,7 @@ export async function getAccountCache(userId: string): Promise<AccountCache | nu
     _id: account.id,
     passwordVersion: account.passwordVersion,
     user: {
+      _id: account.user._id.toString(),
       username: account.user.username,
       tag: account.user.tag,
       avatar: account.user.avatar,

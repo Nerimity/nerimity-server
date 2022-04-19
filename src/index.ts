@@ -10,6 +10,7 @@ import cors from 'cors';
 
 import {createIO} from './common/socket';
 import { UsersRouter } from './routes/users/Router';
+import { ServersRouter } from './routes/servers/Router';
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +30,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use('/api', UsersRouter);
+app.use('/api', ServersRouter);
 
 
 server.listen(env.PORT, async () => {
