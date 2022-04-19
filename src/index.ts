@@ -8,7 +8,7 @@ import { Log } from './common/Log';
 import { connectRedis } from './common/redis';
 import cors from 'cors';
 
-import {createIO} from './common/socket';
+import {createIO} from './socket/socket';
 import { UsersRouter } from './routes/users/Router';
 import { ServersRouter } from './routes/servers/Router';
 

@@ -1,7 +1,8 @@
 import { createAdapter, RedisAdapter } from '@socket.io/redis-adapter';
 import socketIO from 'socket.io';
 import http from 'http';
-import { redisClient } from './redis';
+import { redisClient } from '../common/redis';
+import { onConnection } from './events/onConnection';
 
 let io: socketIO.Server;
 
@@ -10,6 +11,7 @@ export function createIO(server: http.Server) {
     transports: ['websocket']
   });
   io.adapter(createAdapter(redisClient, redisClient.duplicate()));
+  io.on('connection', onConnection);
 
 }
 

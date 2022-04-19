@@ -1,5 +1,5 @@
 import { SERVER_JOIN } from '../common/ClientEventNames';
-import { getIO } from '../common/socket';
+import { getIO } from '../socket/socket';
 import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
 import { Server } from '../models/ServerModel';

@@ -6,15 +6,17 @@ export interface User {
   username: string
   tag: string
   avatar?: string
+  servers: Types.ObjectId[]
   bot?: boolean
   createdAt: number
 }
 
 const schema = new Schema<User>({
-  account: { type: Schema.Types.ObjectId, ref: 'Account' },
+  account: { type: Schema.Types.ObjectId, ref: 'Account', select: false },
   username: String,
   tag: String,
   avatar: String,
+  servers: [{ type: Schema.Types.ObjectId, ref: 'Server', select: false}],
   bot: Boolean,
   createdAt: { type: Number, default: Date.now },
 });

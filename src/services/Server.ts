@@ -4,6 +4,7 @@ import { emitServerJoin } from '../emits/Server';
 import { ChannelModel } from '../models/ChannelModel';
 import { ServerMemberModel } from '../models/ServerMemberModel';
 import { Server, ServerModel } from '../models/ServerModel';
+import { UserModel } from '../models/UserModel';
 
 interface CreateServerOptions {
   name: string;
@@ -35,6 +36,8 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
 
   server.defaultChannel = channel._id;
   await server.save();
+
+  await UserModel.updateOne({_id: opts.creatorId}, {$addToSet: {servers: server._id}});
 
   const serverMember = await ServerMemberModel.create({
     server: server._id,
