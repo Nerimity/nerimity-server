@@ -15,6 +15,7 @@ export interface AccountCache {
     username: string;
     tag: string;
     avatar?: string;
+    bot?: boolean;
   }
 }
 
@@ -27,7 +28,7 @@ export async function getAccountCache(userId: string): Promise<AccountCache | nu
     return JSON.parse(cacheAccount);
   }
   // If not in cache, fetch from database
-  const account = await AccountModel.findById(userId).populate<{user: User}>('user');
+  const account = await AccountModel.findOne({user: userId}).populate<{user: User}>('user');
   if (!account) return null;
 
   const accountCache: AccountCache = {
@@ -36,7 +37,8 @@ export async function getAccountCache(userId: string): Promise<AccountCache | nu
     user: {
       username: account.user.username,
       tag: account.user.tag,
-      avatar: account.user.avatar
+      avatar: account.user.avatar,
+      bot: account.user.bot
     }
   };
   // Save to cache

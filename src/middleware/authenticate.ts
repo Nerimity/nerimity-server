@@ -12,10 +12,13 @@ export async function authenticate (opts: Options) {
     if (!token) {
       return res.status(401).json(generateError('No token provided.'));
     }
-  
+    
     const [cachedAccount, error] = await authenticateUser(token);
     if (error !== null) {
       return res.status(401).json(generateError(error));
+    }
+    if (!opts.allowBot && cachedAccount.user.bot) {
+      return res.status(401).json(generateError('Bots are not allowed to use this route.'));
     }
     req.accountCache = cachedAccount;
     next();
