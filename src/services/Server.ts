@@ -4,7 +4,7 @@ import { emitServerJoin } from '../emits/Server';
 import { ChannelModel } from '../models/ChannelModel';
 import { ServerMemberModel } from '../models/ServerMemberModel';
 import { Server, ServerModel } from '../models/ServerModel';
-import { UserModel } from '../models/UserModel';
+import { User, UserModel } from '../models/UserModel';
 
 interface CreateServerOptions {
   name: string;
@@ -51,4 +51,20 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
     joinedMember: serverMember.toObject({versionKey: false}),
   });
   return [server.toObject({versionKey: false}), null];
+};
+
+
+export const getServers = async (userId: string) => {
+  const user = await UserModel.findById(userId).select('servers').populate<{servers: Server[]}>('servers');
+
+  const [ serverChannels, serverMembers ] = await Promise.all([
+    ChannelModel.find({server: {$in: user?.servers}}),
+    ServerMemberModel.find({server: {$in: user?.servers}}).populate<{User: User}>('user')
+  ]);
+
+  return {
+    servers: user?.servers || [],
+    serverChannels,
+    serverMembers,
+  };
 };

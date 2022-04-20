@@ -8,7 +8,7 @@ export interface User {
   avatar?: string
   servers: Types.ObjectId[]
   bot?: boolean
-  createdAt: number
+  joinedAt: number
 }
 
 const schema = new Schema<User>({
@@ -18,7 +18,7 @@ const schema = new Schema<User>({
   avatar: String,
   servers: [{ type: Schema.Types.ObjectId, ref: 'Server', select: false}],
   bot: Boolean,
-  createdAt: { type: Number, default: Date.now },
+  joinedAt: { type: Number, default: Date.now },
 });
 
 export const UserModel = model<User>('User', schema);
