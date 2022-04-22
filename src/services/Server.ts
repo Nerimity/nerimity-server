@@ -1,7 +1,7 @@
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
 import { emitServerJoin } from '../emits/Server';
-import { ChannelModel } from '../models/ChannelModel';
+import { ChannelModel, ChannelType } from '../models/ChannelModel';
 import { ServerMemberModel } from '../models/ServerMemberModel';
 import { Server, ServerModel } from '../models/ServerModel';
 import { User, UserModel } from '../models/UserModel';
@@ -31,6 +31,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   const channel = await ChannelModel.create({
     name: 'general',
     server: server._id,
+    type: ChannelType.SERVER_TEXT,
     createdBy: opts.creatorId,
   });
 
