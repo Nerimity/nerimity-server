@@ -29,7 +29,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   });
 
   const channel = await ChannelModel.create({
-    name: 'general',
+    name: 'General',
     server: server._id,
     type: ChannelType.SERVER_TEXT,
     createdBy: opts.creatorId,
