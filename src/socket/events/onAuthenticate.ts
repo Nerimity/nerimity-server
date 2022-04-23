@@ -20,7 +20,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   socket.emit(AUTHENTICATED, {
     user: accountCache.user,
     servers,
-    serverChannels,
     serverMembers,
+    channels: serverChannels,
   });
 }
