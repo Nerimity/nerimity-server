@@ -1,5 +1,5 @@
 import { AccountModel } from '../models/AccountModel';
-import { UserModel } from '../models/UserModel';
+import { User, UserModel } from '../models/UserModel';
 import bcrypt from 'bcrypt';
 import { generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
@@ -67,3 +67,8 @@ export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, C
   return [token, null];
 };
 
+
+
+export const getAccountByUserId = (userId: string) => {
+  return AccountModel.findOne({user: userId}).populate<{user: User}>('user');
+};

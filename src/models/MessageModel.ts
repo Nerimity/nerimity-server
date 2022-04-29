@@ -1,12 +1,12 @@
 import {Schema, model, Types} from 'mongoose';
 
 
-export interface MessageType {
-  CONTENT: 0;
-  JOIN_SERVER: 1;
-  LEAVE_SERVER: 2;
-  KICK_USER: 3;
-  BAN_USER: 4;
+export enum MessageType {
+  CONTENT = 0,
+  JOIN_SERVER = 1,
+  LEAVE_SERVER = 2,
+  KICK_USER = 3,
+  BAN_USER = 4,
 }
 
 export interface Message {
@@ -27,5 +27,5 @@ const schema = new Schema<Message>({
   createdAt: { type: Number, default: Date.now },
 });
 
-export const UserModel = model<Message>('Message', schema);
+export const MessageModel = model<Message>('Message', schema);
 

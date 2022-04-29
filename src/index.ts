@@ -11,6 +11,7 @@ import cors from 'cors';
 import {createIO} from './socket/socket';
 import { UsersRouter } from './routes/users/Router';
 import { ServersRouter } from './routes/servers/Router';
+import { ChannelsRouter } from './routes/channels/Router';
 
 const app = express();
 const server = http.createServer(app);
@@ -31,6 +32,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use('/api', UsersRouter);
 app.use('/api', ServersRouter);
+app.use('/api', ChannelsRouter);
 
 
 server.listen(env.PORT, async () => {

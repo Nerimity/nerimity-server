@@ -1,8 +1,9 @@
-import { SERVER_JOIN } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, SERVER_JOIN } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
 import { Server } from '../models/ServerModel';
+import { Message } from '../models/MessageModel';
 
 interface ServerJoinOpts {
   server: Server;
@@ -23,4 +24,9 @@ export const emitServerJoin = (opts: ServerJoinOpts) => {
     members: opts.members,
     channels: opts.channels,
   });
+};
+
+export const emitServerMessageCreated = (serverId: string, message: Message) => {
+  const io = getIO();
+  io.in(serverId).emit(MESSAGE_CREATED, message);
 };

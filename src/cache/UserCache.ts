@@ -1,12 +1,8 @@
 import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
-import { AccountModel } from '../models/AccountModel';
-import { User } from '../models/UserModel';
-
-// keys
-const ACCOUNT_CACHE_KEY = (userId: string) => `ACCOUNT:${userId}`;
-
+import { getAccountByUserId } from '../services/User';
+import { ACCOUNT_CACHE_KEY_STRING } from './CacheKeys';
 
 export interface AccountCache {
   _id: string;
@@ -23,13 +19,13 @@ export interface AccountCache {
 
 export async function getAccountCache(userId: string): Promise<AccountCache | null> {
   // First, check in cache
-  const cacheKey = ACCOUNT_CACHE_KEY(userId);
+  const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
   const cacheAccount = await redisClient.get(cacheKey);
   if (cacheAccount) {
     return JSON.parse(cacheAccount);
   }
   // If not in cache, fetch from database
-  const account = await AccountModel.findOne({user: userId}).populate<{user: User}>('user');
+  const account = await getAccountByUserId(userId);
   if (!account) return null;
 
   const accountCache: AccountCache = {
