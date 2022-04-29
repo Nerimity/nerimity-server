@@ -13,7 +13,7 @@ export interface Message {
   content: string,
   type: MessageType,
   channel: Types.ObjectId
-  creator: Types.ObjectId
+  createdBy: Types.ObjectId
   editedAt?: number 
   createdAt: number
 }
@@ -22,7 +22,7 @@ const schema = new Schema<Message>({
   content: String,
   type: Number,
   channel: { type: Schema.Types.ObjectId, ref: 'Channel' },
-  creator: { type: Schema.Types.ObjectId, ref: 'User' },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   editedAt: Number,
   createdAt: { type: Number, default: Date.now },
 });

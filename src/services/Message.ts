@@ -5,7 +5,7 @@ import { User } from '../models/UserModel';
 export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
   const messages = await MessageModel
     .find({ channel: channelId })
-    .populate<{creator: User}>('creator', 'username tag hexColor')
+    .populate<{createdBy: User}>('createdBy', 'username tag hexColor')
     .limit(limit)
     .select('-__v');
 
@@ -25,12 +25,12 @@ interface SendMessageOptions {
 export const createMessage = async (opts: SendMessageOptions) => {
   const message = await MessageModel.create({
     content: opts.content,
-    creator: opts.userId,
+    createdBy: opts.userId,
     channel: opts.channelId,
     type: opts.type
   });
 
-  const populatedMessage = (await message.populate<{creator: User}>('creator', 'username tag hexColor')).toObject({versionKey: false});
+  const populatedMessage = (await message.populate<{createdBy: User}>('createdBy', 'username tag hexColor')).toObject({versionKey: false});
 
   // emit 
   if (opts.serverId) {
