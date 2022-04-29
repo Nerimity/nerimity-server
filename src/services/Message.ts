@@ -17,6 +17,7 @@ interface SendMessageOptions {
   userId: string,
   channelId: string,
   serverId?: string,
+  socketId?: string,
   content?: string,
   type: MessageType,
 }
@@ -33,7 +34,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   // emit 
   if (opts.serverId) {
-    emitServerMessageCreated(opts.serverId, populatedMessage);
+    emitServerMessageCreated(opts.serverId, populatedMessage, opts.socketId);
   }
   return populatedMessage;
 };

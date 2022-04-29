@@ -26,7 +26,13 @@ export const emitServerJoin = (opts: ServerJoinOpts) => {
   });
 };
 
-export const emitServerMessageCreated = (serverId: string, message: Message) => {
+export const emitServerMessageCreated = (serverId: string, message: Message, excludeSocketId?: string) => {
   const io = getIO();
+
+  if (excludeSocketId) {
+    io.in(serverId).except(excludeSocketId).emit(MESSAGE_CREATED, message);
+    return;
+  }
+
   io.in(serverId).emit(MESSAGE_CREATED, message);
 };
