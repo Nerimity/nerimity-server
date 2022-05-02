@@ -17,8 +17,15 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   const {servers, serverChannels, serverMembers} = await getServers(accountCache.user._id);
 
+  // join room
+  for (let i = 0; i < servers.length; i++) {
+    const server = servers[i];
+    socket.join(server._id.toString());
+  }
+
+
   socket.emit(AUTHENTICATED, {
-    user: accountCache.user,
+    user: accountCache?.user,
     servers,
     serverMembers,
     channels: serverChannels,
