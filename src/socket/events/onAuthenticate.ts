@@ -14,6 +14,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     emitError(socket, { message: error, disconnect: true });
     return;
   }
+  socket.join(accountCache.user._id);
 
   const {servers, serverChannels, serverMembers} = await getServers(accountCache.user._id);
 
