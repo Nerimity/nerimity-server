@@ -37,8 +37,8 @@ export const emitServerMessageCreated = (serverId: string, message: Message, exc
   io.in(serverId).emit(MESSAGE_CREATED, message);
 };
 
-export const emitServerMessageDeleted = (serverId: string, messageId: string) => {
+export const emitServerMessageDeleted = (serverId: string, data: {channelId: string, messageId: string}) => {
   const io = getIO();
 
-  io.in(serverId).emit(MESSAGE_DELETED, {_id: messageId});
+  io.in(serverId).emit(MESSAGE_DELETED, data);
 };

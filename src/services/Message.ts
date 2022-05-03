@@ -43,17 +43,18 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
 interface MessageDeletedOptions {
   messageId: string,
+  channelId: string
   serverId?: string,
 }
 
 export const deleteMessage = async (opts: MessageDeletedOptions) => {
-  const message = await MessageModel.findOne({ _id: opts.messageId });
+  const message = await MessageModel.findOne({ _id: opts.messageId, channel: opts.channelId });
   if (!message) return false;
   
   await message.remove();
 
   if (opts.serverId) {
-    emitServerMessageDeleted(opts.serverId, opts.messageId);
+    emitServerMessageDeleted(opts.serverId, {channelId: opts.channelId, messageId: opts.messageId});
   }
   
   return true;
