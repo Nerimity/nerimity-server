@@ -7,7 +7,7 @@ export interface User {
   username: string
   tag: string
   avatar?: string
-  hexColor?: string
+  hexColor: string
   servers: Types.ObjectId[]
   bot?: boolean
   joinedAt: number

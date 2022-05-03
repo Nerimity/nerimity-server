@@ -10,6 +10,7 @@ export interface AccountCache {
   user: {
     _id: string
     username: string;
+    hexColor: string;
     tag: string;
     avatar?: string;
     bot?: boolean;
@@ -34,6 +35,7 @@ export async function getAccountCache(userId: string): Promise<AccountCache | nu
     user: {
       _id: account.user._id.toString(),
       username: account.user.username,
+      hexColor: account.user.hexColor,
       tag: account.user.tag,
       avatar: account.user.avatar,
       bot: account.user.bot
