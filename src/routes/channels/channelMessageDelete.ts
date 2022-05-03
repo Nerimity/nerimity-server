@@ -27,10 +27,10 @@ async function route (req: Request, res: Response) {
   const isServerChannel = req.channelCache.server;
   const isServerOwner = req.channelCache.server?.createdBy.toString() === req.accountCache.user._id.toString();
 
-  if (isServerChannel && (!isServerOwner && !isCreatedByMe)) {
+  if (isServerChannel && (!isServerOwner || !isCreatedByMe)) {
     return res.status(403).json(generateError('You are not allowed to delete messages in this channel!'));
   }
-  if (isServerChannel && !isCreatedByMe) {
+  if (!isServerChannel || !isCreatedByMe) {
     return res.status(403).json(generateError('Only the creator of the message can delete this message!'));
   }
 
