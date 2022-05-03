@@ -1,4 +1,4 @@
-import { emitServerMessageCreated } from '../emits/Server';
+import { emitServerMessageCreated, emitServerMessageDeleted } from '../emits/Server';
 import { MessageModel, MessageType } from '../models/MessageModel';
 import { User } from '../models/UserModel';
 
@@ -37,4 +37,24 @@ export const createMessage = async (opts: SendMessageOptions) => {
     emitServerMessageCreated(opts.serverId, populatedMessage, opts.socketId);
   }
   return populatedMessage;
+};
+
+
+
+interface MessageDeletedOptions {
+  messageId: string,
+  serverId?: string,
+}
+
+export const deleteMessage = async (opts: MessageDeletedOptions) => {
+  const message = await MessageModel.findOne({ _id: opts.messageId });
+  if (!message) return false;
+  
+  await message.remove();
+
+  if (opts.serverId) {
+    emitServerMessageDeleted(opts.serverId, opts.messageId);
+  }
+  
+  return true;
 };

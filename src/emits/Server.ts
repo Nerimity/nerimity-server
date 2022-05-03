@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, SERVER_JOIN } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOIN } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
@@ -35,4 +35,10 @@ export const emitServerMessageCreated = (serverId: string, message: Message, exc
   }
 
   io.in(serverId).emit(MESSAGE_CREATED, message);
+};
+
+export const emitServerMessageDeleted = (serverId: string, messageId: string) => {
+  const io = getIO();
+
+  io.in(serverId).emit(MESSAGE_DELETED, {_id: messageId});
 };

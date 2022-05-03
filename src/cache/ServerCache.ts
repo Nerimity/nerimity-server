@@ -5,6 +5,7 @@ import { SERVER_KEY_STRING } from './CacheKeys';
 export interface ServerCache {
   _id: string
   name: string,
+  createdBy: string,
 }
 
 export const getServerCache = async (serverId: string) => {
@@ -18,6 +19,7 @@ export const getServerCache = async (serverId: string) => {
   const serverCache = {
     name: server.name,
     _id: server.id,
+    createdBy: server.createdBy,
   };
   await redisClient.set(key, JSON.stringify(serverCache));
   return serverCache;
