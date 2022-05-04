@@ -1,4 +1,5 @@
 import { ChannelCache } from './cache/ChannelCache';
+import { ServerCache } from './cache/ServerCache';
 import { ServerMemberCache } from './cache/ServerMemberCache';
 import { AccountCache } from './cache/UserCache';
 
@@ -9,6 +10,7 @@ declare global {
       accountCache: AccountCache
       channelCache: ChannelCache
       serverMemberCache: ServerMemberCache
+      serverCache: ServerCache
     }
   }
  

@@ -31,6 +31,7 @@ export function channelVerification (opts?: Options) {
         return res.status(403).json(generateError(error));
       }
       req.serverMemberCache = memberCache;
+      req.serverCache = channel.server;
     }
     req.channelCache = channel;
     next();

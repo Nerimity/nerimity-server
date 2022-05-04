@@ -1,10 +1,19 @@
-export function generateTag() {
+function generateRandom(length: number) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let tag = '';
-  for (let i = 0; i < 4; i++) {
-    tag += chars.charAt(Math.floor(Math.random() * chars.length));
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    str += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return tag;
+  return str;
+}
+
+
+export function generateTag() {
+  return generateRandom(4);
+}
+
+export function generateServerInviteCode() {
+  return generateRandom(5);
 }
 
 
