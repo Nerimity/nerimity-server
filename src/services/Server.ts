@@ -69,3 +69,38 @@ export const getServers = async (userId: string) => {
     serverMembers,
   };
 };
+
+export const joinServer = async (userId: string, serverId: string) => {
+  
+  const maxServersReached = await hasReachedMaxServers(userId);
+  if (maxServersReached) {
+    return [null, generateError('You have reached the maximum number of servers.')];
+  }
+
+  const server = await ServerModel.findById(serverId);
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+
+  // check if user is already in server
+  const isInServer = await ServerMemberModel.exists({user: userId, server: serverId});
+  if (isInServer) {
+    return [null, generateError('You are already in this server.')];
+  }
+
+  await UserModel.updateOne({_id: userId}, {$addToSet: {servers: server._id}});
+
+  const serverMember = await ServerMemberModel.create({
+    server: server._id,
+    user: userId,
+  });
+
+  const [ serverChannels, serverMembers ] = await Promise.all([
+    ChannelModel.find({server: server._id}),
+    ServerMemberModel.find({server: server._id}).populate<{User: User}>('user')
+  ]);
+
+
+
+
+};

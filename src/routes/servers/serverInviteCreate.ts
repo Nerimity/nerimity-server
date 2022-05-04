@@ -1,7 +1,6 @@
 import { Request, Response, Router } from 'express';
-import { generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { serverMemberVerification } from '../../middleware/ServerMemberVerification';
+import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { createServerInvite } from '../../services/ServerInvite';
 
 export function serverInviteCreate(Router: Router) {
