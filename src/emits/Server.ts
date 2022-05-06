@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOIN } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_MEMBER_JOINED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
@@ -12,14 +12,20 @@ interface ServerJoinOpts {
   joinedMember: ServerMember;
 }
 
-export const emitServerJoin = (opts: ServerJoinOpts) => {
+export const emitServerJoined = (opts: ServerJoinOpts) => {
   const io = getIO();
   const serverId = opts.server._id.toString();
-  const joinedMemberId = opts.joinedMember._id.toString();
+  const joinedMemberUserId = opts.joinedMember.user._id.toString();
 
-  io.in(joinedMemberId).socketsJoin(serverId);
+  io.to(serverId).emit(SERVER_MEMBER_JOINED, {
+    serverId: serverId,
+    member: opts.joinedMember,
+  });
+  
+  io.in(joinedMemberUserId).socketsJoin(serverId);
 
-  io.in(serverId).emit(SERVER_JOIN, {
+  
+  io.in(joinedMemberUserId).emit(SERVER_JOINED, {
     server: opts.server,
     members: opts.members,
     channels: opts.channels,

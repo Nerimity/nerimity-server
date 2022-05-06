@@ -1,6 +1,6 @@
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
-import { emitServerJoin } from '../emits/Server';
+import { emitServerJoined } from '../emits/Server';
 import { ChannelModel, ChannelType } from '../models/ChannelModel';
 import { ServerMemberModel } from '../models/ServerMemberModel';
 import { Server, ServerModel } from '../models/ServerModel';
@@ -44,8 +44,9 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
     server: server._id,
     user: opts.creatorId,
   });
+  await serverMember.populate<{User: User}>('user');
 
-  emitServerJoin({
+  emitServerJoined({
     server: server.toObject({versionKey: false}),
     channels: [channel.toObject({versionKey: false})],
     members: [serverMember.toObject({versionKey: false})],
@@ -70,7 +71,7 @@ export const getServers = async (userId: string) => {
   };
 };
 
-export const joinServer = async (userId: string, serverId: string) => {
+export const joinServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>> => {
   
   const maxServersReached = await hasReachedMaxServers(userId);
   if (maxServersReached) {
@@ -95,12 +96,19 @@ export const joinServer = async (userId: string, serverId: string) => {
     user: userId,
   });
 
+  await serverMember.populate<{user: User}>('user');
+
   const [ serverChannels, serverMembers ] = await Promise.all([
     ChannelModel.find({server: server._id}),
     ServerMemberModel.find({server: server._id}).populate<{User: User}>('user')
   ]);
 
+  emitServerJoined({
+    server: server.toObject({versionKey: false}),
+    channels: serverChannels,
+    members: serverMembers,
+    joinedMember: serverMember.toObject({versionKey: false}),
+  });
 
-
-
+  return [server.toObject({versionKey: false}), null];
 };

@@ -6,11 +6,16 @@ import { onConnection } from './events/onConnection';
 
 let io: socketIO.Server;
 
-export function createIO(server: http.Server) {
+export async function createIO(server: http.Server) {
   io = new socketIO.Server(server, {
     transports: ['websocket']
   });
-  io.adapter(createAdapter(redisClient, redisClient.duplicate()));
+
+  const pub = redisClient;
+  const sub = redisClient.duplicate();
+  await sub.connect();
+
+  io.adapter(createAdapter(pub, sub));
   io.on('connection', onConnection);
 
 }

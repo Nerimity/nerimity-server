@@ -15,16 +15,23 @@ import { ChannelsRouter } from './routes/channels/Router';
 
 const app = express();
 const server = http.createServer(app);
-createIO(server);
+
 
 mongoose.connect(env.MONGODB_URI, () => {
   Log.info('Connected to mongodb');
 });
 
-connectRedis().then(() => {
+async function main () {
+  await connectRedis();
   Log.info('Connected to Redis');
-});
+  createIO(server);
+  
+  server.listen(env.PORT, async () => {
+    Log.info('listening on *:' + env.PORT);
+  });
+}
 
+main();
 
 app.use(cors());
 
@@ -35,6 +42,3 @@ app.use('/api', ServersRouter);
 app.use('/api', ChannelsRouter);
 
 
-server.listen(env.PORT, async () => {
-  Log.info('listening on *:' + env.PORT);
-});

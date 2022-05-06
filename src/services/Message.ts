@@ -6,10 +6,11 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
   const messages = await MessageModel
     .find({ channel: channelId })
     .populate<{createdBy: User}>('createdBy', 'username tag hexColor')
+    .sort({_id: -1})
     .limit(limit)
     .select('-__v');
 
-  return messages;
+  return messages.reverse();
 };
 
 

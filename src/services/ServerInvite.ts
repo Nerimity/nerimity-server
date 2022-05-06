@@ -2,6 +2,9 @@ import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateServerInviteCode } from '../common/random';
 import { ServerInvite, ServerInviteModel } from '../models/ServerInvite';
+import { ServerMemberModel } from '../models/ServerMemberModel';
+import { Server, ServerModel } from '../models/ServerModel';
+import { joinServer } from './Server';
 
 export const createServerInvite = async (serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
 
@@ -23,4 +26,35 @@ export const createServerInvite = async (serverId: string, creatorId: string): P
   });
   const invite =  serverInvite.toObject({versionKey: false});
   return [invite, null];
+};
+
+export const joinServerByInviteCode = async (userId: string, inviteCode: string): Promise<CustomResult<Server, CustomError>> => {
+  const invite = await ServerInviteModel.findOne({code: inviteCode});
+  if (!invite) {
+    return [null, generateError('Invalid invite code.')];
+  }
+
+  const server = await ServerModel.exists(invite.server);
+  if (!server) {
+    return [null, generateError('Invalid invite code.')];
+  }
+
+  return await joinServer(userId, invite.server.toString()).then(async server => {
+    await ServerInviteModel.updateOne({_id: invite._id}, {$inc: {uses: 1}});
+    return server;
+  });
+
+};
+
+type ServerWithMemberCount = Server & { memberCount: number }; 
+
+export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
+  const invite = await ServerInviteModel.findOne({code: inviteCode}).populate<{server: Server}>('server').lean();
+  if (!invite) {
+    return [null, generateError('Invalid invite code.')];
+  }
+
+  const memberCount = await ServerMemberModel.estimatedDocumentCount({server: invite.server._id});
+
+  return [{...invite.server, memberCount}, null];
 };
