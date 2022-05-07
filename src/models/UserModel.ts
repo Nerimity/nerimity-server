@@ -1,12 +1,21 @@
 import {Schema, model, Types} from 'mongoose';
 import { generateHexColor } from '../common/random';
 
+
+export enum UserStatus {
+  OFFLINE = 0,
+  ONLINE = 1,
+  LTP = 2, // Looking To Play
+  AFK = 3, // Away from keyboard
+  DND = 4, // Do not disturb
+}
 export interface User {
   _id: Types.ObjectId
   account: Types.ObjectId
   username: string
   tag: string
   avatar?: string
+  status: UserStatus
   hexColor: string
   servers: Types.ObjectId[]
   bot?: boolean
@@ -18,6 +27,7 @@ const schema = new Schema<User>({
   username: String,
   tag: String,
   avatar: String,
+  status: { type: Number, default: UserStatus.ONLINE, select: false },
   hexColor: {type: String, default: generateHexColor},
   servers: [{ type: Schema.Types.ObjectId, ref: 'Server', select: false}],
   bot: Boolean,

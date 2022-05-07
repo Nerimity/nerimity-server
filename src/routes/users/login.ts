@@ -7,12 +7,10 @@ export function login(Router: Router) {
   Router.post('/users/login', 
     body('email')
       .not().isEmpty().withMessage('Email is required.')
-      .isEmail().withMessage('Invalid email.')
-      .isLength({ min: 1, max: 320 }).withMessage('Email must be between 1 and 320 characters long.'),
+      .isEmail().withMessage('Invalid email.'),
     body('password')
       .not().isEmpty().withMessage('Password is required.')
-      .isString().withMessage('Password must be a string.')
-      .isLength({ min: 4, max: 255 }).withMessage('Password must be between 4 and 255 characters long.'),
+      .isString().withMessage('Password must be a string.'),
     route
   );
 }

@@ -19,12 +19,8 @@ export function generateServerInviteCode() {
 
 export function generateHexColor(){ 
   const h = 360 * Math.random();
-  const s = (25 + 70 * Math.random());
-  const l = 70;
-  return hslToHex(h, s, l);
+  return hslToHex(h, 65,65);
 }
-
-
 
 function hslToHex(h: number, s: number, l: number) {
   l /= 100;
