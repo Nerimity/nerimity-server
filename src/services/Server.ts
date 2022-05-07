@@ -24,7 +24,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   }
 
   const server = await ServerModel.create({
-    name: opts.name,
+    name: opts.name.trim(),
     createdBy: opts.creatorId,
   });
 

@@ -24,10 +24,10 @@ export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<str
     return [null, generateError('This username is used too often.', 'username')];
   }
 
-  const hashedPassword = await bcrypt.hash(opts.password, 10);
+  const hashedPassword = await bcrypt.hash(opts.password.trim(), 10);
 
   const newUser = await UserModel.create({
-    username: opts.username,
+    username: opts.username.trim(),
     tag
   });
 

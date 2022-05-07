@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
+import { customExpressValidatorResult } from '../../common/errorHandler';
 import { registerUser } from '../../services/User';
 
 export function register(Router: Router) {
@@ -28,6 +29,14 @@ interface Body {
 
 async function route (req: Request, res: Response) {
   const body = req.body as Body;
+
+
+  const validateError = customExpressValidatorResult(req);
+
+  if (validateError) {
+    return res.status(400).json(validateError);
+  }
+
   const [ userToken, errors ] = await registerUser({
     email: body.email,
     username: body.username,
