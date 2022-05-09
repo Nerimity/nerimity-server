@@ -6,8 +6,31 @@ import { ACCOUNT_CACHE_KEY_STRING, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_I
 
 
 export interface Presence {
+  userId: string;
   status: number;
   custom?: string;
+}
+
+
+export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
+  const multi = redisClient.multi();
+  for (let i = 0; i < userIds.length; i++) {
+    const userId = userIds[i];
+    const key = USER_PRESENCE_KEY_STRING(userId);
+    multi.get(key);
+  }
+
+  const results = await multi.exec();
+
+  const presences: Presence[] = [];
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i] as string;
+    if (!result) continue;
+    const presence = JSON.parse(result);
+    presences.push(presence);
+  }
+
+  return presences;
 }
 
 // returns true if the first user is connected.

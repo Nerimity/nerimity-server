@@ -2,7 +2,7 @@ import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
 import { emitServerJoined } from '../emits/Server';
 import { ChannelModel, ChannelType } from '../models/ChannelModel';
-import { ServerMemberModel } from '../models/ServerMemberModel';
+import { ServerMember, ServerMemberModel } from '../models/ServerMemberModel';
 import { Server, ServerModel } from '../models/ServerModel';
 import { User, UserModel } from '../models/UserModel';
 
@@ -46,11 +46,14 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   });
   await serverMember.populate<{User: User}>('user');
 
+  const member: Partial<ServerMember> = serverMember.toObject({versionKey: false});
+  delete member._id;
+
   emitServerJoined({
     server: server.toObject({versionKey: false}),
     channels: [channel.toObject({versionKey: false})],
-    members: [serverMember.toObject({versionKey: false})],
-    joinedMember: serverMember.toObject({versionKey: false}),
+    members: [member],
+    joinedMember: member,
   });
   return [server.toObject({versionKey: false}), null];
 };
@@ -61,7 +64,7 @@ export const getServers = async (userId: string) => {
 
   const [ serverChannels, serverMembers ] = await Promise.all([
     ChannelModel.find({server: {$in: user?.servers}}),
-    ServerMemberModel.find({server: {$in: user?.servers}}).populate<{User: User}>('user')
+    ServerMemberModel.find({server: {$in: user?.servers}}).select('-_id').populate<{User: User}>('user')
   ]);
 
   return {
@@ -100,7 +103,7 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
 
   const [ serverChannels, serverMembers ] = await Promise.all([
     ChannelModel.find({server: server._id}),
-    ServerMemberModel.find({server: server._id}).populate<{User: User}>('user')
+    ServerMemberModel.find({server: server._id}).select('-_id').populate<{User: User}>('user')
   ]);
 
   emitServerJoined({

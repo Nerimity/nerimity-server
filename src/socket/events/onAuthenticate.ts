@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io';
-import { addSocketUser, authenticateUser } from '../../cache/UserCache';
+import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/UserCache';
 import { AUTHENTICATED } from '../../common/ClientEventNames';
+import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
 import { UserModel } from '../../models/UserModel';
 import { getServers } from '../../services/Server';
@@ -32,8 +33,13 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   }
   
   const isFirstConnect = await addSocketUser(cacheUser._id, socket.id, {
-    status: user.status
+    status: user.status,
+    userId: cacheUser._id
   });
+
+  const userIds = removeDuplicates(serverMembers.map(member => member.user._id.toString()));
+
+  const presences = await getUserPresences(userIds);
 
   console.log('isFirstConnect', isFirstConnect);
 
@@ -43,6 +49,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     user: cacheUser,
     servers,
     serverMembers,
+    presences,
     channels: serverChannels,
   });
 }

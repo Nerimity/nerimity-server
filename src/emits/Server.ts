@@ -7,14 +7,15 @@ import { Message } from '../models/MessageModel';
 
 interface ServerJoinOpts {
   server: Server;
-  members: ServerMember[];
+  members: Partial<ServerMember>[];
   channels: Channel[];
-  joinedMember: ServerMember;
+  joinedMember: Partial<ServerMember>;
 }
 
 export const emitServerJoined = (opts: ServerJoinOpts) => {
   const io = getIO();
   const serverId = opts.server._id.toString();
+  if (!opts.joinedMember?.user?._id) throw new Error('User not found.');
   const joinedMemberUserId = opts.joinedMember.user._id.toString();
 
   io.to(serverId).emit(SERVER_MEMBER_JOINED, {
