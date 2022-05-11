@@ -87,7 +87,7 @@ export interface AccountCache {
 export async function getAccountCacheBySocketId(socket: string) {
   const userId = await redisClient.get(CONNECTED_USER_ID_KEY_STRING(socket));
   if (!userId) return null;
-  return getAccountByUserId(userId);
+  return getAccountCache(userId);
 }
 
 export async function getAccountCache(userId: string): Promise<AccountCache | null> {

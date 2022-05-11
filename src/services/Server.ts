@@ -74,6 +74,11 @@ export const getServers = async (userId: string) => {
   };
 };
 
+export const getServerIds = async (userId: string): Promise<string[]> => {
+  const user = await UserModel.findById(userId).select('servers');
+  return user?.servers.map(String) || [];
+};
+
 export const joinServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>> => {
   
   const maxServersReached = await hasReachedMaxServers(userId);

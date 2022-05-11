@@ -2,6 +2,8 @@
 export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
 
+export const USER_PRESENCE_UPDATE = 'user:presence_update';
+
 export const SERVER_JOINED = 'server:joined';
 export const SERVER_MEMBER_JOINED = 'server:member_joined';
 

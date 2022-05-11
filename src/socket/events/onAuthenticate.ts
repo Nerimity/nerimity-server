@@ -3,7 +3,8 @@ import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/U
 import { AUTHENTICATED } from '../../common/ClientEventNames';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
-import { UserModel } from '../../models/UserModel';
+import { emitUserPresenceUpdate } from '../../emits/User';
+import { UserModel, UserStatus } from '../../models/UserModel';
 import { getServers } from '../../services/Server';
 
 interface Payload {
@@ -41,7 +42,9 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   const presences = await getUserPresences(userIds);
 
-  console.log('isFirstConnect', isFirstConnect);
+  if (isFirstConnect && user.status !== UserStatus.OFFLINE) {
+    emitUserPresenceUpdate(cacheUser._id, {status: user.status, userId: cacheUser._id}, socket.id);
+  }
 
 
 
