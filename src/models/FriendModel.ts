@@ -10,14 +10,14 @@ export enum FriendStatus {
 export interface Friend {
   status: FriendStatus,
   createdAt: number
-  user: Types.ObjectId
-  friend: Types.ObjectId
+  user: Types.ObjectId;
+  recipient: Types.ObjectId;
 }
 
 const schema = new Schema<Friend>({
   status: Number,
+  recipient: { type: Schema.Types.ObjectId, ref: 'User' },
   user: { type: Schema.Types.ObjectId, ref: 'User' },
-  friend: { type: Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Number, default: Date.now },
 });
 

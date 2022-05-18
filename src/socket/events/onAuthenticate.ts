@@ -20,7 +20,9 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   const cacheUser = accountCache.user;
   socket.join(accountCache.user._id);
 
-  const user = await UserModel.findOne({ _id: accountCache.user._id }).select('status');
+  const user = (await UserModel.findOne({ _id: accountCache.user._id })
+    .populate({ path: 'friends', populate: { path: 'recipient', model: 'User' }, select: '-_id'}).select('status friends'))?.toObject({ versionKey: false });
+    
   if (!user) {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
@@ -53,6 +55,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     servers,
     serverMembers,
     presences,
+    friends: user.friends,
     channels: serverChannels,
   });
 }

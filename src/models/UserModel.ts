@@ -31,7 +31,7 @@ const schema = new Schema<User>({
   status: { type: Number, default: UserStatus.ONLINE, select: false },
   hexColor: {type: String, default: generateHexColor},
   servers: [{ type: Schema.Types.ObjectId, ref: 'Server', select: false}],
-  friends: [{ type: Schema.Types.ObjectId, ref: 'User', select: false}],
+  friends: [{ type: Schema.Types.ObjectId, ref: 'Friend', select: false}],
   bot: Boolean,
   joinedAt: { type: Number, default: Date.now },
 });
