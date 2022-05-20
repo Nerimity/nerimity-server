@@ -42,7 +42,7 @@ async function route (req: Request, res: Response) {
 
   const [friend, error] = await addFriend(req.accountCache.user._id, userFriend._id.toString());
   if (error) {
-    return res.status(500).json(error);
+    return res.status(400).json(error);
   }
 
   res.json(friend);

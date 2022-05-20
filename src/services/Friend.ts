@@ -4,8 +4,13 @@ import { FriendModel, FriendStatus } from '../models/FriendModel';
 import { User, UserModel } from '../models/UserModel';
 
 export const addFriend = async (userId: string, friendId: string) => {
-  
-  // todo: check if "already friends" works.
+
+
+  if (userId === friendId) {
+    return [null, generateError('You cannot add yourself as a friend.')];
+  }
+
+
   const alreadyFriends = await FriendModel.exists({user: userId, recipient: friendId});
   if (alreadyFriends) {
     return [null, generateError('Already in friends list.')];

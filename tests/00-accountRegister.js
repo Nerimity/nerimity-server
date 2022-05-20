@@ -26,7 +26,7 @@ module.exports = function () {
           console.log("ERR", res.body)
           done(err);
         } else {
-          global.userToken2 = res.body.token2;
+          global.userToken2 = res.body.token;
           done();
         }
       });
