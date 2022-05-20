@@ -22,17 +22,21 @@ mongoose.connect(env.MONGODB_URI, () => {
   Log.info('Connected to mongodb');
 });
 
-async function main () {
+// eslint-disable-next-line no-async-promise-executor
+export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
   await connectRedis();
   Log.info('Connected to Redis');
   createIO(server);
   
-  server.listen(env.PORT, async () => {
+  server.listen(env.PORT, () => {
     Log.info('listening on *:' + env.PORT);
+    resolve(server);
   });
-}
+});
 
-main();
+if (process.env.TEST !== 'true') {
+  main();
+}
 
 app.use(cors());
 
