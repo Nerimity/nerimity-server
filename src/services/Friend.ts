@@ -1,5 +1,5 @@
 import { generateError } from '../common/errorHandler';
-import { emitFriendRequestSent } from '../emits/Friend';
+import { emitFriendRemoved, emitFriendRequestAccept, emitFriendRequestSent } from '../emits/Friend';
 import { FriendModel, FriendStatus } from '../models/FriendModel';
 import { User, UserModel } from '../models/UserModel';
 
@@ -46,4 +46,48 @@ export const addFriend = async (userId: string, friendId: string) => {
   emitFriendRequestSent(requesterResponse, recipientResponse);
 
   return [requesterResponse, null];
+};
+
+
+export const acceptFriend = async (userId: string, friendId: string) => {
+  const friendRequest = await FriendModel.findOne({user: userId, recipient: friendId});
+
+  if (!friendRequest) {
+    return [null, generateError('Friend request does not exist.')];
+  }
+
+  if (friendRequest.status === FriendStatus.FRIENDS) {
+    return [null, generateError('Friend request already accepted.')];
+  }
+  if (friendRequest.status === FriendStatus.SENT) {
+    return [null, generateError('Cannot accept friend request because it is sent by you.')];
+  }
+
+  await FriendModel.updateOne({user: userId, recipient: friendId}, {$set: {status: FriendStatus.FRIENDS}});
+  await FriendModel.updateOne({user: friendId, recipient: userId}, {$set: {status: FriendStatus.FRIENDS}});
+
+
+  emitFriendRequestAccept(userId, friendId);
+  return [{message: 'Accepted!'}, null];
+
+};
+
+export const removeFriend = async (userId: string, friendId: string) => {
+  const friendRequest = await FriendModel.findOne({user: userId, recipient: friendId});
+  
+  if (!friendRequest) {
+    return [null, generateError('Friend request does not exist.')];
+  }
+  
+
+
+  await FriendModel.deleteOne({user: userId, recipient: friendId});
+  await FriendModel.deleteOne({user: friendId, recipient: userId});
+
+
+  await UserModel.updateOne({_id: userId}, {$pull: {friends: friendId}});
+  await UserModel.updateOne({_id: friendId}, {$pull: {friends: userId}});
+
+  emitFriendRemoved(userId, friendId);
+  return [{message: 'Removed!'}, null];
 };
