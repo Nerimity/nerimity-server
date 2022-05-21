@@ -2,19 +2,23 @@ const io = require('socket.io-client');
 const {AUTHENTICATED, AUTHENTICATE_ERROR}  = require('../build/common/ClientEventNames');
 const {AUTHENTICATE} = require('../build/common/ServerEventNames');
 
+
+
+
+
 module.exports = function () {
   describe('Socket Authentication', function() {
     it('responds with user data', function(done) {
 
       global.socket = io.connect('http://localhost:80', {transports: ['websocket']})
-      global.socket.on('connect', () => {
+      global.socket.once('connect', () => {
         global.socket.emit(AUTHENTICATE, {token: global.userToken})
       });
-      global.socket.on(AUTHENTICATED, (data) => {
+      global.socket.once(AUTHENTICATED, (data) => {
         global.user = data.user;
         done()
       });
-      global.socket.on(AUTHENTICATE_ERROR, (error) => {
+      global.socket.once(AUTHENTICATE_ERROR, (error) => {
         done(new Error(error));
       });
     });
@@ -22,26 +26,49 @@ module.exports = function () {
     it('responds with second user data', function(done) {
 
       global.socket2 = io.connect('http://localhost:80', {transports: ['websocket']})
-      global.socket2.on('connect', () => {
+      global.socket2.once('connect', () => {
         global.socket2.emit(AUTHENTICATE, {token: global.userToken2})
       });
-      global.socket2.on(AUTHENTICATED, (data) => {
+      global.socket2.once(AUTHENTICATED, (data) => {
         global.user2 = data.user;
         done()
       });
-      global.socket2.on(AUTHENTICATE_ERROR, (error) => {
+      global.socket2.once(AUTHENTICATE_ERROR, (error) => {
         done(new Error(error));
       });
+
+
+      global.checkEventForBothUsers = (userOneEvent, userTwoEvent) => new Promise(resolve => {
+        let eventCount = 0;
+        let eventOneData = null;
+        let eventTwoData = null;
+        global.socket.once(userOneEvent, (data) => {
+          eventCount++;
+          eventOneData = data;
+          if (eventCount === 2) {
+            resolve([eventOneData, eventTwoData]);
+          }
+        })
+        global.socket2.once(userTwoEvent, (data) => {
+          eventCount++;
+          eventTwoData = data;
+          if (eventCount === 2) {
+            resolve([eventOneData, eventTwoData]);
+          }
+        })
+      })
+
+
     });
 
 
     it('throws an error with bad token.' , function(done) {
 
-      global.socket2 = io.connect('http://localhost:80', {transports: ['websocket']})
-      global.socket2.on('connect', () => {
-        global.socket2.emit(AUTHENTICATE, {token: "1234"})
+      const socket = io.connect('http://localhost:80', {transports: ['websocket']})
+      socket.on('connect', () => {
+        socket.emit(AUTHENTICATE, {token: "1234"})
       });
-      global.socket2.on(AUTHENTICATE_ERROR, (error) => {
+      socket.on(AUTHENTICATE_ERROR, (error) => {
         done();
       });
     });
