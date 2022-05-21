@@ -9,8 +9,8 @@ type FriendWithUser = Partial<Omit<Omit<Friend, 'recipient'>, 'user'>> & { recip
 export const emitFriendRequestSent = (requester: FriendWithUser, recipient: FriendWithUser) => {
   const io = getIO();
 
-  io.in(requester.user.toString()).emit(FRIEND_REQUEST_SENT, recipient);
-  io.in(requester.recipient._id.toString()).emit(FRIEND_REQUEST_PENDING, requester);
+  io.in(requester.user.toString()).emit(FRIEND_REQUEST_SENT, requester);
+  io.in(requester.recipient._id.toString()).emit(FRIEND_REQUEST_PENDING, recipient);
 
 };
 

@@ -7,7 +7,7 @@ export const USER_PRESENCE_UPDATE = 'user:presence_update';
 export const FRIEND_REQUEST_SENT = 'friend:request_sent';
 export const FRIEND_REQUEST_PENDING = 'friend:request_pending';
 export const FRIEND_REQUEST_ACCEPTED = 'friend:request_accepted';
-export const FRIEND_REMOVED = 'friend:request_removed';
+export const FRIEND_REMOVED = 'friend:removed';
 
 
 export const SERVER_JOINED = 'server:joined';
