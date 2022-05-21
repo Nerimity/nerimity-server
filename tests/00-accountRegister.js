@@ -1,6 +1,6 @@
 module.exports = function () {
-  describe('(Create 2 Accounts) POST /api/users/register', function() {
-    it('responds with token', function(done) {
+  describe('POST /api/users/register', function() {
+    it('Create account', function(done) {
       global.email = Math.random() + "@test.com"
       request.post(`/api/users/register`)
       .send({email: global.email, username: "user1", password: "test123"})
@@ -16,7 +16,7 @@ module.exports = function () {
       });
     });
     // create 2 accounts to test other routes.
-    it('responds with another token', function(done) {
+    it('Create second account', function(done) {
       global.email2 = Math.random() + "@test.com"
       request.post(`/api/users/register`)
       .send({email: global.email2, username: "user2", password: "test123"})
@@ -31,7 +31,7 @@ module.exports = function () {
         }
       });
     });
-    it('Send bad request to check errors.', function(done) {
+    it('Error when bad details are provided', function(done) {
       request.post(`/api/users/register`)
       .send({})
       .expect(400)

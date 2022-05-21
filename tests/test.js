@@ -8,8 +8,8 @@ let supertest = require('supertest');
 
 global.expect = chai.expect;
 
-describe('Serve Server',() => {
-  it('Should return server object', function (done) {
+describe('Start Server',() => {
+  it('Should return a server object', function (done) {
     this.timeout(60000);
     main().then(server => {
       done()

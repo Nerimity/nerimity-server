@@ -1,6 +1,6 @@
 module.exports = function () {
-  describe('(Login to an account) POST /api/users/login', function() {
-    it('responds with token', function(done) {
+  describe('POST /api/users/login', function() {
+    it('Login', function(done) {
       request.post(`/api/users/login`)
       .send({email: global.email, password: "test123"})
       .expect(200)
@@ -15,7 +15,7 @@ module.exports = function () {
       });
     });
 
-    it('Send bad request to check errors.', function(done) {
+    it('Error when bad details are provided', function(done) {
       request.post(`/api/users/login`)
       .send({})
       .expect(400)

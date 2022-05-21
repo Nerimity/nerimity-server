@@ -7,8 +7,8 @@ const {AUTHENTICATE} = require('../build/common/ServerEventNames');
 
 
 module.exports = function () {
-  describe('Socket Authentication', function() {
-    it('responds with user data', function(done) {
+  describe('EMIT AUTHENTICATE', function() {
+    it('Authenticate with Websocket', function(done) {
 
       global.socket = io.connect('http://localhost:80', {transports: ['websocket']})
       global.socket.once('connect', () => {
@@ -23,7 +23,7 @@ module.exports = function () {
       });
     });
 
-    it('responds with second user data', function(done) {
+    it('Authenticate second user with Websocket', function(done) {
 
       global.socket2 = io.connect('http://localhost:80', {transports: ['websocket']})
       global.socket2.once('connect', () => {
@@ -62,7 +62,7 @@ module.exports = function () {
     });
 
 
-    it('throws an error with bad token.' , function(done) {
+    it('Error when a bad token is provided' , function(done) {
 
       const socket = io.connect('http://localhost:80', {transports: ['websocket']})
       socket.on('connect', () => {

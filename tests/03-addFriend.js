@@ -1,9 +1,9 @@
 const {FRIEND_REQUEST_PENDING, FRIEND_REQUEST_SENT}  = require('../build/common/ClientEventNames');
 
 module.exports = function () {
-  describe('(Add user 2 from user 1) POST /api/friends/add', function() {
+  describe('POST /api/friends/add', function() {
 
-    it('responds with friend data', function(done) {
+    it('Add a friend', function(done) {
 
       checkEventForBothUsers(FRIEND_REQUEST_SENT, FRIEND_REQUEST_PENDING).then(() => done());
 
@@ -19,7 +19,7 @@ module.exports = function () {
       });
     });
 
-    it('returns an error when adding the user again.', function(done) {
+    it('Error when adding the user again', function(done) {
       request.post(`/api/friends/add`)
       .send({username: global.user2.username, tag: global.user2.tag})
       .expect(400)
