@@ -4,6 +4,8 @@ export const AUTHENTICATE_ERROR = 'user:authenticate_error';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 
+export const INBOX_OPENED = 'inbox:opened';
+
 export const FRIEND_REQUEST_SENT = 'friend:request_sent';
 export const FRIEND_REQUEST_PENDING = 'friend:request_pending';
 export const FRIEND_REQUEST_ACCEPTED = 'friend:request_accepted';

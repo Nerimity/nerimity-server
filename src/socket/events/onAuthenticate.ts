@@ -4,7 +4,10 @@ import { AUTHENTICATED } from '../../common/ClientEventNames';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
 import { emitUserPresenceUpdate } from '../../emits/User';
-import { UserModel, UserStatus } from '../../models/UserModel';
+import { Channel } from '../../models/ChannelModel';
+import { Inbox } from '../../models/InboxModel';
+import { User, UserModel, UserStatus } from '../../models/UserModel';
+import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
 
 interface Payload {
@@ -29,6 +32,21 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   }
   const {servers, serverChannels, serverMembers} = await getServers(cacheUser._id);
 
+
+  const inbox = await getInbox(cacheUser._id);
+  const inboxChannels: Channel[] = [];
+  const inboxUserIds: string[] = [];
+
+  const inboxResponse: Inbox[] = inbox.map((item: any) => {
+    inboxChannels.push(item.channel);
+    for (let i = 0; i < item.channel.recipients.length; i++) {
+      const recipient = item.channel.recipients[i];
+      inboxUserIds.push(recipient._id.toString());
+    }
+    item.channel = item.channel._id;
+    return item;
+  });
+
   // join room
   for (let i = 0; i < servers.length; i++) {
     const server = servers[i];
@@ -40,7 +58,10 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     userId: cacheUser._id
   });
 
-  const userIds = removeDuplicates(serverMembers.map(member => member.user._id.toString()));
+  const userIds = removeDuplicates([
+    ...serverMembers.map(member => member.user._id.toString()),
+    ...inboxUserIds,
+  ]);
 
   const presences = await getUserPresences(userIds);
 
@@ -56,6 +77,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     serverMembers,
     presences,
     friends: user.friends,
-    channels: serverChannels,
+    channels: [...serverChannels, ...inboxChannels],
+    inbox: inboxResponse,
   });
 }

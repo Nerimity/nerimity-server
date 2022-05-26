@@ -73,14 +73,16 @@ export async function socketDisconnect(socketId: string, userId: string) {
 export interface AccountCache {
   _id: string;
   passwordVersion: number;
-  user: {
-    _id: string
-    username: string;
-    hexColor: string;
-    tag: string;
-    avatar?: string;
-    bot?: boolean;
-  }
+  user: UserCache
+}
+
+export interface UserCache {
+  _id: string
+  username: string;
+  hexColor: string;
+  tag: string;
+  avatar?: string;
+  bot?: boolean;
 }
 
 

@@ -1,6 +1,7 @@
 import { Presence } from '../cache/UserCache';
-import { USER_PRESENCE_UPDATE } from '../common/ClientEventNames';
-import { emitToAll } from '../socket/socket';
+import { INBOX_OPENED, USER_PRESENCE_UPDATE } from '../common/ClientEventNames';
+import { Inbox } from '../models/InboxModel';
+import { emitToAll, getIO } from '../socket/socket';
 
 export const emitUserPresenceUpdate = (userId: string, presence: Presence, socketId?: string) => {
   emitToAll({
@@ -10,4 +11,9 @@ export const emitUserPresenceUpdate = (userId: string, presence: Presence, socke
     excludeSocketId: socketId
   });
 
+};
+
+
+export const emitInboxOpened = (userId: string, inbox: Inbox) => {
+  getIO().to(userId).emit(INBOX_OPENED, inbox);
 };

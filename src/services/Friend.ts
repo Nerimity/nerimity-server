@@ -3,6 +3,12 @@ import { emitFriendRemoved, emitFriendRequestAccept, emitFriendRequestSent } fro
 import { FriendModel, FriendStatus } from '../models/FriendModel';
 import { User, UserModel } from '../models/UserModel';
 
+
+export const getFriendIds = async (userId: string) => {
+  const friends = await FriendModel.find({ user: userId, status: FriendStatus.FRIENDS });
+  return friends.map(friend => friend.recipient.toString());
+};
+
 export const addFriend = async (userId: string, friendId: string) => {
 
 
@@ -91,3 +97,4 @@ export const removeFriend = async (userId: string, friendId: string) => {
   emitFriendRemoved(userId, friendId);
   return [{message: 'Removed!'}, null];
 };
+

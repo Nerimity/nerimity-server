@@ -4,6 +4,8 @@ import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
 import { Server } from '../models/ServerModel';
 import { Message } from '../models/MessageModel';
+import { User } from '../models/UserModel';
+import { UserCache } from '../cache/UserCache';
 
 interface ServerJoinOpts {
   server: Server;
@@ -33,7 +35,7 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
   });
 };
 
-export const emitServerMessageCreated = (serverId: string, message: Message, excludeSocketId?: string) => {
+export const emitServerMessageCreated = (serverId: string, message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
   const io = getIO();
 
   if (excludeSocketId) {

@@ -5,6 +5,9 @@ import { generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
+import { emitInboxOpened } from '../emits/User';
+import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
+import { InboxModel } from '../models/InboxModel';
 
 interface RegisterOpts {
   email: string;
@@ -71,4 +74,39 @@ export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, C
 
 export const getAccountByUserId = (userId: string) => {
   return AccountModel.findOne({user: userId}).populate<{user: User}>('user');
+};
+
+// this function is used to open a channel and inbox.
+// if the recipient has not opened the channel, it will be created.
+// if the recipient has opened the channel, we will create a new inbox with the existing channel id.
+export const openDMChannel = async (userId: string, friendId: string) => {
+
+  const channel = await ChannelModel.findOne({ type: ChannelType.DM_TEXT, recipients: {$all: [userId, friendId], $size: 2} }).select('_id');
+
+  if (channel) {
+    const inbox = await InboxModel.findOne({ channel: channel.id, user: userId }).populate<{channel: Channel & {recipients: User[]}}>({ path: 'channel', select: '_id', populate: { path: 'recipients' } });
+    if (inbox) {
+      if (inbox.closed) {
+        inbox.closed = false;
+        await inbox.save();
+        emitInboxOpened(userId, inbox.toObject({versionKey: false}));
+      }
+
+      return [inbox.toObject({versionKey: false}), null];
+    }
+  }
+
+  const newChannel = channel || await ChannelModel.create({ type: ChannelType.DM_TEXT, recipients: [userId, friendId], createdBy: userId });
+  
+  let newInbox = await InboxModel.create({
+    channel: newChannel.id,
+    user: userId,
+    closed: false,
+  });
+
+  newInbox = await newInbox.populate<{channel: Channel & {recipients: User[]}}>({ path: 'channel', populate: { path: 'recipients' } });
+  emitInboxOpened(userId, newInbox.toObject({versionKey: false}));
+
+  return [newInbox.toObject({versionKey: false}), null];
+  
 };

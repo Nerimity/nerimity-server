@@ -4,6 +4,7 @@ import http from 'http';
 import { redisClient } from '../common/redis';
 import { onConnection } from './events/onConnection';
 import { getServerIds } from '../services/Server';
+import { getFriendIds } from '../services/Friend';
 
 let io: socketIO.Server;
 
@@ -36,10 +37,19 @@ interface EmitToAllOptions {
   excludeSocketId?: string
 }
 
+
+// emit to your friends and your servers.
+// Note: when broadcasting to an empty array, it will emit to everyone :(
 export async function emitToAll(opts: EmitToAllOptions) {
   const { event, payload, userId, excludeSocketId } = opts;
   const serverIds = await getServerIds(userId);
-  let broadcaster = getIO().to(serverIds);
+  const friendIds = await getFriendIds(userId);
+
+  const concatIds = [...serverIds, ...friendIds];
+  if (concatIds.length === 0) return;
+
+  let broadcaster = getIO().to(concatIds);
+
   if (excludeSocketId) {
     broadcaster = broadcaster.except(excludeSocketId);
   }
