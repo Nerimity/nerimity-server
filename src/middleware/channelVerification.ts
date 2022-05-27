@@ -33,6 +33,13 @@ export function channelVerification (opts?: Options) {
       req.serverMemberCache = memberCache;
       req.serverCache = channel.server;
     }
+
+    if (channel.recipients) {
+      if (!channel.recipients.includes(req.accountCache.user._id)) {
+        res.status(403).json(generateError('You are not a member of this channel.'));
+      }
+    }
+
     req.channelCache = channel;
     next();
 
