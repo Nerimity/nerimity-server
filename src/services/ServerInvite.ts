@@ -66,7 +66,9 @@ export const getServerInvitesByServerId = async (serverId: string, creatorId?: s
     server: serverId,
     ...(creatorId && {createdBy: creatorId})
   
-  }).populate('createdBy');
+  })
+    .select('-_id -__v -server')
+    .populate('createdBy');
 
   return invites;
 
