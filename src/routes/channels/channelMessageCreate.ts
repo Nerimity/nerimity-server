@@ -14,6 +14,7 @@ export function channelMessageCreate(Router: Router) {
       .isString().withMessage('Content must be a string!')
       .isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
     body('socketId')
+      .optional(true)
       .isString().withMessage('SocketId must be a string!')
       .isLength({ min: 1, max: 255 }).withMessage('SocketId length must be between 1 and 255 characters.'),
     route
