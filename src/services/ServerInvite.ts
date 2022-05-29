@@ -58,3 +58,16 @@ export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<
 
   return [{...invite.server, memberCount}, null];
 };
+
+
+export const getServerInvitesByServerId = async (serverId: string, creatorId?: string): Promise<ServerInvite[]> => {
+
+  const invites = await ServerInviteModel.find({
+    server: serverId,
+    ...(creatorId && {createdBy: creatorId})
+  
+  }).populate('createdBy');
+
+  return invites;
+
+};
