@@ -9,6 +9,7 @@ import { Inbox } from '../../models/InboxModel';
 import { User, UserModel, UserStatus } from '../../models/UserModel';
 import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
+import { onDisconnect } from './onDisconnect';
 
 interface Payload {
   token: string;
@@ -69,6 +70,11 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     emitUserPresenceUpdate(cacheUser._id, {status: user.status, userId: cacheUser._id}, socket.id);
   }
 
+
+  if (!socket.connected) {
+    onDisconnect(socket);
+    return;
+  }
 
 
   socket.emit(AUTHENTICATED, {
