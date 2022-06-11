@@ -81,7 +81,19 @@ export const getAccountByUserId = (userId: string) => {
 // if the recipient has opened the channel, we will create a new inbox with the existing channel id.
 export const openDMChannel = async (userId: string, friendId: string) => {
 
-  const channel = await ChannelModel.findOne({ type: ChannelType.DM_TEXT, recipients: {$all: [userId, friendId], $size: 2} }).select('_id');
+  const channel = await ChannelModel.findOne({ 
+    $or: [
+      {
+        type: ChannelType.DM_TEXT,
+        recipients: { $eq: [userId, friendId], $size: 2}
+      },
+      {
+        type: ChannelType.DM_TEXT,
+        recipients: { $eq: [friendId, userId], $size: 2}
+      }
+    ]
+  }).select('_id');
+
 
   if (channel) {
     const inbox = await InboxModel.findOne({ channel: channel.id, user: userId }).populate<{channel: Channel & {recipients: User[]}}>({ path: 'channel', select: '_id', populate: { path: 'recipients' } });
