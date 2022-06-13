@@ -1,6 +1,7 @@
 import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
+import { UserStatus } from '../models/UserModel';
 import { getAccountByUserId } from '../services/User';
 import { ACCOUNT_CACHE_KEY_STRING, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 
@@ -33,6 +34,19 @@ export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
   return presences;
 }
 
+
+export async function updateCachePresence (userId: string, presence: Presence): Promise<boolean> {
+  const key = USER_PRESENCE_KEY_STRING(userId);
+  
+  if (presence.status === UserStatus.OFFLINE) {
+    await redisClient.del(key);
+    return true;
+  }
+
+  await redisClient.set(key, JSON.stringify(presence));
+  return true;
+}
+
 // returns true if the first user is connected.
 export async function addSocketUser(userId: string, socketId: string, presence: Presence) {
   const socketIdsKey =  CONNECTED_SOCKET_ID_KEY_SET(userId);
@@ -44,7 +58,9 @@ export async function addSocketUser(userId: string, socketId: string, presence: 
   const multi = redisClient.multi();
   multi.sAdd(socketIdsKey, socketId);
   multi.set(userIdKey, userId);
-  multi.set(presenceKey, JSON.stringify(presence));
+  if (presence.status !== UserStatus.OFFLINE) {
+    multi.set(presenceKey, JSON.stringify(presence));
+  }
   await multi.exec();
 
   return count === 0;
