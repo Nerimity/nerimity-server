@@ -1,13 +1,14 @@
 import { AccountModel } from '../models/AccountModel';
-import { User, UserModel } from '../models/UserModel';
+import { User, UserModel, UserStatus } from '../models/UserModel';
 import bcrypt from 'bcrypt';
 import { generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
-import { emitInboxOpened } from '../emits/User';
+import { emitInboxOpened, emitUserPresenceUpdate } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { InboxModel } from '../models/InboxModel';
+import { Presence, updateCachePresence } from '../cache/UserCache';
 
 interface RegisterOpts {
   email: string;
@@ -121,4 +122,22 @@ export const openDMChannel = async (userId: string, friendId: string) => {
 
   return [newInbox.toObject({versionKey: false}), null];
   
+};
+
+
+export const updateUserPresence = async (userId: string, presence: Omit<Presence, 'userId'>) => {
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return [null, generateError('User not found.', 'user')];
+  }
+
+  user.status = presence.status;
+  await user.save();
+
+  await updateCachePresence(userId, {status: presence.status, userId});
+
+  emitUserPresenceUpdate(userId, { ...presence,  userId: user.id});
+
+  return ['Presence updated.', null];
+
 };
