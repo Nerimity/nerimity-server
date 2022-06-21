@@ -1,5 +1,6 @@
 import { Presence } from '../cache/UserCache';
 import { INBOX_OPENED, USER_PRESENCE_UPDATE } from '../common/ClientEventNames';
+import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
 import { Inbox } from '../models/InboxModel';
 import { emitToAll, getIO } from '../socket/socket';
 
@@ -16,4 +17,7 @@ export const emitUserPresenceUpdate = (userId: string, presence: Presence, socke
 
 export const emitInboxOpened = (userId: string, inbox: Inbox) => {
   getIO().to(userId).emit(INBOX_OPENED, inbox);
+};
+export const emitNotificationDismissed = (userId: string, channelId: string) => {
+  getIO().to(userId).emit(NOTIFICATION_DISMISSED, {channelId});
 };

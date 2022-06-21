@@ -9,6 +9,8 @@ import { emitInboxOpened, emitUserPresenceUpdate } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { InboxModel } from '../models/InboxModel';
 import { Presence, updateCachePresence } from '../cache/UserCache';
+import { FriendModel, FriendStatus } from '../models/FriendModel';
+import { ServerMemberModel } from '../models/ServerMemberModel';
 
 interface RegisterOpts {
   email: string;
@@ -139,5 +141,29 @@ export const updateUserPresence = async (userId: string, presence: Omit<Presence
   emitUserPresenceUpdate(userId, { ...presence,  userId: user.id});
 
   return ['Presence updated.', null];
+
+};
+
+
+export const getUserDetails = async (requesterId: string, recipientId: string) => {
+  const user = await UserModel.findById(recipientId);
+  if (!user) {
+    return [null, generateError('User not found.', 'user')];
+  }
+
+  // get mutual Friends
+  const recipientFriends = await FriendModel.find({ user: recipientId, status: FriendStatus.FRIENDS });
+  const recipientFriendsIds = recipientFriends.map(friend => friend.recipient);
+  const mutualFriends = await FriendModel.find({ user: requesterId, recipient: { $in: recipientFriendsIds } });
+  const mutualFriendIds = mutualFriends.map(friend => friend.recipient);
+
+  // Get mutual servers
+  const recipientServers = (await UserModel.findById(recipientId).select('servers'))?.servers;
+  const members = await ServerMemberModel.find({ user: requesterId, server: { $in: recipientServers } });
+  const mutualServerIds = members.map(member => member.server);
+
+  return [{user: user.toObject({versionKey: false}), mutualFriendIds, mutualServerIds}, null];
+
+
 
 };

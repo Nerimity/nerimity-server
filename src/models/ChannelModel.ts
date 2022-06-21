@@ -16,6 +16,7 @@ export interface Channel {
   createdBy?: Types.ObjectId
   createdAt: number
   type: ChannelType
+  lastMessagedAt?: number
 }
 
 const schema = new Schema<Channel>({
@@ -24,6 +25,7 @@ const schema = new Schema<Channel>({
   recipients: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   type: { type: Number, required: true },
+  lastMessagedAt: { type: Number },
   createdAt: { type: Number, default: Date.now },
 });
 

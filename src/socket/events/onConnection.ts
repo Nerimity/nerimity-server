@@ -1,8 +1,9 @@
 import { Socket } from 'socket.io';
-import { AUTHENTICATE } from '../../common/ServerEventNames';
+import { AUTHENTICATE, NOTIFICATION_DISMISS } from '../../common/ServerEventNames';
 import { emitError } from '../../emits/Connection';
 import { onAuthenticate } from './onAuthenticate';
 import { onDisconnect } from './onDisconnect';
+import { onNotificationDismiss } from './onNotificationDismiss';
 
 export function onConnection(socket: Socket) {
   let didEmitAuthenticate = false;
@@ -12,9 +13,10 @@ export function onConnection(socket: Socket) {
     onAuthenticate(socket, data);
   });
 
-  socket.on('disconnect', () => {
-    onDisconnect(socket);
-  });
+  socket.on(NOTIFICATION_DISMISS, (data) => onNotificationDismiss(socket, data));
+
+
+  socket.on('disconnect', () => onDisconnect(socket));
 
   setTimeout(() => {
     if (!didEmitAuthenticate) {

@@ -4,6 +4,7 @@ import { emitServerMessageCreated, emitServerMessageDeleted } from '../emits/Ser
 import { ChannelModel } from '../models/ChannelModel';
 import { Message, MessageModel, MessageType } from '../models/MessageModel';
 import { User } from '../models/UserModel';
+import { dismissChannelNotification } from './Channel';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
   const messages = await MessageModel
@@ -45,6 +46,11 @@ export const createMessage = async (opts: SendMessageOptions) => {
   } else {
     populated = (await message.populate<{createdBy: User}>('createdBy', 'username tag hexColor')).toObject({versionKey: false});
   }
+
+  // update channel last message
+  await ChannelModel.findOneAndUpdate({ _id: opts.channelId }, { $set: {lastMessagedAt: message.createdAt} });
+  // update sender last seen
+  await dismissChannelNotification(opts.userId, opts.channelId, false);
   
   
   // emit 
