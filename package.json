@@ -6,6 +6,7 @@
   "scripts": {
     "start": "ts-node ./src/index.ts",
     "dev": "nodemon --exec npx ts-node --files ./src/index.ts",
+    "dev-no-type-check": "nodemon --exec npx ts-node --transpileOnly --files ./src/index.ts", 
     "build": "tsc",
     "test": "npm run build && mocha tests/test.js --reporter spec --exit"
   },
