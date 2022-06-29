@@ -35,20 +35,25 @@ interface EmitToAllOptions {
   payload: any;
   userId: string;
   excludeSocketId?: string
+  excludeSelf?: boolean
 }
 
 
 // emit to your friends and your servers.
 // Note: when broadcasting to an empty array, it will emit to everyone :(
 export async function emitToAll(opts: EmitToAllOptions) {
-  const { event, payload, userId, excludeSocketId } = opts;
+  const { event, payload, userId, excludeSocketId, excludeSelf } = opts;
   const serverIds = await getServerIds(userId);
   const friendIds = await getFriendIds(userId);
 
-  const concatIds = [...serverIds, ...friendIds];
+  const concatIds = [...serverIds, ...friendIds, userId];
   if (concatIds.length === 0) return;
 
   let broadcaster = getIO().to(concatIds);
+
+  if (excludeSelf) {
+    broadcaster = broadcaster.except(userId);
+  }
 
   if (excludeSocketId) {
     broadcaster = broadcaster.except(excludeSocketId);
