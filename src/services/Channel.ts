@@ -1,7 +1,7 @@
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { emitNotificationDismissed } from '../emits/User';
-import { LastSeenServerChannelModel } from '../models/LastSeenServerChannelModel';
+import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId);
@@ -12,7 +12,7 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
     if (!serverMember) return;
     const serverId = channel.server._id;
 
-    await LastSeenServerChannelModel.updateOne({ user: userId, server: serverId, channel: channelId }, {
+    await ServerChannelLastSeenModel.updateOne({ user: userId, server: serverId, channel: channelId }, {
       $set: {
         user: userId,
         server: serverId,
@@ -30,7 +30,7 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
 
 
 export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
-  const results = await LastSeenServerChannelModel.find({ user: userId }).select('channel lastSeen').lean();
+  const results = await ServerChannelLastSeenModel.find({ user: userId }).select('channel lastSeen').lean();
 
   const lastSeenChannels: Record<string, number> = {};
 
