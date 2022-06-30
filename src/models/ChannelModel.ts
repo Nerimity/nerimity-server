@@ -12,7 +12,7 @@ export interface Channel {
   _id: Types.ObjectId
   name?: string
   server?: Types.ObjectId
-  recipients?: Types.ObjectId[]
+  recipient?: Types.ObjectId
   createdBy?: Types.ObjectId
   createdAt: number
   type: ChannelType
@@ -22,7 +22,7 @@ export interface Channel {
 const schema = new Schema<Channel>({
   name: String,
   server: { type: Schema.Types.ObjectId, ref: 'Server' },
-  recipients: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  recipient: { type: Schema.Types.ObjectId, ref: 'User' },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   type: { type: Number, required: true },
   lastMessagedAt: { type: Number },

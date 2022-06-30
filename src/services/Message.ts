@@ -1,4 +1,5 @@
 import { UserCache } from '../cache/UserCache';
+import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
 import { emitDMMessageCreated, emitDMMessageDeleted } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted } from '../emits/Server';
 import { ChannelModel } from '../models/ChannelModel';
@@ -20,9 +21,9 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
 
 interface SendMessageOptions {
   userId: string,
-  channelId: string,
-  recipientIds?: string[],
   creator?: UserCache,
+  channelId: string,
+  channel: ChannelCache,
   serverId?: string,
   socketId?: string,
   content?: string,
@@ -57,22 +58,16 @@ export const createMessage = async (opts: SendMessageOptions) => {
   if (opts.serverId) {
     emitServerMessageCreated(opts.serverId, populated, opts.socketId);
     return populated;
-  } 
+  }
+  
+  const channel = opts.channel || await getChannelCache(opts.channelId);
 
-  let recipientIds = opts.recipientIds;
 
-  if (!recipientIds) {
-    const channel = await ChannelModel.findById(opts.channelId).populate('recipients');
-    if (!channel) {
-      throw new Error('Channel not found!');
-    }
-    recipientIds = channel.recipients?.map(r => r._id.toString());
+  if (!channel.recipient) {
+    throw new Error('Channel not found!');
   }
 
-  if (!recipientIds) {
-    throw new Error('No recipients found!');
-  }
-  emitDMMessageCreated(recipientIds, populated, opts.socketId);
+  emitDMMessageCreated(channel, populated, opts.socketId);
   
 
   return populated;
@@ -83,7 +78,8 @@ export const createMessage = async (opts: SendMessageOptions) => {
 interface MessageDeletedOptions {
   messageId: string,
   channelId: string,
-  recipientIds?: string[],
+  channel: ChannelCache,
+  recipientId?: string,
   serverId?: string,
 }
 
@@ -98,18 +94,13 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
     return true;
   }
   
-  let recipientIds = opts.recipientIds;
   
-  if (!recipientIds) {
-    const channel = await ChannelModel.findById(opts.channelId).populate('recipients');
-    if (!channel) {
-      throw new Error('Channel not found!');
-    }
-    recipientIds = channel.recipients?.map(r => r._id.toString());
+  const channel = opts.channel || await getChannelCache(opts.channelId);
+
+
+  if (!channel.recipient) {
+    throw new Error('Channel not found!');
   }
-  if (!recipientIds) {
-    throw new Error('No recipients found!');
-  }
-  emitDMMessageDeleted(recipientIds, {channelId: opts.channelId, messageId: opts.messageId});
+  emitDMMessageDeleted(channel, message.createdBy.toString(), {channelId: opts.channelId, messageId: opts.messageId});
   return true;
 };

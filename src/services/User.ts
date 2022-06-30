@@ -88,18 +88,20 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     $or: [
       {
         type: ChannelType.DM_TEXT,
-        recipients: { $eq: [userId, friendId], $size: 2}
+        recipient: friendId,
+        createdBy: userId,
       },
       {
         type: ChannelType.DM_TEXT,
-        recipients: { $eq: [friendId, userId], $size: 2}
+        recipient: userId,
+        createdBy: friendId,
       }
     ]
   }).select('_id');
 
 
   if (channel) {
-    const inbox = await InboxModel.findOne({ channel: channel.id, user: userId }).populate<{channel: Channel & {recipients: User[]}}>({ path: 'channel', select: '_id', populate: { path: 'recipients' } });
+    const inbox = await InboxModel.findOne({ channel: channel.id, user: userId }).populate<{channel: Channel & {recipient: User}}>({ path: 'channel', select: '_id', populate: { path: 'recipient' } });
     if (inbox) {
       if (inbox.closed) {
         inbox.closed = false;
@@ -111,7 +113,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     }
   }
 
-  const newChannel = channel || await ChannelModel.create({ type: ChannelType.DM_TEXT, recipients: [userId, friendId], createdBy: userId });
+  const newChannel = channel || await ChannelModel.create({ type: ChannelType.DM_TEXT, recipient: friendId, createdBy: userId });
   
   let newInbox = await InboxModel.create({
     channel: newChannel.id,
@@ -119,7 +121,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     closed: false,
   });
 
-  newInbox = await newInbox.populate<{channel: Channel & {recipients: User[]}}>({ path: 'channel', populate: { path: 'recipients' } });
+  newInbox = await newInbox.populate<{channel: Channel & {recipient: User}}>({ path: 'channel', populate: { path: 'recipient' } });
   emitInboxOpened(userId, newInbox.toObject({versionKey: false}));
 
   return [newInbox.toObject({versionKey: false}), null];

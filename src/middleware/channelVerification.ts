@@ -34,8 +34,10 @@ export function channelVerification (opts?: Options) {
       req.serverCache = channel.server;
     }
 
-    if (!channel.server && channel.recipients) {
-      if (!channel.recipients.includes(req.accountCache.user._id)) {
+    if (!channel.server && channel.recipient) {
+      const isRecipient = channel.recipient.toString() === req.accountCache.user._id.toString();
+      const isCreator = channel.createdBy?.toString() === req.accountCache.user._id.toString();
+      if (!isRecipient && !isCreator) {
         return res.status(403).json(generateError('You are not a member of this channel.'));
       }
     }

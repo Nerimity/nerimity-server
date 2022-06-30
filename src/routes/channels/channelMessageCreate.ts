@@ -38,10 +38,10 @@ async function route (req: Request, res: Response) {
   
   const message = await createMessage({
     channelId: req.channelCache._id,
-    content : body.content,
+    content: body.content,
     userId: req.accountCache.user._id,
     creator: req.accountCache.user,
-    recipientIds: req.channelCache.recipients,
+    channel: req.channelCache,
     serverId: req.channelCache?.server?._id,
     socketId: body.socketId,
     type: MessageType.CONTENT

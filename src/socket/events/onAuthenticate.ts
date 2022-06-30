@@ -43,10 +43,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   const inboxResponse: Inbox[] = inbox.map((item: any) => {
     inboxChannels.push(item.channel);
-    for (let i = 0; i < item.channel.recipients.length; i++) {
-      const recipient = item.channel.recipients[i];
-      inboxUserIds.push(recipient._id.toString());
-    }
+    inboxUserIds.push(item.channel.recipient._id.toString());
     item.channel = item.channel._id;
     return item;
   });

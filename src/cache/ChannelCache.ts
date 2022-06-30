@@ -9,7 +9,8 @@ export interface ChannelCache {
   _id: string,
   name?: string,
   server?: ServerCache
-  recipients?: string[]
+  recipient?: string
+  createdBy?: string,
 }
 export const getChannelCache = async (channelId: string): Promise<CustomResult<ChannelCache, string>> => {
   // Check server channel in cache.

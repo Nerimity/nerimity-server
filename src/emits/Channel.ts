@@ -1,3 +1,4 @@
+import { ChannelCache } from '../cache/ChannelCache';
 import { UserCache } from '../cache/UserCache';
 import { MESSAGE_CREATED, MESSAGE_DELETED } from '../common/ClientEventNames';
 import { Message } from '../models/MessageModel';
@@ -5,19 +6,22 @@ import { getIO } from '../socket/socket';
 
 
 
-export const emitDMMessageCreated = (recipientIds: string[], message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
+export const emitDMMessageCreated = (channel: ChannelCache, message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
   const io = getIO();
 
+  const userIds = [channel.recipient as string, channel.createdBy as unknown as string];
   if (excludeSocketId) {
-    io.in(recipientIds).except(excludeSocketId).emit(MESSAGE_CREATED, message);
+    io.in(userIds).except(excludeSocketId).emit(MESSAGE_CREATED, message);
     return;
   }
 
-  io.in(recipientIds).emit(MESSAGE_CREATED, message);
+  io.in(userIds).emit(MESSAGE_CREATED, message);
 };
 
-export const emitDMMessageDeleted = (recipientIds: string[], data: {channelId: string, messageId: string}) => {
+export const emitDMMessageDeleted = (channel: ChannelCache, creatorId: string, data: {channelId: string, messageId: string}) => {
   const io = getIO();
 
-  io.in(recipientIds).emit(MESSAGE_DELETED, data);
+  const userIds = [channel.recipient as string, channel.createdBy as unknown as string];
+
+  io.in(userIds).emit(MESSAGE_DELETED, data);
 };
