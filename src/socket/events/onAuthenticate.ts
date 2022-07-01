@@ -39,14 +39,15 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   const inbox = await getInbox(cacheUser._id);
   const inboxChannels: Channel[] = [];
-  const inboxUserIds: string[] = [];
 
   const inboxResponse: Inbox[] = inbox.map((item: any) => {
     inboxChannels.push(item.channel);
-    inboxUserIds.push(item.channel.recipient._id.toString());
     item.channel = item.channel._id;
     return item;
   });
+  
+  const friendUserIds = user.friends.map((friend: any) => friend.recipient._id);
+
 
   // join room
   for (let i = 0; i < servers.length; i++) {
@@ -61,7 +62,8 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   const userIds = removeDuplicates([
     ...serverMembers.map(member => member.user._id.toString()),
-    ...inboxUserIds,
+    ...friendUserIds,
+    cacheUser._id.toString()
   ]);
 
   const presences = await getUserPresences(userIds);
