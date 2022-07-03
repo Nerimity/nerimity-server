@@ -101,7 +101,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
 
 
   if (channel) {
-    const inbox = await InboxModel.findOne({ channel: channel.id, user: userId }).populate<{channel: Channel & {recipient: User}}>({ path: 'channel', select: '_id', populate: { path: 'recipient' } });
+    const inbox = await InboxModel.findOne({ channel: channel.id, createdBy: userId }).populate<{channel: Channel}>('channel', '-recipient -createdBy').populate<{recipient: User}>('recipient');
     if (inbox) {
       if (inbox.closed) {
         inbox.closed = false;
@@ -117,11 +117,13 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   
   let newInbox = await InboxModel.create({
     channel: newChannel.id,
-    user: userId,
+    createdBy: userId,
+    recipient: friendId,
     closed: false,
   });
 
-  newInbox = await newInbox.populate<{channel: Channel & {recipient: User}}>({ path: 'channel', populate: { path: 'recipient' } });
+  newInbox = await newInbox.populate<{channel: Channel}>('channel', '-recipient -createdBy');
+  newInbox = await newInbox.populate<{recipient: User}>('recipient');
   emitInboxOpened(userId, newInbox.toObject({versionKey: false}));
 
   return [newInbox.toObject({versionKey: false}), null];

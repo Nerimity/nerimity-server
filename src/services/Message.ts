@@ -6,6 +6,7 @@ import { ChannelModel } from '../models/ChannelModel';
 import { Message, MessageModel, MessageType } from '../models/MessageModel';
 import { User } from '../models/UserModel';
 import { dismissChannelNotification } from './Channel';
+import { MessageMentionModel } from '../models/MessageMentionModel';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
   const messages = await MessageModel
@@ -52,6 +53,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   await ChannelModel.findOneAndUpdate({ _id: opts.channelId }, { $set: {lastMessagedAt: message.createdAt} });
   // update sender last seen
   await dismissChannelNotification(opts.userId, opts.channelId, false);
+
   
   
   // emit 
@@ -62,10 +64,23 @@ export const createMessage = async (opts: SendMessageOptions) => {
   
   const channel = opts.channel || await getChannelCache(opts.channelId);
 
-
   if (!channel.recipient) {
     throw new Error('Channel not found!');
   }
+
+
+  // For DM channels, mentions are notifications for everything.
+  // For Server channels, mentions are notifications for @mentions.
+  // Don't send notifications for saved notes
+  if (channel.recipient.toString() !== channel.createdBy?.toString()) {
+    await MessageMentionModel.updateOne({
+      channel: opts.channelId,
+      mentionedBy: opts.userId,
+      mentionedTo: channel.recipient.toString()
+    }, { $inc: { count: 1 }, $setOnInsert: {createdAt: message.createdAt} }, { upsert: true });
+  }
+
+
 
   emitDMMessageCreated(channel, populated, opts.socketId);
   

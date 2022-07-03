@@ -7,7 +7,7 @@ import { emitUserPresenceUpdate } from '../../emits/User';
 import { Channel } from '../../models/ChannelModel';
 import { Inbox } from '../../models/InboxModel';
 import { User, UserModel, UserStatus } from '../../models/UserModel';
-import { getLastSeenServerChannelIdsByUserId } from '../../services/Channel';
+import { getAllMessageMentions, getLastSeenServerChannelIdsByUserId } from '../../services/Channel';
 import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
 import { onDisconnect } from './onDisconnect';
@@ -35,6 +35,8 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   const {servers, serverChannels, serverMembers} = await getServers(cacheUser._id);
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(cacheUser._id);
+
+  const messageMentions = await getAllMessageMentions(cacheUser._id);
 
 
   const inbox = await getInbox(cacheUser._id);
@@ -83,6 +85,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     user: cacheUser,
     servers,
     lastSeenServerChannelIds,
+    messageMentions,
     serverMembers,
     presences,
     friends: user.friends,

@@ -1,6 +1,7 @@
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { emitNotificationDismissed } from '../emits/User';
+import { MessageMentionModel } from '../models/MessageMentionModel';
 import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
@@ -28,6 +29,12 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
   console.log('Not implemented DM Notifications yet.');
 };
 
+
+
+export const getAllMessageMentions = async (userId: string) => {
+  const mentions = await MessageMentionModel.find({ mentionedBy: userId }).select('mentionedTo createdAt channel server count -_id').lean();
+  return mentions;
+};
 
 export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
   const results = await ServerChannelLastSeenModel.find({ user: userId }).select('channel lastSeen').lean();
