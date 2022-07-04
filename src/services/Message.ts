@@ -24,7 +24,7 @@ interface SendMessageOptions {
   userId: string,
   creator?: UserCache,
   channelId: string,
-  channel: ChannelCache,
+  channel?: ChannelCache | null,
   serverId?: string,
   socketId?: string,
   content?: string,
@@ -62,9 +62,14 @@ export const createMessage = async (opts: SendMessageOptions) => {
     return populated;
   }
   
-  const channel = opts.channel || await getChannelCache(opts.channelId);
+  let channel = opts.channel;
 
-  if (!channel.recipient) {
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.userId);
+  }
+
+
+  if (!channel?.inbox?.recipient) {
     throw new Error('Channel not found!');
   }
 
@@ -72,11 +77,11 @@ export const createMessage = async (opts: SendMessageOptions) => {
   // For DM channels, mentions are notifications for everything.
   // For Server channels, mentions are notifications for @mentions.
   // Don't send notifications for saved notes
-  if (channel.recipient.toString() !== channel.createdBy?.toString()) {
+  if (channel.inbox.recipient.toString() !== channel.inbox.createdBy?.toString()) {
     await MessageMentionModel.updateOne({
       channel: opts.channelId,
       mentionedBy: opts.userId,
-      mentionedTo: channel.recipient.toString()
+      mentionedTo: channel.inbox.recipient.toString()
     }, { $inc: { count: 1 }, $setOnInsert: {createdAt: message.createdAt} }, { upsert: true });
   }
 
@@ -93,7 +98,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
 interface MessageDeletedOptions {
   messageId: string,
   channelId: string,
-  channel: ChannelCache,
+  channel?: ChannelCache | null,
   recipientId?: string,
   serverId?: string,
 }
@@ -110,12 +115,16 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   }
   
   
-  const channel = opts.channel || await getChannelCache(opts.channelId);
+  let channel = opts.channel;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, message.createdBy.toString());
+  }
 
 
-  if (!channel.recipient) {
+  if (!channel?.inbox?.recipient) {
     throw new Error('Channel not found!');
   }
-  emitDMMessageDeleted(channel, message.createdBy.toString(), {channelId: opts.channelId, messageId: opts.messageId});
+  emitDMMessageDeleted(channel, {channelId: opts.channelId, messageId: opts.messageId});
   return true;
 };

@@ -20,7 +20,7 @@ export function channelVerification (opts?: Options) {
       return res.status(403).json(generateError('Channel ID is required.'));
     }
     
-    const [channel, error] = await getChannelCache(channelId);
+    const [channel, error] = await getChannelCache(channelId, req.accountCache.user._id);
 
     if (error !== null) {
       return res.status(403).json(generateError(error));
@@ -34,9 +34,9 @@ export function channelVerification (opts?: Options) {
       req.serverCache = channel.server;
     }
 
-    if (!channel.server && channel.recipient) {
-      const isRecipient = channel.recipient.toString() === req.accountCache.user._id.toString();
-      const isCreator = channel.createdBy?.toString() === req.accountCache.user._id.toString();
+    if (!channel.server && channel?.inbox?.recipient) {
+      const isRecipient = channel.inbox.recipient.toString() === req.accountCache.user._id.toString();
+      const isCreator = channel.inbox.createdBy?.toString() === req.accountCache.user._id.toString();
       if (!isRecipient && !isCreator) {
         return res.status(403).json(generateError('You are not a member of this channel.'));
       }

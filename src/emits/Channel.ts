@@ -9,7 +9,7 @@ import { getIO } from '../socket/socket';
 export const emitDMMessageCreated = (channel: ChannelCache, message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
   const io = getIO();
 
-  const userIds = [channel.recipient as string, channel.createdBy as unknown as string];
+  const userIds = [channel.inbox?.recipient as string, channel.inbox?.createdBy as unknown as string];
   if (excludeSocketId) {
     io.in(userIds).except(excludeSocketId).emit(MESSAGE_CREATED, message);
     return;
@@ -18,10 +18,10 @@ export const emitDMMessageCreated = (channel: ChannelCache, message: Omit<Messag
   io.in(userIds).emit(MESSAGE_CREATED, message);
 };
 
-export const emitDMMessageDeleted = (channel: ChannelCache, creatorId: string, data: {channelId: string, messageId: string}) => {
+export const emitDMMessageDeleted = (channel: ChannelCache, data: {channelId: string, messageId: string}) => {
   const io = getIO();
 
-  const userIds = [channel.recipient as string, channel.createdBy as unknown as string];
+  const userIds = [channel.inbox?.recipient as string, channel.inbox?.createdBy as unknown as string];
 
   io.in(userIds).emit(MESSAGE_DELETED, data);
 };

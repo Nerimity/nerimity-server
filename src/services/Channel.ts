@@ -5,7 +5,7 @@ import { MessageMentionModel } from '../models/MessageMentionModel';
 import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
-  const [channel] = await getChannelCache(channelId);
+  const [channel] = await getChannelCache(channelId, userId);
   if (!channel) return;
 
   if (channel.server) {
@@ -32,7 +32,7 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
 
 
 export const getAllMessageMentions = async (userId: string) => {
-  const mentions = await MessageMentionModel.find({ mentionedBy: userId }).select('mentionedTo createdAt channel server count -_id').lean();
+  const mentions = await MessageMentionModel.find({ mentionedTo: userId }).select('mentionedBy createdAt channel server count -_id').lean();
   return mentions;
 };
 

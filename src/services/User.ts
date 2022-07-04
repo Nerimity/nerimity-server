@@ -84,36 +84,34 @@ export const getAccountByUserId = (userId: string) => {
 // if the recipient has opened the channel, we will create a new inbox with the existing channel id.
 export const openDMChannel = async (userId: string, friendId: string) => {
 
-  const channel = await ChannelModel.findOne({ 
+  const inbox = await InboxModel.findOne({
     $or: [
       {
-        type: ChannelType.DM_TEXT,
-        recipient: friendId,
         createdBy: userId,
+        recipient: friendId
       },
       {
-        type: ChannelType.DM_TEXT,
-        recipient: userId,
         createdBy: friendId,
+        recipient: userId
       }
     ]
-  }).select('_id');
+  });
 
 
-  if (channel) {
-    const inbox = await InboxModel.findOne({ channel: channel.id, createdBy: userId }).populate<{channel: Channel}>('channel', '-recipient -createdBy').populate<{recipient: User}>('recipient');
-    if (inbox) {
-      if (inbox.closed) {
-        inbox.closed = false;
-        await inbox.save();
-        emitInboxOpened(userId, inbox.toObject({versionKey: false}));
+  if (inbox?.channel) {
+    const myInbox = await InboxModel.findOne({ channel: inbox.channel, createdBy: userId }).populate<{channel: Channel}>('channel', '-createdBy').populate<{recipient: User}>('recipient');
+    if (myInbox) {
+      if (myInbox.closed) {
+        myInbox.closed = false;
+        await myInbox.save();
+        emitInboxOpened(userId, myInbox.toObject({versionKey: false}));
       }
 
-      return [inbox.toObject({versionKey: false}), null];
+      return [myInbox.toObject({versionKey: false}), null];
     }
   }
 
-  const newChannel = channel || await ChannelModel.create({ type: ChannelType.DM_TEXT, recipient: friendId, createdBy: userId });
+  const newChannel = inbox ? {id: inbox?.channel} : await ChannelModel.create({ type: ChannelType.DM_TEXT, recipient: friendId, createdBy: userId });
   
   let newInbox = await InboxModel.create({
     channel: newChannel.id,
@@ -122,7 +120,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     closed: false,
   });
 
-  newInbox = await newInbox.populate<{channel: Channel}>('channel', '-recipient -createdBy');
+  newInbox = await newInbox.populate<{channel: Channel}>('channel', '-createdBy');
   newInbox = await newInbox.populate<{recipient: User}>('recipient');
   emitInboxOpened(userId, newInbox.toObject({versionKey: false}));
 

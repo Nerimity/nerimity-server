@@ -34,7 +34,7 @@ async function route (req: Request, res: Response) {
     return res.status(403).json(generateError('Only the creator of the message can delete this message!'));
   }
 
-  const isMessageDeleted = await deleteMessage({channelId: req.channelCache._id, channel: req.channelCache ,messageId, serverId: req.channelCache.server?._id, recipientId: req.channelCache.recipient});
+  const isMessageDeleted = await deleteMessage({channelId: req.channelCache._id, channel: req.channelCache ,messageId, serverId: req.channelCache.server?._id, recipientId: req.channelCache.inbox?.recipient});
 
   if (!isMessageDeleted) return res.status(500).json(generateError('Could not delete message!'));
 

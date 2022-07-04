@@ -4,7 +4,7 @@ import { InboxModel } from '../models/InboxModel';
 
 export const getInbox = async (userId: string) => {
   return InboxModel.find({createdBy: userId, closed: false})
-    .populate<{channel: Channel}>('channel', '-recipient -createdBy')
+    .populate<{channel: Channel}>('channel', '-createdBy')
     .populate<{recipient: User}>('recipient')
     .lean();
 };
