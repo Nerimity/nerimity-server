@@ -26,7 +26,10 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
     return;
   }
 
-  console.log('Not implemented DM Notifications yet.');
+  await MessageMentionModel.deleteOne({ mentionedTo: userId, channel: channelId });
+
+  emit && emitNotificationDismissed(userId, channelId);
+
 };
 
 
