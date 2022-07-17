@@ -4,9 +4,6 @@ const { SERVER_JOINED, SERVER_MEMBER_JOINED } = require("../build/common/ClientE
 module.exports = function () {
   describe('POST /api/servers/invites/:inviteId', function() {
 
-
-    
-    
     it('Join the server using the invite code', function(done) {
 
       checkEventForBothUsers(SERVER_MEMBER_JOINED, SERVER_JOINED).then(() => done());
@@ -37,8 +34,5 @@ module.exports = function () {
         done();
       });
     })
-
-
-
   });
 }
