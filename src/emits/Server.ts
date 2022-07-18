@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_MEMBER_JOINED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_MEMBER_JOINED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
@@ -6,6 +6,7 @@ import { Server } from '../models/ServerModel';
 import { Message } from '../models/MessageModel';
 import { User } from '../models/UserModel';
 import { UserCache } from '../cache/UserCache';
+import { UpdateServerOptions } from '../services/Server';
 
 interface ServerJoinOpts {
   server: Server;
@@ -50,4 +51,11 @@ export const emitServerMessageDeleted = (serverId: string, data: {channelId: str
   const io = getIO();
 
   io.in(serverId).emit(MESSAGE_DELETED, data);
+};
+
+
+export const emitServerUpdated = (serverId: string, updated: UpdateServerOptions) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_UPDATED, {serverId, updated});
 };

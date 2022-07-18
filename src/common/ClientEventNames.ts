@@ -14,6 +14,7 @@ export const FRIEND_REMOVED = 'friend:removed';
 
 
 export const SERVER_JOINED = 'server:joined';
+export const SERVER_UPDATED = 'server:updated';
 export const SERVER_MEMBER_JOINED = 'server:member_joined';
 
 export const MESSAGE_CREATED = 'message:created';

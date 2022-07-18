@@ -1,6 +1,6 @@
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
-import { emitServerJoined } from '../emits/Server';
+import { emitServerJoined, emitServerUpdated } from '../emits/Server';
 import { ChannelModel, ChannelType } from '../models/ChannelModel';
 import { ServerMember, ServerMemberModel } from '../models/ServerMemberModel';
 import { Server, ServerModel } from '../models/ServerModel';
@@ -119,4 +119,30 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   });
 
   return [server.toObject({versionKey: false}), null];
+};
+
+
+export interface UpdateServerOptions {
+  name?: string;
+  defaultChannel?: string;
+}
+
+export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
+  const server = await ServerModel.findById(serverId);
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+
+  // check if channel is a server channel
+  if (update.defaultChannel) {
+    const channel = await ChannelModel.findById(update.defaultChannel).select('server');
+    if (!channel || channel.server?.toString() !== serverId) {
+      return [null, generateError('Channel does not exist.')];
+    }
+  }
+
+  await server.updateOne(update);
+  emitServerUpdated(serverId, update);
+  return [update, null];
+
 };

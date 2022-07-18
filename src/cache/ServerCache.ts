@@ -21,6 +21,7 @@ export const getServerCache = async (serverId: string) => {
     _id: server.id,
     createdBy: server.createdBy,
   };
-  await redisClient.set(key, JSON.stringify(serverCache));
-  return serverCache;
+  const serverCacheString = JSON.stringify(serverCache);
+  await redisClient.set(key, serverCacheString);
+  return JSON.parse(serverCacheString);
 };
