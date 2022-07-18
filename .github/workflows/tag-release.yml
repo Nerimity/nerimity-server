@@ -44,6 +44,10 @@ jobs:
           REDIS_PORT: 6379
           JWT_SECRET: "change me"
           PORT: 80
+      - name: Copy package.json & package-lock.json
+        run: |
+          cp package.json build/
+          cp package-lock.json build/
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
