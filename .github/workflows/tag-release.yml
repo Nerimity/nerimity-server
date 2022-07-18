@@ -1,0 +1,62 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Testing
+
+# This workflow can be used for pushing to the production server and will only be ran when code is pushed to the main branch
+
+on:
+  push:
+    tags:
+      - "v*"
+
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    container: node:16-alpine3.12
+    
+    services:
+      # Label used to access the service container
+      mongo:
+        # Docker Hub image
+        image: mongo
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: npm ci
+      - name: Testing
+        run: npm test
+        env:
+          MONGODB_URL: "mongodb://mongo:27017/Chat"
+
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
+          JWT_SECRET: "change me"
+          PORT: 80
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: Zip The Build
+        uses: vimtor/action-zip@v1
+        with:
+          files: build/
+          dest: chat-${{ steps.get_version.outputs.VERSION }}.zip
+      - name: Publish Draft Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          draft: true
+          files: |
+            chat-${{ steps.get_version.outputs.VERSION }}.zip
