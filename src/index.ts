@@ -18,9 +18,6 @@ const app = express();
 const server = http.createServer(app);
 
 
-mongoose.connect(env.MONGODB_URI, () => {
-  Log.info('Connected to mongodb');
-});
 
 // eslint-disable-next-line no-async-promise-executor
 export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
@@ -28,9 +25,13 @@ export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
   Log.info('Connected to Redis');
   createIO(server);
   
-  server.listen(env.PORT, () => {
-    Log.info('listening on *:' + env.PORT);
-    resolve(server);
+  mongoose.connect(env.MONGODB_URI, () => {
+    Log.info('Connected to mongodb');
+    if (server.listening) return;
+    server.listen(env.PORT, () => {
+      Log.info('listening on *:' + env.PORT);
+      resolve(server);
+    });
   });
 });
 
