@@ -38,7 +38,7 @@ jobs:
       - name: Testing
         run: npm test
         env:
-          MONGODB_URL: "mongodb://mongo:27017/Chat"
+          MONGODB_URI: "mongodb://mongo:27017/Chat"
 
           REDIS_HOST: redis
           REDIS_PORT: 6379
