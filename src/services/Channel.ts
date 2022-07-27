@@ -2,11 +2,12 @@ import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
-import { emitServerChannelCreated } from '../emits/Channel';
+import { emitServerChannelCreated, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { MessageMentionModel } from '../models/MessageMentionModel';
 import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
+import { ServerModel } from '../models/ServerModel';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -75,4 +76,28 @@ export const createServerChannel = async (serverId: string, channelName: string,
   emitServerChannelCreated(serverId, channelObj);
 
   return [channelObj, null];
+};
+
+
+export interface UpdateServerChannelOptions {
+  name?: string;
+  defaultChannel?: string;
+}
+
+export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
+  const server = await ServerModel.findById(serverId);
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+
+  const channel = await ChannelModel.findOne({_id: channelId, server: serverId});
+  if (!channel) {
+    return [null, generateError('Channel does not exist.')];
+  }
+
+  await channel.updateOne(update);
+  emitServerChannelUpdated(serverId, channelId, update);
+
+  return [update, null];
+
 };

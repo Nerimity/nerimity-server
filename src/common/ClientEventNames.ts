@@ -17,6 +17,7 @@ export const SERVER_JOINED = 'server:joined';
 export const SERVER_UPDATED = 'server:updated';
 export const SERVER_MEMBER_JOINED = 'server:member_joined';
 export const SERVER_CHANNEL_CREATED = 'server:channel_created';
+export const SERVER_CHANNEL_UPDATED = 'server:channel_updated';
 
 export const MESSAGE_CREATED = 'message:created';
 export const MESSAGE_DELETED = 'message:deleted';

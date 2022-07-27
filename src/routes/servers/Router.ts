@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import { serverChannelCreate } from './serverChannelCreate';
+import { serverChannelUpdate } from './serverChannelUpdate';
 import { serverCreate } from './serverCreate';
 import { serverInviteCreate } from './serverInviteCreate';
 import { serverInviteDetails } from './serverInviteDetails';
@@ -17,6 +18,7 @@ serverInviteCreate(ServersRouter);
 serverInvites(ServersRouter);
 serverSettingsUpdate(ServersRouter);
 serverChannelCreate(ServersRouter);
+serverChannelUpdate(ServersRouter);
 
 
 export {ServersRouter};
