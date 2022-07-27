@@ -1,6 +1,6 @@
 import { ChannelCache } from '../cache/ChannelCache';
 import { UserCache } from '../cache/UserCache';
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
 import { Channel } from '../models/ChannelModel';
 import { Message } from '../models/MessageModel';
 import { UpdateServerChannelOptions } from '../services/Channel';
@@ -40,4 +40,9 @@ export const emitServerChannelUpdated = (serverId: string, channelId: string, up
   const io = getIO();
 
   io.in(serverId).emit(SERVER_CHANNEL_UPDATED, {serverId, channelId, updated});
+};
+export const emitServerChannelDeleted = (serverId: string, channelId: string) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_CHANNEL_DELETED, {serverId, channelId});
 };

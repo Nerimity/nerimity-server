@@ -2,7 +2,7 @@ import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
-import { emitServerChannelCreated, emitServerChannelUpdated } from '../emits/Channel';
+import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { MessageMentionModel } from '../models/MessageMentionModel';
@@ -99,5 +99,23 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
   emitServerChannelUpdated(serverId, channelId, update);
 
   return [update, null];
+
+};
+
+export const deleteServerChannel = async (serverId: string, channelId: string): Promise<CustomResult<string, CustomError>> => {
+  const server = await ServerModel.findById(serverId);
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+
+  const channel = await ChannelModel.findOne({_id: channelId, server: serverId});
+  if (!channel) {
+    return [null, generateError('Channel does not exist.')];
+  }
+
+  await channel.delete();
+  emitServerChannelDeleted(serverId, channelId);
+
+  return [channelId, null];
 
 };
