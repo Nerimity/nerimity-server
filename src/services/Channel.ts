@@ -1,6 +1,10 @@
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
+import { CustomResult } from '../common/CustomResult';
+import { CustomError, generateError } from '../common/errorHandler';
+import { emitServerChannelCreated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
+import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { MessageMentionModel } from '../models/MessageMentionModel';
 import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
 
@@ -49,4 +53,26 @@ export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
     lastSeenChannels[result.channel.toString()] = result.lastSeen;
   }
   return lastSeenChannels;
+};
+
+
+export const createServerChannel = async (serverId: string, channelName: string, userId: string): Promise<CustomResult<Channel, CustomError>> => {
+
+  const channelCount = await ChannelModel.countDocuments({ server: serverId });
+  if (channelCount >= 100) {
+    return [null, generateError('You already created the maximum amount of channels for this server.')];
+  }
+
+  const channel = await ChannelModel.create({
+    name: channelName,
+    server: serverId,
+    type: ChannelType.SERVER_TEXT,
+    createdBy: userId,
+  });
+
+  const channelObj = channel.toObject({versionKey: false});
+
+  emitServerChannelCreated(serverId, channelObj);
+
+  return [channelObj, null];
 };
