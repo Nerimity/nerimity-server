@@ -6,6 +6,7 @@ import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUp
 import { emitNotificationDismissed } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { MessageMentionModel } from '../models/MessageMentionModel';
+import { MessageModel } from '../models/MessageModel';
 import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
 import { ServerModel } from '../models/ServerModel';
 
@@ -108,6 +109,13 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
     return [null, generateError('Server does not exist.')];
   }
 
+  // Delete all messages
+  await MessageModel.deleteMany({ channel: channelId });
+  await ServerChannelLastSeenModel.deleteMany({ channel: channelId });
+  await MessageMentionModel.deleteMany({ channel: channelId });
+
+
+  // Delete the channel
   const channel = await ChannelModel.findOne({_id: channelId, server: serverId});
   if (!channel) {
     return [null, generateError('Channel does not exist.')];
