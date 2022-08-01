@@ -25,12 +25,12 @@ async function route (req: Request, res: Response) {
 
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
-    return res.status(400).json(bodyErrors);
+    return res.status(403).json(bodyErrors);
   }
 
   const [done, error] = await deleteServerChannel(req.serverCache._id, req.params.channelId);
   if (error) {
-    return res.status(400).json(error);
+    return res.status(403).json(error);
   }
   res.json({deleted: done});
 

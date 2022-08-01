@@ -109,6 +109,12 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
     return [null, generateError('Server does not exist.')];
   }
 
+  // check if channel is default channel
+  if (server.defaultChannel.toString() === channelId) {
+    return [null, generateError('You cannot delete the default channel.')];
+  }
+
+
   // Delete all messages
   await MessageModel.deleteMany({ channel: channelId });
   await ServerChannelLastSeenModel.deleteMany({ channel: channelId });
