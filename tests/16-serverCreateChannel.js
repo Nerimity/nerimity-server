@@ -17,7 +17,24 @@ module.exports = function () {
           done(err);
           return;
         }
-        global.newServerChannel = res.body._id;
+        global.newServerChannelId = res.body._id;
+      });
+    })
+
+    it('Create another server channel.', function(done) {
+
+      checkEventForBothUsers(SERVER_CHANNEL_CREATED, SERVER_CHANNEL_CREATED).then(() => done());
+
+      request.post(`/api/servers/${global.server._id}/channels`)
+      .expect(200)
+      .set('Authorization', global.userToken)
+      .end(function(err, res) {
+        if(err) {
+          console.log("ERR", res.body)
+          done(err);
+          return;
+        }
+        global.newServerChannelId2 = res.body._id;
       });
     })
 
