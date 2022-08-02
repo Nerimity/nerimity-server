@@ -15,6 +15,7 @@ export interface Channel {
   createdBy?: Types.ObjectId
   createdAt: number
   type: ChannelType
+  permissions?: number;
   lastMessagedAt?: number
 }
 
@@ -24,6 +25,7 @@ const schema = new Schema<Channel>({
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   type: { type: Number, required: true },
   lastMessagedAt: { type: Number },
+  permissions: { type: Number, select: true },
   createdAt: { type: Number, default: Date.now },
 });
 

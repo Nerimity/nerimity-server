@@ -1,5 +1,6 @@
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
+import { CHANNEL_PERMISSIONS } from '../common/Permissions';
 import { emitServerJoined, emitServerUpdated } from '../emits/Server';
 import { ChannelModel, ChannelType } from '../models/ChannelModel';
 import { ServerMember, ServerMemberModel } from '../models/ServerMemberModel';
@@ -32,6 +33,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
     name: 'General',
     server: server._id,
     type: ChannelType.SERVER_TEXT,
+    permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
     createdBy: opts.creatorId,
   });
 
@@ -63,7 +65,7 @@ export const getServers = async (userId: string) => {
   const user = await UserModel.findById(userId).select('servers').populate<{servers: Server[]}>('servers');
 
   const [ serverChannels, serverMembers ] = await Promise.all([
-    ChannelModel.find({server: {$in: user?.servers}}),
+    ChannelModel.find({server: {$in: user?.servers}}).select('+permissions'),
     ServerMemberModel.find({server: {$in: user?.servers}}).select('-_id').populate<{User: User}>('user')
   ]);
 
@@ -107,7 +109,7 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   await serverMember.populate<{user: User}>('user');
 
   const [ serverChannels, serverMembers ] = await Promise.all([
-    ChannelModel.find({server: server._id}),
+    ChannelModel.find({server: server._id}).select('+permissions'),
     ServerMemberModel.find({server: server._id}).select('-_id').populate<{User: User}>('user')
   ]);
 

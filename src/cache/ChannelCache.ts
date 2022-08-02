@@ -11,6 +11,7 @@ export interface ChannelCache {
   name?: string,
   server?: ServerCache
   inbox?: InboxCache
+  permissions: number,
   createdBy: string,
 }
 
@@ -36,7 +37,7 @@ export const getChannelCache = async (channelId: string, userId: string): Promis
   }
 
   // If not in cache, fetch from database.
-  const channel = await ChannelModel.findOne({ _id: channelId }).select('-__v');
+  const channel = await ChannelModel.findOne({ _id: channelId }).select('-__v +permissions');
 
   if (!channel) return [null, 'Channel does not exist.'];
 

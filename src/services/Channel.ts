@@ -2,6 +2,7 @@ import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
+import { CHANNEL_PERMISSIONS } from '../common/Permissions';
 import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
@@ -69,6 +70,7 @@ export const createServerChannel = async (serverId: string, channelName: string,
     name: channelName,
     server: serverId,
     type: ChannelType.SERVER_TEXT,
+    permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
     createdBy: userId,
   });
 
