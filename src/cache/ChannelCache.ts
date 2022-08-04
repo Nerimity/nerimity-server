@@ -74,6 +74,12 @@ const getServerChannelCache = async (channelId: string) => {
   return JSON.parse(channel);
 };
 
+export const updateServerChannelCache = async (channelId: string, update: Partial<ChannelCache>) => {
+  const cache = await getServerChannelCache(channelId);
+  if (!cache) return;
+  await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), JSON.stringify({...cache, ...update}));
+};
+
 
 const getInboxCache = async (channelId: string, userId: string) => {
   const inbox = await redisClient.get(INBOX_KEY_STRING(channelId, userId));

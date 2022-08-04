@@ -1,7 +1,9 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
+import { CHANNEL_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
+import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../models/MessageModel';
 import { createMessage } from '../../services/Message';
@@ -10,6 +12,7 @@ export function channelMessageCreate(Router: Router) {
   Router.post('/channels/:channelId/messages', 
     authenticate(),
     channelVerification(),
+    channelPermissions({bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, message: 'You are not allowed to send messages in this channel.'}),
     body('content')
       .isString().withMessage('Content must be a string!')
       .isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),

@@ -1,5 +1,6 @@
-import { getChannelCache } from '../cache/ChannelCache';
+import { getChannelCache, updateServerChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
+import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CHANNEL_PERMISSIONS } from '../common/Permissions';
@@ -84,7 +85,7 @@ export const createServerChannel = async (serverId: string, channelName: string,
 
 export interface UpdateServerChannelOptions {
   name?: string;
-  defaultChannel?: string;
+  permissions?: number;
 }
 
 export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
@@ -99,6 +100,10 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
   }
 
   await channel.updateOne(update);
+  await updateServerChannelCache(channelId, {
+    ...addToObjectIfExists('name', update.name),
+    ...addToObjectIfExists('permissions', update.permissions),
+  });
   emitServerChannelUpdated(serverId, channelId, update);
 
   return [update, null];

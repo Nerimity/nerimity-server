@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from 'express';
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { generateError } from '../common/errorHandler';
+import { CHANNEL_PERMISSIONS } from '../common/Permissions';
+import { channelPermissions } from './channelPermissions';
 
 interface Options {
   allowBot?: boolean;
@@ -43,7 +45,7 @@ export function channelVerification (opts?: Options) {
     }
 
     req.channelCache = channel;
-    next();
+    channelPermissions({bit: CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit, invert: true, message: 'This channel is private.'})(req, res, next);
 
   };
 }
