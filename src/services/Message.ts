@@ -58,7 +58,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   
   // emit 
   if (opts.serverId) {
-    emitServerMessageCreated(opts.serverId, populated, opts.socketId);
+    emitServerMessageCreated(populated, opts.socketId);
     return populated;
   }
   
@@ -110,7 +110,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   await message.remove();
 
   if (opts.serverId) {
-    emitServerMessageDeleted(opts.serverId, {channelId: opts.channelId, messageId: opts.messageId});
+    emitServerMessageDeleted({channelId: opts.channelId, messageId: opts.messageId});
     return true;
   }
   

@@ -1,16 +1,18 @@
 import { getChannelCache, updateServerChannelCache } from '../cache/ChannelCache';
-import { getServerMemberCache } from '../cache/ServerMemberCache';
+import { getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
 import { CustomError, generateError } from '../common/errorHandler';
-import { CHANNEL_PERMISSIONS } from '../common/Permissions';
+import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
 import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
 import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
 import { MessageMentionModel } from '../models/MessageMentionModel';
 import { MessageModel } from '../models/MessageModel';
 import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
+import { ServerMemberModel } from '../models/ServerMemberModel';
 import { ServerModel } from '../models/ServerModel';
+import { getIO } from '../socket/socket';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -77,6 +79,9 @@ export const createServerChannel = async (serverId: string, channelName: string,
 
   const channelObj = channel.toObject({versionKey: false});
 
+  getIO().in(serverId).socketsJoin(channel.id);
+
+
   emitServerChannelCreated(serverId, channelObj);
 
   return [channelObj, null];
@@ -94,7 +99,7 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
     return [null, generateError('Server does not exist.')];
   }
 
-  const channel = await ChannelModel.findOne({_id: channelId, server: serverId});
+  const channel = await ChannelModel.findOne({_id: channelId, server: serverId}).select('+permissions');
   if (!channel) {
     return [null, generateError('Channel does not exist.')];
   }
@@ -105,6 +110,26 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
     ...addToObjectIfExists('permissions', update.permissions),
   });
   emitServerChannelUpdated(serverId, channelId, update);
+
+
+
+  if (update.permissions !== undefined) {
+    const wasPrivate = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivate = hasPermission(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    if (wasPrivate !== isPrivate) {
+      getIO().in(serverId).socketsLeave(channelId);
+      const serverMembers = await getServerMembersCache(serverId);
+      
+      for (let i = 0; i < serverMembers.length; i++) {
+        const member = serverMembers[i];
+        const isAdmin = server.createdBy.equals(member.user);
+        if (isPrivate && !isAdmin) continue;
+        getIO().in(member.user).socketsJoin(channelId);
+      }
+    }
+  }
+
+
 
   return [update, null];
 
@@ -135,6 +160,11 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
   }
 
   await channel.delete();
+
+
+  getIO().in(serverId).socketsLeave(channelId);
+
+
   emitServerChannelDeleted(serverId, channelId);
 
   return [channelId, null];

@@ -5,6 +5,7 @@ import { SERVER_MEMBERS_KEY_HASH } from './CacheKeys';
 
 export interface ServerMemberCache {
   permissions: number,
+  user: string;
 }
 
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
@@ -24,6 +25,16 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   stringifiedMember = JSON.stringify(serverMember);
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
+};
 
 
+export const getServerMembersCache = async (serverId: string): Promise<ServerMemberCache[]> => {
+  const key = SERVER_MEMBERS_KEY_HASH(serverId);
+
+  const members = await redisClient.hGetAll(key);
+
+  const array = Object.values(members);
+
+  return array.map(member => JSON.parse(member));
+  
 };

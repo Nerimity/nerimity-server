@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io';
 import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/UserCache';
 import { AUTHENTICATED } from '../../common/ClientEventNames';
+import { CHANNEL_PERMISSIONS, hasPermission } from '../../common/Permissions';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
 import { emitUserPresenceUpdate } from '../../emits/User';
@@ -56,6 +57,21 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     const server = servers[i];
     socket.join(server._id.toString());
   }
+
+  for (let i = 0; i < serverChannels.length; i++) {
+    const channel = serverChannels[i];
+
+    const server = servers.find(server => server._id.toString() === channel.server?.toString());
+    if (!server) throw new Error(`Server not found (channelId: ${channel.id} serverId: ${channel.server?.toString()})`);
+    
+    const isPrivateChannel = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isAdmin = server.createdBy?.equals(cacheUser._id);
+
+    if (isPrivateChannel && !isAdmin) continue;
+    socket.join(channel._id.toString());
+    
+  }
+
   
   const isFirstConnect = await addSocketUser(cacheUser._id, socket.id, {
     status: user.status,

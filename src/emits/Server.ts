@@ -4,9 +4,9 @@ import { Channel } from '../models/ChannelModel';
 import { ServerMember } from '../models/ServerMemberModel';
 import { Server } from '../models/ServerModel';
 import { Message } from '../models/MessageModel';
-import { User } from '../models/UserModel';
 import { UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
+import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
 
 interface ServerJoinOpts {
   server: Server;
@@ -28,6 +28,19 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
   
   io.in(joinedMemberUserId).socketsJoin(serverId);
 
+  for (let i = 0; i < opts.channels.length; i++) {
+    const channel = opts.channels[i];
+
+    const isPrivateChannel = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isAdmin = opts.server.createdBy?.equals(joinedMemberUserId);
+
+    if (isPrivateChannel && !isAdmin) continue;
+    getIO().in(joinedMemberUserId).socketsJoin(channel._id.toString());
+    
+  }
+
+
+
   
   io.in(joinedMemberUserId).emit(SERVER_JOINED, {
     server: opts.server,
@@ -36,21 +49,23 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
   });
 };
 
-export const emitServerMessageCreated = (serverId: string, message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
+export const emitServerMessageCreated = (message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
   const io = getIO();
 
+  const channelId = message.channel._id.toString();
+
   if (excludeSocketId) {
-    io.in(serverId).except(excludeSocketId).emit(MESSAGE_CREATED, message);
+    io.in(channelId).except(excludeSocketId).emit(MESSAGE_CREATED, message);
     return;
   }
 
-  io.in(serverId).emit(MESSAGE_CREATED, message);
+  io.in(channelId).emit(MESSAGE_CREATED, message);
 };
 
-export const emitServerMessageDeleted = (serverId: string, data: {channelId: string, messageId: string}) => {
+export const emitServerMessageDeleted = (data: {channelId: string, messageId: string}) => {
   const io = getIO();
 
-  io.in(serverId).emit(MESSAGE_DELETED, data);
+  io.in(data.channelId).emit(MESSAGE_DELETED, data);
 };
 
 
