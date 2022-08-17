@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              Int     @id @default(autoincrement())
+  email           String  @unique
+  password        String
+  passwordVersion Int     @default(1)
+  ipAddress       String?
+  user            User?
+}
+
+model User {
+  id                     Int                     @id @default(autoincrement())
+  accountId              Int                     @unique
+  username               String
+  tag                    String
+  avatar                 String?
+  status                 Int
+  hexColor               String?
+  serverIds              Int[]
+  bot                    Boolean?
+  joinedAt               DateTime                @default(now())
+  account                Account                 @relation(fields: [accountId], references: [id])
+  channelsCreatedByMe    Channel[]
+  recipientFriends       Friend[]                @relation("recipient_friends")
+  friends                Friend[]                @relation("friends")
+  inbox                  Inbox[]                 @relation("inbox")
+  recipientInbox         Inbox[]                 @relation("recipient_inbox")
+  messages               Message[]
+  sendMessageMentions    MessageMention[]        @relation("sent_message_mentions")
+  messageMentions        MessageMention[]        @relation("message_mentions")
+  serversCreatedByMe     Server[]                @relation("server_creator")
+  lastSeenServerChannels ServerChannelLastSeen[]
+  createdServerInvites   ServerInvite[]
+  memberInServers        ServerMember[]
+  servers                Server[]
+}
+
+model Server {
+  id                     Int                     @id @default(autoincrement())
+  name                   String
+  hexColor               String
+  defaultChannel         Int
+  createdById            Int
+  createdAt              DateTime                @default(now())
+  createdBy              User                    @relation("server_creator", fields: [createdById], references: [id])
+  channels               Channel[]
+  messageMentions        MessageMention[]
+  lastSeenChannelMembers ServerChannelLastSeen[]
+  invites                ServerInvite[]
+  serverMembers          ServerMember[]
+  users                  User[]
+}
+
+model ServerInvite {
+  id          Int      @id @default(autoincrement())
+  code        String
+  isCustom    Boolean
+  uses        Int      @default(0)
+  serverId    Int
+  createdById Int
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  server      Server   @relation(fields: [serverId], references: [id])
+}
+
+model ServerMember {
+  id       Int      @id @default(autoincrement())
+  serverId Int
+  userId   Int
+  joinedAt DateTime @default(now())
+  server   Server   @relation(fields: [serverId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+model Friend {
+  id          Int      @id @default(autoincrement())
+  status      Int
+  userId      Int
+  recipientId Int
+  createdAt   DateTime @default(now())
+  recipient   User     @relation("recipient_friends", fields: [recipientId], references: [id])
+  user        User     @relation("friends", fields: [userId], references: [id])
+}
+
+model Channel {
+  id                     Int                     @id @default(autoincrement())
+  name                   String?
+  serverId               Int?
+  createdById            Int?
+  type                   Int
+  permissions            Int?
+  lastMessagedAt         Int?
+  createdAt              DateTime                @default(now())
+  createdBy              User?                   @relation(fields: [createdById], references: [id])
+  server                 Server?                 @relation(fields: [serverId], references: [id])
+  inbox                  Inbox[]
+  messages               Message[]
+  messageMentions        MessageMention[]
+  lastSeenChannelServers ServerChannelLastSeen[]
+}
+
+model Inbox {
+  id          Int      @id @default(autoincrement())
+  createdById Int
+  recipientId Int
+  channelId   Int
+  closed      Boolean
+  createdAt   DateTime @default(now())
+  channel     Channel  @relation(fields: [channelId], references: [id])
+  createdBy   User     @relation("inbox", fields: [createdById], references: [id])
+  recipient   User     @relation("recipient_inbox", fields: [recipientId], references: [id])
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  content     String
+  type        Int
+  channelId   Int
+  createdById Int
+  editedAt    Int
+  createdAt   DateTime @default(now())
+  channel     Channel  @relation(fields: [channelId], references: [id])
+  createdBy   User     @relation(fields: [createdById], references: [id])
+}
+
+model MessageMention {
+  id            Int      @id @default(autoincrement())
+  mentionedById Int
+  mentionedToId Int
+  channelId     Int
+  serverId      Int
+  count         Int      @default(0)
+  createdAt     DateTime @default(now())
+  channel       Channel  @relation(fields: [channelId], references: [id])
+  mentionedBy   User     @relation("sent_message_mentions", fields: [mentionedById], references: [id])
+  mentionedTo   User     @relation("message_mentions", fields: [mentionedToId], references: [id])
+  server        Server   @relation(fields: [serverId], references: [id])
+}
+
+model ServerChannelLastSeen {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  serverId  Int
+  channelId Int
+  lastSeen  DateTime
+  channel   Channel  @relation(fields: [channelId], references: [id])
+  server    Server   @relation(fields: [serverId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}

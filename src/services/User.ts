@@ -1,7 +1,7 @@
 import { AccountModel } from '../models/AccountModel';
 import { User, UserModel, UserStatus } from '../models/UserModel';
 import bcrypt from 'bcrypt';
-import { generateTag } from '../common/random';
+import { generateHexColor, generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -11,7 +11,7 @@ import { InboxModel } from '../models/InboxModel';
 import { Presence, updateCachePresence } from '../cache/UserCache';
 import { FriendModel, FriendStatus } from '../models/FriendModel';
 import { ServerMemberModel } from '../models/ServerMemberModel';
-
+import {excludeFields, exists, includeFields, prisma} from '../database';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -19,35 +19,45 @@ interface RegisterOpts {
 }
 
 export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<string, CustomError>> => {
-  const account = await AccountModel.findOne({ email: opts.email });
+
+  const account = await exists(prisma.account, {where: {email: opts.email}});
+
   if (account) {
     return [null, generateError('Email already exists.', 'email')];
   }
 
   const tag = generateTag();
-  const usernameTagExists = await UserModel.exists({ username: opts.username, tag });
+  const usernameTagExists = await prisma.user.findFirst({ where: {username: opts.username, tag} });
   if (usernameTagExists) {
     return [null, generateError('This username is used too often.', 'username')];
   }
 
   const hashedPassword = await bcrypt.hash(opts.password.trim(), 10);
 
-  const newUser = await UserModel.create({
-    username: opts.username.trim(),
-    tag
+
+  const newAccount = await prisma.account.create({
+    data: {
+      email: opts.email,
+      user: {
+        create: {
+          username: opts.username.trim(),
+          tag,
+          status: UserStatus.ONLINE,
+          hexColor: generateHexColor(),
+        },
+      },
+      password: hashedPassword,
+      passwordVersion: 0,
+    },
+
+    select: {
+      ...excludeFields('Account', ['password']),
+      user: true,
+    }
   });
 
-  const newAccount = await AccountModel.create({
-    email: opts.email,
-    user: newUser._id,
-    password: hashedPassword,
-    passwordVersion: 0,
-  });
 
-  newUser.account = newAccount._id;
-  await newUser.save();
-
-  const token = generateToken(newUser.id, newAccount.passwordVersion);
+  const token = generateToken(newAccount?.user?.id as unknown as string, newAccount.passwordVersion);
 
   return [token, null];
 };
