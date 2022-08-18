@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import http from 'http';
-import mongoose from 'mongoose';
 import env from './common/env';
 import { Log } from './common/Log';
 import { connectRedis } from './common/redis';
@@ -13,6 +12,7 @@ import { UsersRouter } from './routes/users/Router';
 import { ServersRouter } from './routes/servers/Router';
 import { ChannelsRouter } from './routes/channels/Router';
 import { FriendsRouter } from './routes/friends/Router';
+import { prisma } from './common/database';
 
 const app = express();
 const server = http.createServer(app);
@@ -25,8 +25,8 @@ export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
   Log.info('Connected to Redis');
   createIO(server);
   
-  mongoose.connect(env.MONGODB_URI, () => {
-    Log.info('Connected to mongodb');
+  prisma.$connect().then(() => {
+    Log.info('Connected to PostgreSQL');
     if (server.listening) return;
     server.listen(env.PORT, () => {
       Log.info('listening on *:' + env.PORT);
