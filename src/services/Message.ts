@@ -2,7 +2,7 @@ import { UserCache } from '../cache/UserCache';
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
 import { emitDMMessageCreated, emitDMMessageDeleted } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted } from '../emits/Server';
-import { MessageType } from '../models/MessageModel';
+import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
 import { prisma } from '../common/database';
 import { generateId } from '../common/flakeId';

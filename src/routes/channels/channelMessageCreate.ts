@@ -5,7 +5,7 @@ import { CHANNEL_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
-import { MessageType } from '../../models/MessageModel';
+import { MessageType } from '../../types/Message';
 import { createMessage } from '../../services/Message';
 
 export function channelMessageCreate(Router: Router) {

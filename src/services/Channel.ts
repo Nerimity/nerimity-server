@@ -9,7 +9,7 @@ import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
 import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
-import {  ChannelType } from '../models/ChannelModel';
+import {  ChannelType } from '../types/Channel';
 import { getIO } from '../socket/socket';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {

@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { UserStatus } from '../../models/UserModel';
+import { UserStatus } from '../../types/User';
 import { updateUserPresence } from '../../services/User';
 
 export function userUpdatePresence(Router: Router) {

@@ -1,13 +1,13 @@
-import { UserStatus } from '../models/UserModel';
+import { UserStatus } from '../types/User';
 import bcrypt from 'bcrypt';
 import { generateHexColor, generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import { emitInboxOpened, emitUserPresenceUpdate } from '../emits/User';
-import { ChannelType } from '../models/ChannelModel';
+import { ChannelType } from '../types/Channel';
 import { Presence, updateCachePresence } from '../cache/UserCache';
-import { FriendStatus } from '../models/FriendModel';
+import { FriendStatus } from '../types/Friend';
 import {excludeFields, exists, prisma} from '../common/database';
 import { generateId } from '../common/flakeId';
 interface RegisterOpts {

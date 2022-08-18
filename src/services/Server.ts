@@ -6,7 +6,7 @@ import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS } from '../common/Permissions';
 import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerUpdated } from '../emits/Server';
-import { ChannelType } from '../models/ChannelModel';
+import { ChannelType } from '../types/Channel';
 
 interface CreateServerOptions {
   name: string;

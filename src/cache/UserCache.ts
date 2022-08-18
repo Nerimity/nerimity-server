@@ -1,7 +1,7 @@
 import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
-import { UserStatus } from '../models/UserModel';
+import { UserStatus } from '../types/User';
 import { getAccountByUserId } from '../services/User';
 import { ACCOUNT_CACHE_KEY_STRING, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 

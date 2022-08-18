@@ -2,7 +2,7 @@ import { exists, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { emitFriendRemoved, emitFriendRequestAccept, emitFriendRequestSent } from '../emits/Friend';
-import { FriendStatus } from '../models/FriendModel';
+import { FriendStatus } from '../types/Friend';
 
 
 export const getFriendIds = async (userId: string) => {

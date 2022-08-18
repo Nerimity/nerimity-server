@@ -2,7 +2,7 @@ import { Socket } from 'socket.io';
 import { getAccountCacheBySocketId, socketDisconnect } from '../../cache/UserCache';
 import { prisma } from '../../common/database';
 import { emitUserPresenceUpdate } from '../../emits/User';
-import { UserStatus } from '../../models/UserModel';
+import { UserStatus } from '../../types/User';
 
 
 

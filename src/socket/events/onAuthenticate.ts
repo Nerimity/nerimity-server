@@ -7,7 +7,7 @@ import { CHANNEL_PERMISSIONS, hasPermission } from '../../common/Permissions';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
 import { emitUserPresenceUpdate } from '../../emits/User';
-import { UserStatus } from '../../models/UserModel';
+import { UserStatus } from '../../types/User';
 import { getAllMessageMentions, getLastSeenServerChannelIdsByUserId } from '../../services/Channel';
 import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
