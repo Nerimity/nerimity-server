@@ -1,7 +1,9 @@
 import{ PrismaClient, Prisma } from '@prisma/client';
 
 
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({
+  // log: ['error', 'warn', 'info', 'query']
+});
 
 export async function exists<Model extends {count: any}>  ( model: Model, args: Parameters<Model['count']>[0] ): Promise<boolean> {
   const count = await model.count(args);

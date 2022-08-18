@@ -11,7 +11,7 @@ module.exports = function () {
         done()
       });
 
-      request.post(`/api/servers/${global.server._id}/channels/${global.newServerChannelId}`)
+      request.post(`/api/servers/${global.server.id}/channels/${global.newServerChannelId}`)
       .expect(200)
       .send({name: "Cool Channel"})
       .set('Authorization', global.userToken)
@@ -26,7 +26,7 @@ module.exports = function () {
 
     it('Error when member tries to update the channel', function(done) {
 
-      request.post(`/api/servers/${global.server._id}/channels/${global.newServerChannelId}`)
+      request.post(`/api/servers/${global.server.id}/channels/${global.newServerChannelId}`)
       .expect(403)
       .send({name: "Not Cool Channel"})
       .set('Authorization', global.userToken2)

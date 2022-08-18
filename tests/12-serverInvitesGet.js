@@ -5,7 +5,7 @@ module.exports = function () {
   describe('GET /api/servers/:serverId/invites', function() {
 
     it('Error when getting invites from a user that is not in the server', function(done) {
-      request.get(`/api/servers/${global.server._id}/invites`)
+      request.get(`/api/servers/${global.server.id}/invites`)
       .expect(403)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {
@@ -20,7 +20,7 @@ module.exports = function () {
 
 
     it('Get server invites', function(done) {
-      request.get(`/api/servers/${global.server._id}/invites`)
+      request.get(`/api/servers/${global.server.id}/invites`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {

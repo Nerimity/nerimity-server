@@ -1,15 +1,15 @@
+import { Server, ServerInvite } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
+import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
+import { generateId } from '../common/flakeId';
 import { generateServerInviteCode } from '../common/random';
-import { ServerInvite, ServerInviteModel } from '../models/ServerInvite';
-import { ServerMemberModel } from '../models/ServerMemberModel';
-import { Server, ServerModel } from '../models/ServerModel';
 import { joinServer } from './Server';
 
 export const createServerInvite = async (serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
 
   // check how many invite codes already created by the user
-  const count = await ServerInviteModel.countDocuments({ server: serverId, createdBy: creatorId });
+  const count = await prisma.serverInvite.count({where: {serverId, createdById: creatorId}});
 
   // if user already created max amount of invites, return error
   if (count >= 10) {
@@ -17,30 +17,32 @@ export const createServerInvite = async (serverId: string, creatorId: string): P
   }
 
 
-  const serverInvite = await ServerInviteModel.create({
-    uses: 0,
-    createdBy: creatorId,
-    code: generateServerInviteCode(),
-    server: serverId,
-    isCustom: false,
+  const serverInvite = await prisma.serverInvite.create({
+    data: {
+      id: generateId(),
+      uses: 0,
+      createdById: creatorId,
+      code: generateServerInviteCode(),
+      serverId: serverId,
+      isCustom: false,
+    }
   });
-  const invite =  serverInvite.toObject({versionKey: false});
-  return [invite, null];
+  return [serverInvite, null];
 };
 
 export const joinServerByInviteCode = async (userId: string, inviteCode: string): Promise<CustomResult<Server, CustomError>> => {
-  const invite = await ServerInviteModel.findOne({code: inviteCode});
+  const invite = await prisma.serverInvite.findFirst({where: {code: inviteCode}});
   if (!invite) {
     return [null, generateError('Invalid invite code.')];
   }
 
-  const server = await ServerModel.exists(invite.server);
+  const server = await prisma.server.findFirst({where: {id: invite.serverId}});
   if (!server) {
     return [null, generateError('Invalid invite code.')];
   }
 
-  return await joinServer(userId, invite.server.toString()).then(async server => {
-    await ServerInviteModel.updateOne({_id: invite._id}, {$inc: {uses: 1}});
+  return await joinServer(userId, invite.serverId).then(async server => {
+    await prisma.serverInvite.update({where: {id: invite.id}, data: {uses: {increment: 1}}});
     return server;
   });
 
@@ -49,12 +51,12 @@ export const joinServerByInviteCode = async (userId: string, inviteCode: string)
 type ServerWithMemberCount = Server & { memberCount: number }; 
 
 export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
-  const invite = await ServerInviteModel.findOne({code: inviteCode}).populate<{server: Server}>('server').lean();
+  const invite = await prisma.serverInvite.findFirst({where: {code: inviteCode}, include: {server: true}});
   if (!invite) {
     return [null, generateError('Invalid invite code.')];
   }
 
-  const memberCount = await ServerMemberModel.estimatedDocumentCount({server: invite.server._id});
+  const memberCount = await prisma.serverMember.count({where: {serverId: invite.serverId}});
 
   return [{...invite.server, memberCount}, null];
 };
@@ -62,13 +64,13 @@ export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<
 
 export const getServerInvitesByServerId = async (serverId: string, creatorId?: string): Promise<ServerInvite[]> => {
 
-  const invites = await ServerInviteModel.find({
-    server: serverId,
-    ...(creatorId && {createdBy: creatorId})
-  
-  })
-    .select('-_id -__v -server')
-    .populate('createdBy');
+  const invites = await prisma.serverInvite.findMany({
+    where: {
+      serverId,
+      ...(creatorId && {createdById: creatorId})
+    },
+    include: { createdBy: true }
+  });
 
   return invites;
 

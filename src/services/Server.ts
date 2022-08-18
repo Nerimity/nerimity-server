@@ -1,11 +1,12 @@
+import { Server } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
+import { exists, prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
+import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS } from '../common/Permissions';
+import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerUpdated } from '../emits/Server';
-import { ChannelModel, ChannelType } from '../models/ChannelModel';
-import { ServerMember, ServerMemberModel } from '../models/ServerMemberModel';
-import { Server, ServerModel } from '../models/ServerModel';
-import { User, UserModel } from '../models/UserModel';
+import { ChannelType } from '../models/ChannelModel';
 
 interface CreateServerOptions {
   name: string;
@@ -13,7 +14,7 @@ interface CreateServerOptions {
 }
 
 export const hasReachedMaxServers = async (userId: string): Promise<boolean> => {
-  const serverCount = await ServerModel.countDocuments({createdBy: userId});
+  const serverCount = await prisma.server.count({where: {createdById: userId}});
   return serverCount > 100;
 };
 
@@ -24,50 +25,58 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
     return [null, generateError('You have reached the maximum number of servers.')];
   }
 
-  const server = await ServerModel.create({
-    name: opts.name.trim(),
-    createdBy: opts.creatorId,
-  });
+  const serverId = generateId();
+  const channelId = generateId();
+  const serverMemberId = generateId();
 
-  const channel = await ChannelModel.create({
-    name: 'General',
-    server: server._id,
-    type: ChannelType.SERVER_TEXT,
-    permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
-    createdBy: opts.creatorId,
-  });
 
-  server.defaultChannel = channel._id;
-  await server.save();
+  const [server, channel, user, serverMember] = await prisma.$transaction([
+    prisma.server.create({
+      data: {
+        id: serverId,
+        name: opts.name.trim(),
+        createdById: opts.creatorId,
+        defaultChannelId: channelId,
+        hexColor: generateHexColor(),
+      }
+    }),
+    prisma.channel.create({
+      data: {
+        id: channelId,
+        name: 'General',
+        serverId: serverId,
+        type: ChannelType.SERVER_TEXT,
+        permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
+        createdById: opts.creatorId,
+      }
+    }),
+    prisma.user.update({where: {id: opts.creatorId}, data: {servers: {connect: {id: serverId}}} }),
+    prisma.serverMember.create({data: {id: serverMemberId, serverId, userId: opts.creatorId}, include: {user: true}}),
+  ]);
 
-  await UserModel.updateOne({_id: opts.creatorId}, {$addToSet: {servers: server._id}});
-
-  const serverMember = await ServerMemberModel.create({
-    server: server._id,
-    user: opts.creatorId,
-  });
-  await serverMember.populate<{User: User}>('user');
-
-  const member: Partial<ServerMember> = serverMember.toObject({versionKey: false});
-  delete member._id;
 
   emitServerJoined({
-    server: server.toObject({versionKey: false}),
-    channels: [channel.toObject({versionKey: false})],
-    members: [member],
-    joinedMember: member,
+    server: server,
+    channels: [channel],
+    members: [serverMember],
+    joinedMember: serverMember,
   });
-  return [server.toObject({versionKey: false}), null];
+  return [server, null];
 };
 
 
 export const getServers = async (userId: string) => {
-  const user = await UserModel.findById(userId).select('servers').populate<{servers: Server[]}>('servers');
 
-  const [ serverChannels, serverMembers ] = await Promise.all([
-    ChannelModel.find({server: {$in: user?.servers}}).select('+permissions'),
-    ServerMemberModel.find({server: {$in: user?.servers}}).select('-_id').populate<{User: User}>('user')
+  const user = await prisma.user.findFirst({where: {id: userId}, include: {servers: true}});
+
+  const serverIds = user?.servers.map(server => server.id);
+
+  const [serverChannels, serverMembers] = await prisma.$transaction([
+    prisma.channel.findMany({where: {serverId: {in: serverIds}}}),
+    prisma.serverMember.findMany({where: {serverId: {in: serverIds}}, include: {user: true}}),
   ]);
+
+
 
   return {
     servers: user?.servers || [],
@@ -77,8 +86,8 @@ export const getServers = async (userId: string) => {
 };
 
 export const getServerIds = async (userId: string): Promise<string[]> => {
-  const user = await UserModel.findById(userId).select('servers');
-  return user?.servers.map(String) || [];
+  const user = await prisma.user.findFirst({where: {id: userId}, select: {servers: {select: {id: true}}}});
+  return user?.servers.map(server => server.id) || [];
 };
 
 export const joinServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>> => {
@@ -88,62 +97,59 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     return [null, generateError('You have reached the maximum number of servers.')];
   }
 
-  const server = await ServerModel.findById(serverId);
+  
+  const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
   // check if user is already in server
-  const isInServer = await ServerMemberModel.exists({user: userId, server: serverId});
+  const isInServer = await exists(prisma.serverMember, {where: {serverId, userId}});
   if (isInServer) {
     return [null, generateError('You are already in this server.')];
   }
 
-  await UserModel.updateOne({_id: userId}, {$addToSet: {servers: server._id}});
+  await prisma.user.update({where: {id: userId}, data: {servers: {connect: {id: serverId}}} });
 
-  const serverMember = await ServerMemberModel.create({
-    server: server._id,
-    user: userId,
-  });
+  const serverMember = await prisma.serverMember.create({data: {id: generateId(),serverId, userId}, include: {user: true}});
 
-  await serverMember.populate<{user: User}>('user');
 
-  const [ serverChannels, serverMembers ] = await Promise.all([
-    ChannelModel.find({server: server._id}).select('+permissions'),
-    ServerMemberModel.find({server: server._id}).select('-_id').populate<{User: User}>('user')
+  const [ serverChannels, serverMembers ] = await prisma.$transaction([
+    prisma.channel.findMany({where: {serverId: server.id}}),
+    prisma.serverMember.findMany({where: {serverId: server.id}, include: {user: true}}),
   ]);
 
   emitServerJoined({
-    server: server.toObject({versionKey: false}),
+    server: server,
     channels: serverChannels,
     members: serverMembers,
-    joinedMember: serverMember.toObject({versionKey: false}),
+    joinedMember: serverMember,
   });
 
-  return [server.toObject({versionKey: false}), null];
+  return [server, null];
 };
 
 
 export interface UpdateServerOptions {
   name?: string;
-  defaultChannel?: string;
+  defaultChannelId?: string;
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
-  const server = await ServerModel.findById(serverId);
+  const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
   // check if channel is a server channel
-  if (update.defaultChannel) {
-    const channel = await ChannelModel.findById(update.defaultChannel).select('server');
-    if (!channel || channel.server?.toString() !== serverId) {
+  if (update.defaultChannelId) {
+    const channel = await prisma.channel.findFirst({where: {id: update.defaultChannelId}});
+    if (!channel || channel.serverId !== serverId) {
       return [null, generateError('Channel does not exist.')];
     }
   }
 
-  await server.updateOne(update);
+  await prisma.server.update({where: {id: serverId}, data: update});
   emitServerUpdated(serverId, update);
   return [update, null];
 

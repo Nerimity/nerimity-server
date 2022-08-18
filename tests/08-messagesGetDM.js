@@ -2,7 +2,7 @@
 module.exports = function () {
   describe('GET /api/channels/:channelId/messages', function() {
     it('Check if there are 2 messages.', function(done) {
-      request.get(`/api/channels/${inbox.channel._id}/messages`)
+      request.get(`/api/channels/${inbox.channel.id}/messages`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {

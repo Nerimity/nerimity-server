@@ -15,9 +15,9 @@ export function serverInvites(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdBy === req.accountCache.user._id;
+  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
 
-  const invites = await getServerInvitesByServerId(req.serverCache._id, !isServerCreator ? req.accountCache.user._id : undefined);
+  const invites = await getServerInvitesByServerId(req.serverCache.id, !isServerCreator ? req.accountCache.user.id : undefined);
 
   res.json(invites);
 

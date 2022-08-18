@@ -17,14 +17,14 @@ export function serverChannelCreate(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdBy === req.accountCache.user._id;
+  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
 
   if (!isServerCreator) {
     res.status(403).json(generateError('You are not allowed to perform this action'));
     return;
   }
 
-  const [newChannel, error] = await createServerChannel(req.serverCache._id, 'New Channel', req.accountCache.user._id);
+  const [newChannel, error] = await createServerChannel(req.serverCache.id, 'New Channel', req.accountCache.user.id);
 
   if (error) {
     return res.status(400).json(error);

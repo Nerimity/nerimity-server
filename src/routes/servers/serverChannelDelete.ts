@@ -16,7 +16,7 @@ export function serverChannelDelete(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdBy === req.accountCache.user._id;
+  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
 
   if (!isServerCreator) {
     res.status(403).json(generateError('You are not allowed to perform this action'));
@@ -28,7 +28,7 @@ async function route (req: Request, res: Response) {
     return res.status(403).json(bodyErrors);
   }
 
-  const [done, error] = await deleteServerChannel(req.serverCache._id, req.params.channelId);
+  const [done, error] = await deleteServerChannel(req.serverCache.id, req.params.channelId);
   if (error) {
     return res.status(403).json(error);
   }

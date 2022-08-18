@@ -1,11 +1,11 @@
 import { CustomResult } from '../common/CustomResult';
+import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
-import { ServerMemberModel } from '../models/ServerMemberModel';
 import { SERVER_MEMBERS_KEY_HASH } from './CacheKeys';
 
 export interface ServerMemberCache {
   permissions: number,
-  user: string;
+  userId: string;
 }
 
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
@@ -18,7 +18,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   }
 
   // fetch from database and cache it.
-  const serverMember = await ServerMemberModel.findOne({user: userId, server: serverId}).select('-__v');
+  const serverMember = await prisma.serverMember.findFirst({where: {userId: userId, serverId: serverId}});
 
   if (!serverMember) return [null, 'Server member is not in this server.'];
 

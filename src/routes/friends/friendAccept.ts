@@ -24,7 +24,7 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const [statusMessage, error] = await acceptFriend(req.accountCache.user._id, req.params.friendId);
+  const [statusMessage, error] = await acceptFriend(req.accountCache.user.id, req.params.friendId);
   if (error) {
     return res.status(400).json(error);
   }

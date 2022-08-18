@@ -1,25 +1,22 @@
 import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_MEMBER_JOINED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
-import { Channel } from '../models/ChannelModel';
-import { ServerMember } from '../models/ServerMemberModel';
-import { Server } from '../models/ServerModel';
-import { Message } from '../models/MessageModel';
 import { UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
+import { Channel, Message, Server, ServerMember, User } from '@prisma/client';
 
 interface ServerJoinOpts {
   server: Server;
   members: Partial<ServerMember>[];
   channels: Channel[];
-  joinedMember: Partial<ServerMember>;
+  joinedMember: ServerMember & {user: User};
 }
 
 export const emitServerJoined = (opts: ServerJoinOpts) => {
   const io = getIO();
-  const serverId = opts.server._id.toString();
-  if (!opts.joinedMember?.user?._id) throw new Error('User not found.');
-  const joinedMemberUserId = opts.joinedMember.user._id.toString();
+  const serverId = opts.server.id;
+  if (!opts.joinedMember?.user.id) throw new Error('User not found.');
+  const joinedMemberUserId = opts.joinedMember.user.id;
 
   io.to(serverId).emit(SERVER_MEMBER_JOINED, {
     serverId: serverId,
@@ -32,10 +29,10 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
     const channel = opts.channels[i];
 
     const isPrivateChannel = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    const isAdmin = opts.server.createdBy?.equals(joinedMemberUserId);
+    const isAdmin = opts.server.createdById === joinedMemberUserId;
 
     if (isPrivateChannel && !isAdmin) continue;
-    getIO().in(joinedMemberUserId).socketsJoin(channel._id.toString());
+    getIO().in(joinedMemberUserId).socketsJoin(channel.id);
     
   }
 
@@ -49,10 +46,10 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
   });
 };
 
-export const emitServerMessageCreated = (message: Omit<Message, 'createdBy'> &  {createdBy: UserCache}, excludeSocketId?: string) => {
+export const emitServerMessageCreated = (message: Message & {createdBy: Partial<UserCache | User>}, excludeSocketId?: string) => {
   const io = getIO();
 
-  const channelId = message.channel._id.toString();
+  const channelId = message.channelId;
 
   if (excludeSocketId) {
     io.in(channelId).except(excludeSocketId).emit(MESSAGE_CREATED, message);

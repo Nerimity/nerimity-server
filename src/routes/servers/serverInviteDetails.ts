@@ -1,6 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { authenticate } from '../../middleware/authenticate';
-import { getServerDetailsByInviteCode, joinServerByInviteCode } from '../../services/ServerInvite';
+import { getServerDetailsByInviteCode } from '../../services/ServerInvite';
 
 export function serverInviteDetails(Router: Router) {
   Router.get('/servers/invites/:inviteCode', 

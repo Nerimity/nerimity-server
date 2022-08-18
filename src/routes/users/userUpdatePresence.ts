@@ -31,7 +31,7 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const [ successMessage, error ] = await updateUserPresence(req.accountCache.user._id, {status: body.status});
+  const [ successMessage, error ] = await updateUserPresence(req.accountCache.user.id, {status: body.status});
   if (error) {
     return res.status(400).json(error);
   }

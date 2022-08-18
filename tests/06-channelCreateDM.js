@@ -9,7 +9,7 @@ module.exports = function () {
         done()
       })
 
-      request.post(`/api/users/${user2._id}/open-channel`)
+      request.post(`/api/users/${user2.id}/open-channel`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {
@@ -26,7 +26,7 @@ module.exports = function () {
         done()
       })
 
-      request.post(`/api/users/${user._id}/open-channel`)
+      request.post(`/api/users/${user.id}/open-channel`)
       .expect(200)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {

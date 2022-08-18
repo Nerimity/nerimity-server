@@ -8,7 +8,7 @@ module.exports = function () {
         
     it('Error when member tries to delete the channel', function(done) {
 
-      request.delete(`/api/servers/${global.server._id}/channels/${global.newServerChannelId}`)
+      request.delete(`/api/servers/${global.server.id}/channels/${global.newServerChannelId}`)
       .expect(403)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {
@@ -25,7 +25,7 @@ module.exports = function () {
         
     it('Error when deleting the default channel', function(done) {
 
-      request.delete(`/api/servers/${global.server._id}/channels/${global.newServerChannelId}`)
+      request.delete(`/api/servers/${global.server.id}/channels/${global.newServerChannelId}`)
       .expect(403)
       .set('Authorization', global.userToken)
       .end(function(err, res) {
@@ -48,7 +48,7 @@ module.exports = function () {
         done()
       });
 
-      request.delete(`/api/servers/${global.server._id}/channels/${global.newServerChannelId2}`)
+      request.delete(`/api/servers/${global.server.id}/channels/${global.newServerChannelId2}`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {

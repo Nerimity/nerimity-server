@@ -29,7 +29,7 @@ async function route (req: Request, res: Response) {
   }
   const [server, error] = await createServer({
     name: body.name,
-    creatorId: req.accountCache.user._id
+    creatorId: req.accountCache.user.id
   });
 
   if (error) {

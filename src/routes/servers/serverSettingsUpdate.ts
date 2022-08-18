@@ -12,23 +12,23 @@ export function serverSettingsUpdate(Router: Router) {
     body('name')
       .isString().withMessage('Name must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
-    body('defaultChannel')
-      .isString().withMessage('defaultChannel must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('defaultChannel must be between 4 and 100 characters long.').optional({nullable: true}),
+    body('defaultChannelId')
+      .isString().withMessage('defaultChannelId must be a string.')
+      .isLength({ min: 4, max: 100 }).withMessage('defaultChannelId must be between 4 and 100 characters long.').optional({nullable: true}),
     route
   );
 }
 
 interface Body {
   name?: string;
-  defaultChannel?: string;
+  defaultChannelId?: string;
 }
 
 
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdBy === req.accountCache.user._id;
+  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
 
   if (!isServerCreator) {
     res.status(403).json(generateError('You are not allowed to perform this action'));
@@ -41,7 +41,7 @@ async function route (req: Request, res: Response) {
 
   const matchedBody: Body = matchedData(req);
 
-  const [updated, error] = await updateServer(req.serverCache._id, matchedBody);
+  const [updated, error] = await updateServer(req.serverCache.id, matchedBody);
   if (error) {
     return res.status(400).json(error);
   }

@@ -7,7 +7,7 @@ module.exports = function () {
 
       checkEventForBothUsers(FRIEND_REMOVED, FRIEND_REMOVED).then(() => done());
 
-      request.delete(`/api/friends/${user._id}`)
+      request.delete(`/api/friends/${user.id}`)
       .expect(200)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {
@@ -19,7 +19,7 @@ module.exports = function () {
     });
 
     it('Error when trying to remove friend again', function(done) {
-      request.delete(`/api/friends/${user._id}`)
+      request.delete(`/api/friends/${user.id}`)
       .expect(400)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {

@@ -5,7 +5,7 @@ module.exports = function () {
   describe('GET /api/users/:userId', function() {
 
     it('Get user details', function(done) {
-      request.get(`/api/users/${global.user._id}`)
+      request.get(`/api/users/${global.user.id}`)
       .expect(200)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {
@@ -19,7 +19,7 @@ module.exports = function () {
         
         expect(res.body.mutualServerIds).to.be.an('array')
         expect(res.body.mutualServerIds).lengthOf(1);
-        expect(res.body.mutualServerIds).to.include(global.server._id);
+        expect(res.body.mutualServerIds).to.include(global.server.id);
         
         done();
       });

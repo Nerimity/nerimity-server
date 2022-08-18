@@ -2,20 +2,19 @@ import { UserCache } from '../cache/UserCache';
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
 import { emitDMMessageCreated, emitDMMessageDeleted } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted } from '../emits/Server';
-import { ChannelModel } from '../models/ChannelModel';
-import { Message, MessageModel, MessageType } from '../models/MessageModel';
-import { User } from '../models/UserModel';
+import { MessageType } from '../models/MessageModel';
 import { dismissChannelNotification } from './Channel';
-import { MessageMentionModel } from '../models/MessageMentionModel';
+import { prisma } from '../common/database';
+import { generateId } from '../common/flakeId';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
-  const messages = await MessageModel
-    .find({ channel: channelId })
-    .populate<{createdBy: User}>('createdBy', 'username tag hexColor')
-    .sort({_id: -1})
-    .limit(limit)
-    .select('-__v');
 
+  const messages = await prisma.message.findMany({
+    where: {channelId},
+    include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
+    take: limit,
+    orderBy: {createdAt: 'desc'},
+  });
   return messages.reverse();
 };
 
@@ -32,25 +31,20 @@ interface SendMessageOptions {
 }
 
 export const createMessage = async (opts: SendMessageOptions) => {
-  const message = await MessageModel.create({
-    content: opts.content,
-    createdBy: opts.userId,
-    channel: opts.channelId,
-    type: opts.type
+  const message = await prisma.message.create({
+    data: {
+      id: generateId(),
+      content: opts.content || '',
+      createdById: opts.userId,
+      channelId: opts.channelId,
+      type: opts.type      
+    },
+    include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
   });
 
 
-  let populated: Omit<Message, 'createdBy'> &  {createdBy: UserCache};
-  
-
-  if (opts.creator) {
-    populated = {...message.toObject({versionKey: false}), createdBy: opts.creator};
-  } else {
-    populated = (await message.populate<{createdBy: User}>('createdBy', 'username tag hexColor')).toObject({versionKey: false});
-  }
-
   // update channel last message
-  await ChannelModel.findOneAndUpdate({ _id: opts.channelId }, { $set: {lastMessagedAt: message.createdAt} });
+  await prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: message.createdAt}});
   // update sender last seen
   await dismissChannelNotification(opts.userId, opts.channelId, false);
 
@@ -58,8 +52,8 @@ export const createMessage = async (opts: SendMessageOptions) => {
   
   // emit 
   if (opts.serverId) {
-    emitServerMessageCreated(populated, opts.socketId);
-    return populated;
+    emitServerMessageCreated(message, opts.socketId);
+    return message;
   }
   
   let channel = opts.channel;
@@ -69,7 +63,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   }
 
 
-  if (!channel?.inbox?.recipient) {
+  if (!channel?.inbox?.recipientId) {
     throw new Error('Channel not found!');
   }
 
@@ -77,20 +71,36 @@ export const createMessage = async (opts: SendMessageOptions) => {
   // For DM channels, mentions are notifications for everything.
   // For Server channels, mentions are notifications for @mentions.
   // Don't send notifications for saved notes
-  if (channel.inbox.recipient.toString() !== channel.inbox.createdBy?.toString()) {
-    await MessageMentionModel.updateOne({
-      channel: opts.channelId,
-      mentionedBy: opts.userId,
-      mentionedTo: channel.inbox.recipient.toString()
-    }, { $inc: { count: 1 }, $setOnInsert: {createdAt: message.createdAt} }, { upsert: true });
+  if (channel.inbox.recipientId !== channel.inbox.createdById) {
+    await prisma.messageMention.upsert({
+      where: {
+        mentionedById_mentionedToId_channelId: {
+          channelId: channel.id,
+          mentionedById: opts.userId,
+          mentionedToId:channel.inbox.recipientId
+        }
+      },
+      update: {
+        count: {increment: 1}
+      },
+      create: {
+        id: generateId(),
+        count: 1,
+        channelId: channel.id,
+        mentionedById: opts.userId,
+        mentionedToId: channel.inbox.recipientId,
+        serverId: channel.server?.id,
+        createdAt: message.createdAt,
+      }
+    });
   }
 
 
 
-  emitDMMessageCreated(channel, populated, opts.socketId);
+  emitDMMessageCreated(channel, message, opts.socketId);
   
 
-  return populated;
+  return message;
 };
 
 
@@ -104,10 +114,10 @@ interface MessageDeletedOptions {
 }
 
 export const deleteMessage = async (opts: MessageDeletedOptions) => {
-  const message = await MessageModel.findOne({ _id: opts.messageId, channel: opts.channelId });
+  const message = await prisma.message.findFirst({ where: {id: opts.messageId, channelId: opts.channelId} });
   if (!message) return false;
   
-  await message.remove();
+  await prisma.message.delete({where: {id: opts.messageId}});
 
   if (opts.serverId) {
     emitServerMessageDeleted({channelId: opts.channelId, messageId: opts.messageId});
@@ -118,11 +128,11 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, message.createdBy.toString());
+    [channel] = await getChannelCache(opts.channelId, message.createdById);
   }
 
 
-  if (!channel?.inbox?.recipient) {
+  if (!channel?.inbox?.recipientId) {
     throw new Error('Channel not found!');
   }
   emitDMMessageDeleted(channel, {channelId: opts.channelId, messageId: opts.messageId});
