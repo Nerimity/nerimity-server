@@ -65,6 +65,7 @@ export const getAllMessageMentions = async (userId: string) => {
     },
     select: {
       mentionedById: true,
+      mentionedBy: true,
       createdAt: true,
       channelId: true,
       serverId: true,
