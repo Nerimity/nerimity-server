@@ -5,7 +5,10 @@ import http from 'http';
 import env from './common/env';
 import { Log } from './common/Log';
 import { connectRedis } from './common/redis';
+import fastifyCors from '@fastify/cors';
 import cors from 'cors';
+import Fastify from 'fastify';
+import ExpressPlugin from '@fastify/express';
 
 import {createIO} from './socket/socket';
 import { UsersRouter } from './routes/users/Router';
@@ -14,23 +17,27 @@ import { ChannelsRouter } from './routes/channels/Router';
 import { FriendsRouter } from './routes/friends/Router';
 import { prisma } from './common/database';
 
-const app = express();
-const server = http.createServer(app);
 
 
+
+
+const fastify = Fastify({
+  logger: true,
+});
 
 // eslint-disable-next-line no-async-promise-executor
 export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
+  await fastify.register(ExpressPlugin);
+  registerRoutes();
   await connectRedis();
   Log.info('Connected to Redis');
-  createIO(server);
+  createIO(fastify.server);
   
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');
-    if (server.listening) return;
-    server.listen(env.PORT, () => {
+    fastify.listen({port: env.PORT}, () => {
       Log.info('listening on *:' + env.PORT);
-      resolve(server);
+      resolve(fastify.server);
     });
   });
 });
@@ -39,13 +46,18 @@ if (process.env.TEST !== 'true') {
   main();
 }
 
-app.use(cors());
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use('/api', UsersRouter);
-app.use('/api', ServersRouter);
-app.use('/api', ChannelsRouter);
-app.use('/api', FriendsRouter);
+async function registerRoutes() {
+  
+  await fastify.register(fastifyCors, {
+    origin: '*',
+  });
 
-
+  fastify.use(cors());
+  fastify.use(express.json());
+  fastify.use(express.urlencoded({ extended: false }));
+  fastify.use('/api', UsersRouter);  
+  fastify.use('/api', ServersRouter);
+  fastify.use('/api', ChannelsRouter);
+  fastify.use('/api', FriendsRouter);
+}  
