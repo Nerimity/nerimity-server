@@ -18,9 +18,17 @@ jobs:
     
     services:
       # Label used to access the service container
-      mongo:
+      postgres:
         # Docker Hub image
-        image: mongo
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: 123
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         # Docker Hub image
         image: redis
@@ -37,7 +45,7 @@ jobs:
         
       - run: npm test
         env:
-          MONGODB_URI: "mongodb://mongo:27017/Chat"
+          DATABASE_URL: "postgresql://postgres:123@localhost:5432/postgres"
 
           REDIS_HOST: redis
           REDIS_PORT: 6379
