@@ -2,7 +2,7 @@
 module.exports = function () {
   describe('DELETE /api/channels/:channelId/messages/:messageId', function() {
     it('Don\'t allow user to delete friends message.', function(done) {
-      request.delete(`/api/channels/${inbox.channel._id}/messages/${message2._id}`)
+      request.delete(`/api/channels/${inbox.channel.id}/messages/${message2.id}`)
       .expect(403)
       .set('Authorization', global.userToken)
       .end(function(err, res) {
@@ -14,7 +14,7 @@ module.exports = function () {
       });
     });
     it('Delete own Message', function(done) {
-      request.delete(`/api/channels/${inbox.channel._id}/messages/${message._id}`)
+      request.delete(`/api/channels/${inbox.channel.id}/messages/${message.id}`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {
@@ -26,7 +26,7 @@ module.exports = function () {
       });
     });
     it('Check if there is 1 message.', function(done) {
-      request.get(`/api/channels/${inbox.channel._id}/messages`)
+      request.get(`/api/channels/${inbox.channel.id}/messages`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {

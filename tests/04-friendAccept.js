@@ -7,7 +7,7 @@ module.exports = function () {
 
       checkEventForBothUsers(FRIEND_REQUEST_ACCEPTED, FRIEND_REQUEST_ACCEPTED).then(() => done());
 
-      request.post(`/api/friends/${user._id}`)
+      request.post(`/api/friends/${user.id}`)
       .expect(200)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {
@@ -19,7 +19,7 @@ module.exports = function () {
     });
 
     it('Error when accepting the friend request again', function(done) {
-      request.post(`/api/friends/${user._id}`)
+      request.post(`/api/friends/${user.id}`)
       .expect(400)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {

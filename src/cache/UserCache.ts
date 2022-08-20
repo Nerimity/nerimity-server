@@ -1,7 +1,7 @@
 import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
-import { UserStatus } from '../models/UserModel';
+import { UserStatus } from '../types/User';
 import { getAccountByUserId } from '../services/User';
 import { ACCOUNT_CACHE_KEY_STRING, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 
@@ -87,15 +87,15 @@ export async function socketDisconnect(socketId: string, userId: string) {
 }
 
 export interface AccountCache {
-  _id: string;
+  id: string;
   passwordVersion: number;
   user: UserCache
 }
 
 export interface UserCache {
-  _id: string
+  id: string
   username: string;
-  hexColor: string;
+  hexColor?: string;
   tag: string;
   avatar?: string;
   bot?: boolean;
@@ -120,15 +120,15 @@ export async function getAccountCache(userId: string): Promise<AccountCache | nu
   if (!account) return null;
 
   const accountCache: AccountCache = {
-    _id: account.id,
+    id: account.id,
     passwordVersion: account.passwordVersion,
     user: {
-      _id: account.user._id.toString(),
+      id: account.user.id,
       username: account.user.username,
-      hexColor: account.user.hexColor,
+      hexColor: account.user.hexColor || undefined,
       tag: account.user.tag,
-      avatar: account.user.avatar,
-      bot: account.user.bot
+      avatar: account.user.avatar || undefined,
+      bot: account.user.bot || undefined
     }
   };
   // Save to cache

@@ -15,7 +15,7 @@ export function serverInviteCreate(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const [invite, error] = await createServerInvite(req.serverCache._id, req.accountCache.user._id);
+  const [invite, error] = await createServerInvite(req.serverCache.id, req.accountCache.user.id);
 
   if (error) {
     return res.status(403).json(error);

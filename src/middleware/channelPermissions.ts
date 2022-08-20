@@ -14,7 +14,7 @@ export function channelPermissions (opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
 
     if (!req.channelCache.server) return next();
-    if (req.serverCache.createdBy === req.accountCache.user._id) return next();
+    if (req.serverCache.createdById === req.accountCache.user.id) return next();
     
     const permissions = req.channelCache.permissions;
 

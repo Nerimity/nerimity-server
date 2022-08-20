@@ -5,7 +5,7 @@ import { CHANNEL_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
-import { MessageType } from '../../models/MessageModel';
+import { MessageType } from '../../types/Message';
 import { createMessage } from '../../services/Message';
 
 export function channelMessageCreate(Router: Router) {
@@ -40,12 +40,12 @@ async function route (req: Request, res: Response) {
   }
   
   const message = await createMessage({
-    channelId: req.channelCache._id,
+    channelId: req.channelCache.id,
     content: body.content,
-    userId: req.accountCache.user._id,
+    userId: req.accountCache.user.id,
     creator: req.accountCache.user,
     channel: req.channelCache,
-    serverId: req.channelCache?.server?._id,
+    serverId: req.channelCache?.server?.id,
     socketId: body.socketId,
     type: MessageType.CONTENT
   });

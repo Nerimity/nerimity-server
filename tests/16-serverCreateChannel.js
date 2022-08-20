@@ -8,7 +8,7 @@ module.exports = function () {
 
       checkEventForBothUsers(SERVER_CHANNEL_CREATED, SERVER_CHANNEL_CREATED).then(() => done());
 
-      request.post(`/api/servers/${global.server._id}/channels`)
+      request.post(`/api/servers/${global.server.id}/channels`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {
@@ -17,7 +17,7 @@ module.exports = function () {
           done(err);
           return;
         }
-        global.newServerChannelId = res.body._id;
+        global.newServerChannelId = res.body.id;
       });
     })
 
@@ -25,7 +25,7 @@ module.exports = function () {
 
       checkEventForBothUsers(SERVER_CHANNEL_CREATED, SERVER_CHANNEL_CREATED).then(() => done());
 
-      request.post(`/api/servers/${global.server._id}/channels`)
+      request.post(`/api/servers/${global.server.id}/channels`)
       .expect(200)
       .set('Authorization', global.userToken)
       .end(function(err, res) {
@@ -34,13 +34,13 @@ module.exports = function () {
           done(err);
           return;
         }
-        global.newServerChannelId2 = res.body._id;
+        global.newServerChannelId2 = res.body.id;
       });
     })
 
     it('Error when member tries to create a server channel', function(done) {
 
-      request.post(`/api/servers/${global.server._id}/channels`)
+      request.post(`/api/servers/${global.server.id}/channels`)
       .expect(403)
       .set('Authorization', global.userToken2)
       .end(function(err, res) {

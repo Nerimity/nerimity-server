@@ -1,42 +1,56 @@
+import { Channel } from '@prisma/client';
 import { getChannelCache, updateServerChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
+import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
+import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
 import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
-import { Channel, ChannelModel, ChannelType } from '../models/ChannelModel';
-import { MessageMentionModel } from '../models/MessageMentionModel';
-import { MessageModel } from '../models/MessageModel';
-import { ServerChannelLastSeenModel } from '../models/ServerChannelLastSeenModel';
-import { ServerMemberModel } from '../models/ServerMemberModel';
-import { ServerModel } from '../models/ServerModel';
+import {  ChannelType } from '../types/Channel';
 import { getIO } from '../socket/socket';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
   if (!channel) return;
 
-  if (channel.server) {
-    const [serverMember] = await getServerMemberCache(channel.server._id, userId);
-    if (!serverMember) return;
-    const serverId = channel.server._id;
 
-    await ServerChannelLastSeenModel.updateOne({ user: userId, server: serverId, channel: channelId }, {
-      $set: {
-        user: userId,
-        server: serverId,
-        channel: channelId,
-        lastSeen: Date.now(),
+  if (channel.server) {
+    const [serverMember] = await getServerMemberCache(channel.server.id, userId);
+    if (!serverMember) return;
+    const serverId = channel.server.id;
+
+
+    await prisma.serverChannelLastSeen.upsert({
+      where: {
+        channelId_userId_serverId: {
+          userId,
+          serverId,
+          channelId 
+        }
+      },
+      create: {
+        id: generateId(),
+        userId,
+        serverId,
+        channelId,
+        lastSeen: new Date().toISOString(),
+      },
+      update: {
+        lastSeen: new Date().toISOString(),
       }
-    }, {upsert: true});
+    });
+
+
     emit && emitNotificationDismissed(userId, channelId);
 
     return;
   }
 
-  await MessageMentionModel.deleteOne({ mentionedTo: userId, channel: channelId });
+
+  await prisma.messageMention.delete({where: {mentionedToId_channelId: { mentionedToId: userId, channelId: channelId }}}).catch(() => null);
 
   emit && emitNotificationDismissed(userId, channelId);
 
@@ -45,18 +59,36 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
 
 
 export const getAllMessageMentions = async (userId: string) => {
-  const mentions = await MessageMentionModel.find({ mentionedTo: userId }).select('mentionedBy createdAt channel server count -_id').lean();
+  const mentions = await prisma.messageMention.findMany({
+    where: {
+      mentionedToId: userId,
+    },
+    select: {
+      mentionedById: true,
+      mentionedBy: true,
+      createdAt: true,
+      channelId: true,
+      serverId: true,
+      count: true
+    }
+  });
   return mentions;
 };
 
 export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
-  const results = await ServerChannelLastSeenModel.find({ user: userId }).select('channel lastSeen').lean();
+  const results = await prisma.serverChannelLastSeen.findMany({
+    where: {userId},
+    select: {
+      channelId: true,
+      lastSeen: true
+    }
+  });
 
-  const lastSeenChannels: Record<string, number> = {};
+  const lastSeenChannels: Record<string, Date> = {};
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
-    lastSeenChannels[result.channel.toString()] = result.lastSeen;
+    lastSeenChannels[result.channelId] = result.lastSeen;
   }
   return lastSeenChannels;
 };
@@ -64,27 +96,29 @@ export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
 
 export const createServerChannel = async (serverId: string, channelName: string, userId: string): Promise<CustomResult<Channel, CustomError>> => {
 
-  const channelCount = await ChannelModel.countDocuments({ server: serverId });
+  const channelCount = await prisma.channel.count({ where: {serverId: serverId}});
   if (channelCount >= 100) {
     return [null, generateError('You already created the maximum amount of channels for this server.')];
   }
 
-  const channel = await ChannelModel.create({
-    name: channelName,
-    server: serverId,
-    type: ChannelType.SERVER_TEXT,
-    permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
-    createdBy: userId,
+  const channel = await prisma.channel.create({
+    data: {
+      id: generateId(),
+      name: channelName,
+      serverId: serverId,
+      type: ChannelType.SERVER_TEXT,
+      permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
+      createdById: userId,
+    }
   });
 
-  const channelObj = channel.toObject({versionKey: false});
 
   getIO().in(serverId).socketsJoin(channel.id);
 
 
-  emitServerChannelCreated(serverId, channelObj);
+  emitServerChannelCreated(serverId, channel);
 
-  return [channelObj, null];
+  return [channel, null];
 };
 
 
@@ -94,17 +128,17 @@ export interface UpdateServerChannelOptions {
 }
 
 export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
-  const server = await ServerModel.findById(serverId);
+  const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
-  const channel = await ChannelModel.findOne({_id: channelId, server: serverId}).select('+permissions');
+  const channel = await prisma.channel.findFirst({where: {id: channelId, serverId: serverId}});
   if (!channel) {
     return [null, generateError('Channel does not exist.')];
   }
 
-  await channel.updateOne(update);
+  await prisma.channel.update({where: {id: channel.id}, data: update});
   await updateServerChannelCache(channelId, {
     ...addToObjectIfExists('name', update.name),
     ...addToObjectIfExists('permissions', update.permissions),
@@ -122,9 +156,9 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
       
       for (let i = 0; i < serverMembers.length; i++) {
         const member = serverMembers[i];
-        const isAdmin = server.createdBy.equals(member.user);
+        const isAdmin = server.createdById === member.userId;
         if (isPrivate && !isAdmin) continue;
-        getIO().in(member.user).socketsJoin(channelId);
+        getIO().in(member.userId).socketsJoin(channelId);
       }
     }
   }
@@ -136,30 +170,32 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
 };
 
 export const deleteServerChannel = async (serverId: string, channelId: string): Promise<CustomResult<string, CustomError>> => {
-  const server = await ServerModel.findById(serverId);
+  const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
   // check if channel is default channel
-  if (server.defaultChannel.toString() === channelId) {
+  if (server.defaultChannelId === channelId) {
     return [null, generateError('You cannot delete the default channel.')];
   }
 
-
-  // Delete all messages
-  await MessageModel.deleteMany({ channel: channelId });
-  await ServerChannelLastSeenModel.deleteMany({ channel: channelId });
-  await MessageMentionModel.deleteMany({ channel: channelId });
-
-
   // Delete the channel
-  const channel = await ChannelModel.findOne({_id: channelId, server: serverId});
+  const channel = await prisma.channel.findFirst({where: {id: channelId, serverId: serverId}});
   if (!channel) {
     return [null, generateError('Channel does not exist.')];
   }
 
-  await channel.delete();
+
+  // Delete all messages
+  await prisma.message.deleteMany({where: {channelId}});
+  await prisma.serverChannelLastSeen.deleteMany({where: {channelId}});
+  await prisma.messageMention.deleteMany({where: {channelId}});
+
+
+
+
+  await prisma.channel.delete({where: {id: channelId}});
 
 
   getIO().in(serverId).socketsLeave(channelId);

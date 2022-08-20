@@ -1,7 +1,7 @@
+import { Inbox } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
 import { INBOX_OPENED, USER_PRESENCE_UPDATE } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
-import { Inbox } from '../models/InboxModel';
 import { emitToAll, getIO } from '../socket/socket';
 
 export const emitUserPresenceUpdate = (userId: string, presence: Presence, socketId?: string) => {

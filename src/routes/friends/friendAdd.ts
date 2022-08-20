@@ -1,8 +1,8 @@
 import { Request, Response, Router } from 'express';
 import {body} from 'express-validator';
+import { prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { UserModel } from '../../models/UserModel';
 import { addFriend } from '../../services/Friend';
 
 export function friendAdd(Router: Router) {
@@ -34,13 +34,13 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const userFriend = await UserModel.exists({username: body.username, tag: body.tag});
+  const userFriend = await prisma.user.findFirst({where: {username: body.username, tag: body.tag}});
 
-  if (!userFriend?._id) {
+  if (!userFriend?.id) {
     return res.status(400).json(generateError('User not found.'));
   }
 
-  const [friend, error] = await addFriend(req.accountCache.user._id, userFriend._id.toString());
+  const [friend, error] = await addFriend(req.accountCache.user.id, userFriend.id);
   if (error) {
     return res.status(400).json(error);
   }

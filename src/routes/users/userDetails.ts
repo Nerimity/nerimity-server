@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { openDMChannel, getUserDetails } from '../../services/User';
+import { getUserDetails } from '../../services/User';
 
 export function userDetails(Router: Router) {
   Router.get('/users/:userId',
@@ -24,7 +24,7 @@ async function route (req: Request, res: Response) {
   if (validateError) {
     return res.status(400).json(validateError);
   }
-  const requesterId = req.accountCache.user._id;
+  const requesterId = req.accountCache.user.id;
   const recipientId = req.params.userId;
 
   const [details, error] = await getUserDetails(requesterId, recipientId);

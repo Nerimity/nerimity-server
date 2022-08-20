@@ -13,7 +13,7 @@ export function serverInviteJoin(Router: Router) {
 
 async function route (req: Request, res: Response) {
   const { inviteCode } = req.params;
-  const [server, error] = await joinServerByInviteCode(req.accountCache.user._id, inviteCode);
+  const [server, error] = await joinServerByInviteCode(req.accountCache.user.id, inviteCode);
   if (error) {
     return res.status(400).json(error);
   }

@@ -1,7 +1,8 @@
 import { Socket } from 'socket.io';
 import { getAccountCacheBySocketId, socketDisconnect } from '../../cache/UserCache';
+import { prisma } from '../../common/database';
 import { emitUserPresenceUpdate } from '../../emits/User';
-import { UserModel, UserStatus } from '../../models/UserModel';
+import { UserStatus } from '../../types/User';
 
 
 
@@ -10,14 +11,14 @@ export async function onDisconnect(socket: Socket) {
   if (!accountCache) return;
   const userCache = accountCache.user;
 
-  const isLastDisconnect = await socketDisconnect(socket.id, accountCache.user._id.toString());
+  const isLastDisconnect = await socketDisconnect(socket.id, accountCache.user.id);
 
-  const user = await UserModel.findOne({ _id: accountCache.user._id }).select('status');
+  const user = await prisma.user.findFirst({ where: {id: accountCache.user.id}, select: {status: true}});
   if (!user) return;
 
 
   if (isLastDisconnect && user.status !== UserStatus.OFFLINE) {
-    emitUserPresenceUpdate(userCache._id, {status: UserStatus.OFFLINE, userId: userCache._id});
+    emitUserPresenceUpdate(userCache.id, {status: UserStatus.OFFLINE, userId: userCache.id});
   }
   
   

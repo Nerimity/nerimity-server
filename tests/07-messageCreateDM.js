@@ -6,7 +6,8 @@ module.exports = function () {
 
       checkEventForBothUsers(MESSAGE_CREATED, MESSAGE_CREATED).then(() => done());
 
-      request.post(`/api/channels/${inbox.channel._id}/messages`)
+
+      request.post(`/api/channels/${inbox.channel.id}/messages`)
       .expect(200)
       .set('Authorization', global.userToken)
       .send({content: 'Hello user 2!'})
@@ -22,7 +23,7 @@ module.exports = function () {
 
       checkEventForBothUsers(MESSAGE_CREATED, MESSAGE_CREATED).then(() => done());
 
-      request.post(`/api/channels/${inbox.channel._id}/messages`)
+      request.post(`/api/channels/${inbox.channel.id}/messages`)
       .expect(200)
       .set('Authorization', global.userToken2)
       .send({content: 'Hello user 1!'})

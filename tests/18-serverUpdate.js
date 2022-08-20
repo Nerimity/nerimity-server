@@ -8,13 +8,13 @@ module.exports = function () {
 
       checkEventForBothUsers(SERVER_UPDATED, SERVER_UPDATED).then(([data]) => {
         expect(data.updated.name).to.equal("Cool Server");
-        expect(data.updated.defaultChannel).to.equal(global.newServerChannelId);
+        expect(data.updated.defaultChannelId).to.equal(global.newServerChannelId);
         done()
       });
 
-      request.post(`/api/servers/${global.server._id}`)
+      request.post(`/api/servers/${global.server.id}`)
       .expect(200)
-      .send({name: "Cool Server", defaultChannel: global.newServerChannelId})
+      .send({name: "Cool Server", defaultChannelId: global.newServerChannelId})
       .set('Authorization', global.userToken)
       .end(function(err, res) {
         if(err) {
@@ -27,7 +27,7 @@ module.exports = function () {
 
     it('Error when member tries to update the server', function(done) {
 
-      request.post(`/api/servers/${global.server._id}`)
+      request.post(`/api/servers/${global.server.id}`)
       .expect(403)
       .send({name: "Not Cool Server"})
       .set('Authorization', global.userToken2)

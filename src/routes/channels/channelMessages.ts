@@ -15,6 +15,6 @@ export function channelMessages(Router: Router) {
 
 
 async function route (req: Request, res: Response) {
-  const messages = await getMessagesByChannelId(req.channelCache._id);
+  const messages = await getMessagesByChannelId(req.channelCache.id);
   res.json(messages);
 }

@@ -1,12 +1,13 @@
+import { exists, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
+import { generateId } from '../common/flakeId';
 import { emitFriendRemoved, emitFriendRequestAccept, emitFriendRequestSent } from '../emits/Friend';
-import { FriendModel, FriendStatus } from '../models/FriendModel';
-import { User, UserModel } from '../models/UserModel';
+import { FriendStatus } from '../types/Friend';
 
 
 export const getFriendIds = async (userId: string) => {
-  const friends = await FriendModel.find({ user: userId, status: FriendStatus.FRIENDS });
-  return friends.map(friend => friend.recipient.toString());
+  const friends = await prisma.friend.findMany({where: {userId: userId, status: FriendStatus.FRIENDS }});
+  return friends.map(friend => friend.recipientId);
 };
 
 export const addFriend = async (userId: string, friendId: string) => {
@@ -17,7 +18,7 @@ export const addFriend = async (userId: string, friendId: string) => {
   }
 
 
-  const alreadyFriends = await FriendModel.exists({user: userId, recipient: friendId});
+  const alreadyFriends = await exists(prisma.friend, {where: {userId: userId, recipientId: friendId}});
   if (alreadyFriends) {
     return [null, generateError('Already in friends list.')];
   }
@@ -26,27 +27,31 @@ export const addFriend = async (userId: string, friendId: string) => {
   
   
   const requesterObj = {
-    user: userId,
-    recipient: friendId,
+    id: generateId(),
+    userId: userId,
+    recipientId: friendId,
     status: FriendStatus.SENT
   };
   const recipientObj = {
-    user: friendId,
-    recipient: userId,
+    id: generateId(),
+    userId: friendId,
+    recipientId: userId,
     status: FriendStatus.PENDING
   };
   
   
-  const docs = await FriendModel.insertMany([requesterObj, recipientObj]);
+  const docs = await prisma.$transaction([
+    prisma.friend.create({data: requesterObj, include: {recipient: true}}),
+    prisma.friend.create({data: recipientObj, include: {recipient: true}})
+  ]);
   
-  const requester = await docs[0].populate<{recipient: User}>('recipient');
-  const recipient = await docs[1].populate<{recipient: User}>('recipient');
-  
-  await UserModel.updateOne({_id: userId}, {$addToSet: {friends: requester.id}});
-  await UserModel.updateOne({_id: friendId}, {$addToSet: {friends: recipient.id}});
 
-  const recipientResponse = {...recipientObj, recipient: recipient.recipient};
-  const requesterResponse = {...requesterObj, recipient: requester.recipient};
+  const requester = docs[0];
+  const recipient = docs[1];
+  
+
+  const requesterResponse = {...requester, recipient: requester.recipient};
+  const recipientResponse = {...recipient, recipient: recipient.recipient};
 
 
   emitFriendRequestSent(requesterResponse, recipientResponse);
@@ -56,7 +61,7 @@ export const addFriend = async (userId: string, friendId: string) => {
 
 
 export const acceptFriend = async (userId: string, friendId: string) => {
-  const friendRequest = await FriendModel.findOne({user: userId, recipient: friendId});
+  const friendRequest = await prisma.friend.findFirst({where: {userId: userId, recipientId: friendId}});
 
   if (!friendRequest) {
     return [null, generateError('Friend request does not exist.')];
@@ -69,8 +74,13 @@ export const acceptFriend = async (userId: string, friendId: string) => {
     return [null, generateError('Cannot accept friend request because it is sent by you.')];
   }
 
-  await FriendModel.updateOne({user: userId, recipient: friendId}, {$set: {status: FriendStatus.FRIENDS}});
-  await FriendModel.updateOne({user: friendId, recipient: userId}, {$set: {status: FriendStatus.FRIENDS}});
+
+
+  await prisma.$transaction([
+    prisma.friend.update({where: {userId_recipientId: {userId: userId, recipientId: friendId}}, data: {status: FriendStatus.FRIENDS}}),
+    prisma.friend.update({where: {userId_recipientId: {userId: friendId, recipientId: userId}}, data: {status: FriendStatus.FRIENDS}}),
+  ]);
+
 
 
   emitFriendRequestAccept(userId, friendId);
@@ -79,20 +89,17 @@ export const acceptFriend = async (userId: string, friendId: string) => {
 };
 
 export const removeFriend = async (userId: string, friendId: string) => {
-  const friendRequest = await FriendModel.findOne({user: userId, recipient: friendId});
+  const friendRequest = await prisma.friend.findFirst({where: {userId: userId, recipientId: friendId}});
   
   if (!friendRequest) {
     return [null, generateError('Friend request does not exist.')];
   }
   
 
-
-  await FriendModel.deleteOne({user: userId, recipient: friendId});
-  await FriendModel.deleteOne({user: friendId, recipient: userId});
-
-
-  await UserModel.updateOne({_id: userId}, {$pull: {friends: friendId}});
-  await UserModel.updateOne({_id: friendId}, {$pull: {friends: userId}});
+  await prisma.$transaction([
+    prisma.friend.delete({where: {userId_recipientId: {userId: userId, recipientId: friendId}}}),
+    prisma.friend.delete({where: {userId_recipientId: {userId: friendId, recipientId: userId}}}),
+  ]);
 
   emitFriendRemoved(userId, friendId);
   return [{message: 'Removed!'}, null];

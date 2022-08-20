@@ -16,7 +16,7 @@ export function serverMemberVerification (opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const { serverId } = req.params;
 
-    const [memberCache, error] = await getServerMemberCache(serverId, req.accountCache.user._id);
+    const [memberCache, error] = await getServerMemberCache(serverId, req.accountCache.user.id);
     if (error !== null) {
       return res.status(403).json(generateError(error));
     }

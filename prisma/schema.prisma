@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              String  @id
+  email           String  @unique
+  password        String
+  passwordVersion Int     @default(1)
+  ipAddress       String?
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id                     String                  @id
+  username               String
+  tag                    String
+  avatar                 String?
+  status                 Int
+  hexColor               String?
+  bot                    Boolean?
+  joinedAt               DateTime                @default(now())
+  account                Account?
+  channelsCreatedByMe    Channel[]
+  recipientFriends       Friend[]                @relation("recipient_friends")
+  friends                Friend[]                @relation("friends")
+  inbox                  Inbox[]                 @relation("inbox")
+  recipientInbox         Inbox[]                 @relation("recipient_inbox")
+  messages               Message[]
+  sendMessageMentions    MessageMention[]        @relation("sent_message_mentions")
+  messageMentions        MessageMention[]        @relation("message_mentions")
+  serversCreatedByMe     Server[]                @relation("server_creator")
+  lastSeenServerChannels ServerChannelLastSeen[]
+  createdServerInvites   ServerInvite[]
+  memberInServers        ServerMember[]
+  servers                Server[]
+}
+
+model Server {
+  id                     String                  @id
+  name                   String
+  hexColor               String
+  defaultChannelId       String
+  createdById            String
+  createdAt              DateTime                @default(now())
+  createdBy              User                    @relation("server_creator", fields: [createdById], references: [id])
+  channels               Channel[]
+  messageMentions        MessageMention[]
+  lastSeenChannelMembers ServerChannelLastSeen[]
+  invites                ServerInvite[]
+  serverMembers          ServerMember[]
+  users                  User[]
+}
+
+model ServerInvite {
+  id          String   @id
+  code        String
+  isCustom    Boolean
+  uses        Int      @default(0)
+  serverId    String
+  createdById String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  server      Server   @relation(fields: [serverId], references: [id])
+}
+
+model ServerMember {
+  id       String   @id
+  serverId String
+  userId   String
+  joinedAt DateTime @default(now())
+  server   Server   @relation(fields: [serverId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+model Friend {
+  id          String   @id
+  status      Int
+  userId      String 
+  recipientId String
+  createdAt   DateTime @default(now())
+  recipient   User     @relation("recipient_friends", fields: [recipientId], references: [id])
+  user        User     @relation("friends", fields: [userId], references: [id])
+
+  @@unique([userId, recipientId])
+}
+
+model Channel {
+  id                     String                  @id
+  name                   String?
+  serverId               String?
+  createdById            String?
+  type                   Int
+  permissions            Int?
+  lastMessagedAt         DateTime?
+  createdAt              DateTime                @default(now())
+  createdBy              User?                   @relation(fields: [createdById], references: [id])
+  server                 Server?                 @relation(fields: [serverId], references: [id])
+  inbox                  Inbox[]
+  messages               Message[]
+  messageMentions        MessageMention[]
+  lastSeenChannelServers ServerChannelLastSeen[]
+}
+
+model Inbox {
+  id          String   @id
+  createdById String
+  recipientId String
+  channelId   String
+  closed      Boolean
+  createdAt   DateTime @default(now())
+  channel     Channel  @relation(fields: [channelId], references: [id])
+  createdBy   User     @relation("inbox", fields: [createdById], references: [id])
+  recipient   User     @relation("recipient_inbox", fields: [recipientId], references: [id])
+}
+
+model Message {
+  id          String   @id
+  content     String
+  type        Int
+  channelId   String
+  createdById String
+  editedAt    DateTime?
+  createdAt   DateTime @default(now())
+  channel     Channel  @relation(fields: [channelId], references: [id])
+  createdBy   User     @relation(fields: [createdById], references: [id])
+}
+
+model MessageMention {
+  id            String   @id
+  mentionedById String
+  mentionedToId String
+  channelId     String
+  serverId      String?
+  count         Int      @default(0)
+  createdAt     DateTime @default(now())
+  channel       Channel  @relation(fields: [channelId], references: [id])
+  mentionedBy   User     @relation("sent_message_mentions", fields: [mentionedById], references: [id])
+  mentionedTo   User     @relation("message_mentions", fields: [mentionedToId], references: [id])
+  server        Server?  @relation(fields: [serverId], references: [id])
+
+
+  @@unique([mentionedById, mentionedToId, channelId])
+  @@unique([mentionedToId, channelId])
+
+}
+
+model ServerChannelLastSeen {
+  id        String   @id
+  userId    String
+  serverId  String
+  channelId String
+  lastSeen  DateTime
+  channel   Channel  @relation(fields: [channelId], references: [id])
+  server    Server   @relation(fields: [serverId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([channelId, userId, serverId])
+}

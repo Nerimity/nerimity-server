@@ -25,7 +25,7 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const [ inbox, errors ] = await openDMChannel(req.accountCache.user._id, req.params.userId);
+  const [ inbox, errors ] = await openDMChannel(req.accountCache.user.id, req.params.userId);
   if (errors) {
     return res.status(400).json(errors);
   }

@@ -11,6 +11,6 @@ export async function onNotificationDismiss(socket: Socket, payload: Payload) {
   if (!accountCache) return;
   const userCache = accountCache.user;
 
-  dismissChannelNotification(userCache._id, payload.channelId);
+  dismissChannelNotification(userCache.id, payload.channelId);
 
 }

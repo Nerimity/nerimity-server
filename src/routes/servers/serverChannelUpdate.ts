@@ -27,7 +27,7 @@ interface Body {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdBy === req.accountCache.user._id;
+  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
 
   if (!isServerCreator) {
     res.status(403).json(generateError('You are not allowed to perform this action'));
@@ -43,7 +43,7 @@ async function route (req: Request, res: Response) {
 
 
 
-  const [updated, error] = await updateServerChannel(req.serverCache._id, req.params.channelId, matchedBody);
+  const [updated, error] = await updateServerChannel(req.serverCache.id, req.params.channelId, matchedBody);
   if (error) {
     return res.status(400).json(error);
   }

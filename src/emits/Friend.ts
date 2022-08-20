@@ -1,16 +1,14 @@
+import { Friend } from '@prisma/client';
 import { FRIEND_REQUEST_SENT, FRIEND_REQUEST_PENDING, FRIEND_REQUEST_ACCEPTED, FRIEND_REMOVED } from '../common/ClientEventNames';
-import { Friend, FriendStatus } from '../models/FriendModel';
-import { User } from '../models/UserModel';
 import { getIO } from '../socket/socket';
 
 
-type FriendWithUser = Partial<Omit<Omit<Friend, 'recipient'>, 'user'>> & { recipient: User, user: string };
 
-export const emitFriendRequestSent = (requester: FriendWithUser, recipient: FriendWithUser) => {
+export const emitFriendRequestSent = (requester: Friend, recipient: Friend) => {
   const io = getIO();
 
-  io.in(requester.user.toString()).emit(FRIEND_REQUEST_SENT, requester);
-  io.in(requester.recipient._id.toString()).emit(FRIEND_REQUEST_PENDING, recipient);
+  io.in(requester.userId).emit(FRIEND_REQUEST_SENT, requester);
+  io.in(requester.recipientId).emit(FRIEND_REQUEST_PENDING, recipient);
 
 };
 
