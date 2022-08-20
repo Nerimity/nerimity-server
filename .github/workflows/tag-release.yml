@@ -11,13 +11,7 @@ on:
       - "v*"
 
 
-env:
-  DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
 
-  REDIS_HOST: redis
-  REDIS_PORT: 6379
-  JWT_SECRET: "change me"
-  PORT: 80
 
 jobs:
   build:
@@ -53,6 +47,13 @@ jobs:
         run: npm ci
       - name: Prisma Migrate
         run: npm run prisma:migrate_dev
+        env:
+          DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
+
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
+          JWT_SECRET: "change me"
+          PORT: 80
       - name: Testing
         run: npm test
       - name: Copy package.json & package-lock.json
