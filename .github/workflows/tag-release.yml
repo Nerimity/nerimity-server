@@ -43,10 +43,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Dependencies
         run: npm ci
+      - name: Prisma Migrate
+        run: npm run prisma:migrate_dev
       - name: Testing
         run: npm test
         env:
-          DATABASE_URL: "postgresql://postgres:123@localhost:5432/postgres"
+          DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
 
           REDIS_HOST: redis
           REDIS_PORT: 6379

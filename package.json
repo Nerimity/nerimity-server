@@ -8,6 +8,8 @@
     "dev": "nodemon --exec npx ts-node --files ./src/index.ts",
     "dev-no-type-check": "nodemon --exec npx ts-node --transpileOnly --files ./src/index.ts",
     "build": "tsc",
+    "prisma:create": "prisma migrate dev --name",
+    "prisma:migrate_dev": "prisma migrate dev",
     "test": "npm run build && mocha tests/test.js --reporter spec --exit"
   },
   "keywords": [],
