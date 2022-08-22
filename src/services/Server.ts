@@ -5,7 +5,8 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS } from '../common/Permissions';
 import { generateHexColor } from '../common/random';
-import { emitServerJoined, emitServerUpdated } from '../emits/Server';
+import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Server';
+import { getIO } from '../socket/socket';
 import { ChannelType } from '../types/Channel';
 
 interface CreateServerOptions {
@@ -109,12 +110,12 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     return [null, generateError('You are already in this server.')];
   }
 
-  await prisma.user.update({where: {id: userId}, data: {servers: {connect: {id: serverId}}} });
-
-  const serverMember = await prisma.serverMember.create({data: {id: generateId(),serverId, userId}, include: {user: true}});
 
 
-  const [ serverChannels, serverMembers ] = await prisma.$transaction([
+
+  const [ _, serverMember, serverChannels, serverMembers ] = await prisma.$transaction([
+    prisma.user.update({where: {id: userId}, data: {servers: {connect: {id: serverId}}} }),
+    prisma.serverMember.create({data: {id: generateId(),serverId, userId}, include: {user: true}}),
     prisma.channel.findMany({where: {serverId: server.id}}),
     prisma.serverMember.findMany({where: {serverId: server.id}, include: {user: true}}),
   ]);
@@ -127,6 +128,39 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   });
 
   return [server, null];
+};
+
+
+export const leaveServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>>  => {
+  
+  const server = await prisma.server.findFirst({where: {id: serverId}});
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+
+  if (server.createdById === userId) {
+    return [null, generateError('You cannot leave a server you created.')];
+  }
+
+  // check if user is in the server
+  const isInServer = await exists(prisma.serverMember, {where: {serverId, userId}});
+  if (!isInServer) {
+    return [null, generateError('You are not in this server.')];
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({where: {id: userId}, data: {servers: {disconnect: {id: serverId}}} }),
+    prisma.serverMember.delete({where: {userId_serverId: {serverId: serverId, userId: userId}}}),
+    prisma.messageMention.deleteMany({where: { serverId: serverId, mentionedToId: userId}}),
+    prisma.serverChannelLastSeen.deleteMany({where: { serverId: serverId, userId: userId}}),
+  ]);
+
+
+  emitServerLeft(userId, serverId);
+
+  return [server, null];
+
+
 };
 
 

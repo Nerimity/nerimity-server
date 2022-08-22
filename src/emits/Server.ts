@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_MEMBER_JOINED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
@@ -45,6 +45,23 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
     channels: opts.channels,
   });
 };
+
+
+export const emitServerLeft = (userId: string, serverId: string) => {
+  const io = getIO();
+  io.in(userId).socketsLeave(serverId);
+  io.in(serverId).emit(SERVER_MEMBER_LEFT, {
+    serverId: serverId,
+    userId: userId,
+  });
+
+  io.in(userId).emit(SERVER_LEFT, {
+    serverId: serverId,
+  });
+
+};
+
+
 
 export const emitServerMessageCreated = (message: Message & {createdBy: Partial<UserCache | User>}, excludeSocketId?: string) => {
   const io = getIO();

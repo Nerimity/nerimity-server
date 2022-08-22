@@ -77,6 +77,10 @@ model ServerMember {
   joinedAt DateTime @default(now())
   server   Server   @relation(fields: [serverId], references: [id])
   user     User     @relation(fields: [userId], references: [id])
+
+
+  @@unique([userId, serverId])
+
 }
 
 model Friend {
