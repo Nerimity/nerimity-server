@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { leaveServer } from '../../services/Server';
+import { deleteOrLeaveServer } from '../../services/Server';
 
-export function serverLeave(Router: Router) {
+export function serverDeleteOrLeave(Router: Router) {
   Router.delete('/servers/:serverId', 
     authenticate(),
     serverMemberVerification(),
@@ -15,7 +15,7 @@ export function serverLeave(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const [server, error]  = await leaveServer(req.accountCache.user.id, req.serverCache.id);
+  const [server, error]  = await deleteOrLeaveServer(req.accountCache.user.id, req.serverCache.id);
   if (error) {
     return res.status(500).json(error);
   }

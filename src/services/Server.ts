@@ -131,16 +131,15 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
 };
 
 
-export const leaveServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>>  => {
+export const deleteOrLeaveServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>>  => {
   
   const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
-  if (server.createdById === userId) {
-    return [null, generateError('You cannot leave a server you created.')];
-  }
+  const isServerCreator = server.createdById === userId;
+  
 
   // check if user is in the server
   const isInServer = await exists(prisma.serverMember, {where: {serverId, userId}});
@@ -148,15 +147,26 @@ export const leaveServer = async (userId: string, serverId: string): Promise<Cus
     return [null, generateError('You are not in this server.')];
   }
 
-  await prisma.$transaction([
-    prisma.user.update({where: {id: userId}, data: {servers: {disconnect: {id: serverId}}} }),
-    prisma.serverMember.delete({where: {userId_serverId: {serverId: serverId, userId: userId}}}),
-    prisma.messageMention.deleteMany({where: { serverId: serverId, mentionedToId: userId}}),
-    prisma.serverChannelLastSeen.deleteMany({where: { serverId: serverId, userId: userId}}),
-  ]);
+
+  const channels = await prisma.channel.findMany({where: {serverId}, select: {id: true}});
+  const channelIds = channels.map(channel => channel.id);
 
 
-  emitServerLeft(userId, serverId);
+  if (isServerCreator) {
+    // This one line also deletes related stuff from the database.
+    await prisma.server.delete({where: {id: serverId}});
+  } else {
+    await prisma.$transaction([
+      prisma.user.update({where: {id: userId}, data: {servers: {disconnect: {id: serverId}}} }),
+      prisma.serverMember.delete({where: {userId_serverId: {serverId: serverId, userId: userId}}}),
+      prisma.messageMention.deleteMany({where: { serverId: serverId, mentionedToId: userId}}),
+      prisma.serverChannelLastSeen.deleteMany({where: { serverId: serverId, userId: userId}}),
+    ]);
+  }
+
+
+
+  emitServerLeft(userId, serverId, isServerCreator);
 
   return [server, null];
 

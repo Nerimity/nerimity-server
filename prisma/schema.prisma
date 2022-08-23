@@ -67,7 +67,7 @@ model ServerInvite {
   createdById String
   createdAt   DateTime @default(now())
   createdBy   User     @relation(fields: [createdById], references: [id])
-  server      Server   @relation(fields: [serverId], references: [id])
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
 }
 
 model ServerMember {
@@ -75,7 +75,7 @@ model ServerMember {
   serverId String
   userId   String
   joinedAt DateTime @default(now())
-  server   Server   @relation(fields: [serverId], references: [id])
+  server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
 
 
@@ -105,7 +105,7 @@ model Channel {
   lastMessagedAt         DateTime?
   createdAt              DateTime                @default(now())
   createdBy              User?                   @relation(fields: [createdById], references: [id])
-  server                 Server?                 @relation(fields: [serverId], references: [id])
+  server                 Server?                 @relation(fields: [serverId], references: [id], onDelete: Cascade)
   inbox                  Inbox[]
   messages               Message[]
   messageMentions        MessageMention[]
@@ -132,7 +132,7 @@ model Message {
   createdById String
   editedAt    DateTime?
   createdAt   DateTime @default(now())
-  channel     Channel  @relation(fields: [channelId], references: [id])
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   createdBy   User     @relation(fields: [createdById], references: [id])
 }
 
@@ -144,10 +144,10 @@ model MessageMention {
   serverId      String?
   count         Int      @default(0)
   createdAt     DateTime @default(now())
-  channel       Channel  @relation(fields: [channelId], references: [id])
+  channel       Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   mentionedBy   User     @relation("sent_message_mentions", fields: [mentionedById], references: [id])
   mentionedTo   User     @relation("message_mentions", fields: [mentionedToId], references: [id])
-  server        Server?  @relation(fields: [serverId], references: [id])
+  server        Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
 
   @@unique([mentionedById, mentionedToId, channelId])
@@ -161,8 +161,8 @@ model ServerChannelLastSeen {
   serverId  String
   channelId String
   lastSeen  DateTime
-  channel   Channel  @relation(fields: [channelId], references: [id])
-  server    Server   @relation(fields: [serverId], references: [id])
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([channelId, userId, serverId])

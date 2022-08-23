@@ -187,13 +187,6 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
   }
 
 
-  // Delete all messages
-  await prisma.message.deleteMany({where: {channelId}});
-  await prisma.serverChannelLastSeen.deleteMany({where: {channelId}});
-  await prisma.messageMention.deleteMany({where: {channelId}});
-
-
-
 
   await prisma.channel.delete({where: {id: channelId}});
 

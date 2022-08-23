@@ -47,8 +47,18 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
 };
 
 
-export const emitServerLeft = (userId: string, serverId: string) => {
+export const emitServerLeft = (userId: string, serverId: string, serverDeleted: boolean) => {
   const io = getIO();
+
+  if (serverDeleted) {
+    io.in(serverId).emit(SERVER_LEFT, {
+      serverId: serverId,
+    });
+    io.in(serverId).socketsLeave(serverId);
+    return;
+  }
+
+
   io.in(userId).socketsLeave(serverId);
   io.in(serverId).emit(SERVER_MEMBER_LEFT, {
     serverId: serverId,
