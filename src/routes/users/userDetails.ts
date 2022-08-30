@@ -8,7 +8,6 @@ export function userDetails(Router: Router) {
   Router.get('/users/:userId',
     authenticate(),
     param('userId')
-      .not().isEmpty().withMessage('userId is required.')
       .isString().withMessage('Invalid userId.')
       .isLength({ min: 1, max: 320 }).withMessage('userId must be between 1 and 320 characters long.'),
     route
@@ -25,7 +24,7 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
   const requesterId = req.accountCache.user.id;
-  const recipientId = req.params.userId;
+  const recipientId = req.params.userId || requesterId;
 
   const [details, error] = await getUserDetails(requesterId, recipientId);
   if (error) {
