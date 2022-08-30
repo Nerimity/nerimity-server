@@ -5,11 +5,12 @@ import { authenticate } from '../../middleware/authenticate';
 import { getUserDetails } from '../../services/User';
 
 export function userDetails(Router: Router) {
-  Router.get('/users/:userId',
+  Router.get('/users/:userId?',
     authenticate(),
     param('userId')
       .isString().withMessage('Invalid userId.')
-      .isLength({ min: 1, max: 320 }).withMessage('userId must be between 1 and 320 characters long.'),
+      .isLength({ min: 1, max: 320 }).withMessage('userId must be between 1 and 320 characters long.')
+      .optional(),
     route
   );
 }
