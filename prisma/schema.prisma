@@ -40,6 +40,9 @@ model User {
   createdServerInvites   ServerInvite[]
   memberInServers        ServerMember[]
   servers                Server[]
+
+
+  createdServerRoles ServerRole[]
 }
 
 model Server {
@@ -56,6 +59,22 @@ model Server {
   invites                ServerInvite[]
   serverMembers          ServerMember[]
   users                  User[]
+  roles                  ServerRole[]
+}
+
+model ServerRole {
+  id                     String                  @id
+  name                   String
+  hexColor               String
+
+  createdById            String
+  createdBy              User                    @relation(fields: [createdById], references: [id])
+
+  serverId               String
+  server                 Server                  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  order                  Int
+
+  createdAt              DateTime                @default(now())
 }
 
 model ServerInvite {
@@ -77,6 +96,8 @@ model ServerMember {
   joinedAt DateTime @default(now())
   server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
+
+  roleIds  String[]
 
 
   @@unique([userId, serverId])
