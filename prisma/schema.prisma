@@ -74,6 +74,9 @@ model ServerRole {
   server                 Server                  @relation(fields: [serverId], references: [id], onDelete: Cascade)
   order                  Int
 
+  defaultRole Boolean?
+  botRole     Boolean?
+
   createdAt              DateTime                @default(now())
 }
 
