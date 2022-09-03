@@ -1,6 +1,7 @@
 import { Server, ServerInvite } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
+import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { generateServerInviteCode } from '../common/random';
@@ -12,7 +13,7 @@ export const createServerInvite = async (serverId: string, creatorId: string): P
   const count = await prisma.serverInvite.count({where: {serverId, createdById: creatorId}});
 
   // if user already created max amount of invites, return error
-  if (count >= 10) {
+  if (count >= env.MAX_INVITES_PER_SERVER) {
     return [null, generateError('You already created the maximum amount of invites!')];
   }
 

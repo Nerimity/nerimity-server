@@ -1,12 +1,12 @@
 import { Server } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma } from '../common/database';
+import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS } from '../common/Permissions';
 import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Server';
-import { getIO } from '../socket/socket';
 import { ChannelType } from '../types/Channel';
 
 interface CreateServerOptions {
@@ -29,16 +29,30 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   const serverId = generateId();
   const channelId = generateId();
   const serverMemberId = generateId();
+  const defaultRoleId = generateId();
 
 
-  const [server, channel, user, serverMember] = await prisma.$transaction([
+  const [server, defaultRole, channel, user, serverMember] = await prisma.$transaction([
     prisma.server.create({
       data: {
         id: serverId,
         name: opts.name.trim(),
         createdById: opts.creatorId,
         defaultChannelId: channelId,
+        defaultRoleId: defaultRoleId,
         hexColor: generateHexColor(),
+      }
+    }),
+    prisma.serverRole.create({
+      data: {
+        id: generateId(),
+        name: 'All',
+        serverId,
+        
+        order: 1,
+        hexColor: env.DEFAULT_SERVER_ROLE_COLOR,
+  
+        createdById: opts.creatorId,
       }
     }),
     prisma.channel.create({
@@ -60,6 +74,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
     server: server,
     channels: [channel],
     members: [serverMember],
+    roles: [defaultRole],
     joinedMember: serverMember,
   });
   return [server, null];
@@ -113,8 +128,9 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
 
 
 
-  const [ _, serverMember, serverChannels, serverMembers ] = await prisma.$transaction([
+  const [ _, serverRoles, serverMember, serverChannels, serverMembers ] = await prisma.$transaction([
     prisma.user.update({where: {id: userId}, data: {servers: {connect: {id: serverId}}} }),
+    prisma.serverRole.findMany({where: {serverId}}),
     prisma.serverMember.create({data: {id: generateId(),serverId, userId}, include: {user: true}}),
     prisma.channel.findMany({where: {serverId: server.id}}),
     prisma.serverMember.findMany({where: {serverId: server.id}, include: {user: true}}),
@@ -124,6 +140,7 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     server: server,
     channels: serverChannels,
     members: serverMembers,
+    roles: serverRoles,
     joinedMember: serverMember,
   });
 
@@ -147,9 +164,6 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string): Pro
     return [null, generateError('You are not in this server.')];
   }
 
-
-  const channels = await prisma.channel.findMany({where: {serverId}, select: {id: true}});
-  const channelIds = channels.map(channel => channel.id);
 
 
   if (isServerCreator) {

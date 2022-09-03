@@ -3,13 +3,14 @@ import { getIO } from '../socket/socket';
 import { UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
-import { Channel, Message, Server, ServerMember, User } from '@prisma/client';
+import { Channel, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
 
 interface ServerJoinOpts {
   server: Server;
   members: Partial<ServerMember>[];
   channels: Channel[];
   joinedMember: ServerMember & {user: User};
+  roles: ServerRole[]
 }
 
 export const emitServerJoined = (opts: ServerJoinOpts) => {

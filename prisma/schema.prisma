@@ -49,8 +49,13 @@ model Server {
   id                     String                  @id
   name                   String
   hexColor               String
-  defaultChannelId       String
+  defaultChannelId       String @unique
+  defaultRoleId          String @unique
   createdById            String
+
+  defaultChannel         Channel       @relation(fields: [defaultChannelId], references: [id], name: "server_of_default_channel")
+  defaultRole            ServerRole    @relation(fields: [defaultRoleId], references: [id], name: "server_of_default_role")
+
   createdAt              DateTime                @default(now())
   createdBy              User                    @relation("server_creator", fields: [createdById], references: [id])
   channels               Channel[]
@@ -74,10 +79,12 @@ model ServerRole {
   server                 Server                  @relation(fields: [serverId], references: [id], onDelete: Cascade)
   order                  Int
 
-  defaultRole Boolean?
   botRole     Boolean?
 
   createdAt              DateTime                @default(now())
+
+  // useless
+  serverOfDefaultRole    Server? @relation(name: "server_of_default_role")
 }
 
 model ServerInvite {
@@ -134,6 +141,11 @@ model Channel {
   messages               Message[]
   messageMentions        MessageMention[]
   lastSeenChannelServers ServerChannelLastSeen[]
+
+
+  // useless
+  serverOfDefaultChannel Server?  @relation(name: "server_of_default_channel")
+
 }
 
 model Inbox {

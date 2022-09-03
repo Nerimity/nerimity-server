@@ -11,6 +11,7 @@ import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUp
 import { emitNotificationDismissed } from '../emits/User';
 import {  ChannelType } from '../types/Channel';
 import { getIO } from '../socket/socket';
+import env from '../common/env';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -97,7 +98,7 @@ export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
 export const createServerChannel = async (serverId: string, channelName: string, userId: string): Promise<CustomResult<Channel, CustomError>> => {
 
   const channelCount = await prisma.channel.count({ where: {serverId: serverId}});
-  if (channelCount >= 100) {
+  if (channelCount >= env.MAX_CHANNELS_PER_SERVER) {
     return [null, generateError('You already created the maximum amount of channels for this server.')];
   }
 
