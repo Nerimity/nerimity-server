@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_ROLE_CREATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
@@ -44,6 +44,7 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
     server: opts.server,
     members: opts.members,
     channels: opts.channels,
+    roles: opts.roles
   });
 };
 
@@ -98,4 +99,9 @@ export const emitServerUpdated = (serverId: string, updated: UpdateServerOptions
   const io = getIO();
 
   io.in(serverId).emit(SERVER_UPDATED, {serverId, updated});
+};
+
+export const emitServerRoleCreated = (serverId: string, role: ServerRole) => {
+  const io = getIO();
+  io.in(serverId).emit(SERVER_ROLE_CREATED, role);
 };

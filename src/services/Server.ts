@@ -87,9 +87,10 @@ export const getServers = async (userId: string) => {
 
   const serverIds = user?.servers.map(server => server.id);
 
-  const [serverChannels, serverMembers] = await prisma.$transaction([
+  const [serverChannels, serverMembers, serverRoles] = await prisma.$transaction([
     prisma.channel.findMany({where: {serverId: {in: serverIds}}}),
     prisma.serverMember.findMany({where: {serverId: {in: serverIds}}, include: {user: true}}),
+    prisma.serverRole.findMany({where: {serverId: {in: serverIds}}}),
   ]);
 
 
@@ -98,6 +99,7 @@ export const getServers = async (userId: string) => {
     servers: user?.servers || [],
     serverChannels,
     serverMembers,
+    serverRoles
   };
 };
 

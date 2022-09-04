@@ -2,6 +2,7 @@ import { prisma } from '../common/database';
 import env from '../common/env';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
+import { emitServerRoleCreated } from '../emits/Server';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string) => {
 
@@ -10,7 +11,7 @@ export const createServerRole = async (name: string, creatorId: string, serverId
     return [null, generateError('You already created the maximum amount of roles for this server.')];
   }
 
-  const createdRole = prisma.serverRole.create({
+  const createdRole = await prisma.serverRole.create({
     data: {
       id: generateId(),
       name,
@@ -21,5 +22,9 @@ export const createServerRole = async (name: string, creatorId: string, serverId
       createdById: creatorId,
     }
   });
+
+  emitServerRoleCreated(serverId, createdRole);
+
+  return [createdRole, null];
 
 };
