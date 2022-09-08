@@ -3,14 +3,17 @@ import { body, matchedData } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { updateServerChannel } from '../../services/Channel';
+import { updateServerRole } from '../../services/ServerRole';
 
-export function serverChannelUpdate(Router: Router) {
-  Router.post('/servers/:serverId/channels/:channelId', 
+export function serverRoleUpdate(Router: Router) {
+  Router.post('/servers/:serverId/roles/:roleId', 
     authenticate(),
     serverMemberVerification(),
     body('name')
       .isString().withMessage('Name must be a string.')
+      .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
+    body('hexColor')
+      .isString().withMessage('hexColor must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
     body('permissions')
       .isNumeric().withMessage('Permissions must be a number.')
@@ -44,7 +47,7 @@ async function route (req: Request, res: Response) {
 
 
 
-  const [updated, error] = await updateServerChannel(req.serverCache.id, req.params.channelId, matchedBody);
+  const [updated, error] = await updateServerRole(req.serverCache.id, req.params.roleId, matchedBody);
   if (error) {
     return res.status(400).json(error);
   }

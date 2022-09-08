@@ -24,4 +24,5 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
+  "rpc.enabled": true,
 }

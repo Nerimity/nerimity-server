@@ -1,9 +1,10 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_ROLE_CREATED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_ROLE_CREATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
 import { Channel, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
+import { UpdateServerRoleOptions } from '../services/ServerRole';
 
 interface ServerJoinOpts {
   server: Server;
@@ -104,4 +105,10 @@ export const emitServerUpdated = (serverId: string, updated: UpdateServerOptions
 export const emitServerRoleCreated = (serverId: string, role: ServerRole) => {
   const io = getIO();
   io.in(serverId).emit(SERVER_ROLE_CREATED, role);
+};
+
+export const emitServerRoleUpdated = (serverId: string, roleId: string, updated: UpdateServerRoleOptions) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_ROLE_UPDATED, {serverId, roleId, updated});
 };

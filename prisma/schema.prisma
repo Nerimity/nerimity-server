@@ -72,6 +72,9 @@ model ServerRole {
   createdById            String
   createdBy              User                    @relation(fields: [createdById], references: [id])
 
+
+  permissions            Int
+
   serverId               String
   server                 Server                  @relation(fields: [serverId], references: [id], onDelete: Cascade)
   order                  Int

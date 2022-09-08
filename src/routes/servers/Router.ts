@@ -10,6 +10,7 @@ import { serverInvites } from './ServerInvites';
 import { serverDeleteOrLeave } from './serverDeleteOrLeave';
 import { serverSettingsUpdate } from './serverSettingsUpdate';
 import { serverRoleCreate } from './serverRoleCreate';
+import { serverRoleUpdate } from './serverRoleUpdate';
 
 
 const ServersRouter = Router();
@@ -25,5 +26,6 @@ serverChannelCreate(ServersRouter);
 serverChannelUpdate(ServersRouter);
 serverChannelDelete(ServersRouter);
 serverRoleCreate(ServersRouter);
+serverRoleUpdate(ServersRouter);
 
 export {ServersRouter};

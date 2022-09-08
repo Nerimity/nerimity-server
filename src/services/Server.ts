@@ -4,7 +4,7 @@ import { exists, prisma } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { CHANNEL_PERMISSIONS } from '../common/Permissions';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Permissions';
 import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
@@ -48,6 +48,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         id: generateId(),
         name: 'All',
         serverId,
+        permissions: ROLE_PERMISSIONS.SEND_MESSAGE.bit,
         
         order: 1,
         hexColor: env.DEFAULT_SERVER_ROLE_COLOR,
