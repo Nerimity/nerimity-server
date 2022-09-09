@@ -1,3 +1,4 @@
+import { deleteAllServerMemberCache } from '../cache/ServerMemberCache';
 import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
 import env from '../common/env';
@@ -51,6 +52,8 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
   }
 
   await prisma.serverRole.update({where: {id: role.id}, data: update});
+
+  await deleteAllServerMemberCache(serverId);
 
   emitServerRoleUpdated(serverId, roleId, update);
 

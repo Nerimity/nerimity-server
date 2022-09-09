@@ -28,6 +28,12 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
 };
 
 
+export const deleteAllServerMemberCache = (serverId: string) => {
+  const key = SERVER_MEMBERS_KEY_HASH(serverId);
+  return redisClient.del(key);
+
+};
+
 export const getServerMembersCache = async (serverId: string): Promise<ServerMemberCache[]> => {
   const key = SERVER_MEMBERS_KEY_HASH(serverId);
 
