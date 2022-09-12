@@ -11,21 +11,27 @@ import { serverDeleteOrLeave } from './serverDeleteOrLeave';
 import { serverSettingsUpdate } from './serverSettingsUpdate';
 import { serverRoleCreate } from './serverRoleCreate';
 import { serverRoleUpdate } from './serverRoleUpdate';
+import { serverMemberUpdate } from './serveMemberUpdate';
 
 
 const ServersRouter = Router();
 
 serverCreate(ServersRouter);
 serverDeleteOrLeave(ServersRouter);
+serverSettingsUpdate(ServersRouter);
+
 serverInviteJoin(ServersRouter);
 serverInviteDetails(ServersRouter);
 serverInviteCreate(ServersRouter);
 serverInvites(ServersRouter);
-serverSettingsUpdate(ServersRouter);
+
 serverChannelCreate(ServersRouter);
 serverChannelUpdate(ServersRouter);
 serverChannelDelete(ServersRouter);
+
 serverRoleCreate(ServersRouter);
 serverRoleUpdate(ServersRouter);
+
+serverMemberUpdate(ServersRouter);
 
 export {ServersRouter};

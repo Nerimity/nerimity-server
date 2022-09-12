@@ -29,7 +29,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   const serverId = generateId();
   const channelId = generateId();
   const serverMemberId = generateId();
-  const defaultRoleId = generateId();
+  const roleId = generateId();
 
 
   const [server, defaultRole, channel, user, serverMember] = await prisma.$transaction([
@@ -39,13 +39,13 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         name: opts.name.trim(),
         createdById: opts.creatorId,
         defaultChannelId: channelId,
-        defaultRoleId: defaultRoleId,
+        defaultRoleId: roleId,
         hexColor: generateHexColor(),
       }
     }),
     prisma.serverRole.create({
       data: {
-        id: generateId(),
+        id: roleId,
         name: 'All',
         serverId,
         permissions: ROLE_PERMISSIONS.SEND_MESSAGE.bit,

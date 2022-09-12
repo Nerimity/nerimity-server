@@ -20,6 +20,7 @@ export const SERVER_ROLE_CREATED = 'server:role_created';
 export const SERVER_ROLE_UPDATED = 'server:role_updated';
 export const SERVER_MEMBER_JOINED = 'server:member_joined';
 export const SERVER_MEMBER_LEFT = 'server:member_left';
+export const SERVER_MEMBER_UPDATED = 'server:member_updated';
 export const SERVER_CHANNEL_CREATED = 'server:channel_created';
 export const SERVER_CHANNEL_UPDATED = 'server:channel_updated';
 export const SERVER_CHANNEL_DELETED = 'server:channel_deleted';
