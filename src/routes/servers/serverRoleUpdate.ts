@@ -15,6 +15,9 @@ export function serverRoleUpdate(Router: Router) {
     body('hexColor')
       .isString().withMessage('hexColor must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
+    body('hideRole')
+      .isBoolean().withMessage('hideRole must be a boolean.')
+      .optional({nullable: true}),
     body('permissions')
       .isNumeric().withMessage('Permissions must be a number.')
       .isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({nullable: true }),
@@ -25,6 +28,8 @@ export function serverRoleUpdate(Router: Router) {
 interface Body {
   name?: string;
   permissions?: number;
+  hexColor?: string;
+  hideRoles?: boolean;
 }
 
 

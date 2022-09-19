@@ -38,6 +38,7 @@ export interface UpdateServerRoleOptions {
   name?: string;
   permissions?: number;
   hexColor?: string;
+  hideRole?: boolean;
 }
 
 export const updateServerRole = async (serverId: string, roleId: string, update: UpdateServerRoleOptions): Promise<CustomResult<UpdateServerRoleOptions, CustomError>> => {

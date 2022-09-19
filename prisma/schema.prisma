@@ -72,6 +72,7 @@ model ServerRole {
   createdById            String
   createdBy              User                    @relation(fields: [createdById], references: [id])
 
+  hideRole               Boolean                 @default(false)
 
   permissions            Int
 
