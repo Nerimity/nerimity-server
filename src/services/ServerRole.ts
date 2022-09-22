@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { deleteAllServerMemberCache } from '../cache/ServerMemberCache';
 import { CustomResult } from '../common/CustomResult';
-import { prisma } from '../common/database';
+import { prisma, removeRoleIdFromServerMembers } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
@@ -80,13 +80,7 @@ export const deleteServerRole = async (serverId: string, roleId: string) => {
   }
   
   
-  await prisma.$queryRaw(
-    Prisma.sql`
-    UPDATE "ServerMember"
-      SET "roleIds"=(array_remove("roleIds", ${roleId})) 
-      WHERE ${roleId} = ANY("roleIds");
-      `
-  );
+  await removeRoleIdFromServerMembers(roleId);
       
       
   await prisma.serverRole.delete({where: {id: roleId}});

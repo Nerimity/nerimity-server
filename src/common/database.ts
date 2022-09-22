@@ -45,3 +45,15 @@ export function includeFields<T extends Entity, K extends Keys<T>>(
   }
   return result;
 }
+
+
+
+export function removeRoleIdFromServerMembers(roleId: string) {
+  return prisma.$executeRaw(
+    Prisma.sql`
+    UPDATE "ServerMember"
+      SET "roleIds"=(array_remove("roleIds", ${roleId})) 
+      WHERE ${roleId} = ANY("roleIds");
+      `
+  );
+}
