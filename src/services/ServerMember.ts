@@ -2,7 +2,7 @@ import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { emitServerMemberUpdated } from '../emits/Server';
-
+import {removeDuplicates} from '../common/utils';
 export interface UpdateServerMember {
   roleIds?: string[]
 }
@@ -16,7 +16,15 @@ export const updateServerMember = async (serverId: string, userId: string, updat
   if (!member) {
     return [null, generateError('Member is not in this server.')];
   }
+
+  
   if (update.roleIds) {
+    update.roleIds = removeDuplicates(update.roleIds);
+
+    if (update.roleIds.includes(server.defaultRoleId)) {
+      return [null, generateError('Cannot apply default role.')];
+    }
+
     // check if roles are inside the server.
     const roleCount = await prisma.serverRole.count({where: {id: {in: update.roleIds, not: server.defaultRoleId}, serverId}});
     if (roleCount !== update.roleIds.length) {

@@ -12,6 +12,7 @@ import { serverSettingsUpdate } from './serverSettingsUpdate';
 import { serverRoleCreate } from './serverRoleCreate';
 import { serverRoleUpdate } from './serverRoleUpdate';
 import { serverMemberUpdate } from './serveMemberUpdate';
+import { serverRoleDelete } from './serverRoleDelete';
 
 
 const ServersRouter = Router();
@@ -31,6 +32,7 @@ serverChannelDelete(ServersRouter);
 
 serverRoleCreate(ServersRouter);
 serverRoleUpdate(ServersRouter);
+serverRoleDelete(ServersRouter);
 
 serverMemberUpdate(ServersRouter);
 
