@@ -1,6 +1,6 @@
 import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
-import { UserCache } from '../cache/UserCache';
+import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
 import { Channel, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
@@ -12,7 +12,8 @@ interface ServerJoinOpts {
   members: Partial<ServerMember>[];
   channels: Channel[];
   joinedMember: ServerMember & {user: User};
-  roles: ServerRole[]
+  roles: ServerRole[];
+  memberPresences: Presence[]
 }
 
 export const emitServerJoined = (opts: ServerJoinOpts) => {

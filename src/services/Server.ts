@@ -1,4 +1,5 @@
 import { Server } from '@prisma/client';
+import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma } from '../common/database';
 import env from '../common/env';
@@ -139,12 +140,16 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     prisma.serverMember.findMany({where: {serverId: server.id}, include: {user: true}}),
   ]);
 
+  const memberIds = serverMembers.map(sm => sm.user.id);
+  const memberPresences = await getUserPresences(memberIds);
+
   emitServerJoined({
     server: server,
     channels: serverChannels,
     members: serverMembers,
     roles: serverRoles,
     joinedMember: serverMember,
+    memberPresences,
   });
 
   return [server, null];
