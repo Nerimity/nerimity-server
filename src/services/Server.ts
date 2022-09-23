@@ -78,6 +78,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
     members: [serverMember],
     roles: [defaultRole],
     joinedMember: serverMember,
+    memberPresences: []
   });
   return [server, null];
 };
