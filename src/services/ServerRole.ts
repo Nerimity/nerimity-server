@@ -53,6 +53,13 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
     return [null, generateError('Role does not exist.')];
   }
 
+  if (role.id === server.defaultRoleId) {
+    if (update.hideRole !== undefined) {
+      return [null, generateError('Cannot hide default role.')];
+    }
+  }
+
+
   await prisma.serverRole.update({where: {id: role.id}, data: update});
 
   await deleteAllServerMemberCache(serverId);
