@@ -47,7 +47,8 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
     server: opts.server,
     members: opts.members,
     channels: opts.channels,
-    roles: opts.roles
+    roles: opts.roles,
+    memberPresences: opts.memberPresences
   });
 };
 
