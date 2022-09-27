@@ -1,18 +1,20 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
-import { CHANNEL_PERMISSIONS } from '../../common/Permissions';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../types/Message';
 import { createMessage } from '../../services/Message';
+import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 
 export function channelMessageCreate(Router: Router) {
   Router.post('/channels/:channelId/messages', 
     authenticate(),
     channelVerification(),
     channelPermissions({bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, message: 'You are not allowed to send messages in this channel.'}),
+    memberHasRolePermission(ROLE_PERMISSIONS.SEND_MESSAGE),
     body('content')
       .isString().withMessage('Content must be a string!')
       .isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),

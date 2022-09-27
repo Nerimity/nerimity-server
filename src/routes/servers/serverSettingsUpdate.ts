@@ -1,7 +1,9 @@
 import { Request, Response, Router } from 'express';
 import { body, matchedData } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
+import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServer } from '../../services/Server';
 
@@ -9,6 +11,7 @@ export function serverSettingsUpdate(Router: Router) {
   Router.post('/servers/:serverId', 
     authenticate(),
     serverMemberVerification(),
+    memberHasRolePermission(ROLE_PERMISSIONS.ADMIN),
     body('name')
       .isString().withMessage('Name must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
@@ -28,12 +31,6 @@ interface Body {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
-
-  if (!isServerCreator) {
-    res.status(403).json(generateError('You are not allowed to perform this action'));
-    return;
-  }
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);

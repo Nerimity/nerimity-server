@@ -1,5 +1,6 @@
 import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
+import { addPermission } from '../common/Permissions';
 import { redisClient } from '../common/redis';
 import { SERVER_MEMBERS_KEY_HASH } from './CacheKeys';
 
@@ -18,11 +19,26 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   }
 
   // fetch from database and cache it.
-  const serverMember = await prisma.serverMember.findFirst({where: {userId: userId, serverId: serverId}});
+  const serverMember = await prisma.serverMember.findFirst({where: {userId: userId, serverId: serverId}, include: {server: {select: {defaultRoleId: true}}}});
 
   if (!serverMember) return [null, 'Server member is not in this server.'];
+  
+  // get member permissions
+  let permissions = 0;
+  serverMember.roleIds.push(serverMember.server.defaultRoleId);
+  const roles = await prisma.serverRole.findMany({where: {id: {in: serverMember.roleIds}}, select: {permissions: true}});
 
-  stringifiedMember = JSON.stringify(serverMember);
+  for (let i = 0; i < roles.length; i++) {
+    const role = roles[i];
+    permissions = addPermission(permissions, role.permissions);
+  }
+
+
+
+  stringifiedMember = JSON.stringify({
+    userId: serverMember.userId,
+    permissions,
+  });
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
 };

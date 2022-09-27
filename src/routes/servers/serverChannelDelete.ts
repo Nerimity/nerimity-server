@@ -1,6 +1,8 @@
 import { Request, Response, Router } from 'express';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
+import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { deleteServerChannel } from '../../services/Channel';
 
@@ -8,6 +10,7 @@ export function serverChannelDelete(Router: Router) {
   Router.delete('/servers/:serverId/channels/:channelId', 
     authenticate(),
     serverMemberVerification(),
+    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     route
   );
 }
@@ -16,12 +19,6 @@ export function serverChannelDelete(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
-
-  if (!isServerCreator) {
-    res.status(403).json(generateError('You are not allowed to perform this action'));
-    return;
-  }
 
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {

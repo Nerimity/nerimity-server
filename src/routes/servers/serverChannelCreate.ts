@@ -1,6 +1,8 @@
 import { Request, Response, Router } from 'express';
 import { generateError } from '../../common/errorHandler';
+import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
+import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { createServerChannel } from '../../services/Channel';
 
@@ -8,6 +10,7 @@ export function serverChannelCreate(Router: Router) {
   Router.post('/servers/:serverId/channels', 
     authenticate(),
     serverMemberVerification(),
+    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     route
   );
 }
@@ -17,12 +20,6 @@ export function serverChannelCreate(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
-
-  if (!isServerCreator) {
-    res.status(403).json(generateError('You are not allowed to perform this action'));
-    return;
-  }
 
   const [newChannel, error] = await createServerChannel(req.serverCache.id, 'New Channel', req.accountCache.user.id);
 

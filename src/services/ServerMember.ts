@@ -3,6 +3,7 @@ import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { emitServerMemberUpdated } from '../emits/Server';
 import {removeDuplicates} from '../common/utils';
+import { deleteAllServerMemberCache } from '../cache/ServerMemberCache';
 export interface UpdateServerMember {
   roleIds?: string[]
 }
@@ -35,6 +36,8 @@ export const updateServerMember = async (serverId: string, userId: string, updat
 
   
   await prisma.serverMember.update({where: {userId_serverId: {serverId, userId}}, data: update});
+
+  deleteAllServerMemberCache(serverId);
 
 
   emitServerMemberUpdated(serverId, userId, update);

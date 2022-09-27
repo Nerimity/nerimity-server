@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { generateError } from '../common/errorHandler';
-import { hasPermission } from '../common/Permissions';
+import { hasPermission, ROLE_PERMISSIONS } from '../common/Permissions';
 
 interface Options {
   bit: number;
@@ -15,6 +15,13 @@ export function channelPermissions (opts: Options) {
 
     if (!req.channelCache.server) return next();
     if (req.serverCache.createdById === req.accountCache.user.id) return next();
+
+    const rolePerms = req.serverMemberCache.permissions;
+
+
+    if (hasPermission(rolePerms, ROLE_PERMISSIONS.ADMIN.bit)) {
+      return next();
+    }
     
     const permissions = req.channelCache.permissions;
 
