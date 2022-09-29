@@ -5,8 +5,9 @@ import { redisClient } from '../common/redis';
 import { SERVER_MEMBERS_KEY_HASH } from './CacheKeys';
 
 export interface ServerMemberCache {
-  permissions: number,
   userId: string;
+  permissions: number,
+  topRoleOrder: number;
 }
 
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
@@ -26,7 +27,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   // get member permissions
   let permissions = 0;
   serverMember.roleIds.push(serverMember.server.defaultRoleId);
-  const roles = await prisma.serverRole.findMany({where: {id: {in: serverMember.roleIds}}, select: {permissions: true}});
+  const roles = await prisma.serverRole.findMany({where: {id: {in: serverMember.roleIds}}, select: {permissions: true, order: true}, orderBy: {order: 'desc'}});
 
   for (let i = 0; i < roles.length; i++) {
     const role = roles[i];
@@ -34,11 +35,11 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   }
 
 
-
   stringifiedMember = JSON.stringify({
     userId: serverMember.userId,
     permissions,
-  });
+    topRoleOrder: roles[0].order
+  } as ServerMemberCache);
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
 };

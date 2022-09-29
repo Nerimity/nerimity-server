@@ -1,7 +1,10 @@
 import { Request, Response, Router } from 'express';
 import { body, matchedData } from 'express-validator';
+import { prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
+import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerRole } from '../../services/ServerRole';
 
@@ -9,6 +12,7 @@ export function serverRoleUpdate(Router: Router) {
   Router.post('/servers/:serverId/roles/:roleId', 
     authenticate(),
     serverMemberVerification(),
+    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('name')
       .isString().withMessage('Name must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
@@ -36,19 +40,23 @@ interface Body {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
-
-  if (!isServerCreator) {
-    res.status(403).json(generateError('You are not allowed to perform this action'));
-    return;
-  }
-
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
   }
 
   const matchedBody: Body = matchedData(req);
+
+  const role = await prisma.serverRole.findFirst({where: {id: req.params.roleId}});
+  if (!role) {
+    return res.status(400).json(generateError('Role does not exist.'));
+  }
+  const isCreator = req.serverCache.createdById === req.accountCache.user.id;
+  if (!isCreator && role.order >= req.serverMemberCache.topRoleOrder) {
+    return res.status(400).json(generateError('You do not have priority to modify this role.'));
+  }
+
+
 
 
 

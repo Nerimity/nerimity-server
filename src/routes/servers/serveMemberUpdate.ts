@@ -1,15 +1,17 @@
 import { Request, Response, Router } from 'express';
 import { body, matchedData } from 'express-validator';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { customExpressValidatorResult } from '../../common/errorHandler';
+import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
+import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerMember } from '../../services/ServerMember';
-import { updateServerRole } from '../../services/ServerRole';
 
 export function serverMemberUpdate(Router: Router) {
   Router.post('/servers/:serverId/members/:userId', 
     authenticate(),
     serverMemberVerification(),
+    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('roleIds').isArray().withMessage('roleIds must be an array of strings.').optional({nullable: true}),
     body('roleIds.*')
       .isString().withMessage('roleIds must be a string.')
@@ -26,13 +28,6 @@ interface Body {
 
 async function route (req: Request, res: Response) {
 
-  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
-
-  if (!isServerCreator) {
-    res.status(403).json(generateError('You are not allowed to perform this action'));
-    return;
-  }
-
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
@@ -42,7 +37,7 @@ async function route (req: Request, res: Response) {
 
 
 
-  const [updated, error] = await updateServerMember(req.serverCache.id, req.params.userId, matchedBody);
+  const [updated, error] = await updateServerMember(req.serverCache.id, req.params.userId, req.accountCache.user.id, matchedBody);
   if (error) {
     return res.status(400).json(error);
   }

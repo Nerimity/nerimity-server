@@ -2,11 +2,6 @@ import { NextFunction, Request, Response } from 'express';
 import { generateError } from '../common/errorHandler';
 import { hasPermission, Permission, ROLE_PERMISSIONS } from '../common/Permissions';
 
-interface Options {
-  allowBot?: boolean;
-}
-
-
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Options {
   ignoreAdmin: boolean
