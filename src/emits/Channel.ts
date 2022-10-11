@@ -1,6 +1,6 @@
 import { Channel, Message, User } from '@prisma/client';
 import { ChannelCache, InboxCache } from '../cache/ChannelCache';
-import { AccountCache, UserCache } from '../cache/UserCache';
+import { UserCache } from '../cache/UserCache';
 import { CHANNEL_TYPING, MESSAGE_CREATED, MESSAGE_DELETED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
 import { UpdateServerChannelOptions } from '../services/Channel';
 import { getIO } from '../socket/socket';
