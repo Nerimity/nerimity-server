@@ -4,6 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { UserStatus } from '../../types/User';
 import { updateUserPresence } from '../../services/User';
+import { rateLimit } from '../../middleware/rateLimit';
 
 export function userUpdatePresence(Router: Router) {
   Router.post('/users/presence',
@@ -12,6 +13,11 @@ export function userUpdatePresence(Router: Router) {
       .not().isEmpty().withMessage('Status is required.')
       .isNumeric().withMessage('Invalid status.')
       .isLength({ min: 0, max: 4 }).withMessage('Presence must be between 0 and 4.'),
+    rateLimit({
+      name: 'update_presence',
+      expireMS: 5000,
+      requestCount: 10,
+    }),
     route
   );
 }

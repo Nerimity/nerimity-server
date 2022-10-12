@@ -4,6 +4,7 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServer } from '../../services/Server';
 
@@ -18,6 +19,11 @@ export function serverSettingsUpdate(Router: Router) {
     body('defaultChannelId')
       .isString().withMessage('defaultChannelId must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('defaultChannelId must be between 4 and 100 characters long.').optional({nullable: true}),
+    rateLimit({
+      name: 'server_update',
+      expireMS: 10000,
+      requestCount: 10,
+    }),
     route
   );
 }

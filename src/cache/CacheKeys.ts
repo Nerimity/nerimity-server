@@ -13,3 +13,6 @@ export const CONNECTED_SOCKET_ID_KEY_SET = (userId: string) => `SOCKET_USER_CONN
 export const CONNECTED_USER_ID_KEY_STRING = (socketId: string) => `SOCKET_USER_ID:${socketId}`;
 
 export const USER_PRESENCE_KEY_STRING = (userId: string) => `USER_PRESENCE:${userId}`;
+
+
+export const RATE_LIMIT_KEY_STRING = (id: string) => `RATE_LIMIT:${id}`;

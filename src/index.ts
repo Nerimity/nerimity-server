@@ -13,6 +13,8 @@ import { ServersRouter } from './routes/servers/Router';
 import { ChannelsRouter } from './routes/channels/Router';
 import { FriendsRouter } from './routes/friends/Router';
 import { prisma } from './common/database';
+import { userIP } from './middleware/userIP';
+import { rateLimit } from './middleware/rateLimit';
 
 const app = express();
 const server = http.createServer(app);
@@ -43,6 +45,16 @@ app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+app.use(userIP);
+
+app.use(rateLimit({
+  name: 'global_limit',
+  useIP: true,
+  expireMS: 30000,
+  requestCount: 100,
+}));
+
 app.use('/api', UsersRouter);
 app.use('/api', ServersRouter);
 app.use('/api', ChannelsRouter);

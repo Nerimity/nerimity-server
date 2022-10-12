@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
+import { rateLimit } from '../../middleware/rateLimit';
 import { registerUser } from '../../services/User';
 
 export function register(Router: Router) {
@@ -17,6 +18,12 @@ export function register(Router: Router) {
       .not().isEmpty().withMessage('Password is required.')
       .isString().withMessage('Password must be a string.')
       .isLength({ min: 4, max: 255 }).withMessage('Password must be between 4 and 255 characters long.'),
+    rateLimit({
+      name: 'register_limit',
+      useIP: true,
+      expireMS: 30000,
+      requestCount: 5,
+    }),
     route
   );
 }

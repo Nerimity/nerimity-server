@@ -4,6 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerMember } from '../../services/ServerMember';
 
@@ -16,6 +17,11 @@ export function serverMemberUpdate(Router: Router) {
     body('roleIds.*')
       .isString().withMessage('roleIds must be a string.')
       .optional({}),
+    rateLimit({
+      name: 'server_member_role_update',
+      expireMS: 10000,
+      requestCount: 10,
+    }),
     route
   );
 }

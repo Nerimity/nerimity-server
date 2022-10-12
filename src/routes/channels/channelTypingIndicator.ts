@@ -5,7 +5,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
-import { getMessagesByChannelId } from '../../services/Message';
+import { rateLimit } from '../../middleware/rateLimit';
 
 export function channelTypingIndicator(Router: Router) {
   Router.post('/channels/:channelId/typing', 
@@ -13,6 +13,11 @@ export function channelTypingIndicator(Router: Router) {
     channelVerification(),
     channelPermissions({bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, message: 'You are not allowed to send messages in this channel.'}),
     memberHasRolePermission(ROLE_PERMISSIONS.SEND_MESSAGE),
+    rateLimit({
+      name: 'channel_typing',
+      expireMS: 10000,
+      requestCount: 3,
+    }),
     route
   );
 }
@@ -32,7 +37,6 @@ async function route (req: Request, res: Response) {
     return;
   }
   if (channel.inbox) {
-    console.log(channel.inbox);
     emitInboxTyping(channel.id, channel.inbox, typingUser.id);
     res.end();
     return;

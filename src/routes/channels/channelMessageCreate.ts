@@ -8,6 +8,7 @@ import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../types/Message';
 import { createMessage } from '../../services/Message';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { rateLimit } from '../../middleware/rateLimit';
 
 export function channelMessageCreate(Router: Router) {
   Router.post('/channels/:channelId/messages', 
@@ -22,6 +23,11 @@ export function channelMessageCreate(Router: Router) {
       .optional(true)
       .isString().withMessage('SocketId must be a string!')
       .isLength({ min: 1, max: 255 }).withMessage('SocketId length must be between 1 and 255 characters.'),
+    rateLimit({
+      name: 'create_message',
+      expireMS: 20000,
+      requestCount: 20,
+    }),
     route
   );
 }

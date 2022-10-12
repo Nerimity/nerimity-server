@@ -3,6 +3,7 @@ import {body} from 'express-validator';
 import { prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
+import { rateLimit } from '../../middleware/rateLimit';
 import { addFriend } from '../../services/Friend';
 
 export function friendAdd(Router: Router) {
@@ -16,6 +17,11 @@ export function friendAdd(Router: Router) {
       .not().isEmpty().withMessage('tag is required.')
       .isString().withMessage('tag must be a string.')
       .isLength({ min: 4, max: 4}).withMessage('tag must be 4 characters long.'),
+    rateLimit({
+      name: 'add_friend',
+      expireMS: 30000,
+      requestCount: 5,
+    }),
     route
   );
 }

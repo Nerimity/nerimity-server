@@ -4,6 +4,7 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 import { ROLE_PERMISSIONS } from '../../common/Permissions';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerChannel } from '../../services/Channel';
 
@@ -18,6 +19,11 @@ export function serverChannelUpdate(Router: Router) {
     body('permissions')
       .isNumeric().withMessage('Permissions must be a number.')
       .isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({nullable: true }),
+    rateLimit({
+      name: 'server_channel_update',
+      expireMS: 10000,
+      requestCount: 10,
+    }),
     route
   );
 }

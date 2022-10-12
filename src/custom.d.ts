@@ -11,6 +11,8 @@ declare global {
       channelCache: ChannelCache
       serverMemberCache: ServerMemberCache
       serverCache: ServerCache
+      rateLimited?: number
+      userIP: string;
     }
   }
  

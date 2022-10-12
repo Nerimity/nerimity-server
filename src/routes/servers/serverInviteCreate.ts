@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
+import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { createServerInvite } from '../../services/ServerInvite';
 
@@ -7,6 +8,11 @@ export function serverInviteCreate(Router: Router) {
   Router.post('/servers/:serverId/invites', 
     authenticate(),
     serverMemberVerification(),
+    rateLimit({
+      name: 'create_server_invite',
+      expireMS: 20000,
+      requestCount: 5,
+    }),
     route
   );
 }
