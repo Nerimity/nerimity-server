@@ -50,6 +50,7 @@ model Server {
   name                   String
   hexColor               String
   defaultChannelId       String
+  systemChannelId        String // Used for system messages eg member joined message.
   defaultRoleId          String
   createdById            String
 

@@ -40,6 +40,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         name: opts.name.trim(),
         createdById: opts.creatorId,
         defaultChannelId: channelId,
+        systemChannelId: channelId,
         defaultRoleId: roleId,
         hexColor: generateHexColor(),
       }
