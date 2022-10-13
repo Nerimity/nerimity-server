@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { generateError } from '../common/errorHandler';
-import { hasPermission, Permission, ROLE_PERMISSIONS } from '../common/Permissions';
+import { hasBit, Bitwise, ROLE_PERMISSIONS } from '../common/Bitwise';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Options {
@@ -8,7 +8,7 @@ interface Options {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function memberHasRolePermission (permission: Permission, opts?: Options) {
+export function memberHasRolePermission (permission: Bitwise, opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
 
     if (!req.serverCache) {
@@ -23,10 +23,10 @@ export function memberHasRolePermission (permission: Permission, opts?: Options)
     
     const memberPermissions = req.serverMemberCache.permissions;
     
-    if (!opts?.ignoreAdmin && hasPermission(memberPermissions, ROLE_PERMISSIONS.ADMIN.bit)) {
+    if (!opts?.ignoreAdmin && hasBit(memberPermissions, ROLE_PERMISSIONS.ADMIN.bit)) {
       return next();      
     }
-    if (!hasPermission(memberPermissions, permission.bit)){
+    if (!hasBit(memberPermissions, permission.bit)){
       return res.status(403).json(generateError(`Missing ${permission.name} permission`));
     }
 

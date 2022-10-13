@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { ROLE_PERMISSIONS } from '../../common/Permissions';
+import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';

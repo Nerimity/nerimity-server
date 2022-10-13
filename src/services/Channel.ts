@@ -6,7 +6,7 @@ import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
+import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
 import {  ChannelType } from '../types/Channel';
@@ -149,8 +149,8 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
 
 
   if (update.permissions !== undefined) {
-    const wasPrivate = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    const isPrivate = hasPermission(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     if (wasPrivate !== isPrivate) {
       getIO().in(serverId).socketsLeave(channelId);
       const serverMembers = await getServerMembersCache(serverId);

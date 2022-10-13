@@ -4,7 +4,7 @@ import { prisma, removeRoleIdFromServerMembers } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { ROLE_PERMISSIONS } from '../common/Permissions';
+import { ROLE_PERMISSIONS } from '../common/Bitwise';
 import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleUpdated } from '../emits/Server';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string) => {

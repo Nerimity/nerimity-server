@@ -2,7 +2,7 @@ import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_ME
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
-import { CHANNEL_PERMISSIONS, hasPermission } from '../common/Permissions';
+import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { Channel, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
 import { UpdateServerRoleOptions } from '../services/ServerRole';
 import { UpdateServerMember } from '../services/ServerMember';
@@ -32,7 +32,7 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
   for (let i = 0; i < opts.channels.length; i++) {
     const channel = opts.channels[i];
 
-    const isPrivateChannel = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivateChannel = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     const isAdmin = opts.server.createdById === joinedMemberUserId;
 
     if (isPrivateChannel && !isAdmin) continue;

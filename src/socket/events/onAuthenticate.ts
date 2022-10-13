@@ -3,7 +3,7 @@ import { Socket } from 'socket.io';
 import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/UserCache';
 import { AUTHENTICATED } from '../../common/ClientEventNames';
 import { prisma } from '../../common/database';
-import { CHANNEL_PERMISSIONS, hasPermission } from '../../common/Permissions';
+import { CHANNEL_PERMISSIONS, hasBit } from '../../common/Bitwise';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
 import { emitUserPresenceUpdate } from '../../emits/User';
@@ -70,7 +70,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     const server = servers.find(server => server.id === channel.serverId);
     if (!server) throw new Error(`Server not found (channelId: ${channel.id} serverId: ${channel.serverId})`);
     
-    const isPrivateChannel = hasPermission(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivateChannel = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     const isAdmin = server.createdById === cacheUser.id;
 
     if (isPrivateChannel && !isAdmin) continue;

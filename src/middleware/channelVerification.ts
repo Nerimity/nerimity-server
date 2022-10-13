@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { generateError } from '../common/errorHandler';
-import { CHANNEL_PERMISSIONS } from '../common/Permissions';
+import { CHANNEL_PERMISSIONS } from '../common/Bitwise';
 import { channelPermissions } from './channelPermissions';
 
 interface Options {

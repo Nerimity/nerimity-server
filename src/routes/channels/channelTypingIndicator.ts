@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../../common/Permissions';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { emitInboxTyping, emitServerTyping } from '../../emits/Channel';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';

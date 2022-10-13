@@ -1,6 +1,6 @@
 import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
-import { addPermission } from '../common/Permissions';
+import { addBit } from '../common/Bitwise';
 import { redisClient } from '../common/redis';
 import { SERVER_MEMBERS_KEY_HASH } from './CacheKeys';
 
@@ -31,7 +31,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
 
   for (let i = 0; i < roles.length; i++) {
     const role = roles[i];
-    permissions = addPermission(permissions, role.permissions);
+    permissions = addBit(permissions, role.permissions);
   }
 
 

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { generateError } from '../common/errorHandler';
-import { hasPermission, ROLE_PERMISSIONS } from '../common/Permissions';
+import { hasBit, ROLE_PERMISSIONS } from '../common/Bitwise';
 
 interface Options {
   bit: number;
@@ -19,19 +19,19 @@ export function channelPermissions (opts: Options) {
     const rolePerms = req.serverMemberCache.permissions;
 
 
-    if (hasPermission(rolePerms, ROLE_PERMISSIONS.ADMIN.bit)) {
+    if (hasBit(rolePerms, ROLE_PERMISSIONS.ADMIN.bit)) {
       return next();
     }
     
     const permissions = req.channelCache.permissions;
 
     if (opts.invert) {
-      if (hasPermission(permissions, opts.bit)) {
+      if (hasBit(permissions, opts.bit)) {
         return res.status(403).json(generateError(opts.message));
       }
     }
     if (!opts.invert) {
-      if (!hasPermission(permissions, opts.bit)) {
+      if (!hasBit(permissions, opts.bit)) {
         return res.status(403).json(generateError(opts.message));
       }
     }

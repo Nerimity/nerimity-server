@@ -5,7 +5,7 @@ import { exists, prisma } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Permissions';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
@@ -201,6 +201,7 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string): Pro
 export interface UpdateServerOptions {
   name?: string;
   defaultChannelId?: string;
+  systemChannelId?: string | null;
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
@@ -213,9 +214,17 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
   if (update.defaultChannelId) {
     const channel = await prisma.channel.findFirst({where: {id: update.defaultChannelId}});
     if (!channel || channel.serverId !== serverId) {
-      return [null, generateError('Channel does not exist.')];
+      return [null, generateError('Invalid defaultChannelId')];
     }
   }
+  if (update.systemChannelId) {
+    const channel = await prisma.channel.findFirst({where: {id: update.systemChannelId}});
+    if (!channel || channel.serverId !== serverId) {
+      return [null, generateError('Invalid systemChannelId')];
+    }
+  }
+
+  console.log(update);
 
   await prisma.server.update({where: {id: serverId}, data: update});
   emitServerUpdated(serverId, update);
