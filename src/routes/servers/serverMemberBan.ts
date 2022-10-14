@@ -12,7 +12,7 @@ export function serverMemberBan(Router: Router) {
     serverMemberVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.BAN),
     rateLimit({
-      name: 'server_kick',
+      name: 'server_ban_member',
       expireMS: 10000,
       requestCount: 30,
     }),

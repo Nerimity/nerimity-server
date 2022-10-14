@@ -14,7 +14,7 @@ export function serverMemberKick(Router: Router) {
     serverMemberVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.KICK),
     rateLimit({
-      name: 'server_kick',
+      name: 'server_kick_member',
       expireMS: 10000,
       requestCount: 30,
     }),
