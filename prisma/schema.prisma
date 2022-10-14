@@ -63,6 +63,7 @@ model Server {
   serverMembers          ServerMember[]
   users                  User[]
   roles                  ServerRole[]
+  bannedUsers            BannedServerMember[]
 }
 
 model ServerRole {
@@ -112,6 +113,14 @@ model ServerMember {
 
   @@unique([userId, serverId])
 
+}
+
+
+model BannedServerMember {
+  id       String  @id
+  userId   String
+  serverId String
+  server   Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
 }
 
 model Friend {

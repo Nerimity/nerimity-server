@@ -134,6 +134,13 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   }
 
 
+  const isBanned = await exists(prisma.bannedServerMember, {where: {serverId, userId}});
+
+  if (isBanned) {
+    return [null, generateError('You are banned from this server')];
+  }
+
+
   if (server.systemChannelId) {
     await createMessage({
       channelId: server.systemChannelId,
@@ -168,8 +175,7 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   return [server, null];
 };
 
-
-export const deleteOrLeaveServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>>  => {
+export const deleteOrLeaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<Server, CustomError>>  => {
   
   const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
@@ -191,21 +197,84 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string): Pro
     // This one line also deletes related stuff from the database.
     await prisma.server.delete({where: {id: serverId}});
   } else {
-    await prisma.$transaction([
+    const transactions: any[] = [
       prisma.user.update({where: {id: userId}, data: {servers: {disconnect: {id: serverId}}} }),
       prisma.serverMember.delete({where: {userId_serverId: {serverId: serverId, userId: userId}}}),
       prisma.messageMention.deleteMany({where: { serverId: serverId, mentionedToId: userId}}),
       prisma.serverChannelLastSeen.deleteMany({where: { serverId: serverId, userId: userId}}),
-    ]);
+    ];
+    if (ban) {
+      transactions.push(prisma.bannedServerMember.create({
+        data: {
+          id: generateId(),
+          userId,
+          serverId,
+        }
+      }));
+    }
+    await prisma.$transaction(transactions);
+
+    if (server.systemChannelId && leaveMessage) {
+      await createMessage({
+        channelId: server.systemChannelId,
+        type: MessageType.LEAVE_SERVER,
+        userId,
+        serverId
+      });
+    }
+
+
   }
-
-
-
   emitServerLeft(userId, serverId, isServerCreator);
 
   return [server, null];
 
+};
 
+
+export const kickServerMember = async (userId: string, serverId: string) => {
+  const server = await prisma.server.findFirst({where: {id: serverId}});
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+  if (server.createdById === userId) {
+    return [null, generateError('You can not kick yourself.')];
+  }
+
+  const [,error] = await deleteOrLeaveServer(userId, serverId, false, true);
+  if (error) return [null, error];
+
+  if (server.systemChannelId) {
+    await createMessage({
+      channelId: server.systemChannelId,
+      type: MessageType.KICK_USER,
+      userId,
+      serverId
+    });
+  }
+  return [true, null];
+};
+export const banServerMember = async (userId: string, serverId: string) => {
+  const server = await prisma.server.findFirst({where: {id: serverId}});
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+  if (server.createdById === userId) {
+    return [null, generateError('You can not kick yourself.')];
+  }
+
+  const [,error] = await deleteOrLeaveServer(userId, serverId, true, false);
+  if (error) return [null, error];
+
+  if (server.systemChannelId) {
+    await createMessage({
+      channelId: server.systemChannelId,
+      type: MessageType.BAN_USER,
+      userId,
+      serverId
+    });
+  }
+  return [true, null];
 };
 
 
