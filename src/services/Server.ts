@@ -224,8 +224,6 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
     }
   }
 
-  console.log(update);
-
   await prisma.server.update({where: {id: serverId}, data: update});
   emitServerUpdated(serverId, update);
   return [update, null];
