@@ -21,7 +21,6 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
 
 interface SendMessageOptions {
   userId: string,
-  creator?: UserCache,
   channelId: string,
   channel?: ChannelCache | null,
   serverId?: string,

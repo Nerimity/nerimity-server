@@ -9,6 +9,8 @@ import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
+import { createMessage } from './Message';
+import { MessageType } from '../types/Message';
 
 interface CreateServerOptions {
   name: string;
@@ -131,6 +133,15 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     return [null, generateError('You are already in this server.')];
   }
 
+
+  if (server.systemChannelId) {
+    await createMessage({
+      channelId: server.systemChannelId,
+      type: MessageType.JOIN_SERVER,
+      serverId: serverId,
+      userId: userId,
+    });
+  }
 
 
 

@@ -51,7 +51,6 @@ async function route (req: Request, res: Response) {
     channelId: req.channelCache.id,
     content: body.content,
     userId: req.accountCache.user.id,
-    creator: req.accountCache.user,
     channel: req.channelCache,
     serverId: req.channelCache?.server?.id,
     socketId: body.socketId,
