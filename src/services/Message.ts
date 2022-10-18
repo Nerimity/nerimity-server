@@ -27,6 +27,7 @@ interface SendMessageOptions {
   socketId?: string,
   content?: string,
   type: MessageType,
+  updateLastSeen?: boolean // by default, this is true.
 }
 
 export const createMessage = async (opts: SendMessageOptions) => {
@@ -45,7 +46,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   // update channel last message
   await prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: message.createdAt}});
   // update sender last seen
-  await dismissChannelNotification(opts.userId, opts.channelId, false);
+  opts.updateLastSeen !== false && await dismissChannelNotification(opts.userId, opts.channelId, false);
 
   
   

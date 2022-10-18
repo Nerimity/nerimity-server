@@ -219,7 +219,9 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string, ban 
         channelId: server.systemChannelId,
         type: MessageType.LEAVE_SERVER,
         userId,
-        serverId
+        serverId,
+        updateLastSeen: false
+
       });
     }
 
@@ -249,7 +251,8 @@ export const kickServerMember = async (userId: string, serverId: string) => {
       channelId: server.systemChannelId,
       type: MessageType.KICK_USER,
       userId,
-      serverId
+      serverId,
+      updateLastSeen: false
     });
   }
   return [true, null];
@@ -271,7 +274,8 @@ export const banServerMember = async (userId: string, serverId: string) => {
       channelId: server.systemChannelId,
       type: MessageType.BAN_USER,
       userId,
-      serverId
+      serverId,
+      updateLastSeen: false
     });
   }
   return [true, null];
