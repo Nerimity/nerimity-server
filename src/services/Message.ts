@@ -1,11 +1,14 @@
 import { UserCache } from '../cache/UserCache';
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
-import { emitDMMessageCreated, emitDMMessageDeleted } from '../emits/Channel';
-import { emitServerMessageCreated, emitServerMessageDeleted } from '../emits/Server';
+import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageUpdated } from '../emits/Channel';
+import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
-import { prisma } from '../common/database';
+import { exists, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
+import { CustomError, generateError } from '../common/errorHandler';
+import { CustomResult } from '../common/CustomResult';
+import { Message } from '@prisma/client';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
 
@@ -19,6 +22,60 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
 };
 
 
+interface EditMessageOptions {
+  userId: string,
+  channelId: string,
+  channel?: ChannelCache | null,
+  serverId?: string,
+  content: string,
+  messageId: string
+}
+
+export const editMessage = async (opts: EditMessageOptions): Promise<CustomResult<Partial<Message>, CustomError >> => {
+
+  const messageExists = await exists(prisma.message, {where: {id: opts.messageId, createdById: opts.userId}});
+
+  if (!messageExists) {
+    return [null, generateError('Message does not exist or is not created by you.')];
+  }
+
+  const content = opts.content.trim();
+
+  if (!content) {
+    return [null, generateError('Content is required', 'content')];
+  }
+
+  const message = await prisma.message.update({
+    where: {id: opts.messageId},
+    data: {
+      content,
+      editedAt: new Date().toISOString(),
+    },
+    select: {content: true, editedAt: true}
+  });
+  
+  
+  // emit 
+  if (opts.serverId) {
+    emitServerMessageUpdated(opts.channelId, opts.messageId, message);
+    return [message, null];
+  }
+  
+  let channel = opts.channel;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.userId);
+  }
+
+
+  if (!channel?.inbox?.recipientId) {
+    return [null, generateError('Channel not found!')];
+  }
+
+  emitDMMessageUpdated(channel, opts.messageId, message);
+
+  return [message, null];
+};
 interface SendMessageOptions {
   userId: string,
   channelId: string,

@@ -4,7 +4,7 @@ import { validationResult } from 'express-validator';
 
 export type CustomError = { message: string, path: string | null };
 
-export function generateError(message: string, path?: string) {
+export function generateError(message: string, path?: string): CustomError {
   return {
     message,
     path: path || null

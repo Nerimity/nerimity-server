@@ -27,5 +27,6 @@ export const SERVER_CHANNEL_UPDATED = 'server:channel_updated';
 export const SERVER_CHANNEL_DELETED = 'server:channel_deleted';
 
 export const MESSAGE_CREATED = 'message:created';
+export const MESSAGE_UPDATED = 'message:updated';
 export const CHANNEL_TYPING = 'channel:typing';
 export const MESSAGE_DELETED = 'message:deleted';

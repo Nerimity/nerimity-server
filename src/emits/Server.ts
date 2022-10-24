@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_UPDATED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
@@ -90,6 +90,12 @@ export const emitServerMessageCreated = (message: Message & {createdBy: Partial<
   }
 
   io.in(channelId).emit(MESSAGE_CREATED, message);
+};
+
+export const emitServerMessageUpdated = (channelId: string, messageId: string, updated: Partial<Message>) => {
+  const io = getIO();
+
+  io.in(channelId).emit(MESSAGE_UPDATED, {channelId, messageId, updated});
 };
 
 export const emitServerMessageDeleted = (data: {channelId: string, messageId: string}) => {
