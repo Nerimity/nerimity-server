@@ -15,6 +15,7 @@ import { FriendsRouter } from './routes/friends/Router';
 import { prisma } from './common/database';
 import { userIP } from './middleware/userIP';
 import { rateLimit } from './middleware/rateLimit';
+import { ModerationRouter } from './routes/moderation/Router';
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,7 @@ app.use(rateLimit({
   requestCount: 100,
 }));
 
+app.use('/api', ModerationRouter);
 app.use('/api', UsersRouter);
 app.use('/api', ServersRouter);
 app.use('/api', ChannelsRouter);

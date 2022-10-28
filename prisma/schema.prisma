@@ -19,6 +19,7 @@ model Account {
 
 model User {
   id                     String                  @id
+  badges                 Int                     @default(0)
   username               String
   tag                    String
   avatar                 String?
