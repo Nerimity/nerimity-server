@@ -1,10 +1,11 @@
 import { Request, Response, Router } from 'express';
+import { getAllConnectedUserIds } from '../../cache/UserCache';
 import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
-export function getUsers(Router: Router) {
-  Router.get('/moderation/users', 
+export function getUsersOnline(Router: Router) {
+  Router.get('/moderation/online-users', 
     authenticate(),
     isModMiddleware,
     route
@@ -16,14 +17,16 @@ export function getUsers(Router: Router) {
 
 
 async function route (req: Request, res: Response) {
-  const after = req.query.after as string | undefined;
+
+
+  const connectedUserIds = await getAllConnectedUserIds();
+
 
   const users = await prisma.user.findMany({
+    where: {id: {in: connectedUserIds}},
     orderBy: {
       joinedAt: 'desc'
     },
-    take: 30,
-    ...(after ? {cursor: { id: after }} : undefined),
     include: {account: {select: { email: true }}}
   });
 

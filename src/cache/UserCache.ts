@@ -157,3 +157,11 @@ export async function authenticateUser(token: string): Promise<CustomResult<Acco
   return [accountCache, null];
 }
 
+
+
+// Moderators Only
+export async function getAllConnectedUserIds() {
+  const key = USER_PRESENCE_KEY_STRING('*');
+  const keys = await redisClient.scan(0, {MATCH: key});
+  return keys.keys.map(k => k.split(':')[1]);
+}
