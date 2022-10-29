@@ -6,7 +6,7 @@ export interface Bitwise {
 }
 
 
-export const BADGES = {
+export const USER_BADGES = {
   CREATOR: {
     name: 'Creator',
     bit: 1
