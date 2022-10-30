@@ -25,7 +25,7 @@ async function route (req: Request, res: Response) {
     },
     take: 30,
     ...(after ? {cursor: { id: after }} : undefined),
-    select: {name: true, hexColor: true, id: true, createdAt: true, createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}}
+    select: {name: true, hexColor: true, id: true, createdAt: true, createdBy: {select: {id: true, username: true, tag: true}}}
   });
 
 

@@ -24,7 +24,7 @@ async function route (req: Request, res: Response) {
     },
     take: 30,
     ...(after ? {cursor: { id: after }} : undefined),
-    include: {account: {select: { email: true }}}
+    select: {id: true, username: true, joinedAt: true, tag: true, hexColor: true, }
   });
 
 

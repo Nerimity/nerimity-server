@@ -27,7 +27,7 @@ async function route (req: Request, res: Response) {
     orderBy: {
       joinedAt: 'desc'
     },
-    include: {account: {select: { email: true }}}
+    select: {id: true, username: true, joinedAt: true, tag: true, hexColor: true, }
   });
 
 
