@@ -39,6 +39,7 @@ export const createServerRole = async (name: string, creatorId: string, serverId
 
   const [createdRole] = await prisma.$transaction(transactions);
 
+  await deleteAllServerMemberCache(serverId);
   emitServerRoleCreated(serverId, createdRole);
 
   return [createdRole, null];
