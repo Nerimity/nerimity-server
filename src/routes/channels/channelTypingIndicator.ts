@@ -16,7 +16,7 @@ export function channelTypingIndicator(Router: Router) {
     rateLimit({
       name: 'channel_typing',
       expireMS: 10000,
-      requestCount: 3,
+      requestCount: 25,
     }),
     route
   );
