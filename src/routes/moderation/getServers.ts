@@ -23,6 +23,7 @@ async function route (req: Request, res: Response) {
     orderBy: {
       createdAt: 'desc'
     },
+    ...(after ? {skip: 1} : undefined),
     take: 30,
     ...(after ? {cursor: { id: after }} : undefined),
     select: {name: true, hexColor: true, id: true, createdAt: true, createdBy: {select: {id: true, username: true, tag: true}}}
