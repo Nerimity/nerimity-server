@@ -15,14 +15,10 @@ export function login(Router: Router) {
   );
 }
 
-
 interface Body {
   email: string;
   password: string;
 }
-
-
-
 
 async function route (req: Request, res: Response) {
   const body = req.body as Body;

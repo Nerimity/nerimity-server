@@ -11,8 +11,8 @@ export function generateError(message: string, path?: string): CustomError {
   };
 }
 
-export function customExpressValidatorResult(req: Request) {
-  const errors = validationResult(req);
+export function customExpressValidatorResult(req: Request<unknown, unknown, unknown>) {
+  const errors = validationResult(req as any);
   if (errors.isEmpty()) return null;
   const firstError = errors.array({onlyFirstError: true});
   return generateError(firstError[0].msg, firstError[0].param);

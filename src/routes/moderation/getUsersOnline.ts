@@ -12,15 +12,8 @@ export function getUsersOnline(Router: Router) {
   );
 }
 
-
-
-
-
 async function route (req: Request, res: Response) {
-
-
   const connectedUserIds = await getAllConnectedUserIds();
-
 
   const users = await prisma.user.findMany({
     where: {id: {in: connectedUserIds}},
@@ -30,8 +23,5 @@ async function route (req: Request, res: Response) {
     select: {id: true, username: true, joinedAt: true, tag: true, hexColor: true, }
   });
 
-
   res.json(users);
-
-
 }

@@ -72,7 +72,7 @@ export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, C
     return [null, generateError('Invalid email address.', 'email')];
   }
 
-  const isPasswordValid = await bcrypt.compare(opts.password, account.password);
+  const isPasswordValid = await checkUserPassword(opts.password, account.password);
   if (!isPasswordValid) {
     return [null, generateError('Invalid password.', 'password')];
   }
@@ -82,6 +82,8 @@ export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, C
 
   return [token, null];
 };
+
+export const checkUserPassword = (password: string, encrypted: string): Promise<boolean> => bcrypt.compare(password, encrypted);
 
 
 
