@@ -55,12 +55,10 @@ async function route (req: Request<unknown, unknown, Body>, res: Response) {
   const DAY_IN_MS = 86400000;
   const now = Date.now();
   const expireDate = new Date(now + (DAY_IN_MS * req.body.days));
-  
 
   prisma.$transaction(sanitizedUserIds.map(userId => (
     prisma.account.update({where: {userId}, data: {suspendCount: {increment: 1}}})
   )));
-
 
   prisma.suspension.createMany({
     data: sanitizedUserIds.map(userId => ({
@@ -71,7 +69,4 @@ async function route (req: Request<unknown, unknown, Body>, res: Response) {
       suspendedById: req.accountCache.user.id
     }))
   });
-
-
-
 }
