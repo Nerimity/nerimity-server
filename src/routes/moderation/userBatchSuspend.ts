@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
 import { checkUserPassword } from '../../services/User';
@@ -50,5 +51,27 @@ async function route (req: Request<unknown, unknown, Body>, res: Response) {
   if (req.body.userIds.length >= 5000) return res.status(403).json(generateError('userIds must contain less than 5000 ids.'));
 
   const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
+
+  const DAY_IN_MS = 86400000;
+  const now = Date.now();
+  const expireDate = new Date(now + (DAY_IN_MS * req.body.days));
+  
+
+  prisma.$transaction(sanitizedUserIds.map(userId => (
+    prisma.account.update({where: {userId}, data: {suspendCount: {increment: 1}}})
+  )));
+
+
+  prisma.suspension.createMany({
+    data: sanitizedUserIds.map(userId => ({
+      id: generateId(),
+      userId,
+      reason: req.body.reason,
+      expireAt: expireDate.toISOString(),
+      suspendedById: req.accountCache.user.id
+    }))
+  });
+
+
 
 }

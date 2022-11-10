@@ -15,6 +15,7 @@ model Account {
   ipAddress       String?
   userId          String  @unique
   user            User    @relation(fields: [userId], references: [id])
+  suspendCount    Int     @default(0) // How many times the user has been suspended.
 }
 
 model User {
@@ -41,9 +42,16 @@ model User {
   createdServerInvites   ServerInvite[]
   memberInServers        ServerMember[]
   servers                Server[]
-
-
   createdServerRoles ServerRole[]
+}
+
+model Suspension {
+  id            String    @id
+  suspendedAt   DateTime  @default(now())
+  expireAt      DateTime?
+  reason        String?
+  suspendedById String
+  userId        String       @unique
 }
 
 model Server {
