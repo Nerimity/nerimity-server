@@ -19,8 +19,9 @@ interface Payload {
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
   const [accountCache, error] = await authenticateUser(payload.token);
+
   if (error !== null) {
-    emitError(socket, { message: error, disconnect: true });
+    emitError(socket, { ...error, disconnect: true });
     return;
   }
   const cacheUser = accountCache.user;

@@ -15,7 +15,7 @@ export function authenticate (opts?: Options) {
     
     const [cachedAccount, error] = await authenticateUser(token);
     if (error !== null) {
-      return res.status(401).json(generateError(error));
+      return res.status(401).json(generateError(error.message));
     }
     if (!opts?.allowBot && cachedAccount.user.bot) {
       return res.status(401).json(generateError('Bots are not allowed to use this route.'));

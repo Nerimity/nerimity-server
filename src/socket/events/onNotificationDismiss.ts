@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { getAccountCacheBySocketId } from '../../cache/UserCache';
+import { getUserIdBySocketId } from '../../cache/UserCache';
 import { dismissChannelNotification } from '../../services/Channel';
 
 interface Payload {
@@ -7,10 +7,9 @@ interface Payload {
 }
 
 export async function onNotificationDismiss(socket: Socket, payload: Payload) {
-  const accountCache = await getAccountCacheBySocketId(socket.id);
-  if (!accountCache) return;
-  const userCache = accountCache.user;
+  const userId = await getUserIdBySocketId(socket.id);
+  if (!userId) return;
 
-  dismissChannelNotification(userCache.id, payload.channelId);
+  dismissChannelNotification(userId, payload.channelId);
 
 }

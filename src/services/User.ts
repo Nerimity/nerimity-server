@@ -16,6 +16,21 @@ interface RegisterOpts {
   password: string;  
 }
 
+
+export const getSuspensionDetails = async (userId: string) => {
+  const suspend = await prisma.suspension.findFirst({where: {userId}});
+  if (!suspend) return false;
+  if (!suspend.expireAt) return suspend;
+  
+  const expireDate = new Date(suspend.expireAt);
+  const now = new Date();
+  if (expireDate > now) return suspend;
+
+  await prisma.suspension.delete({where: {userId}});
+  return false;
+};
+
+
 export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<string, CustomError>> => {
 
   const account = await exists(prisma.account, {where: {email: opts.email}});
