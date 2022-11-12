@@ -147,7 +147,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
         mentionedById: opts.userId,
         mentionedToId: channel.inbox.recipientId,
         serverId: channel.server?.id,
-        createdAt: message.createdAt,
+        createdAt: dateToDateTime(message.createdAt),
       }
     });
   }
