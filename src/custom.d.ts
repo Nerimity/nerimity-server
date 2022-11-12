@@ -15,5 +15,9 @@ declare global {
       userIP: string;
     }
   }
- 
+
+  interface Date {
+    toJSON(test: string): number;
+  }
 }
+

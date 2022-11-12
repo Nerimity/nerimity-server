@@ -4,7 +4,7 @@ import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageUpdated } from
 import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
-import { exists, prisma } from '../common/database';
+import { dateToDateTime, exists, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -49,7 +49,7 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
     where: {id: opts.messageId},
     data: {
       content,
-      editedAt: new Date().toISOString(),
+      editedAt: dateToDateTime(),
     },
     select: {content: true, editedAt: true}
   });
@@ -101,7 +101,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
 
   // update channel last message
-  await prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: message.createdAt}});
+  await prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: dateToDateTime(message.createdAt)}});
   // update sender last seen
   opts.updateLastSeen !== false && await dismissChannelNotification(opts.userId, opts.channelId, false);
 

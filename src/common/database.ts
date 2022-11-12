@@ -57,3 +57,13 @@ export function removeRoleIdFromServerMembers(roleId: string) {
       `
   );
 }
+
+export function dateToDateTime(date?: Date | number) {
+  if (!date) {
+    return new Date().toISOString();
+  }
+  if (typeof date === 'number') {
+    return new Date(date).toISOString();
+  }
+  return date.toISOString();
+}

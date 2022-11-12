@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { prisma } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
@@ -65,6 +65,8 @@ async function route (req: Request<unknown, unknown, Body>, res: Response) {
     prisma.account.update({where: {userId}, data: {suspendCount: {increment: 1}}})
   )));
 
+  const expireDateTime = dateToDateTime(expireDate);
+
   await prisma.$transaction(sanitizedUserIds.map(userId => (
     prisma.suspension.upsert({
       where: {userId},
@@ -73,12 +75,12 @@ async function route (req: Request<unknown, unknown, Body>, res: Response) {
         userId,
         suspendedById: req.accountCache.user.id,
         reason: req.body.reason,
-        expireAt: req.body.days ? expireDate.toISOString() : null,
+        expireAt: req.body.days ? expireDateTime : null,
       },
       update: {
         suspendedById: req.accountCache.user.id,
         reason: req.body.reason || null,
-        expireAt: req.body.days ? expireDate.toISOString() : null,
+        expireAt: req.body.days ? expireDateTime : null,
       }
     })
   )));
@@ -87,7 +89,7 @@ async function route (req: Request<unknown, unknown, Body>, res: Response) {
     userIds: sanitizedUserIds,
     clearCache: true,
     reason: req.body.reason,
-    expire: expireDate.toISOString()
+    expire: expireDateTime,
   });
 
   res.status(200).json({success: true});

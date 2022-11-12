@@ -3,7 +3,7 @@ import { getChannelCache, updateServerChannelCache } from '../cache/ChannelCache
 import { getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
-import { prisma } from '../common/database';
+import { dateToDateTime, prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
@@ -37,10 +37,10 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
         userId,
         serverId,
         channelId,
-        lastSeen: new Date().toISOString(),
+        lastSeen: dateToDateTime(),
       },
       update: {
-        lastSeen: new Date().toISOString(),
+        lastSeen: dateToDateTime(),
       }
     });
 

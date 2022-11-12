@@ -17,10 +17,12 @@ import { userIP } from './middleware/userIP';
 import { rateLimit } from './middleware/rateLimit';
 import { ModerationRouter } from './routes/moderation/Router';
 
+(Date.prototype.toJSON as unknown as (this: Date) => number) = function() {
+  return this.getTime();
+};
+
 const app = express();
 const server = http.createServer(app);
-
-
 
 // eslint-disable-next-line no-async-promise-executor
 export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
