@@ -44,7 +44,9 @@ if (process.env.TEST !== 'true') {
   main();
 }
 
-app.use(cors());
+app.use(cors({
+  origin: env.ORIGIN
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
