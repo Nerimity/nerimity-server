@@ -1,14 +1,11 @@
 import { Log } from './Log';
 
-const origin = () => {
+const origin = (): string[]  => {
   if (!process.env.ORIGIN) {
-    Log.warn('ORIGIN is not provided in .env. \'*\' will be used by default.');
-    return '*';
+    Log.warn('ORIGIN is not provided in .env.');
+    return [];
   }
-  if (process.env.ORIGIN.startsWith('[')) {
-    return JSON.parse(process.env.ORIGIN);
-  }
-  return process.env.ORIGIN;
+  return JSON.parse(process.env.ORIGIN);
 };
 
 

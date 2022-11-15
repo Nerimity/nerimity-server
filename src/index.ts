@@ -45,7 +45,15 @@ if (process.env.TEST !== 'true') {
 }
 
 app.use(cors({
-  origin: env.ORIGIN
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (env.ORIGIN.indexOf(origin) === -1) {
+      return callback(null, false);
+    }
+    return callback(null, true);
+    
+  },
+  credentials: true,
 }));
 
 app.use(express.json());
