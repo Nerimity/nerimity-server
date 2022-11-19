@@ -7,7 +7,8 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { banServerMember } from '../../services/Server';
 
 export function serverMemberBan(Router: Router) {
-  Router.delete('/servers/:serverId/members/:userId/ban', 
+  // Router.delete('/servers/:serverId/members/:userId/ban', 
+  Router.post('/servers/:serverId/bans/:userId', 
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.BAN),
