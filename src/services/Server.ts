@@ -257,6 +257,11 @@ export const kickServerMember = async (userId: string, serverId: string) => {
   }
   return [true, null];
 };
+
+export const serverMemberBans = async (serverId: string) => {
+  return prisma.bannedServerMember.findMany({ where: { serverId }, select: { serverId: true, user: true }});
+};
+
 export const banServerMember = async (userId: string, serverId: string) => {
   const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {

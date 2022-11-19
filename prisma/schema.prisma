@@ -43,6 +43,7 @@ model User {
   memberInServers        ServerMember[]
   servers                Server[]
   createdServerRoles ServerRole[]
+  bannedServers      BannedServerMember[]
 }
 
 model Suspension {
@@ -130,6 +131,7 @@ model BannedServerMember {
   userId   String
   serverId String
   server   Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id])
 }
 
 model Friend {

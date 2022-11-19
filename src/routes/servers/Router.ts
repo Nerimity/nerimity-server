@@ -15,6 +15,7 @@ import { serverMemberUpdate } from './serveMemberUpdate';
 import { serverRoleDelete } from './serverRoleDelete';
 import { serverMemberKick } from './serverMemberKick';
 import { serverMemberBan } from './serverMemberBan';
+import { serverMemberBanList } from './serverMemberBanList';
 
 
 const ServersRouter = Router();
@@ -39,5 +40,6 @@ serverRoleDelete(ServersRouter);
 serverMemberUpdate(ServersRouter);
 serverMemberKick(ServersRouter);
 serverMemberBan(ServersRouter);
+serverMemberBanList(ServersRouter);
 
 export {ServersRouter};
