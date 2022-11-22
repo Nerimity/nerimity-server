@@ -15,10 +15,10 @@ export function serverDeleteOrLeave(Router: Router) {
 
 async function route (req: Request, res: Response) {
 
-  const [server, error]  = await deleteOrLeaveServer(req.accountCache.user.id, req.serverCache.id);
+  const [status, error]  = await deleteOrLeaveServer(req.accountCache.user.id, req.serverCache.id);
   if (error) {
     return res.status(500).json(error);
   }
-  res.json(server);
+  res.json({status: true});
 
 }

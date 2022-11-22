@@ -51,7 +51,7 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
       content,
       editedAt: dateToDateTime(),
     },
-    select: {content: true, editedAt: true}
+    include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
   });
   
   

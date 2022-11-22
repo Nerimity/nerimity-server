@@ -175,7 +175,7 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   return [server, null];
 };
 
-export const deleteOrLeaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<Server, CustomError>>  => {
+export const deleteOrLeaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<boolean, CustomError>>  => {
   
   const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
@@ -187,8 +187,23 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string, ban 
 
   // check if user is in the server
   const isInServer = await exists(prisma.serverMember, {where: {serverId, userId}});
-  if (!isInServer) {
+  if (!isInServer && !ban) {
     return [null, generateError('You are not in this server.')];
+  }
+
+  if (!isInServer && ban) {
+    const isBanned = await prisma.bannedServerMember.findFirst({where: { serverId, userId }});
+    if (isBanned) {
+      return [null, generateError('User already banned.')];
+    }
+    await prisma.bannedServerMember.create({
+      data: {
+        id: generateId(),
+        userId,
+        serverId,
+      }
+    });
+    return [true, null];
   }
 
 
@@ -229,7 +244,7 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string, ban 
   }
   emitServerLeft(userId, serverId, isServerCreator);
 
-  return [server, null];
+  return [false, null];
 
 };
 
@@ -260,6 +275,14 @@ export const kickServerMember = async (userId: string, serverId: string) => {
 
 export const serverMemberBans = async (serverId: string) => {
   return prisma.bannedServerMember.findMany({ where: { serverId }, select: { serverId: true, user: true }});
+};
+export const serverMemberRemoveBan = async (serverId: string, userId: string): Promise<CustomResult<boolean, CustomError>> => {
+  const bannedMember = await prisma.bannedServerMember.findFirst({where: {serverId, userId}});
+  if (!bannedMember) {
+    return [null, generateError('This member is not banned.')];
+  }
+  await prisma.bannedServerMember.delete({ where: { id: bannedMember.id }});
+  return [true, null];
 };
 
 export const banServerMember = async (userId: string, serverId: string) => {
