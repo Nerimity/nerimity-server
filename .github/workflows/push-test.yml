@@ -44,8 +44,8 @@ jobs:
       - uses: actions/checkout@v2
           
       - run: |
-        npm i -g pnpm
-        pnpm i
+          npm i -g pnpm
+          pnpm i
       - run: pnpm run prisma:migrate_dev
         env:
           DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
