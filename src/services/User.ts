@@ -4,12 +4,14 @@ import { generateHexColor, generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
-import { emitInboxOpened, emitUserPresenceUpdate } from '../emits/User';
+import { emitInboxOpened, emitUserPresenceUpdate, emitUserUpdated } from '../emits/User';
 import { ChannelType } from '../types/Channel';
-import { Presence, updateCachePresence } from '../cache/UserCache';
+import { Presence, removeAccountsCache, updateCachePresence } from '../cache/UserCache';
 import { FriendStatus } from '../types/Friend';
 import {excludeFields, exists, prisma} from '../common/database';
 import { generateId } from '../common/flakeId';
+import { Account, User } from '@prisma/client';
+import { addToObjectIfExists } from '../common/addToObjectIfExists';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -98,7 +100,7 @@ export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, C
   return [token, null];
 };
 
-export const checkUserPassword = (password: string, encrypted: string): Promise<boolean> => bcrypt.compare(password, encrypted);
+export const checkUserPassword = async (password: string | undefined, encrypted: string): Promise<boolean> => !password ? false : bcrypt.compare(password, encrypted);
 
 
 
@@ -202,7 +204,66 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
   const mutualServerIds = members.map(member => member.serverId);
 
   return [{user, mutualFriendIds, mutualServerIds}, null];
+};
+
+interface UpdateUserProps {
+  userId: string,
+  email?: string,
+  username?: string,
+  tag?: string,
+  password?: string
+}
+
+export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<User, CustomError>> => {
+  const account = await prisma.account.findFirst({
+    where: { userId: opts.userId },
+    select: {
+      user: true,
+      password: true
+    }
+  });
+
+  if (!account) {
+    return [null, generateError('User does not exist!')];
+  }
+
+  const isPasswordValid = await checkUserPassword(opts.password, account.password);
+  if (!isPasswordValid) return [null, generateError('Invalid Password', 'password')];
+  
+  if (opts.tag || opts.username) {
+    const exists = await prisma.user.findFirst({where: {
+      tag: opts.tag?.trim() || account.user.tag,
+      username: opts.username?.trim() || account.user.username,
+      NOT: {id: opts.userId}
+    }});
+    if (exists) return [null, generateError('Someone already has this combination of tag and username.')];
+  }
+
+  if (opts.email) {
+    const exists = await prisma.account.findFirst({where: {email: opts.email.trim(), NOT: {userId: opts.userId}}});
+    if (exists) return [null, generateError('This email is already used by someone else.')];
+  }
 
 
+  const updateResult = await prisma.account.update({where: {userId: opts.userId}, data: {
+    ...addToObjectIfExists('email', opts.email?.trim()),
+    user: {
+      update: {
+        ...addToObjectIfExists('username', opts.username?.trim()),
+        ...addToObjectIfExists('tag', opts.tag?.trim()),
+      }
+    },
+  },
+  include: {user: true}
+  });
 
+  await removeAccountsCache([opts.userId]);
+
+  emitUserUpdated(opts.userId, {
+    email: updateResult.email,
+    username: updateResult.user.username,
+    tag: updateResult.user.tag,
+  });
+  
+  return [updateResult.user, null];
 };

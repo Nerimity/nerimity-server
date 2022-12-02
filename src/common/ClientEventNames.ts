@@ -1,6 +1,7 @@
 
 export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
+export const USER_UPDATED = 'user:updated';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 

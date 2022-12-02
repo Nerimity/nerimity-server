@@ -33,6 +33,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     where: {id: accountCache.user.id},
     include: {
       friends: {include: {recipient: true}},
+      account: {select: {email: true}}
     }
   });
 
@@ -105,7 +106,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
 
   socket.emit(AUTHENTICATED, {
-    user: cacheUser,
+    user: {...cacheUser, email: user.account?.email},
     servers,
     serverMembers,
     serverRoles,

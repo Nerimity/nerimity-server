@@ -1,6 +1,6 @@
-import { Inbox } from '@prisma/client';
+import { Inbox, User } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
-import { INBOX_OPENED, USER_PRESENCE_UPDATE } from '../common/ClientEventNames';
+import { INBOX_OPENED, USER_PRESENCE_UPDATE, USER_UPDATED } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
 import { emitToAll, getIO } from '../socket/socket';
 
@@ -11,7 +11,6 @@ export const emitUserPresenceUpdate = (userId: string, presence: Presence, socke
     payload: presence,
     excludeSocketId: socketId
   });
-
 };
 
 
@@ -20,4 +19,9 @@ export const emitInboxOpened = (userId: string, inbox: Inbox) => {
 };
 export const emitNotificationDismissed = (userId: string, channelId: string) => {
   getIO().to(userId).emit(NOTIFICATION_DISMISSED, {channelId});
+};
+
+
+export const emitUserUpdated = (userId: string, updated: {email?: string} & Partial<User> ) => {
+  getIO().to(userId).emit(USER_UPDATED, updated);
 };
