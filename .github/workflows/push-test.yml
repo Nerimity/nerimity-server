@@ -43,11 +43,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
           
-      - run: npm ci
-      - run: npm run prisma:migrate_dev
+      - run: |
+        npm i -g pnpm
+        pnpm i
+      - run: pnpm run prisma:migrate_dev
         env:
           DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
-      - run: npm test
+      - run: pnpm test
         env:
           DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
 
