@@ -46,7 +46,7 @@
     "supertest": "^6.2.3"
   },
   "engines": {
-    "npm": "please-use-npm",
+    "npm": "please-use-pnpm",
     "pnpm": ">= 1.0.0"
   }
 }
