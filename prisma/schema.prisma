@@ -74,6 +74,7 @@ model Server {
   users                  User[]
   roles                  ServerRole[]
   bannedUsers            BannedServerMember[]
+  verified               Boolean                @default(false)
 }
 
 model ServerRole {
