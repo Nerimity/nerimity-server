@@ -31,6 +31,38 @@ export const createServerInvite = async (serverId: string, creatorId: string): P
   return [serverInvite, null];
 };
 
+export const createServerCustomInvite = async (code: string, serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
+
+  code = code.trim();
+
+  // check if custom invite already exists by someone else
+  const strangerInvite = await prisma.serverInvite.findFirst({where: { code: {mode: 'insensitive', equals: code}, isCustom: true, serverId: {not: serverId}}});
+  if (strangerInvite) {
+    return [null, generateError('This code already in use by another server.')];
+  }
+
+
+
+  // Check if custom invite already exists
+  const invite = await prisma.serverInvite.findFirst({where: {serverId, isCustom: true}});
+  if (invite) {
+    const newInvite = await prisma.serverInvite.update({where: {id: invite.id}, data: {code}});
+    return [newInvite, null];
+  }
+
+  const serverInvite = await prisma.serverInvite.create({
+    data: {
+      id: generateId(),
+      uses: 0,
+      createdById: creatorId,
+      code,
+      serverId: serverId,
+      isCustom: true,
+    }
+  });
+  return [serverInvite, null];
+};
+
 export const joinServerByInviteCode = async (userId: string, inviteCode: string): Promise<CustomResult<Server, CustomError>> => {
   const invite = await prisma.serverInvite.findFirst({where: {code: inviteCode}});
   if (!invite) {

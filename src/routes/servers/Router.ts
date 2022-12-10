@@ -17,6 +17,7 @@ import { serverMemberKick } from './serverMemberKick';
 import { serverMemberBan } from './serverMemberBan';
 import { serverMemberBanList } from './serverMemberBanList';
 import { serverMemberBanRemove } from './serverMemberBanRemove';
+import { serverInviteCustomCreate } from './serverInviteCustomCreate';
 
 
 const ServersRouter = Router();
@@ -28,6 +29,7 @@ serverSettingsUpdate(ServersRouter);
 serverInviteJoin(ServersRouter);
 serverInviteDetails(ServersRouter);
 serverInviteCreate(ServersRouter);
+serverInviteCustomCreate(ServersRouter);
 serverInvites(ServersRouter);
 
 serverChannelCreate(ServersRouter);
