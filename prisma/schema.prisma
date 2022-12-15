@@ -75,6 +75,23 @@ model Server {
   roles                  ServerRole[]
   bannedUsers            BannedServerMember[]
   verified               Boolean                @default(false)
+
+  PublicServer           PublicServer?
+
+}
+
+model PublicServer {
+  id              String    @id
+  serverId        String    @unique
+  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade) 
+  description     String
+
+  bumpCount       Int       @default(0)
+  bumpedAt        DateTime?
+
+  lifetimeBumpCount   Int      @default(0)
+
+  createdAt       DateTime   @default(now())
 }
 
 model ServerRole {

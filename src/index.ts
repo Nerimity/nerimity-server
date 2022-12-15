@@ -16,6 +16,8 @@ import { prisma } from './common/database';
 import { userIP } from './middleware/userIP';
 import { rateLimit } from './middleware/rateLimit';
 import { ModerationRouter } from './routes/moderation/Router';
+import { ExploreRouter } from './routes/explore/Router';
+import schedule from 'node-schedule';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function() {
   return this.getTime();
@@ -32,6 +34,7 @@ export const main = (): Promise<http.Server> => new Promise(async (resolve) => {
   
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');
+    scheduleBumpReset();
     if (server.listening) return;
     server.listen(env.PORT, () => {
       Log.info('listening on *:' + env.PORT);
@@ -65,5 +68,20 @@ app.use('/api', UsersRouter);
 app.use('/api', ServersRouter);
 app.use('/api', ChannelsRouter);
 app.use('/api', FriendsRouter);
+app.use('/api', ExploreRouter);
 
 
+
+
+function scheduleBumpReset() {
+  // Schedule the task to run every Monday at 0:00 UTC
+  const rule = new schedule.RecurrenceRule();
+  rule.dayOfWeek = 1;
+  rule.hour = 0;
+  rule.minute = 0;
+
+  schedule.scheduleJob(rule, async () => {
+    await prisma.publicServer.updateMany({data: {bumpCount: 0}});
+    Log.info('All public server bumps have been reset to 0.');
+  });
+}
