@@ -4,7 +4,8 @@ import { hasBit, Bitwise, ROLE_PERMISSIONS } from '../common/Bitwise';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Options {
-  ignoreAdmin: boolean
+  ignoreAdmin?: boolean,
+  continueOnError?: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -26,8 +27,13 @@ export function memberHasRolePermission (permission: Bitwise, opts?: Options) {
     if (!opts?.ignoreAdmin && hasBit(memberPermissions, ROLE_PERMISSIONS.ADMIN.bit)) {
       return next();      
     }
-    if (!hasBit(memberPermissions, permission.bit)){
-      return res.status(403).json(generateError(`Missing ${permission.name} permission`));
+    if (!hasBit(memberPermissions, permission.bit)) {
+      const errorMessage = `Missing ${permission.name} permission`;
+      if (opts?.continueOnError) {
+        req.errorMessage = errorMessage;
+        return next();
+      }
+      return res.status(403).json(generateError(errorMessage));
     }
 
     next();

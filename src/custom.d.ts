@@ -13,6 +13,7 @@ declare global {
       serverCache: ServerCache
       rateLimited?: number
       userIP: string;
+      errorMessage?: string;
     }
   }
 
