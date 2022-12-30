@@ -1,4 +1,3 @@
-import { UserCache } from '../cache/UserCache';
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
 import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageUpdated } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageUpdated } from '../emits/Server';
@@ -10,10 +9,16 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import { Message } from '@prisma/client';
 
-export const getMessagesByChannelId = async (channelId: string, limit = 50) => {
+export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string) => {
+
+  console.log(afterMessageId);
 
   const messages = await prisma.message.findMany({
     where: {channelId},
+    ...(afterMessageId ? {
+      cursor: {id: afterMessageId},
+      skip: 1
+    } : undefined),
     include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
     take: limit,
     orderBy: {createdAt: 'desc'},
