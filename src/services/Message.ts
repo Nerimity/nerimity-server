@@ -10,9 +10,6 @@ import { CustomResult } from '../common/CustomResult';
 import { Message } from '@prisma/client';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string) => {
-
-  console.log(afterMessageId);
-
   const messages = await prisma.message.findMany({
     where: {channelId},
     ...(afterMessageId ? {
