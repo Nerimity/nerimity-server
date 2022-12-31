@@ -11,7 +11,7 @@ export function channelMessages(Router: Router) {
     rateLimit({
       name: 'messages',
       expireMS: 30000,
-      requestCount: 30,
+      requestCount: 50,
     }),
     route
   );
