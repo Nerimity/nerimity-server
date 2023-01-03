@@ -9,17 +9,28 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import { Message } from '@prisma/client';
 
-export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string) => {
+export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string, beforeMessageId?: string) => {
+  if (limit > 100) return [];
   const messages = await prisma.message.findMany({
     where: {channelId},
-    ...(afterMessageId ? {
-      cursor: {id: afterMessageId},
-      skip: 1
-    } : undefined),
     include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
     take: limit,
     orderBy: {createdAt: 'desc'},
+
+    ...(afterMessageId ? {
+      cursor: {id: afterMessageId},
+      skip: 1,
+    } : undefined),
+
+    ...(beforeMessageId ? {
+      cursor: {id: beforeMessageId},
+      skip: 1,
+      orderBy: {createdAt: 'asc'},
+    } : undefined),
   });
+
+  if (beforeMessageId) return messages;
+
   return messages.reverse();
 };
 

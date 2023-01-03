@@ -23,7 +23,8 @@ export function channelMessages(Router: Router) {
 async function route (req: Request, res: Response) {
   const limit = parseInt(req.query.limit as string || '50') || undefined;
   const after = req.query.after as string || undefined;
+  const before = req.query.before as string || undefined;
 
-  const messages = await getMessagesByChannelId(req.channelCache.id, limit, after);
+  const messages = await getMessagesByChannelId(req.channelCache.id, limit, after, before);
   res.json(messages);
 }
