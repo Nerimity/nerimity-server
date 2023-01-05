@@ -70,7 +70,7 @@ jobs:
           cp package-lock.json build/
       - name: Get the version
         id: get_version
-        run: echo "VERSION=::$(echo $GITHUB_REF | cut -d / -f 3)" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(echo $GITHUB_REF | cut -d / -f 3)" >> $GITHUB_OUTPUT
       - name: Zip The Build
         uses: vimtor/action-zip@v1
         with:
