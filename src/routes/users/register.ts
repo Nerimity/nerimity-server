@@ -9,7 +9,8 @@ export function register(Router: Router) {
   Router.post('/users/register',
     body('token')
       .isString().withMessage('Token must be a string.')
-      .isLength({ min: 1, max: 5000 }).withMessage('Token must be between 1 and 5000 characters long.'),
+      .isLength({ min: 1, max: 5000 }).withMessage('Token must be between 1 and 5000 characters long.')
+      .optional(true),
     body('email')
       .not().isEmpty().withMessage('Email is required.')
       .isEmail().withMessage('Invalid email.')
