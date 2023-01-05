@@ -52,7 +52,7 @@ jobs:
       - run: pnpm test
         env:
           DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
-
+          DEV_MODE: true
           REDIS_HOST: redis
           REDIS_PORT: 6379
           JWT_SECRET: "change me"

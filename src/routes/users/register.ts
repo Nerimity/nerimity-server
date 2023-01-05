@@ -1,11 +1,15 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { turnstileVerify } from '../../common/turnstileVerify';
 import { rateLimit } from '../../middleware/rateLimit';
 import { registerUser } from '../../services/User';
 
 export function register(Router: Router) {
   Router.post('/users/register',
+    body('token')
+      .isString().withMessage('Token must be a string.')
+      .isLength({ min: 1, max: 5000 }).withMessage('Token must be between 1 and 5000 characters long.'),
     body('email')
       .not().isEmpty().withMessage('Email is required.')
       .isEmail().withMessage('Invalid email.')
@@ -32,16 +36,22 @@ interface Body {
   email: string;
   username: string;
   password: string;
+  token: string;
 }
 
 async function route (req: Request, res: Response) {
   const body = req.body as Body;
 
-
   const validateError = customExpressValidatorResult(req);
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  const validToken = await turnstileVerify(body.token);
+
+  if (!validToken) {
+    return res.status(401).json(generateError('Invalid captcha! Please try again.', 'token'));
   }
 
   const [ userToken, errors ] = await registerUser({
