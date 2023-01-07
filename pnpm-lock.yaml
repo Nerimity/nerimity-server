@@ -2,7 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@brecert/flakeid': ^2.0.1
-  '@prisma/client': ^4.4.0
+  '@prisma/client': ^4.8.1
   '@socket.io/redis-adapter': ^7.2.0
   '@types/bcrypt': ^5.0.0
   '@types/cors': ^2.8.12
@@ -24,7 +24,7 @@ specifiers:
   node-fetch: ^2.6.7
   node-schedule: ^2.1.0
   nodemon: ^2.0.15
-  prisma: ^4.4.0
+  prisma: ^4.8.1
   redis: ^4.1.0
   socket.io: ^4.5.0
   socket.io-client: ^4.5.1
@@ -34,7 +34,7 @@ specifiers:
 
 dependencies:
   '@brecert/flakeid': 2.0.1
-  '@prisma/client': 4.7.1_prisma@4.7.1
+  '@prisma/client': 4.8.1_prisma@4.8.1
   '@socket.io/redis-adapter': 7.2.0
   bcrypt: 5.1.0
   cors: 2.8.5
@@ -61,7 +61,7 @@ devDependencies:
   eslint: 8.28.0
   mocha: 10.1.0
   nodemon: 2.0.20
-  prisma: 4.7.1
+  prisma: 4.8.1
   socket.io-client: 4.5.4
   ts-node: 10.9.1_typescript@4.9.3
   typescript: 4.9.3
@@ -172,8 +172,8 @@ packages:
       fastq: 1.13.0
     dev: true
 
-  /@prisma/client/4.7.1_prisma@4.7.1:
-    resolution: {integrity: sha512-/GbnOwIPtjiveZNUzGXOdp7RxTEkHL4DZP3vBaFNadfr6Sf0RshU5EULFzVaSi9i9PIK9PYd+1Rn7z2B2npb9w==}
+  /@prisma/client/4.8.1_prisma@4.8.1:
+    resolution: {integrity: sha512-d4xhZhETmeXK/yZ7K0KcVOzEfI5YKGGEr4F5SBV04/MU4ncN/HcE28sy3e4Yt8UFW0ZuImKFQJE+9rWt9WbGSQ==}
     engines: {node: '>=14.17'}
     requiresBuild: true
     peerDependencies:
@@ -182,16 +182,16 @@ packages:
       prisma:
         optional: true
     dependencies:
-      '@prisma/engines-version': 4.7.1-1.272861e07ab64f234d3ffc4094e32bd61775599c
-      prisma: 4.7.1
+      '@prisma/engines-version': 4.8.0-61.d6e67a83f971b175a593ccc12e15c4a757f93ffe
+      prisma: 4.8.1
     dev: false
 
-  /@prisma/engines-version/4.7.1-1.272861e07ab64f234d3ffc4094e32bd61775599c:
-    resolution: {integrity: sha512-Bd4LZ+WAnUHOq31e9X/ihi5zPlr4SzTRwUZZYxvWOxlerIZ7HJlVa9zXpuKTKLpI9O1l8Ec4OYCKsivWCs5a3Q==}
+  /@prisma/engines-version/4.8.0-61.d6e67a83f971b175a593ccc12e15c4a757f93ffe:
+    resolution: {integrity: sha512-MHSOSexomRMom8QN4t7bu87wPPD+pa+hW9+71JnVcF3DqyyO/ycCLhRL1we3EojRpZxKvuyGho2REQsMCvxcJw==}
     dev: false
 
-  /@prisma/engines/4.7.1:
-    resolution: {integrity: sha512-zWabHosTdLpXXlMefHmnouhXMoTB1+SCbUU3t4FCmdrtIOZcarPKU3Alto7gm/pZ9vHlGOXHCfVZ1G7OIrSbog==}
+  /@prisma/engines/4.8.1:
+    resolution: {integrity: sha512-93tctjNXcIS+i/e552IO6tqw17sX8liivv8WX9lDMCpEEe3ci+nT9F+1oHtAafqruXLepKF80i/D20Mm+ESlOw==}
     requiresBuild: true
 
   /@redis/bloom/1.1.0_@redis+client@1.4.2:
@@ -2082,13 +2082,13 @@ packages:
     engines: {node: '>= 0.8.0'}
     dev: true
 
-  /prisma/4.7.1:
-    resolution: {integrity: sha512-CCQP+m+1qZOGIZlvnL6T3ZwaU0LAleIHYFPN9tFSzjs/KL6vH9rlYbGOkTuG9Q1s6Ki5D0LJlYlW18Z9EBUpGg==}
+  /prisma/4.8.1:
+    resolution: {integrity: sha512-ZMLnSjwulIeYfaU1O6/LF6PEJzxN5par5weykxMykS9Z6ara/j76JH3Yo2AH3bgJbPN4Z6NeCK9s5fDkzf33cg==}
     engines: {node: '>=14.17'}
     hasBin: true
     requiresBuild: true
     dependencies:
-      '@prisma/engines': 4.7.1
+      '@prisma/engines': 4.8.1
 
   /proxy-addr/2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
