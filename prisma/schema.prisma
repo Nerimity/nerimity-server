@@ -44,6 +44,10 @@ model User {
   servers                Server[]
   createdServerRoles ServerRole[]
   bannedServers      BannedServerMember[]
+
+
+  posts              Post[]
+  likedPosts         PostLike[]
 }
 
 model Suspension {
@@ -235,4 +239,33 @@ model ServerChannelLastSeen {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([channelId, userId, serverId])
+}
+
+
+model Post {
+  id          String   @id
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+  content     String
+  createdAt   DateTime @default(now())
+
+
+
+  quotedPostId    String?
+  quotedPost      Post? @relation(fields: [quotedPostId], references: [id], name: "quotedPost")
+  
+  quotes     Post[] @relation(name: "quotedPost")
+
+  likedBy    PostLike[]
+
+}
+
+model PostLike {
+  id            String   @id
+  
+  postId        String
+  post          Post     @relation(fields: [postId], references: [id])
+
+  likedById     String
+  likedBy       User @relation(fields: [likedById], references: [id])
 }

@@ -18,6 +18,7 @@ import { rateLimit } from './middleware/rateLimit';
 import { ModerationRouter } from './routes/moderation/Router';
 import { ExploreRouter } from './routes/explore/Router';
 import schedule from 'node-schedule';
+import { PostsRouter } from './routes/posts/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function() {
   return this.getTime();
@@ -69,6 +70,7 @@ app.use('/api', ServersRouter);
 app.use('/api', ChannelsRouter);
 app.use('/api', FriendsRouter);
 app.use('/api', ExploreRouter);
+app.use('/api', PostsRouter);
 
 
 
