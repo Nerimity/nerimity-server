@@ -7,6 +7,7 @@ import { generateId } from '../common/flakeId';
 interface CreatePostOpts {
   userId: string;
   content: string;
+  commentToId?: string
 }
 export function createPost(opts: CreatePostOpts) {
   const post = prisma.post.create({
@@ -14,17 +15,17 @@ export function createPost(opts: CreatePostOpts) {
       id: generateId(),
       content: opts.content.trim(),
       createdById: opts.userId,
+      ...(opts.commentToId ? {commentToId: opts.commentToId} : undefined)
     },
     include: {
       createdBy: true,
-      _count: {select: {likedBy: true}},
+      _count: {select: {likedBy: true, comments: true}},
       likedBy: {select: {id: true},where: {likedById: opts.userId}}
     }
   });
 
   return post;
 }
-
 
 interface FetchPostsOpts {
   userId: string;
@@ -94,4 +95,16 @@ export async function unlikePost(userId: string, postId: string): Promise<Custom
   });
   const newPost = await fetchPost(postId, userId) as Post;
   return [newPost, null];
+}
+
+
+export async function deletePost(postId: string): Promise<CustomResult<boolean, CustomError>> {
+  const postExists = await prisma.post.count({where: {id: postId}});
+  if (!postExists) {
+    return [null, generateError('Post does not exist!')];
+  }
+  await prisma.post.delete({
+    where: {id: postId}
+  });
+  return [true, null];
 }

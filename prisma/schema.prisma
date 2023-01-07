@@ -258,13 +258,20 @@ model Post {
 
   likedBy    PostLike[]
 
+
+
+  commentToId  String?
+  commentTo  Post? @relation(fields: [commentToId], references: [id], name: "commentTo", onDelete: SetNull)
+
+  comments Post[] @relation(name: "commentTo")
+
 }
 
 model PostLike {
   id            String   @id
   
   postId        String
-  post          Post     @relation(fields: [postId], references: [id])
+  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   likedById     String
   likedBy       User @relation(fields: [likedById], references: [id])

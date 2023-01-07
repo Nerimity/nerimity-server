@@ -17,6 +17,10 @@ export function postCreate(Router: Router) {
     body('content')
       .isString().withMessage('Content must be a string!')
       .isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.'),
+    body('postId')
+      .isString().withMessage('postId must be a string!')
+      .isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.')
+      .optional(true),
     route
   );
 }
@@ -24,6 +28,7 @@ export function postCreate(Router: Router) {
 
 interface Body {
   content: string;
+  postId?: string; // Used if you want to reply to a post
 }
 
 async function route (req: Request, res: Response) {
@@ -37,7 +42,8 @@ async function route (req: Request, res: Response) {
 
   const post = await createPost({
     content: body.content,
-    userId: req.accountCache.user.id
+    userId: req.accountCache.user.id,
+    commentToId: body.postId
   });
 
 
