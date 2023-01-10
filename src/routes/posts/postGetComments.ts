@@ -3,20 +3,25 @@ import { param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { unlikePost } from '../../services/Post';
+import { fetchPosts } from '../../services/Post';
 
 
-export function postUnlike(Router: Router) {
-  Router.post('/posts/:postId/unlike', 
+export function postsGetComments(Router: Router) {
+  Router.get('/posts/:postId/comments', 
     authenticate(),
     rateLimit({
-      name: 'post_unlike',
+      name: 'post_get_comments',
       expireMS: 20000,
-      requestCount: 30,
+      requestCount: 100,
     }),
     param('postId')
       .isString().withMessage('postId must be a string!')
       .isLength({ min: 1, max: 100 }).withMessage('postId length must be between 1 and 100 characters.'),
+    route
+  );
+  
+  Router.get('/posts', 
+    authenticate(),
     route
   );
 }
@@ -35,11 +40,10 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const [updatedPost, error] = await unlikePost(req.accountCache.user.id, params.postId);
+  const commentPosts = await fetchPosts({
+    postId: params.postId,
+    requesterUserId: req.accountCache.user.id
+  });
 
-  if (error) {
-    return res.status(400).json(error);
-  }
-
-  res.json(updatedPost);
+  res.json(commentPosts);
 }

@@ -28,7 +28,8 @@ export function createPost(opts: CreatePostOpts) {
 }
 
 interface FetchPostsOpts {
-  userId: string;
+  userId?: string;
+  postId?: string; // get comments
   requesterUserId: string;
 } 
 
@@ -36,13 +37,14 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 
   const posts = await prisma.post.findMany({
     where: {
-      createdById: opts.userId
+      ...(opts.userId ? {createdById: opts.userId} : undefined),
+      ...(opts.postId ? {commentToId: opts.postId} : undefined)
     },
-    orderBy: {createdAt: 'desc'},
+    orderBy: {createdAt: 'asc'},
     take: 50,
     include: {
       createdBy: true,
-      _count: {select: {likedBy: true}},
+      _count: {select: {likedBy: true, comments: true}},
       likedBy: {select: {id: true},where: {likedById: opts.requesterUserId}}
     }
   });
@@ -59,7 +61,7 @@ export async function fetchPost(postId: string, requesterUserId: string) {
     take: 50,
     include: {
       createdBy: true,
-      _count: {select: {likedBy: true}},
+      _count: {select: {likedBy: true, comments: true}},
       likedBy: {select: {id: true},where: {likedById: requesterUserId}}
     }
   });

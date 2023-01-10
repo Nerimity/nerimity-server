@@ -2,12 +2,18 @@ import { Request, Response, Router } from 'express';
 import { param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
+import { rateLimit } from '../../middleware/rateLimit';
 import { fetchPosts, likePost } from '../../services/Post';
 
 
 export function postLike(Router: Router) {
   Router.post('/posts/:postId/like', 
     authenticate(),
+    rateLimit({
+      name: 'post_like',
+      expireMS: 20000,
+      requestCount: 30,
+    }),
     param('postId')
       .isString().withMessage('postId must be a string!')
       .isLength({ min: 1, max: 100 }).withMessage('postId length must be between 1 and 100 characters.'),
