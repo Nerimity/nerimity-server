@@ -31,22 +31,30 @@ interface FetchPostsOpts {
   userId?: string;
   postId?: string; // get comments
   requesterUserId: string;
+  withReplies?: boolean
 } 
 
-export async function fetchPosts(opts: FetchPostsOpts) {
 
+
+function constructInclude(requesterUserId: string, continueIter = true): any {
+  return {
+    ...(continueIter ? {commentTo: {include: constructInclude(requesterUserId, false)}} :  undefined),
+    createdBy: true,
+    _count: {select: {likedBy: true, comments: true}},
+    likedBy: {select: {id: true},where: {likedById: requesterUserId}}
+  };
+}
+
+export async function fetchPosts(opts: FetchPostsOpts) {
   const posts = await prisma.post.findMany({
     where: {
       ...(opts.userId ? {createdById: opts.userId} : undefined),
-      ...(opts.postId ? {commentToId: opts.postId} : undefined)
+      ...((opts.userId && !opts.withReplies)? {commentToId: null} : undefined),
+      ...(opts.postId ? {commentToId: opts.postId} : undefined),
     },
     orderBy: {createdAt: 'asc'},
     take: 50,
-    include: {
-      createdBy: true,
-      _count: {select: {likedBy: true, comments: true}},
-      likedBy: {select: {id: true},where: {likedById: opts.requesterUserId}}
-    }
+    include: constructInclude(opts.requesterUserId)
   });
 
   return posts;
@@ -59,11 +67,7 @@ export async function fetchPost(postId: string, requesterUserId: string) {
     },
     orderBy: {createdAt: 'desc'},
     take: 50,
-    include: {
-      createdBy: true,
-      _count: {select: {likedBy: true, comments: true}},
-      likedBy: {select: {id: true},where: {likedById: requesterUserId}}
-    }
+    include: constructInclude(requesterUserId)
   });
 
   return post;
