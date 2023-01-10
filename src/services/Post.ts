@@ -4,6 +4,15 @@ import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 
+function constructInclude(requesterUserId: string, continueIter = true): any {
+  return {
+    ...(continueIter ? {commentTo: {include: constructInclude(requesterUserId, false)}} :  undefined),
+    createdBy: true,
+    _count: {select: {likedBy: true, comments: true}},
+    likedBy: {select: {id: true},where: {likedById: requesterUserId}}
+  };
+}
+
 interface CreatePostOpts {
   userId: string;
   content: string;
@@ -17,11 +26,7 @@ export function createPost(opts: CreatePostOpts) {
       createdById: opts.userId,
       ...(opts.commentToId ? {commentToId: opts.commentToId} : undefined)
     },
-    include: {
-      createdBy: true,
-      _count: {select: {likedBy: true, comments: true}},
-      likedBy: {select: {id: true},where: {likedById: opts.userId}}
-    }
+    include: constructInclude(opts.userId)
   });
 
   return post;
@@ -33,17 +38,6 @@ interface FetchPostsOpts {
   requesterUserId: string;
   withReplies?: boolean
 } 
-
-
-
-function constructInclude(requesterUserId: string, continueIter = true): any {
-  return {
-    ...(continueIter ? {commentTo: {include: constructInclude(requesterUserId, false)}} :  undefined),
-    createdBy: true,
-    _count: {select: {likedBy: true, comments: true}},
-    likedBy: {select: {id: true},where: {likedById: requesterUserId}}
-  };
-}
 
 export async function fetchPosts(opts: FetchPostsOpts) {
   const posts = await prisma.post.findMany({
