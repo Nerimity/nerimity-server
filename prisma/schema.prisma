@@ -48,7 +48,23 @@ model User {
 
   posts              Post[]
   likedPosts         PostLike[]
+
+  followers          Follower[]
+  following          Follower[] @relation(name: "following")
+
 }
+
+model Follower {
+  id            String   @id
+  followedById  String
+  followedBy    User     @relation(fields: [followedById], references: [id], name: "following")
+
+  followedToId  String
+  followedTo    User     @relation(fields: [followedToId], references: [id])
+  @@unique([followedById, followedToId])
+}
+
+
 
 model Suspension {
   id            String    @id
@@ -275,4 +291,6 @@ model PostLike {
 
   likedById     String
   likedBy       User @relation(fields: [likedById], references: [id])
+
+  @@unique([postId, likedById])
 }

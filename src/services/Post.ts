@@ -108,3 +108,25 @@ export async function deletePost(postId: string): Promise<CustomResult<boolean, 
   });
   return [true, null];
 }
+
+export async function getFeed(userId: string) {
+  const feedPosts = await prisma.post.findMany({
+    orderBy: {createdAt: 'desc'},
+    where: {
+      commentTo: null,
+      OR: [
+        {createdById: userId},
+        {
+          createdBy: {
+            followers: {
+              some: {followedById: userId}
+            }
+          }
+        }
+      ]
+    },
+    include: constructInclude(userId),
+    take: 50,
+  });
+  return feedPosts;
+}

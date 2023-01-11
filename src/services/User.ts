@@ -183,7 +183,14 @@ export const updateUserPresence = async (userId: string, presence: Omit<Presence
 
 
 export const getUserDetails = async (requesterId: string, recipientId: string) => {
-  const user = await prisma.user.findFirst({where: {id: recipientId}});
+  const user = await prisma.user.findFirst({
+    where: {id: recipientId},
+    include: {
+      followers: {where: {followedById: requesterId}, select: {followedToId: true}},
+      following: {where: {followedById: requesterId}, select: {followedToId: true}},
+      _count: {select: {followers: true, following: true}}
+    }
+  });
 
   if (!user) {
     return [null, generateError('User not found.', 'user')];
@@ -267,3 +274,30 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
   
   return [updateResult.user, null];
 };
+
+
+
+export async function followUser(requesterId: string, followToId: string): Promise<CustomResult<boolean, CustomError>> {
+  // check if already following
+  const existingFollow = await prisma.follower.findFirst({where: {followedById: requesterId, followedToId: followToId}});
+  if (existingFollow) return [null, generateError('You are already following this user.')];
+
+  await prisma.follower.create({
+    data: {
+      id: generateId(),
+      followedById: requesterId,
+      followedToId: followToId
+    }
+  });
+  return [true, null];
+
+}
+
+export async function unfollowUser(requesterId: string, unfollowId: string): Promise<CustomResult<boolean, CustomError>> {
+  // check if already following
+  const existingFollow = await prisma.follower.findFirst({where: {followedById: requesterId, followedToId: unfollowId}});
+  if (!existingFollow) return [null, generateError('You are already not following this user.')];
+
+  await prisma.follower.delete({where: {id: existingFollow.id}});
+  return [true, null];
+}
