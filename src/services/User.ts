@@ -12,6 +12,7 @@ import {excludeFields, exists, prisma} from '../common/database';
 import { generateId } from '../common/flakeId';
 import { Account, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
+import { createPostNotification, PostNotificationType } from './Post';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -288,6 +289,11 @@ export async function followUser(requesterId: string, followToId: string): Promi
       followedById: requesterId,
       followedToId: followToId
     }
+  });
+  createPostNotification({
+    type: PostNotificationType.FOLLOWED,
+    byId: requesterId,
+    toId: followToId,
   });
   return [true, null];
 

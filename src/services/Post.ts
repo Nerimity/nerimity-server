@@ -18,8 +18,8 @@ interface CreatePostOpts {
   content: string;
   commentToId?: string
 }
-export function createPost(opts: CreatePostOpts) {
-  const post = prisma.post.create({
+export async function createPost(opts: CreatePostOpts) {
+  const post = await prisma.post.create({
     data: {
       id: generateId(),
       content: opts.content.trim(),
@@ -28,6 +28,15 @@ export function createPost(opts: CreatePostOpts) {
     },
     include: constructInclude(opts.userId)
   });
+
+  if (opts.commentToId) {
+    createPostNotification({
+      byId: opts.userId,
+      postId: post.id,
+      type: PostNotificationType.REPLIED,
+    });
+  }
+
 
   return post;
 }
@@ -68,8 +77,8 @@ export async function fetchPost(postId: string, requesterUserId: string) {
 }
 
 export async function likePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
-  const exists = await prisma.postLike.count({where: {likedById: userId, postId}});
-  if (exists) {
+  const existingPost = await prisma.postLike.findFirst({where: {likedById: userId, postId}, select: {id: true}});
+  if (existingPost) {
     return [null, generateError('You have already liked this post!')];
   }
   
@@ -81,6 +90,13 @@ export async function likePost(userId: string, postId: string): Promise<CustomRe
     }
   });
   const newPost = await fetchPost(postId, userId) as Post;
+
+  createPostNotification({
+    type: PostNotificationType.LIKED,
+    byId: userId,
+    postId,
+  });
+
   return [newPost, null];
 }
 
@@ -129,4 +145,73 @@ export async function getFeed(userId: string) {
     take: 50,
   });
   return feedPosts;
+}
+
+
+export enum PostNotificationType {
+  LIKED = 0,
+  REPLIED = 1,
+  FOLLOWED = 2
+}
+
+interface CreatePostNotificationProps {
+  toId?: string,
+  byId: string,
+  postId?: string
+  type: PostNotificationType
+}
+
+export async function createPostNotification(opts: CreatePostNotificationProps){
+
+  let toId = opts.toId;
+
+  if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED) {
+    const post = await prisma.post.findFirst({where: {id: opts.postId}, select: {createdById: true}});
+    if (!post) return;
+    toId = post.createdById;
+  }
+
+  if (opts.type === PostNotificationType.REPLIED) {
+    const post = await prisma.post.findFirst({where: {id: opts.postId}, select: {commentTo: {select: {createdById: true}}}});
+    if (!post) return;
+    toId = post.commentTo?.createdById;
+  }
+
+  if (!toId) return;
+
+  if (opts.toId === opts.byId) return;
+
+
+  const alreadyExists = await prisma.postNotification.findFirst(({
+    where: {
+      byId: opts.byId,
+      toId: toId,
+      type: opts.type,
+      postId: opts.postId
+    }
+  }));
+  if (alreadyExists) return;
+
+  await prisma.postNotification.create({
+    data: {
+      id: generateId(),
+      byId: opts.byId,
+      toId: toId,
+      type: opts.type,
+      postId: opts.postId
+    }
+  });
+}
+
+
+export async function getPostNotifications(userId: string) {
+  return await prisma.postNotification.findMany({
+    orderBy: {createdAt: 'desc'},
+    where: {toId: userId},
+    take: 10,
+    include: {
+      by: true,
+      post: {include: constructInclude(userId)}
+    }
+  });
 }

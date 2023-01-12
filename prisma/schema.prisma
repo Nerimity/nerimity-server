@@ -52,6 +52,11 @@ model User {
   followers          Follower[]
   following          Follower[] @relation(name: "following")
 
+
+
+  postNotifications     PostNotification[]  @relation(name: "postNotifications")
+  sentPostNotifications PostNotification[]
+
 }
 
 model Follower {
@@ -281,7 +286,25 @@ model Post {
 
   comments Post[] @relation(name: "commentTo")
 
+
+  notifications PostNotification[]
 }
+
+model PostNotification {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  type        Int
+
+  toId        String
+  to          User     @relation(fields: [toId], references: [id], name: "postNotifications", onDelete: Cascade)
+
+  byId        String
+  by          User     @relation(fields: [byId], references: [id], onDelete: Cascade)
+
+  postId      String?
+  post        Post?     @relation(fields: [postId], references: [id])
+}
+
 
 model PostLike {
   id            String   @id

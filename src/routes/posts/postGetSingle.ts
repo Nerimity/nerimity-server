@@ -19,11 +19,6 @@ export function postGetSingle(Router: Router) {
       .isLength({ min: 1, max: 100 }).withMessage('userId length must be between 1 and 100 characters.'),
     route
   );
-  
-  Router.get('/posts', 
-    authenticate(),
-    route
-  );
 }
 
 

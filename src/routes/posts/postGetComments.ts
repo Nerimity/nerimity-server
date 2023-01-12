@@ -19,11 +19,6 @@ export function postsGetComments(Router: Router) {
       .isLength({ min: 1, max: 100 }).withMessage('postId length must be between 1 and 100 characters.'),
     route
   );
-  
-  Router.get('/posts', 
-    authenticate(),
-    route
-  );
 }
 
 
