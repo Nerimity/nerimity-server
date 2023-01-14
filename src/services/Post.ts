@@ -192,30 +192,38 @@ export async function createPostNotification(opts: CreatePostNotificationProps){
   }));
   if (alreadyExists) return;
 
-  await prisma.postNotification.create({
-    data: {
-      id: generateId(),
-      byId: opts.byId,
-      toId: toId,
-      type: opts.type,
-      postId: opts.postId
-    }
-  });
+  await prisma.$transaction([
+    prisma.postNotification.create({
+      data: {
+        id: generateId(),
+        byId: opts.byId,
+        toId: toId,
+        type: opts.type,
+        postId: opts.postId
+      }
+    }),
+    prisma.account.update({
+      where: {userId: toId},
+      data: {
+        postNotificationCount: {increment: 1}
+      }
+    })
+  ]);
 
-  // delete if more than 10 notifications exist
-  const tenthLatestRecord = await prisma.postNotification.findFirst({
-    take: 1,
-    skip: 9,
-    where: {toId},
-    orderBy: {id: 'desc'},
-    select: {id: true}
-  });
+  // // delete if more than 10 notifications exist
+  // const tenthLatestRecord = await prisma.postNotification.findFirst({
+  //   take: 1,
+  //   skip: 9,
+  //   where: {toId},
+  //   orderBy: {id: 'desc'},
+  //   select: {id: true}
+  // });
 
-  if (!tenthLatestRecord) return;
+  // if (!tenthLatestRecord) return;
 
-  await prisma.postNotification.deleteMany({
-    where: { id: { lt: tenthLatestRecord.id}, toId }
-  });
+  // await prisma.postNotification.deleteMany({
+  //   where: { id: { lt: tenthLatestRecord.id}, toId }
+  // });
 }
 
 
@@ -229,4 +237,13 @@ export async function getPostNotifications(userId: string) {
       post: {include: constructInclude(userId)}
     }
   });
+}
+
+
+export async function getPostNotificationCount(userId: string) {
+  const account = await prisma.account.findFirst({where: {userId}, select: {postNotificationCount: true}});
+  return account?.postNotificationCount;
+}
+export async function dismissPostNotification(userId: string) {
+  await prisma.account.update({where: {userId}, data: {postNotificationCount: 0}});
 }

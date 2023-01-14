@@ -16,6 +16,7 @@ model Account {
   userId          String  @unique
   user            User    @relation(fields: [userId], references: [id])
   suspendCount    Int     @default(0) // How many times the user has been suspended.
+  postNotificationCount  Int                     @default(0)
 }
 
 model User {
@@ -42,21 +43,16 @@ model User {
   createdServerInvites   ServerInvite[]
   memberInServers        ServerMember[]
   servers                Server[]
-  createdServerRoles ServerRole[]
-  bannedServers      BannedServerMember[]
+  createdServerRoles     ServerRole[]
+  bannedServers          BannedServerMember[]
 
 
-  posts              Post[]
-  likedPosts         PostLike[]
-
-  followers          Follower[]
-  following          Follower[] @relation(name: "following")
-
-
-
-  postNotifications     PostNotification[]  @relation(name: "postNotifications")
-  sentPostNotifications PostNotification[]
-
+  posts                  Post[]
+  likedPosts             PostLike[]
+  followers              Follower[]
+  following              Follower[]              @relation(name: "following")
+  postNotifications      PostNotification[]      @relation(name: "postNotifications")
+  sentPostNotifications  PostNotification[]
 }
 
 model Follower {

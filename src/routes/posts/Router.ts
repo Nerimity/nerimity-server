@@ -7,10 +7,15 @@ import { postsGetComments } from './postGetComments';
 import { postGetSingle } from './postGetSingle';
 import { postsFeed } from './postsFeed';
 import { postNotifications } from './postNotifications';
+import { postNotificationCount } from './postNotificationCount';
+import { postNotificationDismiss } from './postNotificationDismiss';
 
 const PostsRouter = Router();
 
 
+
+postNotificationDismiss(PostsRouter);
+postNotificationCount(PostsRouter);
 postNotifications(PostsRouter);
 postsFeed(PostsRouter);
 postGetSingle(PostsRouter);
