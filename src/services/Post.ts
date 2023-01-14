@@ -201,6 +201,21 @@ export async function createPostNotification(opts: CreatePostNotificationProps){
       postId: opts.postId
     }
   });
+
+  // delete if more than 10 notifications exist
+  const tenthLatestRecord = await prisma.postNotification.findFirst({
+    take: 1,
+    skip: 9,
+    where: {toId},
+    orderBy: {id: 'desc'},
+    select: {id: true}
+  });
+
+  if (!tenthLatestRecord) return;
+
+  await prisma.postNotification.deleteMany({
+    where: { id: { lt: tenthLatestRecord.id}, toId }
+  });
 }
 
 
