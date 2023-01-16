@@ -12,7 +12,7 @@ import {excludeFields, exists, prisma} from '../common/database';
 import { generateId } from '../common/flakeId';
 import { Account, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
-import { createPostNotification, PostNotificationType } from './Post';
+import { createPostNotification, fetchLatestPost, PostNotificationType } from './Post';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -211,7 +211,11 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
   const members = await prisma.serverMember.findMany({where: { userId: requesterId, serverId: { in: recipientServerIds } }});
   const mutualServerIds = members.map(member => member.serverId);
 
-  return [{user, mutualFriendIds, mutualServerIds}, null];
+
+  // get latest post
+  const latestPost = await fetchLatestPost(recipientId, requesterId);
+
+  return [{user, mutualFriendIds, mutualServerIds, latestPost}, null];
 };
 
 interface UpdateUserProps {
