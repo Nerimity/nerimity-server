@@ -21,9 +21,6 @@ export function postsGet(Router: Router) {
     query('withReplies')
       .isBoolean().withMessage('withReplies must be a boolean!')
       .optional(true),
-    query('likes')
-      .isBoolean().withMessage('likes must be a boolean!')
-      .optional(true),
     route
   );
   
