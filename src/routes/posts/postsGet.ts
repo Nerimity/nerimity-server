@@ -21,6 +21,9 @@ export function postsGet(Router: Router) {
     query('withReplies')
       .isBoolean().withMessage('withReplies must be a boolean!')
       .optional(true),
+    query('likes')
+      .isBoolean().withMessage('likes must be a boolean!')
+      .optional(true),
     route
   );
   
@@ -52,7 +55,7 @@ async function route (req: Request, res: Response) {
   const posts = await fetchPosts({
     userId: params.userId || req.accountCache.user.id,
     requesterUserId: req.accountCache.user.id,
-    withReplies: query.withReplies
+    withReplies: query.withReplies,
   });
 
   res.json(posts);

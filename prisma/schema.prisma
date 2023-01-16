@@ -310,6 +310,7 @@ model PostLike {
 
   likedById     String
   likedBy       User @relation(fields: [likedById], references: [id])
+  createdAt   DateTime @default(now())
 
   @@unique([postId, likedById])
 }

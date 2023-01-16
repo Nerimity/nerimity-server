@@ -9,6 +9,7 @@ import { postsFeed } from './postsFeed';
 import { postNotifications } from './postNotifications';
 import { postNotificationCount } from './postNotificationCount';
 import { postNotificationDismiss } from './postNotificationDismiss';
+import { postsGetLiked } from './postsGetLiked';
 
 const PostsRouter = Router();
 
@@ -19,6 +20,7 @@ postNotificationCount(PostsRouter);
 postNotifications(PostsRouter);
 postsFeed(PostsRouter);
 postGetSingle(PostsRouter);
+postsGetLiked(PostsRouter);
 postsGet(PostsRouter);
 postCreate(PostsRouter);
 postLike(PostsRouter);

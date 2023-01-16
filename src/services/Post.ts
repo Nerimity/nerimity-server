@@ -63,6 +63,17 @@ export async function fetchPosts(opts: FetchPostsOpts) {
   return posts;
 }
 
+export async function fetchLikedPosts(userId: string, requesterUserId: string) {
+  const likes = await prisma.postLike.findMany({
+    where: {likedById: userId},
+    include: {post: {include: constructInclude(requesterUserId)}},
+    orderBy: {createdAt: 'asc'},
+    take: 50,
+  });
+
+  return likes.map(like => like.post);
+}
+
 export async function fetchLatestPost(userId: string, requesterUserId: string) {
   const latestPost = await prisma.post.findFirst({ orderBy: {createdAt: 'desc'}, where: { commentToId: null, createdBy: {id: userId}}, include: constructInclude(requesterUserId)});
   return latestPost;
