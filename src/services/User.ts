@@ -189,7 +189,14 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
     include: {
       followers: {where: {followedById: requesterId}, select: {followedToId: true}},
       following: {where: {followedById: requesterId}, select: {followedToId: true}},
-      _count: {select: {followers: true, following: true}}
+      _count: {
+        select: {
+          followers: true,
+          following: true,
+          likedPosts: true,
+          posts: true,
+        }
+      }
     }
   });
 
