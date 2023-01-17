@@ -1,7 +1,9 @@
+import { getUserPresences } from '../cache/UserCache';
 import { exists, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { emitFriendRemoved, emitFriendRequestAccept, emitFriendRequestSent } from '../emits/Friend';
+import { emitUserPresenceUpdateTo } from '../emits/User';
 import { FriendStatus } from '../types/Friend';
 
 
@@ -84,6 +86,12 @@ export const acceptFriend = async (userId: string, friendId: string) => {
 
 
   emitFriendRequestAccept(userId, friendId);
+
+  const [userPresence, friendPresence] = await getUserPresences([userId, friendId]);
+  userPresence && emitUserPresenceUpdateTo(userId, friendPresence);
+  friendPresence && emitUserPresenceUpdateTo(friendId, userPresence);
+
+
   return [{message: 'Accepted!'}, null];
 
 };

@@ -11,6 +11,7 @@ import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Se
 import { ChannelType } from '../types/Channel';
 import { createMessage } from './Message';
 import { MessageType } from '../types/Message';
+import { emitUserPresenceUpdateTo } from '../emits/User';
 
 interface CreateServerOptions {
   name: string;
@@ -171,6 +172,11 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     joinedMember: serverMember,
     memberPresences,
   });
+
+
+  const [userPresence] = await getUserPresences([userId]);
+  userPresence && emitUserPresenceUpdateTo(serverId, userPresence);
+
 
   return [server, null];
 };

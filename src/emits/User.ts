@@ -13,6 +13,10 @@ export const emitUserPresenceUpdate = (userId: string, presence: Presence, socke
   });
 };
 
+export const emitUserPresenceUpdateTo = (to: string | string[],  presence: Presence) => {
+  getIO().to(to).emit(USER_PRESENCE_UPDATE, presence);
+};
+
 
 export const emitInboxOpened = (userId: string, inbox: Inbox) => {
   getIO().to(userId).emit(INBOX_OPENED, inbox);
