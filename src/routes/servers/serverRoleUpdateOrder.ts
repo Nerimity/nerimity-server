@@ -15,7 +15,7 @@ export function serverRoleUpdateOrder(Router: Router) {
     serverMemberVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('roleIds')
-      .isArray().withMessage('Name must be an array.'),
+      .isArray().withMessage('roleIds must be an array.'),
     rateLimit({
       name: 'server_role_update_order',
       expireMS: 10000,
