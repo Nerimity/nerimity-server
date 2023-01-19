@@ -18,6 +18,7 @@ import { serverMemberBan } from './serverMemberBan';
 import { serverMemberBanList } from './serverMemberBanList';
 import { serverMemberBanRemove } from './serverMemberBanRemove';
 import { serverInviteCustomCreate } from './serverInviteCustomCreate';
+import { serverRoleUpdateOrder } from './serverRoleUpdateOrder';
 
 
 const ServersRouter = Router();
@@ -33,8 +34,10 @@ serverInviteCustomCreate(ServersRouter);
 serverInvites(ServersRouter);
 
 serverChannelCreate(ServersRouter);
+serverRoleUpdateOrder(ServersRouter);
 serverChannelUpdate(ServersRouter);
 serverChannelDelete(ServersRouter);
+
 
 serverRoleCreate(ServersRouter);
 serverRoleUpdate(ServersRouter);

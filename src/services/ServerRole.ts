@@ -5,7 +5,7 @@ import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { ROLE_PERMISSIONS } from '../common/Bitwise';
-import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleUpdated } from '../emits/Server';
+import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleOrderUpdated, emitServerRoleUpdated } from '../emits/Server';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string) => {
 
@@ -117,4 +117,46 @@ export const deleteServerRole = async (serverId: string, roleId: string) => {
   emitServerRoleDeleted(serverId, roleId);
   return [role, null];
 
+};
+
+
+export const updateServerRoleOrder = async (requesterTopRole: number, serverId: string, roleIds: string[]) => {
+  const server = await prisma.server.findFirst({where: {id: serverId}, include: {roles: { orderBy: {order: 'asc'}, select: {order: true, id: true}}}});
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+
+  const changingHigherPriorityRole = roleIds.find((roleId, index) => {
+    const role = server.roles.find(r => r.id === roleId)!;
+    const shouldMove = role.order < requesterTopRole;
+    const changed = server.roles[index]?.id !== roleId;
+    return !shouldMove && changed;
+  });
+  if (changingHigherPriorityRole) {
+    return [null, generateError('Cannot move higher priority server role.')];
+  }
+  
+  if (roleIds.length !== server.roles.length) {
+    return [null, generateError('Role count does not match.')];
+  }
+
+  if (server.roles.filter(role => roleIds.includes(role.id)).length !== roleIds.length) {
+    return [null, generateError('Provide all role Ids to update the order.')];
+  }
+
+  const defaultRoleOrderIndex = server.roles.findIndex(role => role.id === server.defaultRoleId);
+  const defaultRoleNewOrderIndex = roleIds.findIndex(roleId => roleId === server.defaultRoleId);
+
+  if (defaultRoleOrderIndex !== defaultRoleNewOrderIndex) {
+    return [null, generateError('Cannot change default role order.')];
+  }
+
+  await prisma.$transaction(roleIds.map((roleId, index) => prisma.serverRole.update({
+    where: {id: roleId},
+    data: {order: index + 1}
+  })));
+  await deleteAllServerMemberCache(serverId);
+  emitServerRoleOrderUpdated(serverId, roleIds);
+
+  return [true, null];
 };

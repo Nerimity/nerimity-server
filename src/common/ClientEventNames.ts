@@ -19,6 +19,7 @@ export const SERVER_LEFT = 'server:left';
 export const SERVER_UPDATED = 'server:updated';
 export const SERVER_ROLE_CREATED = 'server:role_created';
 export const SERVER_ROLE_UPDATED = 'server:role_updated';
+export const SERVER_ROLE_ORDER_UPDATED = 'server:role_order_updated';
 export const SERVER_ROLE_DELETED = 'server:role_deleted';
 export const SERVER_MEMBER_JOINED = 'server:member_joined';
 export const SERVER_MEMBER_LEFT = 'server:member_left';
