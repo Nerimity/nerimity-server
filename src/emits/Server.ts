@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_UPDATED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_UPDATED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
@@ -131,6 +131,12 @@ export const emitServerRoleOrderUpdated = (serverId: string, roleIds: string[]) 
   const io = getIO();
 
   io.in(serverId).emit(SERVER_ROLE_ORDER_UPDATED, {serverId, roleIds});
+};
+
+export const emitServerOrderUpdated = (userId: string, serverIds: string[]) => {
+  const io = getIO();
+
+  io.in(userId).emit(SERVER_ORDER_UPDATED, {serverIds});
 };
 
 export const emitServerRoleDeleted = (serverId: string, roleId: string) => {

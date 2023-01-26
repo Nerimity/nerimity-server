@@ -19,10 +19,13 @@ import { serverMemberBanList } from './serverMemberBanList';
 import { serverMemberBanRemove } from './serverMemberBanRemove';
 import { serverInviteCustomCreate } from './serverInviteCustomCreate';
 import { serverRoleUpdateOrder } from './serverRoleUpdateOrder';
+import { serverUpdateOrder } from './serverUpdateOrder';
 
 
 const ServersRouter = Router();
 
+
+serverUpdateOrder(ServersRouter);
 serverCreate(ServersRouter);
 serverDeleteOrLeave(ServersRouter);
 serverSettingsUpdate(ServersRouter);

@@ -58,6 +58,16 @@ export function removeRoleIdFromServerMembers(roleId: string) {
   );
 }
 
+export function removeServerIdFromAccountOrder(userId: string, serverId: string) {
+  return prisma.$executeRaw(
+    Prisma.sql`
+    UPDATE "Account"
+      SET "serverOrderIds"=(array_remove("serverOrderIds", ${serverId})) 
+      WHERE ${serverId} = ANY("serverOrderIds") AND "userId" = ${userId};
+      `
+  );
+}
+
 export function dateToDateTime(date?: Date | number) {
   if (!date) {
     return new Date().toISOString();

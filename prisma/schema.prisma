@@ -17,6 +17,7 @@ model Account {
   user            User    @relation(fields: [userId], references: [id])
   suspendCount    Int     @default(0) // How many times the user has been suspended.
   postNotificationCount  Int                     @default(0)
+  serverOrderIds   String[]
 }
 
 model User {

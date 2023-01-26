@@ -1,13 +1,13 @@
 import { Server } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
-import { exists, prisma } from '../common/database';
+import { exists, prisma, removeServerIdFromAccountOrder } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
-import { emitServerJoined, emitServerLeft, emitServerUpdated } from '../emits/Server';
+import { emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
 import { createMessage } from './Message';
 import { MessageType } from '../types/Message';
@@ -245,9 +245,8 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string, ban 
 
       });
     }
-
-
   }
+  await removeServerIdFromAccountOrder(userId, serverId);
   emitServerLeft(userId, serverId, isServerCreator);
 
   return [false, null];
@@ -346,4 +345,36 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
   emitServerUpdated(serverId, update);
   return [update, null];
 
+};
+
+
+
+export const updateServerOrder = async (userId: string, orderedServerIds: string[]) => {
+  const user = await prisma.user.findFirst({where: {id: userId}, select: {servers: {select: {id: true}}}});
+  
+  if (!user) {
+    return [null, generateError('User does not exist.')];
+  }
+
+  const joinedServerIds = user.servers.map((server) => server.id);
+  if (joinedServerIds.length !== orderedServerIds.length) {
+    return [null, generateError('Server order length does not match.')];
+  }
+
+  const doesNotExist = joinedServerIds.find(id => !orderedServerIds.includes(id)); 
+
+  if (doesNotExist) {
+    return [null, generateError('Invalid server ids.')];
+  }
+
+  await prisma.account.update({
+    where: {userId},
+    data: {
+      serverOrderIds: orderedServerIds
+    }
+  });
+
+  emitServerOrderUpdated(userId, orderedServerIds);
+
+  return [{success: true}, null];
 };
