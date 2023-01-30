@@ -8,6 +8,7 @@ import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import { Message } from '@prisma/client';
+import { removeDuplicates } from '../common/utils';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string, beforeMessageId?: string) => {
   if (limit > 100) return [];
@@ -21,7 +22,10 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
         id: {gt: beforeMessageId}
       } : undefined)
     },
-    include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
+    include: {
+      createdBy: {select: {id: true, username: true, tag: true, hexColor: true}},
+      mentions: {select: {id: true, username: true, tag: true, hexColor: true}}
+    },
     take: limit,
     orderBy: {createdAt: 'desc'},
     ...(beforeMessageId ? {
@@ -60,11 +64,15 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
 
   const message = await prisma.message.update({
     where: {id: opts.messageId},
-    data: {
+    data: await constructData({
       content,
       editedAt: dateToDateTime(),
+    }, true),
+    include: {
+      createdBy: {select: {id: true, username: true, tag: true, hexColor: true}},
+      mentions: {select: {id: true, username: true, tag: true, hexColor: true}}
+
     },
-    include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
   });
   
   
@@ -100,16 +108,46 @@ interface SendMessageOptions {
   updateLastSeen?: boolean // by default, this is true.
 }
 
+
+type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
+
+type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
+
+const userMentionRegex =/\[@:([\d]+)]/g;
+
+function constructData(messageData: MessageDataUpdate, update: true): Promise<any> 
+function constructData(messageData: MessageDataCreate, update?: false | undefined): Promise<any> 
+
+async function constructData(messageData: MessageDataCreate | MessageDataUpdate, update?: boolean){
+  if (typeof messageData.content === 'string') {
+    const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map(m => m[1]));
+
+    if (mentionUserIds.length) {
+      const mentionedUsers = await prisma.user.findMany({where: {id: {in: mentionUserIds}}, select: {id: true}});
+      messageData.mentions = {
+        ...(update ? {set: mentionedUsers} : {connect: mentionedUsers}),
+      };
+    }
+
+  }
+  return messageData;
+}
+
 export const createMessage = async (opts: SendMessageOptions) => {
+
+  prisma.message.create;
   const message = await prisma.message.create({
-    data: {
+    data: await constructData({
       id: generateId(),
       content: opts.content || '',
       createdById: opts.userId,
       channelId: opts.channelId,
       type: opts.type      
+    }),
+    include: {
+      createdBy: {select: {id: true, username: true, tag: true, hexColor: true}},
+      mentions: {select: {id: true, username: true, tag: true, hexColor: true}}
     },
-    include: {createdBy: {select: {id: true, username: true, tag: true, hexColor: true}}},
   });
 
 

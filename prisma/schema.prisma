@@ -54,6 +54,7 @@ model User {
   following              Follower[]              @relation(name: "following")
   postNotifications      PostNotification[]      @relation(name: "postNotifications")
   sentPostNotifications  PostNotification[]
+  mentionedMessages        Message[]               @relation(name: "mentioned_messages")
 }
 
 model Follower {
@@ -225,6 +226,7 @@ model Message {
   createdAt   DateTime @default(now())
   channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   createdBy   User     @relation(fields: [createdById], references: [id])
+  mentions    User[]  @relation(name: "mentioned_messages")
 }
 
 model MessageMention {
