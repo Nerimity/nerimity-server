@@ -18,13 +18,17 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
   if (!channel) return;
 
 
+  const transactions: any[] = [
+    prisma.messageMention.deleteMany({where: { mentionedToId: userId, channelId: channelId }})
+  ];
+
+
   if (channel.server) {
     const [serverMember] = await getServerMemberCache(channel.server.id, userId);
     if (!serverMember) return;
     const serverId = channel.server.id;
 
-
-    await prisma.serverChannelLastSeen.upsert({
+    transactions.push(prisma.serverChannelLastSeen.upsert({
       where: {
         channelId_userId_serverId: {
           userId,
@@ -42,19 +46,12 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
       update: {
         lastSeen: dateToDateTime(),
       }
-    });
-
-
-    emit && emitNotificationDismissed(userId, channelId);
-
-    return;
+    }));
   }
 
-
-  await prisma.messageMention.delete({where: {mentionedToId_channelId: { mentionedToId: userId, channelId: channelId }}}).catch(() => null);
+  await prisma.$transaction(transactions);
 
   emit && emitNotificationDismissed(userId, channelId);
-
 };
 
 

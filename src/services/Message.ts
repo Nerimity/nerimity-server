@@ -157,6 +157,34 @@ export const createMessage = async (opts: SendMessageOptions) => {
   opts.updateLastSeen !== false && await dismissChannelNotification(opts.userId, opts.channelId, false);
 
   
+
+  if (message.mentions.length && opts.serverId) {
+    const userIds = message.mentions.map(mention => mention.id);
+    const usersInServer = await prisma.user.findMany({where: {id: {in: userIds, not: opts.userId}, servers: {some: {id: opts.serverId}}}, select: {id: true}});
+    await prisma.$transaction(usersInServer.map(user => prisma.messageMention.upsert({
+      where: {
+        mentionedById_mentionedToId_channelId: {
+          channelId: opts.channelId,
+          mentionedById: opts.userId,
+          mentionedToId: user.id
+        }
+      },
+      update: {
+        count: {increment: 1}
+      },
+      create: {
+        id: generateId(),
+        count: 1,
+        channelId: opts.channelId,
+        mentionedById: opts.userId,
+        mentionedToId: user.id,
+        serverId: opts.serverId,
+        createdAt: dateToDateTime(message.createdAt),
+      }
+    })));
+  }
+
+
   
   // emit 
   if (opts.serverId) {
@@ -197,7 +225,6 @@ export const createMessage = async (opts: SendMessageOptions) => {
         channelId: channel.id,
         mentionedById: opts.userId,
         mentionedToId: channel.inbox.recipientId,
-        serverId: channel.server?.id,
         createdAt: dateToDateTime(message.createdAt),
       }
     });
