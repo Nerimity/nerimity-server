@@ -266,7 +266,7 @@ model Post {
   id          String   @id
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
-  content     String
+  content     String?
   createdAt   DateTime @default(now())
 
 
@@ -287,6 +287,7 @@ model Post {
 
 
   notifications PostNotification[]
+  deleted Boolean?
 }
 
 model PostNotification {

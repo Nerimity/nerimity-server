@@ -30,14 +30,8 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  // check if post is created by me
-  const exists = await prisma.post.count({where: {createdById: req.accountCache.user.id, id: params.postId}});
 
-  if (!exists) {
-    return res.status(404).json(generateError('The post does not exist or it is not created by you.'));
-  }
-
-  const [deleted, error] = await deletePost(params.postId);
+  const [deleted, error] = await deletePost(params.postId, req.accountCache.user.id);
 
   if (error) {
     return res.status(400).json(error);

@@ -10,6 +10,7 @@ import { postNotifications } from './postNotifications';
 import { postNotificationCount } from './postNotificationCount';
 import { postNotificationDismiss } from './postNotificationDismiss';
 import { postsGetLiked } from './postsGetLiked';
+import { postDelete } from './postDelete';
 
 const PostsRouter = Router();
 
@@ -21,6 +22,7 @@ postNotifications(PostsRouter);
 postsFeed(PostsRouter);
 postGetSingle(PostsRouter);
 postsGetLiked(PostsRouter);
+postDelete(PostsRouter);
 postsGet(PostsRouter);
 postCreate(PostsRouter);
 postLike(PostsRouter);

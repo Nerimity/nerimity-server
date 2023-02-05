@@ -54,6 +54,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
       ...(opts.userId ? {createdById: opts.userId} : undefined),
       ...((opts.userId && !opts.withReplies)? {commentToId: null} : undefined),
       ...(opts.postId ? {commentToId: opts.postId} : undefined),
+      deleted: null,
     },
     orderBy: {createdAt: 'asc'},
     take: 50,
@@ -75,14 +76,14 @@ export async function fetchLikedPosts(userId: string, requesterUserId: string) {
 }
 
 export async function fetchLatestPost(userId: string, requesterUserId: string) {
-  const latestPost = await prisma.post.findFirst({ orderBy: {createdAt: 'desc'}, where: { commentToId: null, createdBy: {id: userId}}, include: constructInclude(requesterUserId)});
+  const latestPost = await prisma.post.findFirst({ orderBy: {createdAt: 'desc'}, where: { deleted: null, commentToId: null, createdBy: {id: userId}}, include: constructInclude(requesterUserId)});
   return latestPost;
 }
 
 export async function fetchPost(postId: string, requesterUserId: string) {
   const post = prisma.post.findFirst({
     where: {
-      id: postId
+      id: postId,
     },
     orderBy: {createdAt: 'desc'},
     take: 50,
@@ -93,6 +94,9 @@ export async function fetchPost(postId: string, requesterUserId: string) {
 }
 
 export async function likePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
+  const post = await prisma.post.findFirst({where: {deleted: null, id: postId}});
+  if (!post) return [null, generateError('Post not found')];
+
   const existingPost = await prisma.postLike.findFirst({where: {likedById: userId, postId}, select: {id: true}});
   if (existingPost) {
     return [null, generateError('You have already liked this post!')];
@@ -130,14 +134,22 @@ export async function unlikePost(userId: string, postId: string): Promise<Custom
 }
 
 
-export async function deletePost(postId: string): Promise<CustomResult<boolean, CustomError>> {
-  const postExists = await prisma.post.count({where: {id: postId}});
-  if (!postExists) {
+export async function deletePost(postId: string, userId: string): Promise<CustomResult<boolean, CustomError>> {
+  const post = await prisma.post.findFirst({where: {id: postId, createdById: userId}});
+  if (!post) {
     return [null, generateError('Post does not exist!')];
   }
-  await prisma.post.delete({
-    where: {id: postId}
-  });
+  await prisma.$transaction([
+    prisma.post.update({
+      where: {id: postId},
+      data: {
+        content: null,
+        deleted: true,
+      }
+    }),
+    prisma.postLike.deleteMany({where: {postId}})
+  ]);
+
   return [true, null];
 }
 
@@ -146,6 +158,7 @@ export async function getFeed(userId: string) {
     orderBy: {createdAt: 'desc'},
     where: {
       commentTo: null,
+      deleted: null, 
       OR: [
         {createdById: userId},
         {
