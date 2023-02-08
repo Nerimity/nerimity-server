@@ -1,6 +1,6 @@
 import { Post } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
-import { prisma } from '../common/database';
+import { dateToDateTime, prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 
@@ -40,6 +40,25 @@ export async function createPost(opts: CreatePostOpts) {
 
   return post;
 }
+
+
+export async function editPost(opts: {editById: string, postId: string, content: string}) {
+  const post = await prisma.post.findFirst({where: { createdById: opts.editById, deleted: null, id: opts.postId}, select: {id: true}});
+  if (!post) return [null, generateError('Post not found')] as const;
+
+  const newPost = await prisma.post.update({
+    where: {id: opts.postId},
+    data: {
+      content: opts.content.trim(),
+      editedAt: dateToDateTime()
+    },
+    include: constructInclude(opts.editById)
+  });
+
+  return [newPost, null] as const;
+}
+
+
 
 interface FetchPostsOpts {
   userId?: string;
