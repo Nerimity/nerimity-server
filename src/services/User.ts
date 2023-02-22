@@ -194,7 +194,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
           followers: true,
           following: true,
           likedPosts: true,
-          posts: true,
+          posts: {where: {deleted: null}},
         }
       }
     }
