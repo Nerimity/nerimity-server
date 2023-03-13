@@ -20,7 +20,7 @@ async function route (req: Request, res: Response) {
     orderBy: {
       joinedAt: 'desc'
     },
-    select: {id: true, username: true, joinedAt: true, tag: true, hexColor: true, }
+    select: {id: true, username: true, joinedAt: true, tag: true, hexColor: true, avatar: true }
   });
 
   res.json(users);

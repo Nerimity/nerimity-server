@@ -13,6 +13,7 @@ import { generateId } from '../common/flakeId';
 import { Account, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { createPostNotification, fetchLatestPost, PostNotificationType } from './Post';
+import * as nerimityCDN from '../common/nerimityCDN'; 
 interface RegisterOpts {
   email: string;
   username: string;
@@ -231,6 +232,7 @@ interface UpdateUserProps {
   username?: string,
   tag?: string,
   password?: string
+  avatar?: string
 }
 
 export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<User, CustomError>> => {
@@ -264,12 +266,22 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
   }
 
 
+  if (opts.avatar) {
+    const [data, error] = await nerimityCDN.uploadAvatar(opts.avatar, opts.userId);
+    if (error) return [null, generateError(error)];
+    if (data) {
+      opts.avatar = data.path;
+    }
+  }
+
+
   const updateResult = await prisma.account.update({where: {userId: opts.userId}, data: {
     ...addToObjectIfExists('email', opts.email?.trim()),
     user: {
       update: {
         ...addToObjectIfExists('username', opts.username?.trim()),
         ...addToObjectIfExists('tag', opts.tag?.trim()),
+        ...addToObjectIfExists('avatar', opts.avatar),
       }
     },
   },
@@ -282,6 +294,7 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
     email: updateResult.email,
     username: updateResult.user.username,
     tag: updateResult.user.tag,
+    ...addToObjectIfExists('avatar', opts.avatar),
   });
   
   return [updateResult.user, null];

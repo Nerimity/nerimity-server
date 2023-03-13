@@ -34,11 +34,11 @@ interface Body {
   username?: string;
   tag?: string;
   password?: string;
+  avatar?: string;
 }
 
 async function route (req: Request, res: Response) {
   const body = req.body as Body;
-
 
   const validateError = customExpressValidatorResult(req);
 
@@ -51,13 +51,13 @@ async function route (req: Request, res: Response) {
     email: body.email,
     username: body.username,
     tag: body.tag,
-    password: body.password
+    password: body.password,
+    avatar: body.avatar
   });
 
   if (error) {
     return res.status(400).json(error);
   }
 
-  res.json(result);   
-  
+  res.json(result);
 }
