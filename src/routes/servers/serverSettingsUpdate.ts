@@ -34,6 +34,7 @@ export function serverSettingsUpdate(Router: Router) {
 interface Body {
   name?: string;
   defaultChannelId?: string;
+  avatar?: string;
 }
 
 
@@ -49,6 +50,7 @@ async function route (req: Request, res: Response) {
 
   const [updated, error] = await updateServer(req.serverCache.id, {
     ...matchedBody,
+    avatar: req.body.avatar,
     ...(req.body.systemChannelId === null ? {systemChannelId: null} : undefined)
   });
   if (error) {

@@ -12,6 +12,7 @@ import { ChannelType } from '../types/Channel';
 import { createMessage } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
+import * as nerimityCDN from '../common/nerimityCDN'; 
 
 interface CreateServerOptions {
   name: string;
@@ -319,6 +320,7 @@ export interface UpdateServerOptions {
   name?: string;
   defaultChannelId?: string;
   systemChannelId?: string | null;
+  avatar?: string;
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
@@ -340,6 +342,17 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
       return [null, generateError('Invalid systemChannelId')];
     }
   }
+
+
+  if (update.avatar) {
+    const [data, error] = await nerimityCDN.uploadAvatar(update.avatar, serverId);
+    if (error) return [null, generateError(error)];
+    if (data) {
+      update.avatar = data.path;
+    }
+  }
+
+
 
   await prisma.server.update({where: {id: serverId}, data: update});
   emitServerUpdated(serverId, update);
