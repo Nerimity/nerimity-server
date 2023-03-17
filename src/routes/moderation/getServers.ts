@@ -32,7 +32,7 @@ async function route (req: Request, res: Response) {
     ...(after ? {skip: 1} : undefined),
     take: limit,
     ...(after ? {cursor: { id: after }} : undefined),
-    select: {name: true, hexColor: true, id: true, createdAt: true, createdBy: {select: {id: true, username: true, tag: true}}}
+    select: {name: true, hexColor: true, id: true, createdAt: true, createdBy: {select: {id: true, username: true, tag: true}}, avatar: true}
   });
 
 
