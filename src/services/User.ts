@@ -10,7 +10,7 @@ import { Presence, removeAccountsCache, updateCachePresence } from '../cache/Use
 import { FriendStatus } from '../types/Friend';
 import {excludeFields, exists, prisma} from '../common/database';
 import { generateId } from '../common/flakeId';
-import { Account, User } from '@prisma/client';
+import { Account, Follower, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { createPostNotification, fetchLatestPost, PostNotificationType } from './Post';
 import * as nerimityCDN from '../common/nerimityCDN'; 
@@ -330,4 +330,17 @@ export async function unfollowUser(requesterId: string, unfollowId: string): Pro
 
   await prisma.follower.delete({where: {id: existingFollow.id}});
   return [true, null];
+}
+
+
+export async function followingUsers(userId: string) {
+  const user = await prisma.user.findFirst({where: {id: userId}, select: {following: {select: {followedTo: true}}}});
+  if (!user) return [null, generateError('invalid User')];
+  return [user?.following.map(follower => follower.followedTo), null];
+}
+
+export async function followerUsers(userId: string) {
+  const user = await prisma.user.findFirst({where: {id: userId}, select: {followers: {select: {followedBy: true}}}});
+  if (!user) return [null, generateError('invalid User')];
+  return [user?.followers.map(follower => follower.followedBy), null];
 }
