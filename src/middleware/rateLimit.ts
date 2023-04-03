@@ -8,7 +8,9 @@ interface Options {
   expireMS: number
   requestCount: number,
   useIP?: boolean // By default, it uses user id.
+  globalLimit?: boolean // Rate limit globally
   nextIfRatedLimited?: boolean // false by default
+  message?: string;
 }
 
 export function rateLimit (opts: Options) {
@@ -18,10 +20,17 @@ export function rateLimit (opts: Options) {
 
     const ip = req.userIP.replace(/:/g, '=');
 
-    let id = opts.useIP ? ip : req.accountCache.user.id;
-  
-    if (opts.name) {
-      id = `${id}-${opts.name}`;
+    let id = '';
+    
+    if (!opts.globalLimit) {
+      id = opts.useIP ? ip : req.accountCache?.user.id;
+      if (opts.name) {
+        id = `${id}-${opts.name}`;
+      }
+    }
+
+    if (opts.globalLimit) {
+      id = opts.name;
     }
 
     const ttl = await checkRateLimited({
@@ -36,7 +45,7 @@ export function rateLimit (opts: Options) {
     }
 
     if (ttl) {
-      return res.status(429).json({...generateError('Slow down!'), ttl});
+      return res.status(429).json({...generateError(opts.message || 'Slow down!'), ttl});
     }
 
 
