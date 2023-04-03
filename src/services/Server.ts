@@ -9,7 +9,7 @@ import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
 import { emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
-import { createMessage } from './Message';
+import { createMessage, deleteRecentMessages } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import * as nerimityCDN from '../common/nerimityCDN'; 
@@ -291,7 +291,7 @@ export const serverMemberRemoveBan = async (serverId: string, userId: string): P
   return [true, null];
 };
 
-export const banServerMember = async (userId: string, serverId: string) => {
+export const banServerMember = async (userId: string, serverId: string, shouldDeleteRecentMessages?: boolean) => {
   const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -302,6 +302,10 @@ export const banServerMember = async (userId: string, serverId: string) => {
 
   const [,error] = await deleteOrLeaveServer(userId, serverId, true, false);
   if (error) return [null, error];
+
+  if (shouldDeleteRecentMessages) {
+    await deleteRecentMessages(userId, serverId);
+  }
 
   if (server.systemChannelId) {
     await createMessage({

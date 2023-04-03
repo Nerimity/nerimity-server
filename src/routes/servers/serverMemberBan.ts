@@ -5,6 +5,7 @@ import { memberHasRolePermission } from '../../middleware/memberHasRolePermissio
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { banServerMember } from '../../services/Server';
+import { deleteRecentMessages } from '../../services/Message';
 
 export function serverMemberBan(Router: Router) {
   // Router.delete('/servers/:serverId/members/:userId/ban', 
@@ -25,8 +26,9 @@ export function serverMemberBan(Router: Router) {
 async function route (req: Request, res: Response) {
 
   const userId = req.params.userId as string;
+  const shouldDeleteRecentMessages = req.query.shouldDeleteRecentMessages === 'true'; // Delete messages sent in the last 7 hours.
 
-  const [, error] = await banServerMember(userId, req.serverCache.id);
+  const [, error] = await banServerMember(userId, req.serverCache.id, shouldDeleteRecentMessages);
   if (error) {
     return res.status(400).json(error);
   }
