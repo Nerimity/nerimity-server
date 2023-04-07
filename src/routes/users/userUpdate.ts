@@ -35,6 +35,7 @@ interface Body {
   tag?: string;
   password?: string;
   avatar?: string;
+  banner?: string;
 }
 
 async function route (req: Request, res: Response) {
@@ -52,7 +53,8 @@ async function route (req: Request, res: Response) {
     username: body.username,
     tag: body.tag,
     password: body.password,
-    avatar: body.avatar
+    avatar: body.avatar,
+    banner: body.banner
   });
 
   if (error) {

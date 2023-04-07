@@ -98,6 +98,7 @@ export interface UserCache {
   hexColor?: string;
   tag: string;
   avatar?: string;
+  banner?: string;
   badges: number;
   bot?: boolean;
 }
@@ -130,6 +131,7 @@ export async function getAccountCache(userId: string, beforeCache?: (account: Ac
       hexColor: account.user.hexColor || undefined,
       tag: account.user.tag,
       avatar: account.user.avatar || undefined,
+      banner: account.user.banner || undefined,
       bot: account.user.bot || undefined
     }
   };

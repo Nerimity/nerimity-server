@@ -233,6 +233,7 @@ interface UpdateUserProps {
   tag?: string,
   password?: string
   avatar?: string
+  banner?: string
 }
 
 export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<User, CustomError>> => {
@@ -274,6 +275,14 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
     }
   }
 
+  if (opts.banner) {
+    const [data, error] = await nerimityCDN.uploadBanner(opts.banner, opts.userId);
+    if (error) return [null, generateError(error)];
+    if (data) {
+      opts.banner = data.path;
+    }
+  }
+
 
   const updateResult = await prisma.account.update({where: {userId: opts.userId}, data: {
     ...addToObjectIfExists('email', opts.email?.trim()),
@@ -282,6 +291,7 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
         ...addToObjectIfExists('username', opts.username?.trim()),
         ...addToObjectIfExists('tag', opts.tag?.trim()),
         ...addToObjectIfExists('avatar', opts.avatar),
+        ...addToObjectIfExists('banner', opts.banner),
       }
     },
   },
@@ -295,6 +305,7 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
     username: updateResult.user.username,
     tag: updateResult.user.tag,
     ...addToObjectIfExists('avatar', opts.avatar),
+    ...addToObjectIfExists('banner', opts.banner),
   });
   
   return [updateResult.user, null];
