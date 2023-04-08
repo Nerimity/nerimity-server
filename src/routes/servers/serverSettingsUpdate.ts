@@ -15,7 +15,7 @@ export function serverSettingsUpdate(Router: Router) {
     memberHasRolePermission(ROLE_PERMISSIONS.ADMIN),
     body('name')
       .isString().withMessage('Name must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({nullable: true}),
+      .isLength({ min: 4, max: 35 }).withMessage('Name must be between 4 and 35 characters long.').optional({nullable: true}),
     body('defaultChannelId')
       .isString().withMessage('defaultChannelId must be a string.')
       .isLength({ min: 4, max: 100 }).withMessage('defaultChannelId must be between 4 and 100 characters long.').optional({nullable: true}),

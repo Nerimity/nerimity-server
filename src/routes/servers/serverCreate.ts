@@ -10,7 +10,7 @@ export function serverCreate(Router: Router) {
     body('name')
       .not().isEmpty().withMessage('Name is required.')
       .isString().withMessage('Name must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.'),
+      .isLength({ min: 4, max: 35 }).withMessage('Name must be between 4 and 35 characters long.'),
     route
   );
 }

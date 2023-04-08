@@ -18,7 +18,7 @@ export function register(Router: Router) {
     body('username')
       .not().isEmpty().withMessage('Username is required.')
       .isString().withMessage('Invalid username.')
-      .isLength({ min: 3, max: 320 }).withMessage('Username must be between 3 and 320 characters long.'),
+      .isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.'),
     body('password')
       .not().isEmpty().withMessage('Password is required.')
       .isString().withMessage('Password must be a string.')

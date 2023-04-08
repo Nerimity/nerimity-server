@@ -18,7 +18,7 @@ export function userUpdate(Router: Router) {
       .isLength({ min: 1, max: 320 }).withMessage('Email must be between 1 and 320 characters long.').optional({nullable: true }),
     body('username')
       .isString().withMessage('Invalid username.')
-      .isLength({ min: 3, max: 320 }).withMessage('Username must be between 3 and 320 characters long.').optional({nullable: true }),
+      .isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.').optional({nullable: true }),
     body('tag')
       .isString().withMessage('Invalid tag.')
       .isLength({ min: 4, max: 4 }).withMessage('Tag must be 4 characters long').optional({nullable: true }),
