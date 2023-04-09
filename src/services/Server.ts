@@ -325,6 +325,7 @@ export interface UpdateServerOptions {
   defaultChannelId?: string;
   systemChannelId?: string | null;
   avatar?: string;
+  banner?: string;
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
@@ -353,6 +354,14 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
     if (error) return [null, generateError(error)];
     if (data) {
       update.avatar = data.path;
+    }
+  }
+
+  if (update.banner) {
+    const [data, error] = await nerimityCDN.uploadBanner(update.banner, serverId);
+    if (error) return [null, generateError(error)];
+    if (data) {
+      update.banner = data.path;
     }
   }
 

@@ -8,7 +8,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServer } from '../../services/Server';
 
-export function serverSettingsUpdate(Router: Router) {
+export function serverUpdate(Router: Router) {
   Router.post('/servers/:serverId', 
     authenticate(),
     serverMemberVerification(),
@@ -35,6 +35,7 @@ interface Body {
   name?: string;
   defaultChannelId?: string;
   avatar?: string;
+  banner?: string;
 }
 
 
@@ -51,6 +52,7 @@ async function route (req: Request, res: Response) {
   const [updated, error] = await updateServer(req.serverCache.id, {
     ...matchedBody,
     avatar: req.body.avatar,
+    banner: req.body.banner,
     ...(req.body.systemChannelId === null ? {systemChannelId: null} : undefined)
   });
   if (error) {

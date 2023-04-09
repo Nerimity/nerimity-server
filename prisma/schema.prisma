@@ -84,6 +84,7 @@ model Server {
   id                     String                  @id
   name                   String
   avatar                 String?
+  banner                 String?
   hexColor               String
   defaultChannelId       String
   systemChannelId        String? // Used for system messages eg member joined message.
