@@ -15,7 +15,7 @@ export function uploadAvatar(base64: string, uniqueId: string): Promise<CustomRe
     form.append('id', uniqueId);
     form.append('file', buffer, 'temp.' + type);
 
-    fetch(env.NERIMITY_CDN + 'avatar', {
+    fetch(env.NERIMITY_CDN + 'avatars', {
       method: 'POST',
       body: form,
     }).then(async (res) => {
@@ -38,7 +38,7 @@ export function uploadBanner(base64: string, uniqueId: string): Promise<CustomRe
     form.append('id', uniqueId);
     form.append('file', buffer, 'temp.' + type);
 
-    fetch(env.NERIMITY_CDN + 'banner', {
+    fetch(env.NERIMITY_CDN + 'banners', {
       method: 'POST',
       body: form,
     }).then(async (res) => {
