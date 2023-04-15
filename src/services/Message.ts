@@ -9,6 +9,8 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import { Message } from '@prisma/client';
 import { removeDuplicates } from '../common/utils';
+import { addToObjectIfExists } from '../common/addToObjectIfExists';
+import { deleteImage } from '../common/nerimityCDN';
 
 export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string, beforeMessageId?: string) => {
   if (limit > 100) return [];
@@ -24,7 +26,8 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
     },
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
-      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}}
+      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      attachments: {select: {height: true, width: true, path: true}}
     },
     take: limit,
     orderBy: {createdAt: 'desc'},
@@ -88,7 +91,8 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
     }, true),
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
-      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}}
+      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      attachments: {select: {height: true, width: true, path: true}}
     },
   });
   
@@ -123,6 +127,7 @@ interface SendMessageOptions {
   content?: string,
   type: MessageType,
   updateLastSeen?: boolean // by default, this is true.
+  attachment?: {width?: number, height?: number, path: string}
 }
 
 
@@ -151,19 +156,29 @@ async function constructData(messageData: MessageDataCreate | MessageDataUpdate,
 }
 
 export const createMessage = async (opts: SendMessageOptions) => {
-
-  prisma.message.create;
   const message = await prisma.message.create({
     data: await constructData({
       id: generateId(),
       content: opts.content || '',
       createdById: opts.userId,
       channelId: opts.channelId,
-      type: opts.type      
+      type: opts.type,
+      ...(opts.attachment ? {
+        attachments: {
+          create: {
+            id: generateId(),
+            channelId: opts.channelId,
+            height: opts.attachment.height,
+            width: opts.attachment.width,
+            path: opts.attachment.path,
+          }
+        }
+      } : undefined)
     }),
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
-      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}}
+      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      attachments: {select: {height: true, width: true, path: true}}
     },
   });
 
@@ -266,10 +281,15 @@ interface MessageDeletedOptions {
 }
 
 export const deleteMessage = async (opts: MessageDeletedOptions) => {
-  const message = await prisma.message.findFirst({ where: {id: opts.messageId, channelId: opts.channelId} });
+  const message = await prisma.message.findFirst({ where: {id: opts.messageId, channelId: opts.channelId}, include: {attachments: true} });
   if (!message) return false;
   
   await prisma.message.delete({where: {id: opts.messageId}});
+
+  if (message.attachments?.[0]?.path) {
+    deleteImage(message.attachments[0].path);
+  }
+
 
   if (opts.serverId) {
     emitServerMessageDeleted({channelId: opts.channelId, messageId: opts.messageId});

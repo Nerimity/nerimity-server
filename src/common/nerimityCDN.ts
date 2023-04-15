@@ -2,9 +2,10 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 import { CustomResult } from './CustomResult';
 import env from './env';
+import internal from 'stream';
 
 export function uploadAvatar(base64: string, uniqueId: string): Promise<CustomResult<{path: string}, any>> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const form = new FormData();
     const buffer = Buffer.from(base64.split(',')[1], 'base64');
 
@@ -27,7 +28,7 @@ export function uploadAvatar(base64: string, uniqueId: string): Promise<CustomRe
 
 
 export function uploadBanner(base64: string, uniqueId: string): Promise<CustomResult<{path: string}, any>> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const form = new FormData();
     const buffer = Buffer.from(base64.split(',')[1], 'base64');
 
@@ -45,6 +46,41 @@ export function uploadBanner(base64: string, uniqueId: string): Promise<CustomRe
       if (res.status == 200) return resolve([await res.json(), null]);
       resolve([null, await res.json()]);
     });
+  });
+}
+
+interface Dimensions {
+  width: number;
+  height: number;
+}
+
+export function uploadImage(readable: internal.Readable, filename: string, uniqueId: string): Promise<CustomResult<{path: string, dimensions: Dimensions}, any>>  {
+  return new Promise((resolve) => {
+    const form = new FormData();
+
+    form.append('secret', env.NERIMITY_CDN_SECRET);
+    form.append('id', uniqueId);
+    form.append('file', readable, filename);
+
+    fetch(env.NERIMITY_CDN + 'attachments', {
+      method: 'POST',
+      body: form,
+    }).then(async (res) => {
+      if (res.status == 200) return resolve([await res.json(), null]);
+      resolve([null, await res.json()]);
+    });
+  });
+}
+
+
+
+export async function deleteImage(path: string)  {
+  return await fetch(env.NERIMITY_CDN, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({path, secret: env.NERIMITY_CDN_SECRET}),
   });
 }
 

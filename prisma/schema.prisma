@@ -56,7 +56,7 @@ model User {
   following              Follower[]              @relation(name: "following")
   postNotifications      PostNotification[]      @relation(name: "postNotifications")
   sentPostNotifications  PostNotification[]
-  mentionedMessages        Message[]               @relation(name: "mentioned_messages")
+  mentionedMessages      Message[]               @relation(name: "mentioned_messages")
 }
 
 model Follower {
@@ -206,6 +206,7 @@ model Channel {
   messages               Message[]
   messageMentions        MessageMention[]
   lastSeenChannelServers ServerChannelLastSeen[]
+  attachments            Attachment[]
 }
 
 model Inbox {
@@ -231,6 +232,9 @@ model Message {
   channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   createdBy   User     @relation(fields: [createdById], references: [id])
   mentions    User[]  @relation(name: "mentioned_messages")
+
+  attachments Attachment[]
+
 }
 
 model MessageMention {
@@ -250,6 +254,21 @@ model MessageMention {
   @@unique([mentionedById, mentionedToId, channelId])
   @@unique([mentionedToId, channelId])
 
+}
+
+model Attachment {
+  id          String @id
+  
+  path        String
+  width       Int?
+  height      Int?
+
+  messageId   String
+  message     Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
 
 model ServerChannelLastSeen {

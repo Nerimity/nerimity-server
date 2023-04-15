@@ -1,3 +1,4 @@
+import internal from 'stream';
 import { ChannelCache } from './cache/ChannelCache';
 import { ServerCache } from './cache/ServerCache';
 import { ServerMemberCache } from './cache/ServerMemberCache';
@@ -14,6 +15,16 @@ declare global {
       rateLimited?: number
       userIP: string;
       errorMessage?: string;
+      
+      fileInfo?: {
+        name: string
+        file: internal.Readable
+        info: {
+          encoding: string;
+          filename: string;
+          mimeType: string;
+        }
+      }
     }
   }
 
