@@ -9,45 +9,8 @@ import { MessageType } from '../../types/Message';
 import { createMessage } from '../../services/Message';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
-import connectBusboy from 'connect-busboy';
-import { uploadAvatar, uploadImage } from '../../common/nerimityCDN';
-
-// when file field exists, consider the request to be done.
-function connectBusboyWrapper(req: Request, res: Response, next: NextFunction) {
-  if (!req.headers['content-type']?.startsWith('multipart/form-data')) return next();
-  
-  connectBusboy({immediate: true, limits: {files: 1, fileSize: 7840000}})(req, res, () => {
-    //
-  });
-  if (!req.busboy) return next();
-  
-  const fields: any = {};
-  let fileInfo: typeof req.fileInfo | undefined;
-
-  req.busboy.on('field', (name, value) => {
-    fields[name] = value;
-  });
-
-  req.busboy.on('file', async (name, file, info) => {
-    req.body = fields;
-    fileInfo = {name, file, info};
-    req.fileInfo = fileInfo;
-    next();
-  });
-  req.busboy.on('close', () => {
-    if ((fileInfo?.file as any)?.truncated) {
-      res.status(403).json(generateError('File size limit exceeded.'));
-      return;
-    }
-  });
-
-  req.busboy.on('finish', () => {
-    if (!fileInfo?.file) {
-      res.status(403).json(generateError('File not provided.'));
-    }
-  });
-  
-}
+import { uploadImage } from '../../common/nerimityCDN';
+import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 
 
 export function channelMessageCreate(Router: Router) {
@@ -104,7 +67,6 @@ async function route (req: Request, res: Response) {
         path: uploadedImage.path
       };
     }
-
   }
 
   

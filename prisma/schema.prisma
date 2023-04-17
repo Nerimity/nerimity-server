@@ -263,11 +263,14 @@ model Attachment {
   width       Int?
   height      Int?
 
-  messageId   String
-  message     Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId   String?
+  message     Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
-  channelId String
-  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  postId String?
+  post   Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 }
 
@@ -307,6 +310,7 @@ model Post {
   commentTo  Post? @relation(fields: [commentToId], references: [id], name: "commentTo", onDelete: SetNull)
 
   comments Post[] @relation(name: "commentTo")
+  attachments Attachment[]
 
 
   notifications PostNotification[]

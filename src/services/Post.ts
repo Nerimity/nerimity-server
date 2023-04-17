@@ -1,30 +1,43 @@
-import { Post } from '@prisma/client';
+import { Post, Prisma } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
 import { dateToDateTime, prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
+import { deleteImage } from '../common/nerimityCDN';
 
-function constructInclude(requesterUserId: string, continueIter = true): any {
+function constructInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
     ...(continueIter ? {commentTo: {include: constructInclude(requesterUserId, false)}} :  undefined),
     createdBy: true,
     _count: {select: {likedBy: true, comments: true}},
-    likedBy: {select: {id: true},where: {likedById: requesterUserId}}
+    likedBy: {select: {id: true},where: {likedById: requesterUserId}},
+    attachments: {select: {height: true, width: true, path: true}}
   };
 }
 
 interface CreatePostOpts {
   userId: string;
-  content: string;
-  commentToId?: string
+  content?: string;
+  commentToId?: string;
+  attachment?: {width?: number, height?: number, path: string};
 }
 export async function createPost(opts: CreatePostOpts) {
   const post = await prisma.post.create({
     data: {
       id: generateId(),
-      content: opts.content.trim(),
+      content: opts.content?.trim(),
       createdById: opts.userId,
-      ...(opts.commentToId ? {commentToId: opts.commentToId} : undefined)
+      ...(opts.commentToId ? {commentToId: opts.commentToId} : undefined),
+      ...(opts.attachment ? {
+        attachments: {
+          create: {
+            id: generateId(),
+            height: opts.attachment.height,
+            width: opts.attachment.width,
+            path: opts.attachment.path            
+          }
+        }
+      } : undefined)
     },
     include: constructInclude(opts.userId)
   });
@@ -168,10 +181,15 @@ export async function unlikePost(userId: string, postId: string): Promise<Custom
 
 
 export async function deletePost(postId: string, userId: string): Promise<CustomResult<boolean, CustomError>> {
-  const post = await prisma.post.findFirst({where: {id: postId, createdById: userId}});
+  const post = await prisma.post.findFirst({where: {id: postId, createdById: userId}, include: {attachments: true}} );
   if (!post) {
     return [null, generateError('Post does not exist!')];
   }
+
+  if (post.attachments?.[0]?.path) {
+    deleteImage(post.attachments[0].path);
+  }
+
   await prisma.$transaction([
     prisma.post.update({
       where: {id: postId},
