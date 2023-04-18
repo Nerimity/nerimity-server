@@ -310,3 +310,30 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   emitDMMessageDeleted(channel, {channelId: opts.channelId, messageId: opts.messageId});
   return true;
 };
+
+
+
+
+export const getChannelAttachmentImages = async (channelId: string, limit = 50, afterAttachmentId?: string, beforeAttachmentId?: string) => {
+  if (limit > 100) return [];
+  const attachments = await prisma.attachment.findMany({
+    where: {
+      channelId,
+      ...(afterAttachmentId ? {
+        id: {lt: afterAttachmentId}
+      } : undefined),
+      ...(beforeAttachmentId ? {
+        id: {gt: beforeAttachmentId}
+      } : undefined)
+    },
+    take: limit,
+    orderBy: {createdAt: 'desc'},
+    ...(beforeAttachmentId ? {
+      orderBy: {createdAt: 'asc'},
+    } : undefined),
+  });
+
+  if (beforeAttachmentId) return attachments;
+
+  return attachments.reverse();
+};
