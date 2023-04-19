@@ -105,6 +105,9 @@ model Server {
 
   PublicServer           PublicServer?
 
+  attachments Attachment[]
+
+
 }
 
 model PublicServer {
@@ -271,6 +274,10 @@ model Attachment {
 
   channelId String?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  serverId String?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
   createdAt   DateTime @default(now())
 }
 

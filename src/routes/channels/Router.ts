@@ -4,11 +4,13 @@ import { channelMessageDelete } from './channelMessageDelete';
 import { channelMessages } from './channelMessages';
 import { channelMessageUpdate } from './channelMessageUpdate';
 import { channelTypingIndicator } from './channelTypingIndicator';
+import { channelAttachments } from './channelAttachments';
 
 
 const ChannelsRouter = Router();
 
 channelMessages(ChannelsRouter);
+channelAttachments(ChannelsRouter);
 channelMessageCreate(ChannelsRouter);
 channelMessageUpdate(ChannelsRouter);
 channelMessageDelete(ChannelsRouter);
