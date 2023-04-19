@@ -91,12 +91,12 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
 
 export const getServers = async (userId: string) => {
 
-  const user = await prisma.user.findFirst({where: {id: userId}, include: {servers: {include: {_count: {select: {attachments: true}}}}}});
+  const user = await prisma.user.findFirst({where: {id: userId}, include: {servers: true}});
 
   const serverIds = user?.servers.map(server => server.id);
 
   const [serverChannels, serverMembers, serverRoles] = await prisma.$transaction([
-    prisma.channel.findMany({where: {serverId: {in: serverIds}}}),
+    prisma.channel.findMany({where: {serverId: {in: serverIds}}, include: {_count: {select: {attachments: true}}}}),
     prisma.serverMember.findMany({where: {serverId: {in: serverIds}}, include: {user: true}}),
     prisma.serverRole.findMany({where: {serverId: {in: serverIds}}}),
   ]);
@@ -122,9 +122,9 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   if (maxServersReached) {
     return [null, generateError('You have reached the maximum number of servers.')];
   }
+
   
-  
-  const server = await prisma.server.findFirst({where: {id: serverId}, include: {_count: {select: {attachments: true}}}});
+  const server = await prisma.server.findFirst({where: {id: serverId}});
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
