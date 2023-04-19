@@ -168,6 +168,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
           create: {
             id: generateId(),
             channelId: opts.channelId,
+            serverId: opts.serverId,
             height: opts.attachment.height,
             width: opts.attachment.width,
             path: opts.attachment.path,
