@@ -318,6 +318,10 @@ export async function followUser(requesterId: string, followToId: string): Promi
   const existingFollow = await prisma.follower.findFirst({where: {followedById: requesterId, followedToId: followToId}});
   if (existingFollow) return [null, generateError('You are already following this user.')];
 
+  if (requesterId === followToId) {
+    return [null, generateError('You cannot follow yourself.')];
+  }
+
   await prisma.follower.create({
     data: {
       id: generateId(),
