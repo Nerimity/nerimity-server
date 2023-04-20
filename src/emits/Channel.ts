@@ -7,17 +7,18 @@ import { getIO } from '../socket/socket';
 
 
 
-export const emitDMMessageCreated = (channel: ChannelCache, message: Message & {createdBy: Partial<UserCache | User>}, excludeSocketId?: string) => {
+export const emitDMMessageCreated = (channel: ChannelCache, message: Message & {createdBy: Partial<UserCache | User>}, socketId?: string) => {
   const io = getIO();
 
   const userIds = [channel.inbox?.recipientId as string, channel.inbox?.createdById as string];
 
-  if (excludeSocketId) {
-    io.in(userIds).except(excludeSocketId).emit(MESSAGE_CREATED, message);
+  if (socketId) {
+    io.in(userIds).except(socketId).emit(MESSAGE_CREATED, {message});
+    io.in(socketId).emit(MESSAGE_CREATED, {socketId, message});
     return;
   }
 
-  io.in(userIds).emit(MESSAGE_CREATED, message);
+  io.in(userIds).emit(MESSAGE_CREATED, {socketId, message});
 };
 
 export const emitDMMessageUpdated = (channel: ChannelCache, messageId: string, updated: Partial<Message>) => {

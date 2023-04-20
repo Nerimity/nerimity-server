@@ -11,7 +11,7 @@ function constructInclude(requesterUserId: string, continueIter = true): Prisma.
     createdBy: true,
     _count: {select: {likedBy: true, comments: true}},
     likedBy: {select: {id: true},where: {likedById: requesterUserId}},
-    attachments: {select: {height: true, width: true, path: true}}
+    attachments: {select: {height: true, width: true, path: true, id: true}}
   };
 }
 

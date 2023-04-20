@@ -27,7 +27,7 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
       mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
-      attachments: {select: {height: true, width: true, path: true}}
+      attachments: {select: {height: true, width: true, path: true, id: true}}
     },
     take: limit,
     orderBy: {createdAt: 'desc'},
@@ -92,7 +92,7 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
       mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
-      attachments: {select: {height: true, width: true, path: true}}
+      attachments: {select: {height: true, width: true, path: true, id: true}}
     },
   });
   
@@ -179,7 +179,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
       mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
-      attachments: {select: {height: true, width: true, path: true}}
+      attachments: {select: {height: true, width: true, path: true, id: true}}
     },
   });
 

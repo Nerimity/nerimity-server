@@ -79,17 +79,18 @@ export const emitServerLeft = (userId: string, serverId: string, serverDeleted: 
 
 
 
-export const emitServerMessageCreated = (message: Message & {createdBy: Partial<UserCache | User>}, excludeSocketId?: string) => {
+export const emitServerMessageCreated = (message: Message & {createdBy: Partial<UserCache | User>}, socketId?: string) => {
   const io = getIO();
 
   const channelId = message.channelId;
 
-  if (excludeSocketId) {
-    io.in(channelId).except(excludeSocketId).emit(MESSAGE_CREATED, message);
+  if (socketId) {
+    io.in(channelId).except(socketId).emit(MESSAGE_CREATED, {message});
+    io.in(socketId).emit(MESSAGE_CREATED, {socketId, message});
     return;
   }
 
-  io.in(channelId).emit(MESSAGE_CREATED, message);
+  io.in(channelId).emit(MESSAGE_CREATED, {socketId, message});
 };
 
 export const emitServerMessageUpdated = (channelId: string, messageId: string, updated: Partial<Message>) => {
