@@ -44,7 +44,7 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
   if (!body.content?.trim() && !req.fileInfo?.file) {
-    res.status(400).json(generateError('content or attachment is required.'));
+    return res.status(400).json(generateError('content or attachment is required.'));
   }
 
 

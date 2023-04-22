@@ -53,7 +53,7 @@ async function route (req: Request, res: Response) {
   }
 
   if (!body.content?.trim() && !req.fileInfo?.file) {
-    res.status(400).json(generateError('content or attachment is required.'));
+    return res.status(400).json(generateError('content or attachment is required.'));
   }
 
   let attachment: { width?: number; height?: number; path: string} | undefined = undefined;
