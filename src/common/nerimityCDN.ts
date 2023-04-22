@@ -22,7 +22,7 @@ export function uploadAvatar(base64: string, uniqueId: string): Promise<CustomRe
     }).then(async (res) => {
       if (res.status == 200) return resolve([await res.json(), null]);
       resolve([null, await res.json()]);
-    });
+    }).catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
@@ -45,7 +45,7 @@ export function uploadBanner(base64: string, uniqueId: string): Promise<CustomRe
     }).then(async (res) => {
       if (res.status == 200) return resolve([await res.json(), null]);
       resolve([null, await res.json()]);
-    });
+    }).catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
@@ -68,7 +68,7 @@ export function uploadImage(readable: internal.Readable, filename: string, uniqu
     }).then(async (res) => {
       if (res.status == 200) return resolve([await res.json(), null]);
       resolve([null, await res.json()]);
-    });
+    }).catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
