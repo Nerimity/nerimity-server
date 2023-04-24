@@ -70,7 +70,8 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         type: ChannelType.SERVER_TEXT,
         permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
         createdById: opts.creatorId,
-      }
+      },
+      include: {_count: {select: {attachments: true}}}
     }),
     prisma.user.update({where: {id: opts.creatorId}, data: {servers: {connect: {id: serverId}}} }),
     prisma.serverMember.create({data: {id: serverMemberId, serverId, userId: opts.creatorId}, include: {user: true}}),
@@ -158,7 +159,7 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
     prisma.user.update({where: {id: userId}, data: {servers: {connect: {id: serverId}}} }),
     prisma.serverRole.findMany({where: {serverId}}),
     prisma.serverMember.create({data: {id: generateId(),serverId, userId}, include: {user: true}}),
-    prisma.channel.findMany({where: {serverId: server.id}}),
+    prisma.channel.findMany({where: {serverId: server.id}, include: {_count: {select: {attachments: true}}}}),
     prisma.serverMember.findMany({where: {serverId: server.id}, include: {user: true}}),
   ]);
 
