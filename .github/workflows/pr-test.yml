@@ -13,7 +13,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: node:16-alpine3.12
+    container: node:16
     
     services:
       # Label used to access the service container
