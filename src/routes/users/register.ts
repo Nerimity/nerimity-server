@@ -1,9 +1,71 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { customExpressValidatorResult, customZodError, generateError } from '../../common/errorHandler';
 import { turnstileVerify } from '../../common/turnstileVerify';
 import { rateLimit } from '../../middleware/rateLimit';
 import { registerUser } from '../../services/User';
+import z from 'zod';
+
+const tokenLengthMessage = 'Token must be between 1 and 3000 characters long';
+const emailLengthMessage = 'Email must be between 1 and 320 characters long';
+const usernameLengthMessage = 'Username must be between 3 and 35 characters long';
+const passwordLengthMessage = 'Password must be between 4 and 255 characters long';
+
+
+
+
+const customErrorMap: z.ZodErrorMap = (issue, ctx) => {
+  if (ctx.defaultError === 'Required') {
+    return {message: `${issue.path.join('.')} is required.`};
+  }
+  
+  if (issue.code === z.ZodIssueCode.invalid_type) {
+    return {message: `${issue.path.join('.')} must be a ${issue.expected}`};
+  }
+
+  if (issue.code === z.ZodIssueCode.too_small) {
+    return {message: `${issue.path.join('.')} must be at least ${issue.minimum} characters long`};
+  }
+  if (issue.code === z.ZodIssueCode.too_big) {
+    return {message: `${issue.path.join('.')} must be at most ${issue.maximum} characters long`};
+  }
+
+  return { message: ctx.defaultError };
+};
+
+z.setErrorMap(customErrorMap);
+
+
+
+const bodySchema = z.object({
+  token: z.string({})
+    .min(1)
+    .max(3000),
+  email: z.string({required_error: 'Email is required.'}).email('Invalid email.')
+    .min(1)
+    .max(320),
+  username: z.string({required_error: 'Username is required.'})
+    .min(3)
+    .max(35),
+  password:  z.string({required_error: 'Password is required.'})
+    .min(4)
+    .max(255),
+});
+console.clear();
+
+const bodyResult = bodySchema.safeParse({
+  token: '2222222',
+  email: 'test@gmail.com',
+  username: 'asdsadsaddsa',
+  password: 'lo3s'
+
+});
+
+if (!bodyResult.success) {
+  // console.log(bodyResult.error);
+  console.log(customZodError(bodyResult.error));
+} 
+
 
 export function register(Router: Router) {
   Router.post('/users/register',
@@ -34,21 +96,18 @@ export function register(Router: Router) {
   );
 }
 
-interface Body {
-  email: string;
-  username: string;
-  password: string;
-  token: string;
-}
+
 
 async function route (req: Request, res: Response) {
-  const body = req.body as Body;
+  const bodyResult = bodySchema.safeParse(req.body);
 
-  const validateError = customExpressValidatorResult(req);
-
-  if (validateError) {
-    return res.status(400).json(validateError);
+  if (!bodyResult.success) {
+    console.log(customZodError(bodyResult.error));
+    return res.status(400).json(customZodError(bodyResult.error));
   }
+
+  const body = bodyResult.data;
+
 
   const validToken = await turnstileVerify(body.token);
 
