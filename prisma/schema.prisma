@@ -116,10 +116,10 @@ model PublicServer {
   server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade) 
   description     String
 
-  bumpCount       Int       @default(0)
-  bumpedAt        DateTime?
+  bumpCount       Int       @default(1)
+  bumpedAt        DateTime  @default(now())
 
-  lifetimeBumpCount   Int      @default(0)
+  lifetimeBumpCount   Int   @default(1)
 
   createdAt       DateTime   @default(now())
 }

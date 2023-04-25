@@ -87,7 +87,7 @@ export const updatePublicServer = async (serverId: string, description: string):
       id: generateId(),
       serverId,
       description,
-      bumpCount: 0,
+      bumpCount: 1,
     },
     update: {
       description
