@@ -7,7 +7,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
-import { emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
+import { emitServerChannelOrderUpdated, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentMessages } from './Message';
 import { MessageType } from '../types/Message';
@@ -70,6 +70,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         type: ChannelType.SERVER_TEXT,
         permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
         createdById: opts.creatorId,
+        order: 1,
       },
       include: {_count: {select: {attachments: true}}}
     }),
@@ -405,3 +406,42 @@ export const updateServerOrder = async (userId: string, orderedServerIds: string
 
   return [{success: true}, null];
 };
+
+
+
+interface UpdateServerChannelOrderOpts {
+  serverId: string;
+  updated: {id: string, order: number}[]
+}
+
+
+
+export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpts) {
+  const serverChannels = await prisma.channel.findMany({
+    where: {serverId: opts.serverId},
+    orderBy: [{order: 'asc'}, {createdAt: 'asc'}]
+  });
+
+  const existingIds: string[] = [];
+  
+  for (let i = 0; i < serverChannels.length; i++) {
+    const channel = serverChannels[i];
+    channel.order = i + 1;
+    existingIds.push(channel.id);
+  }
+
+
+
+
+  await prisma.$transaction(
+    opts.updated.filter(updated => existingIds.includes(updated.id))
+      .map(updated => prisma.channel.update({
+        where: {id: updated.id},
+        data: {order: updated.order}
+      }))
+  );
+
+  emitServerChannelOrderUpdated(opts.serverId, opts.updated);
+  return [{updated: opts.updated}, null] as const;
+}
+

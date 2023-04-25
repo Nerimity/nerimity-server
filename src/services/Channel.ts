@@ -107,6 +107,7 @@ export const createServerChannel = async (serverId: string, channelName: string,
       type: ChannelType.SERVER_TEXT,
       permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
       createdById: userId,
+      order: channelCount + 1
     }
   });
 

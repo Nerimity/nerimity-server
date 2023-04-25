@@ -20,11 +20,13 @@ import { serverMemberBanRemove } from './serverMemberBanRemove';
 import { serverInviteCustomCreate } from './serverInviteCustomCreate';
 import { serverRoleUpdateOrder } from './serverRoleUpdateOrder';
 import { serverUpdateOrder } from './serverUpdateOrder';
+import { serverChannelUpdateOrder } from './serverChannelUpdateOrder';
 
 
 const ServersRouter = Router();
 
 
+serverChannelUpdateOrder(ServersRouter);
 serverUpdateOrder(ServersRouter);
 serverCreate(ServersRouter);
 serverDeleteOrLeave(ServersRouter);
