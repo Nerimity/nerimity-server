@@ -430,18 +430,17 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
     existingIds.push(channel.id);
   }
 
-
-
+  const safeUpdatedChannels = opts.updated.filter(updated => existingIds.includes(updated.id));
 
   await prisma.$transaction(
-    opts.updated.filter(updated => existingIds.includes(updated.id))
+    safeUpdatedChannels
       .map(updated => prisma.channel.update({
         where: {id: updated.id},
         data: {order: updated.order}
       }))
   );
 
-  emitServerChannelOrderUpdated(opts.serverId, opts.updated);
-  return [{updated: opts.updated}, null] as const;
+  emitServerChannelOrderUpdated(opts.serverId, safeUpdatedChannels);
+  return [{updated: safeUpdatedChannels}, null] as const;
 }
 
