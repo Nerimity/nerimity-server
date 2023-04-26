@@ -11,6 +11,13 @@ import { memberHasRolePermission } from '../../middleware/memberHasRolePermissio
 import { rateLimit } from '../../middleware/rateLimit';
 import { uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
+import z from 'zod';
+
+
+const bodySchema = z.object({
+  content: z.string().optional().max,
+  
+});
 
 
 export function channelMessageCreate(Router: Router) {
@@ -20,6 +27,9 @@ export function channelMessageCreate(Router: Router) {
     channelPermissions({bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, message: 'You are not allowed to send messages in this channel.'}),
     memberHasRolePermission(ROLE_PERMISSIONS.SEND_MESSAGE),
     connectBusboyWrapper,
+
+
+
     body('content')
       .optional(true)
       .isString().withMessage('Content must be a string!')
@@ -28,6 +38,9 @@ export function channelMessageCreate(Router: Router) {
       .optional(true)
       .isString().withMessage('SocketId must be a string!')
       .isLength({ min: 1, max: 255 }).withMessage('SocketId length must be between 1 and 255 characters.'),
+
+
+
     rateLimit({
       name: 'create_message',
       expireMS: 20000,
