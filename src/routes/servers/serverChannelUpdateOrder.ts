@@ -13,8 +13,11 @@ export function serverChannelUpdateOrder(Router: Router) {
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
-    body('updated')
-      .isArray().withMessage('updated must be an array.'),
+    body('channelIds')
+      .isArray().withMessage('channelIds must be an array.'),
+    body('categoryId')
+      .isString().withMessage('channelIds must be a string.')
+      .optional(),
     rateLimit({
       name: 'server_channel_update_order',
       expireMS: 10000,
@@ -25,7 +28,8 @@ export function serverChannelUpdateOrder(Router: Router) {
 }
 
 interface Body {
-  updated: {id: string, order: number}[]
+  channelIds: string[];
+  categoryId?: string;
 }
 
 async function route (req: Request, res: Response) {
@@ -38,7 +42,8 @@ async function route (req: Request, res: Response) {
 
   const [updated, error] = await updateServerChannelOrder({
     serverId: req.serverCache.id,
-    updated: body.updated,
+    orderedChannelIds: body.channelIds,
+    categoryId: body.categoryId,
   });
 
   if (error) {

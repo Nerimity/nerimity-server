@@ -11,6 +11,7 @@ import { memberHasRolePermission } from '../../middleware/memberHasRolePermissio
 import { rateLimit } from '../../middleware/rateLimit';
 import { uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
+import { ChannelType } from '../../types/Channel';
 
 
 export function channelMessageCreate(Router: Router) {
@@ -50,6 +51,10 @@ async function route (req: Request, res: Response) {
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  if (req.channelCache.type === ChannelType.CATEGORY) {
+    return res.status(400).json(generateError('You cannot send messages in a category channel.'));
   }
 
   if (!body.content?.trim() && !req.fileInfo?.file) {

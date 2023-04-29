@@ -1,4 +1,4 @@
-import { Server } from '@prisma/client';
+import { Channel, Server } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma, removeServerIdFromAccountOrder } from '../common/database';
@@ -12,7 +12,8 @@ import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentMessages } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
-import * as nerimityCDN from '../common/nerimityCDN'; 
+import * as nerimityCDN from '../common/nerimityCDN';
+import { prependOnceListener } from 'process';
 
 interface CreateServerOptions {
   name: string;
@@ -20,7 +21,7 @@ interface CreateServerOptions {
 }
 
 export const hasReachedMaxServers = async (userId: string): Promise<boolean> => {
-  const serverCount = await prisma.server.count({where: {createdById: userId}});
+  const serverCount = await prisma.server.count({ where: { createdById: userId } });
   return serverCount > 100;
 };
 
@@ -55,10 +56,10 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         name: 'All',
         serverId,
         permissions: ROLE_PERMISSIONS.SEND_MESSAGE.bit,
-        
+
         order: 1,
         hexColor: env.DEFAULT_SERVER_ROLE_COLOR,
-  
+
         createdById: opts.creatorId,
       }
     }),
@@ -72,10 +73,10 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         createdById: opts.creatorId,
         order: 1,
       },
-      include: {_count: {select: {attachments: true}}}
+      include: { _count: { select: { attachments: true } } }
     }),
-    prisma.user.update({where: {id: opts.creatorId}, data: {servers: {connect: {id: serverId}}} }),
-    prisma.serverMember.create({data: {id: serverMemberId, serverId, userId: opts.creatorId}, include: {user: true}}),
+    prisma.user.update({ where: { id: opts.creatorId }, data: { servers: { connect: { id: serverId } } } }),
+    prisma.serverMember.create({ data: { id: serverMemberId, serverId, userId: opts.creatorId }, include: { user: true } }),
   ]);
 
 
@@ -93,14 +94,14 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
 
 export const getServers = async (userId: string) => {
 
-  const user = await prisma.user.findFirst({where: {id: userId}, include: {servers: true}});
+  const user = await prisma.user.findFirst({ where: { id: userId }, include: { servers: true } });
 
   const serverIds = user?.servers.map(server => server.id);
 
   const [serverChannels, serverMembers, serverRoles] = await prisma.$transaction([
-    prisma.channel.findMany({where: {serverId: {in: serverIds}}, include: {_count: {select: {attachments: true}}}}),
-    prisma.serverMember.findMany({where: {serverId: {in: serverIds}}, include: {user: true}}),
-    prisma.serverRole.findMany({where: {serverId: {in: serverIds}}}),
+    prisma.channel.findMany({ where: { serverId: { in: serverIds } }, include: { _count: { select: { attachments: true } } } }),
+    prisma.serverMember.findMany({ where: { serverId: { in: serverIds } }, include: { user: true } }),
+    prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
   ]);
 
 
@@ -114,31 +115,31 @@ export const getServers = async (userId: string) => {
 };
 
 export const getServerIds = async (userId: string): Promise<string[]> => {
-  const user = await prisma.user.findFirst({where: {id: userId}, select: {servers: {select: {id: true}}}});
+  const user = await prisma.user.findFirst({ where: { id: userId }, select: { servers: { select: { id: true } } } });
   return user?.servers.map(server => server.id) || [];
 };
 
 export const joinServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>> => {
-  
+
   const maxServersReached = await hasReachedMaxServers(userId);
   if (maxServersReached) {
     return [null, generateError('You have reached the maximum number of servers.')];
   }
 
-  
-  const server = await prisma.server.findFirst({where: {id: serverId}});
+
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
   // check if user is already in server
-  const isInServer = await exists(prisma.serverMember, {where: {serverId, userId}});
+  const isInServer = await exists(prisma.serverMember, { where: { serverId, userId } });
   if (isInServer) {
     return [null, generateError('You are already in this server.')];
   }
 
 
-  const isBanned = await exists(prisma.bannedServerMember, {where: {serverId, userId}});
+  const isBanned = await exists(prisma.bannedServerMember, { where: { serverId, userId } });
 
   if (isBanned) {
     return [null, generateError('You are banned from this server')];
@@ -156,12 +157,12 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
 
 
 
-  const [ _, serverRoles, serverMember, serverChannels, serverMembers ] = await prisma.$transaction([
-    prisma.user.update({where: {id: userId}, data: {servers: {connect: {id: serverId}}} }),
-    prisma.serverRole.findMany({where: {serverId}}),
-    prisma.serverMember.create({data: {id: generateId(),serverId, userId}, include: {user: true}}),
-    prisma.channel.findMany({where: {serverId: server.id}, include: {_count: {select: {attachments: true}}}}),
-    prisma.serverMember.findMany({where: {serverId: server.id}, include: {user: true}}),
+  const [_, serverRoles, serverMember, serverChannels, serverMembers] = await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { servers: { connect: { id: serverId } } } }),
+    prisma.serverRole.findMany({ where: { serverId } }),
+    prisma.serverMember.create({ data: { id: generateId(), serverId, userId }, include: { user: true } }),
+    prisma.channel.findMany({ where: { serverId: server.id }, include: { _count: { select: { attachments: true } } } }),
+    prisma.serverMember.findMany({ where: { serverId: server.id }, include: { user: true } }),
   ]);
 
   const memberIds = serverMembers.map(sm => sm.user.id);
@@ -184,24 +185,24 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   return [server, null];
 };
 
-export const deleteOrLeaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<boolean, CustomError>>  => {
-  
-  const server = await prisma.server.findFirst({where: {id: serverId}});
+export const deleteOrLeaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<boolean, CustomError>> => {
+
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
   const isServerCreator = server.createdById === userId;
-  
+
 
   // check if user is in the server
-  const isInServer = await exists(prisma.serverMember, {where: {serverId, userId}});
+  const isInServer = await exists(prisma.serverMember, { where: { serverId, userId } });
   if (!isInServer && !ban) {
     return [null, generateError('You are not in this server.')];
   }
 
   if (!isInServer && ban) {
-    const isBanned = await prisma.bannedServerMember.findFirst({where: { serverId, userId }});
+    const isBanned = await prisma.bannedServerMember.findFirst({ where: { serverId, userId } });
     if (isBanned) {
       return [null, generateError('User already banned.')];
     }
@@ -219,13 +220,13 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string, ban 
 
   if (isServerCreator) {
     // This one line also deletes related stuff from the database.
-    await prisma.server.delete({where: {id: serverId}});
+    await prisma.server.delete({ where: { id: serverId } });
   } else {
     const transactions: any[] = [
-      prisma.user.update({where: {id: userId}, data: {servers: {disconnect: {id: serverId}}} }),
-      prisma.serverMember.delete({where: {userId_serverId: {serverId: serverId, userId: userId}}}),
-      prisma.messageMention.deleteMany({where: { serverId: serverId, mentionedToId: userId}}),
-      prisma.serverChannelLastSeen.deleteMany({where: { serverId: serverId, userId: userId}}),
+      prisma.user.update({ where: { id: userId }, data: { servers: { disconnect: { id: serverId } } } }),
+      prisma.serverMember.delete({ where: { userId_serverId: { serverId: serverId, userId: userId } } }),
+      prisma.messageMention.deleteMany({ where: { serverId: serverId, mentionedToId: userId } }),
+      prisma.serverChannelLastSeen.deleteMany({ where: { serverId: serverId, userId: userId } }),
     ];
     if (ban) {
       transactions.push(prisma.bannedServerMember.create({
@@ -258,7 +259,7 @@ export const deleteOrLeaveServer = async (userId: string, serverId: string, ban 
 
 
 export const kickServerMember = async (userId: string, serverId: string) => {
-  const server = await prisma.server.findFirst({where: {id: serverId}});
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
@@ -266,7 +267,7 @@ export const kickServerMember = async (userId: string, serverId: string) => {
     return [null, generateError('You can not kick yourself.')];
   }
 
-  const [,error] = await deleteOrLeaveServer(userId, serverId, false, true);
+  const [, error] = await deleteOrLeaveServer(userId, serverId, false, true);
   if (error) return [null, error];
 
   if (server.systemChannelId) {
@@ -282,19 +283,19 @@ export const kickServerMember = async (userId: string, serverId: string) => {
 };
 
 export const serverMemberBans = async (serverId: string) => {
-  return prisma.bannedServerMember.findMany({ where: { serverId }, select: { serverId: true, user: true }});
+  return prisma.bannedServerMember.findMany({ where: { serverId }, select: { serverId: true, user: true } });
 };
 export const serverMemberRemoveBan = async (serverId: string, userId: string): Promise<CustomResult<boolean, CustomError>> => {
-  const bannedMember = await prisma.bannedServerMember.findFirst({where: {serverId, userId}});
+  const bannedMember = await prisma.bannedServerMember.findFirst({ where: { serverId, userId } });
   if (!bannedMember) {
     return [null, generateError('This member is not banned.')];
   }
-  await prisma.bannedServerMember.delete({ where: { id: bannedMember.id }});
+  await prisma.bannedServerMember.delete({ where: { id: bannedMember.id } });
   return [true, null];
 };
 
 export const banServerMember = async (userId: string, serverId: string, shouldDeleteRecentMessages?: boolean) => {
-  const server = await prisma.server.findFirst({where: {id: serverId}});
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
@@ -302,7 +303,7 @@ export const banServerMember = async (userId: string, serverId: string, shouldDe
     return [null, generateError('You can not kick yourself.')];
   }
 
-  const [,error] = await deleteOrLeaveServer(userId, serverId, true, false);
+  const [, error] = await deleteOrLeaveServer(userId, serverId, true, false);
   if (error) return [null, error];
 
   if (shouldDeleteRecentMessages) {
@@ -331,20 +332,20 @@ export interface UpdateServerOptions {
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
-  const server = await prisma.server.findFirst({where: {id: serverId}});
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
   // check if channel is a server channel
   if (update.defaultChannelId) {
-    const channel = await prisma.channel.findFirst({where: {id: update.defaultChannelId}});
+    const channel = await prisma.channel.findFirst({ where: { id: update.defaultChannelId } });
     if (!channel || channel.serverId !== serverId) {
       return [null, generateError('Invalid defaultChannelId')];
     }
   }
   if (update.systemChannelId) {
-    const channel = await prisma.channel.findFirst({where: {id: update.systemChannelId}});
+    const channel = await prisma.channel.findFirst({ where: { id: update.systemChannelId } });
     if (!channel || channel.serverId !== serverId) {
       return [null, generateError('Invalid systemChannelId')];
     }
@@ -369,7 +370,7 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
 
 
 
-  await prisma.server.update({where: {id: serverId}, data: update});
+  await prisma.server.update({ where: { id: serverId }, data: update });
   emitServerUpdated(serverId, update);
   return [update, null];
 
@@ -378,8 +379,8 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
 
 
 export const updateServerOrder = async (userId: string, orderedServerIds: string[]) => {
-  const user = await prisma.user.findFirst({where: {id: userId}, select: {servers: {select: {id: true}}}});
-  
+  const user = await prisma.user.findFirst({ where: { id: userId }, select: { servers: { select: { id: true } } } });
+
   if (!user) {
     return [null, generateError('User does not exist.')];
   }
@@ -389,14 +390,14 @@ export const updateServerOrder = async (userId: string, orderedServerIds: string
     return [null, generateError('Server order length does not match.')];
   }
 
-  const doesNotExist = joinedServerIds.find(id => !orderedServerIds.includes(id)); 
+  const doesNotExist = joinedServerIds.find(id => !orderedServerIds.includes(id));
 
   if (doesNotExist) {
     return [null, generateError('Invalid server ids.')];
   }
 
   await prisma.account.update({
-    where: {userId},
+    where: { userId },
     data: {
       serverOrderIds: orderedServerIds
     }
@@ -404,45 +405,83 @@ export const updateServerOrder = async (userId: string, orderedServerIds: string
 
   emitServerOrderUpdated(userId, orderedServerIds);
 
-  return [{success: true}, null];
+  return [{ success: true }, null];
 };
 
 
 
 interface UpdateServerChannelOrderOpts {
   serverId: string;
-  updated: {id: string, order: number}[]
+  categoryId?: string;
+  orderedChannelIds: string[];
 }
 
 
-
+// TODO: make orderChannelIds cant contain a channel type of category when categoryId is provided.
 export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpts) {
   const serverChannels = await prisma.channel.findMany({
-    where: {serverId: opts.serverId},
-    orderBy: [{order: 'asc'}, {createdAt: 'asc'}]
+    where: { serverId: opts.serverId },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }]
   });
 
-  const existingIds: string[] = [];
-  
+
+  const channels: { [key: string]: Channel } = {};
+
   for (let i = 0; i < serverChannels.length; i++) {
     const channel = serverChannels[i];
-    channel.order = i + 1;
-    existingIds.push(channel.id);
+    channels[channel.id] = channel;
   }
 
-  const safeUpdatedChannels = 
-    opts.updated.filter(updated => existingIds.includes(updated.id))
-      .map(updated => ({id: updated.id, order: updated.order}));
+  if (opts.categoryId) {
+    const category = channels[opts.categoryId];
 
-  await prisma.$transaction(
-    safeUpdatedChannels
-      .map(updated => prisma.channel.update({
-        where: {id: updated.id},
-        data: {order: updated.order}
-      }))
-  );
+    const exists = () => category;
+    const isCategory = () => category.type === ChannelType.CATEGORY;
 
-  emitServerChannelOrderUpdated(opts.serverId, safeUpdatedChannels);
-  return [{updated: safeUpdatedChannels}, null] as const;
+    if (!exists() || !isCategory()) {
+      return [null, generateError('Invalid categoryId.')] as const;
+    }
+  }
+
+  const hasInvalidId = opts.orderedChannelIds.find(id => {
+    const channel = channels[id];
+    if (!channel) return true;
+    if (channel.type === ChannelType.CATEGORY && opts.categoryId) return true;
+  });
+  if (hasInvalidId) {
+    return [null, generateError('Invalid channel ids.')] as const;
+  }
+
+
+  await prisma.$transaction(serverChannels.map(channel => prisma.channel.update({
+    where: { id: channel.id },
+    data: {
+      ...(opts.orderedChannelIds.includes(channel.id) ? { order: opts.orderedChannelIds.indexOf(channel.id) + 1 } : undefined),
+
+      // update or add categoryId
+      ...(
+        opts.categoryId && opts.categoryId !== channel.categoryId && opts.orderedChannelIds.includes(channel.id)
+          ? {
+            categoryId: opts.categoryId
+          } : undefined
+      ),
+      // remove categoryId
+      ...(
+        !opts.categoryId && channel.categoryId && opts.orderedChannelIds.includes(channel.id)
+          ? {
+            categoryId: null
+          } : undefined
+      )
+    }
+  })));
+
+
+  const payload = {
+    categoryId: opts.categoryId,
+    orderedChannelIds: opts.orderedChannelIds
+  };
+
+  emitServerChannelOrderUpdated(opts.serverId, payload);
+  return [payload, null] as const;
 }
 
