@@ -134,10 +134,10 @@ export const emitServerRoleOrderUpdated = (serverId: string, roleIds: string[]) 
   io.in(serverId).emit(SERVER_ROLE_ORDER_UPDATED, {serverId, roleIds});
 };
 
-export const emitServerChannelOrderUpdated = (serverId: string, updated: {id: string, order: number}[]) => {
+export const emitServerChannelOrderUpdated = (serverId: string, updated: { categoryId?: string;  orderedChannelIds: string[]; }) => {
   const io = getIO();
 
-  io.in(serverId).emit(SERVER_CHANNEL_ORDER_UPDATED, {serverId, updated});
+  io.in(serverId).emit(SERVER_CHANNEL_ORDER_UPDATED, {serverId, ...updated});
 };
 
 export const emitServerOrderUpdated = (userId: string, serverIds: string[]) => {

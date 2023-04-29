@@ -1,6 +1,7 @@
 import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
+import { ChannelType } from '../types/Channel';
 import { DM_CHANNEL_KEY_STRING, INBOX_KEY_STRING, SERVER_CHANNEL_KEY_STRING } from './CacheKeys';
 import { getServerCache, ServerCache } from './ServerCache';
 
@@ -13,6 +14,7 @@ export interface ChannelCache {
   inbox?: InboxCache
   permissions: number,
   createdById: string,
+  type: ChannelType
 }
 
 export interface InboxCache {

@@ -200,6 +200,10 @@ model Channel {
   serverId               String?
   createdById            String?
   type                   Int
+  
+  categoryId             String?
+  category               Channel?                @relation(fields: [categoryId], references: [id], name: "channel_categories", onDelete: SetNull)
+
   permissions            Int?
   lastMessagedAt         DateTime?
   createdAt              DateTime                @default(now())
@@ -211,6 +215,9 @@ model Channel {
   lastSeenChannelServers ServerChannelLastSeen[]
   attachments            Attachment[]
   order                  Int?
+
+  categories             Channel[] @relation(name: "channel_categories")
+
 }
 
 model Inbox {

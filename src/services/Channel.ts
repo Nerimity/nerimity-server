@@ -92,9 +92,16 @@ export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
 };
 
 
-export const createServerChannel = async (serverId: string, channelName: string, userId: string): Promise<CustomResult<Channel, CustomError>> => {
+interface CreateServerChannelOpts {
+  serverId: string;
+  channelName: string;
+  creatorId: string;
+  channelType?: ChannelType;
+}
 
-  const channelCount = await prisma.channel.count({ where: {serverId: serverId}});
+export const createServerChannel = async (opts: CreateServerChannelOpts): Promise<CustomResult<Channel, CustomError>> => {
+
+  const channelCount = await prisma.channel.count({ where: {serverId: opts.serverId}});
   if (channelCount >= env.MAX_CHANNELS_PER_SERVER) {
     return [null, generateError('You already created the maximum amount of channels for this server.')];
   }
@@ -102,20 +109,20 @@ export const createServerChannel = async (serverId: string, channelName: string,
   const channel = await prisma.channel.create({
     data: {
       id: generateId(),
-      name: channelName,
-      serverId: serverId,
-      type: ChannelType.SERVER_TEXT,
+      name: opts.channelName,
+      serverId: opts.serverId,
+      type: opts.channelType ?? ChannelType.SERVER_TEXT,
       permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
-      createdById: userId,
+      createdById: opts.creatorId,
       order: channelCount + 1
     }
   });
 
 
-  getIO().in(serverId).socketsJoin(channel.id);
+  getIO().in(opts.serverId).socketsJoin(channel.id);
 
 
-  emitServerChannelCreated(serverId, channel);
+  emitServerChannelCreated(opts.serverId, channel);
 
   return [channel, null];
 };
