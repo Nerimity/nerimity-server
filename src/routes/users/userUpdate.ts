@@ -18,9 +18,12 @@ export function userUpdate(Router: Router) {
       .isLength({ min: 1, max: 320 }).withMessage('Email must be between 1 and 320 characters long.').optional({nullable: true }),
     body('username')
       .isString().withMessage('Invalid username.')
+      .not().contains('@').withMessage('Username cannot contain the @ symbol')
+      .not().contains(':').withMessage('Username cannot contain the : symbol')
       .isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.').optional({nullable: true }),
     body('tag')
       .isString().withMessage('Invalid tag.')
+      .isAlphanumeric().withMessage('Tag must be alphanumerical!')
       .isLength({ min: 4, max: 4 }).withMessage('Tag must be 4 characters long').optional({nullable: true }),
     body('password')
       .isString().withMessage('Password must be a string.')

@@ -18,6 +18,8 @@ export function register(Router: Router) {
     body('username')
       .not().isEmpty().withMessage('Username is required.')
       .isString().withMessage('Invalid username.')
+      .not().contains('@').withMessage('Username cannot contain the @ symbol')
+      .not().contains(':').withMessage('Username cannot contain the : symbol')
       .isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.'),
     body('password')
       .not().isEmpty().withMessage('Password is required.')
