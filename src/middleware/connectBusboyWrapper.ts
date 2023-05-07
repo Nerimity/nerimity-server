@@ -31,10 +31,4 @@ export function connectBusboyWrapper(req: Request, res: Response, next: NextFunc
       return;
     }
   });
-
-  req.busboy.on('finish', () => {
-    if (!fileInfo?.file) {
-      res.status(403).json(generateError('File not provided.'));
-    }
-  });
 }
