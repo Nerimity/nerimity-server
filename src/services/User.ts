@@ -313,7 +313,7 @@ export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<Us
           ...(opts.profile ? {
             profile: {
               upsert: {
-                create: {},
+                create: opts.profile,
                 update: opts.profile
               }
             }
