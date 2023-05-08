@@ -28,6 +28,10 @@ export function userUpdate(Router: Router) {
     body('password')
       .isString().withMessage('Password must be a string.')
       .isLength({ min: 4, max: 255 }).withMessage('Password must be between 4 and 255 characters long.').optional({nullable: true }),
+
+    body('bio')
+      .isString().withMessage('Bio must be a string.')
+      .isLength({ min: 1, max: 1000 }).withMessage('Bio must be between 1 and 1000 characters long.').optional({nullable: true }),
     route
   );
 }
@@ -39,6 +43,7 @@ interface Body {
   password?: string;
   avatar?: string;
   banner?: string;
+  bio?: string | null;
 }
 
 async function route (req: Request, res: Response) {
@@ -57,7 +62,12 @@ async function route (req: Request, res: Response) {
     tag: body.tag,
     password: body.password,
     avatar: body.avatar,
-    banner: body.banner
+    banner: body.banner,
+    ...(body.bio !== undefined ? { 
+      profile: {
+        bio: body.bio
+      }
+    } : undefined)
   });
 
   if (error) {

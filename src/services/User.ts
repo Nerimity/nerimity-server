@@ -8,43 +8,43 @@ import { emitInboxOpened, emitUserPresenceUpdate, emitUserUpdated } from '../emi
 import { ChannelType } from '../types/Channel';
 import { Presence, removeAccountsCache, updateCachePresence } from '../cache/UserCache';
 import { FriendStatus } from '../types/Friend';
-import {excludeFields, exists, prisma} from '../common/database';
+import { excludeFields, exists, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { Account, Follower, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { createPostNotification, fetchLatestPost, PostNotificationType } from './Post';
-import * as nerimityCDN from '../common/nerimityCDN'; 
+import * as nerimityCDN from '../common/nerimityCDN';
 interface RegisterOpts {
   email: string;
   username: string;
-  password: string;  
+  password: string;
 }
 
 
 export const getSuspensionDetails = async (userId: string) => {
-  const suspend = await prisma.suspension.findFirst({where: {userId}});
+  const suspend = await prisma.suspension.findFirst({ where: { userId } });
   if (!suspend) return false;
   if (!suspend.expireAt) return suspend;
-  
+
   const expireDate = new Date(suspend.expireAt);
   const now = new Date();
   if (expireDate > now) return suspend;
 
-  await prisma.suspension.delete({where: {userId}});
+  await prisma.suspension.delete({ where: { userId } });
   return false;
 };
 
 
 export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<string, CustomError>> => {
 
-  const account = await exists(prisma.account, {where: {email: opts.email}});
+  const account = await exists(prisma.account, { where: { email: opts.email } });
 
   if (account) {
     return [null, generateError('Email already exists.', 'email')];
   }
 
   const tag = generateTag();
-  const usernameTagExists = await prisma.user.findFirst({ where: {username: opts.username, tag} });
+  const usernameTagExists = await prisma.user.findFirst({ where: { username: opts.username, tag } });
   if (usernameTagExists) {
     return [null, generateError('This username is used too often.', 'username')];
   }
@@ -69,7 +69,7 @@ export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<str
       passwordVersion: 0,
     },
 
-    include: {user: true}
+    include: { user: true }
   });
 
 
@@ -86,7 +86,7 @@ interface LoginOpts {
 }
 
 export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, CustomError>> => {
-  const account = await prisma.account.findFirst({where: {email: opts.email}, include: {user: true}});
+  const account = await prisma.account.findFirst({ where: { email: opts.email }, include: { user: true } });
   if (!account) {
     return [null, generateError('Invalid email address.', 'email')];
   }
@@ -107,7 +107,7 @@ export const checkUserPassword = async (password: string | undefined, encrypted:
 
 
 export const getAccountByUserId = (userId: string) => {
-  return prisma.account.findFirst({where: {userId}, select: {...excludeFields('Account', ['password']), user: true}});
+  return prisma.account.findFirst({ where: { userId }, select: { ...excludeFields('Account', ['password']), user: true } });
 };
 
 // this function is used to open a channel and inbox.
@@ -132,11 +132,11 @@ export const openDMChannel = async (userId: string, friendId: string) => {
 
 
   if (inbox?.channelId) {
-    const myInbox = await prisma.inbox.findFirst({where: { channelId: inbox.channelId, createdById: userId}, include: {channel: true, recipient: true}});
+    const myInbox = await prisma.inbox.findFirst({ where: { channelId: inbox.channelId, createdById: userId }, include: { channel: true, recipient: true } });
     if (myInbox) {
       if (myInbox.closed) {
         myInbox.closed = false;
-        prisma.inbox.update({where: {id: myInbox.id}, data: {closed: false}});
+        prisma.inbox.update({ where: { id: myInbox.id }, data: { closed: false } });
         emitInboxOpened(userId, myInbox);
       }
 
@@ -144,8 +144,8 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     }
   }
 
-  const newChannel = inbox ? {id: inbox?.channelId} : await prisma.channel.create({data: {id: generateId(), type: ChannelType.DM_TEXT, createdById: userId }});
-  
+  const newChannel = inbox ? { id: inbox?.channelId } : await prisma.channel.create({ data: { id: generateId(), type: ChannelType.DM_TEXT, createdById: userId } });
+
   const newInbox = await prisma.inbox.create({
     data: {
       id: generateId(),
@@ -154,30 +154,30 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       recipientId: friendId,
       closed: false,
     },
-    include: {channel: true, recipient: true}
+    include: { channel: true, recipient: true }
   });
-  
+
 
 
   emitInboxOpened(userId, newInbox);
 
   return [newInbox, null];
-  
+
 };
 
 
 export const updateUserPresence = async (userId: string, presence: Omit<Presence, 'userId'>) => {
-  const user = await prisma.user.findFirst({where: {id: userId}});
+  const user = await prisma.user.findFirst({ where: { id: userId } });
   if (!user) {
     return [null, generateError('User not found.', 'user')];
   }
 
-  await prisma.user.update({where: {id: userId}, data: {status: presence.status}});
+  await prisma.user.update({ where: { id: userId }, data: { status: presence.status } });
 
 
-  await updateCachePresence(userId, {status: presence.status, userId});
+  await updateCachePresence(userId, { status: presence.status, userId });
 
-  emitUserPresenceUpdate(userId, { ...presence,  userId: user.id});
+  emitUserPresenceUpdate(userId, { ...presence, userId: user.id });
 
   return ['Presence updated.', null];
 
@@ -186,16 +186,17 @@ export const updateUserPresence = async (userId: string, presence: Omit<Presence
 
 export const getUserDetails = async (requesterId: string, recipientId: string) => {
   const user = await prisma.user.findFirst({
-    where: {id: recipientId},
+    where: { id: recipientId },
     include: {
-      followers: {where: {followedById: requesterId}, select: {followedToId: true}},
-      following: {where: {followedById: requesterId}, select: {followedToId: true}},
+      followers: { where: { followedById: requesterId }, select: { followedToId: true } },
+      following: { where: { followedById: requesterId }, select: { followedToId: true } },
+      profile: { select: { bio: true } },
       _count: {
         select: {
           followers: true,
           following: true,
           likedPosts: true,
-          posts: {where: {deleted: null}},
+          posts: { where: { deleted: null } },
         }
       }
     }
@@ -206,24 +207,31 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
   }
 
   // get mutual Friends
-  const recipientFriends = await prisma.friend.findMany({where: { userId: recipientId, status: FriendStatus.FRIENDS }});
+  const recipientFriends = await prisma.friend.findMany({ where: { userId: recipientId, status: FriendStatus.FRIENDS } });
   const recipientFriendsIds = recipientFriends.map(friend => friend.recipientId);
 
-  const mutualFriends = await prisma.friend.findMany({where: {userId: requesterId, recipientId: { in: recipientFriendsIds }}});
+  const mutualFriends = await prisma.friend.findMany({ where: { userId: requesterId, recipientId: { in: recipientFriendsIds } } });
   const mutualFriendIds = mutualFriends.map(friend => friend.recipientId);
 
   // Get mutual servers
-  const recipient = await prisma.user.findFirst({where: {id: recipientId}, select: {servers: {select: {id: true}}}});
+  const recipient = await prisma.user.findFirst({ where: { id: recipientId }, select: { servers: { select: { id: true } } } });
   const recipientServerIds = recipient?.servers.map(server => server.id);
 
-  const members = await prisma.serverMember.findMany({where: { userId: requesterId, serverId: { in: recipientServerIds } }});
+  const members = await prisma.serverMember.findMany({ where: { userId: requesterId, serverId: { in: recipientServerIds } } });
   const mutualServerIds = members.map(member => member.serverId);
 
 
   // get latest post
   const latestPost = await fetchLatestPost(recipientId, requesterId);
 
-  return [{user, mutualFriendIds, mutualServerIds, latestPost}, null];
+  return [
+    {
+      user: { ...user, profile: undefined },
+      mutualFriendIds,
+      mutualServerIds,
+      latestPost,
+      profile: user.profile
+    }, null];
 };
 
 interface UpdateUserProps {
@@ -234,9 +242,12 @@ interface UpdateUserProps {
   password?: string
   avatar?: string
   banner?: string
+  profile?: {
+    bio?: string | null
+  }
 }
 
-export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<User, CustomError>> => {
+export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<User, CustomError>> => {
   const account = await prisma.account.findFirst({
     where: { userId: opts.userId },
     select: {
@@ -249,20 +260,25 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
     return [null, generateError('User does not exist!')];
   }
 
-  const isPasswordValid = await checkUserPassword(opts.password, account.password);
-  if (!isPasswordValid) return [null, generateError('Invalid Password', 'password')];
-  
+
+  if (opts.tag || opts.email || opts.username) {
+    const isPasswordValid = await checkUserPassword(opts.password, account.password);
+    if (!isPasswordValid) return [null, generateError('Invalid Password', 'password')];
+  }
+
   if (opts.tag || opts.username) {
-    const exists = await prisma.user.findFirst({where: {
-      tag: opts.tag?.trim() || account.user.tag,
-      username: opts.username?.trim() || account.user.username,
-      NOT: {id: opts.userId}
-    }});
+    const exists = await prisma.user.findFirst({
+      where: {
+        tag: opts.tag?.trim() || account.user.tag,
+        username: opts.username?.trim() || account.user.username,
+        NOT: { id: opts.userId }
+      }
+    });
     if (exists) return [null, generateError('Someone already has this combination of tag and username.')];
   }
 
   if (opts.email) {
-    const exists = await prisma.account.findFirst({where: {email: opts.email.trim(), NOT: {userId: opts.userId}}});
+    const exists = await prisma.account.findFirst({ where: { email: opts.email.trim(), NOT: { userId: opts.userId } } });
     if (exists) return [null, generateError('This email is already used by someone else.')];
   }
 
@@ -284,18 +300,28 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
   }
 
 
-  const updateResult = await prisma.account.update({where: {userId: opts.userId}, data: {
-    ...addToObjectIfExists('email', opts.email?.trim()),
-    user: {
-      update: {
-        ...addToObjectIfExists('username', opts.username?.trim()),
-        ...addToObjectIfExists('tag', opts.tag?.trim()),
-        ...addToObjectIfExists('avatar', opts.avatar),
-        ...addToObjectIfExists('banner', opts.banner),
-      }
+  const updateResult = await prisma.account.update({
+    where: { userId: opts.userId }, data: {
+      ...addToObjectIfExists('email', opts.email?.trim()),
+      user: {
+        update: {
+          ...addToObjectIfExists('username', opts.username?.trim()),
+          ...addToObjectIfExists('tag', opts.tag?.trim()),
+          ...addToObjectIfExists('avatar', opts.avatar),
+          ...addToObjectIfExists('banner', opts.banner),
+          ...addToObjectIfExists('profile', opts.profile),
+          ...(opts.profile ? {
+            profile: {
+              upsert: {
+                create: {},
+                update: opts.profile
+              }
+            }
+          } : undefined)
+        }
+      },
     },
-  },
-  include: {user: true}
+    include: { user: true }
   });
 
   await removeAccountsCache([opts.userId]);
@@ -307,7 +333,7 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
     ...addToObjectIfExists('avatar', opts.avatar),
     ...addToObjectIfExists('banner', opts.banner),
   });
-  
+
   return [updateResult.user, null];
 };
 
@@ -315,7 +341,7 @@ export const updateUser = async (opts: UpdateUserProps):  Promise<CustomResult<U
 
 export async function followUser(requesterId: string, followToId: string): Promise<CustomResult<boolean, CustomError>> {
   // check if already following
-  const existingFollow = await prisma.follower.findFirst({where: {followedById: requesterId, followedToId: followToId}});
+  const existingFollow = await prisma.follower.findFirst({ where: { followedById: requesterId, followedToId: followToId } });
   if (existingFollow) return [null, generateError('You are already following this user.')];
 
   if (requesterId === followToId) {
@@ -340,22 +366,22 @@ export async function followUser(requesterId: string, followToId: string): Promi
 
 export async function unfollowUser(requesterId: string, unfollowId: string): Promise<CustomResult<boolean, CustomError>> {
   // check if already following
-  const existingFollow = await prisma.follower.findFirst({where: {followedById: requesterId, followedToId: unfollowId}});
+  const existingFollow = await prisma.follower.findFirst({ where: { followedById: requesterId, followedToId: unfollowId } });
   if (!existingFollow) return [null, generateError('You are already not following this user.')];
 
-  await prisma.follower.delete({where: {id: existingFollow.id}});
+  await prisma.follower.delete({ where: { id: existingFollow.id } });
   return [true, null];
 }
 
 
 export async function followingUsers(userId: string) {
-  const user = await prisma.user.findFirst({where: {id: userId}, select: {following: {select: {followedTo: true}}}});
+  const user = await prisma.user.findFirst({ where: { id: userId }, select: { following: { select: { followedTo: true } } } });
   if (!user) return [null, generateError('invalid User')];
   return [user?.following.map(follower => follower.followedTo), null];
 }
 
 export async function followerUsers(userId: string) {
-  const user = await prisma.user.findFirst({where: {id: userId}, select: {followers: {select: {followedBy: true}}}});
+  const user = await prisma.user.findFirst({ where: { id: userId }, select: { followers: { select: { followedBy: true } } } });
   if (!user) return [null, generateError('invalid User')];
   return [user?.followers.map(follower => follower.followedBy), null];
 }

@@ -57,6 +57,14 @@ model User {
   postNotifications      PostNotification[]      @relation(name: "postNotifications")
   sentPostNotifications  PostNotification[]
   mentionedMessages      Message[]               @relation(name: "mentioned_messages")
+
+  profile                UserProfile?
+}
+
+model UserProfile {
+  userId    String   @id
+  user      User @relation(fields: [userId], references: [id])
+  bio       String?
 }
 
 model Follower {
