@@ -329,6 +329,7 @@ export interface UpdateServerOptions {
   systemChannelId?: string | null;
   avatar?: string;
   banner?: string;
+  verified?: boolean;
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
@@ -366,6 +367,10 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
     if (data) {
       update.banner = data.path;
     }
+  }
+
+  if (update.name && update.name?.trim() !== server.name.trim()) {
+    update.verified = false;
   }
 
 
