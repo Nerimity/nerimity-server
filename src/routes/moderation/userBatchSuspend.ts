@@ -25,6 +25,7 @@ export function userBatchSuspend(Router: Router) {
       .isString().withMessage('Reason must be a string.')
       .isLength({ min: 0, max: 500 }).withMessage('Reason must be less than 500 characters long.'),
     body('password')
+      .isString().withMessage('Password must be a string!')
       .not().isEmpty().withMessage('Password is required'),
     route
   );

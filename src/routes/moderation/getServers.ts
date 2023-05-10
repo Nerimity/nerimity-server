@@ -12,9 +12,6 @@ export function getServers(Router: Router) {
 }
 
 
-
-
-
 async function route (req: Request, res: Response) {
   const after = req.query.after as string | undefined;
 
