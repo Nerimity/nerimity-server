@@ -52,13 +52,22 @@ async function route (req: Request, res: Response) {
 
   if (req.fileInfo?.file) {
     const [uploadedImage, err] = await uploadImage(req.fileInfo?.file, req.fileInfo.info.filename, req.accountCache.user.id);
-    if (uploadedImage) {
-      attachment = {
-        width: uploadedImage.dimensions.width,
-        height: uploadedImage.dimensions.height,
-        path: uploadedImage.path
-      };
+    if (err) {
+      if (typeof err === 'string') {
+        return res.status(403).json(generateError(err));
+      }
+      if (err.type === 'INVALID_IMAGE') {
+        return res.status(403).json(generateError('You can only upload images for now.'));
+      }
+      return res.status(403).json(generateError(`An unknown error has occurred (${err.type})`));
     }
+
+    attachment = {
+      width: uploadedImage!.dimensions.width,
+      height: uploadedImage!.dimensions.height,
+      path: uploadedImage!.path
+    };
+    
   }
 
 
