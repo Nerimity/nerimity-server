@@ -5,7 +5,7 @@ import { exists, prisma, removeServerIdFromAccountOrder } from '../common/databa
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../common/Bitwise';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
 import { emitServerChannelOrderUpdated, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
@@ -14,6 +14,7 @@ import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import * as nerimityCDN from '../common/nerimityCDN';
 import { prependOnceListener } from 'process';
+import { makeChannelsInCategoryPrivate } from './Channel';
 
 interface CreateServerOptions {
   name: string;
@@ -479,6 +480,12 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
       )
     }
   })));
+
+  if (opts.categoryId) {
+    const category = channels[opts.categoryId];
+    const isPrivateCategory = hasBit(category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    isPrivateCategory && await makeChannelsInCategoryPrivate(opts.categoryId, opts.serverId);
+  }
 
 
   const payload = {

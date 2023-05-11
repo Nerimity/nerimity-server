@@ -83,6 +83,16 @@ export const updateServerChannelCache = async (channelId: string, update: Partia
 };
 
 
+export const deleteServerChannelCaches = async (channelIds: string[]) => {
+  const multi = redisClient.multi();
+  for (let i = 0; i < channelIds.length; i++) {
+    const channelId = channelIds[i];
+    multi.del(SERVER_CHANNEL_KEY_STRING(channelId));
+  }
+  await multi.exec();
+};
+
+
 const getInboxCache = async (channelId: string, userId: string) => {
   const cachedInboxStr = await redisClient.get(INBOX_KEY_STRING(channelId, userId));
   if (cachedInboxStr) {
