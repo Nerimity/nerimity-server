@@ -6,7 +6,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { addServerAvatar } from '../../services/Server';
+import { addServerEmoji } from '../../services/Server';
 
 export function serverEmojiAdd(Router: Router) {
   Router.post('/servers/:serverId/emojis', 
@@ -43,7 +43,7 @@ async function route (req: Request, res: Response) {
 
   const body: Body = req.body;
 
-  const [updated, error] = await addServerAvatar({
+  const [updated, error] = await addServerEmoji({
     name: body.name,
     base64: body.emoji,
     serverId: req.serverCache.id,

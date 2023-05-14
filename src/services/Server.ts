@@ -49,6 +49,11 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         systemChannelId: channelId,
         defaultRoleId: roleId,
         hexColor: generateHexColor(),
+      },
+      include: {
+        customEmojis: {
+          select: {gif: true, id: true, name: true}
+        }
       }
     }),
     prisma.serverRole.create({
@@ -389,7 +394,7 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
 };
 
 
-interface AddServerAvatarOpts {
+interface AddServerEmojiOpts {
   name: string;
   serverId: string;
   uploadedById: string;
@@ -397,7 +402,7 @@ interface AddServerAvatarOpts {
 }
 
 
-export const addServerAvatar = async (opts: AddServerAvatarOpts) => {
+export const addServerEmoji = async (opts: AddServerEmojiOpts) => {
   const [data, error] = await nerimityCDN.uploadEmoji(opts.base64, opts.serverId);
   if (error) return [null, generateError(error)] as const;
 
@@ -409,6 +414,7 @@ export const addServerAvatar = async (opts: AddServerAvatarOpts) => {
       name: opts.name,
       gif: data!.gif || false,
       serverId: opts.serverId,
+      uploadedById: opts.uploadedById
     },
   });
   return [result, null] as const;
