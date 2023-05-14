@@ -21,6 +21,7 @@ import { serverInviteCustomCreate } from './serverInviteCustomCreate';
 import { serverRoleUpdateOrder } from './serverRoleUpdateOrder';
 import { serverUpdateOrder } from './serverUpdateOrder';
 import { serverChannelUpdateOrder } from './serverChannelUpdateOrder';
+import { serverEmojiAdd } from './serverEmojiAdd';
 
 
 const ServersRouter = Router();
@@ -53,5 +54,7 @@ serverMemberKick(ServersRouter);
 serverMemberBan(ServersRouter);
 serverMemberBanList(ServersRouter);
 serverMemberBanRemove(ServersRouter);
+
+serverEmojiAdd(ServersRouter);
 
 export {ServersRouter};

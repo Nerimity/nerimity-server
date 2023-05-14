@@ -95,7 +95,11 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
 
 export const getServers = async (userId: string) => {
 
-  const user = await prisma.user.findFirst({ where: { id: userId }, include: { servers: true } });
+  const user = await prisma.user.findFirst({ where: { id: userId }, include: { servers: {include: {customEmojis: {select: {
+    id: true,
+    gif: true,
+    name: true,
+  }}}} } });
 
   const serverIds = user?.servers.map(server => server.id);
 
@@ -128,7 +132,9 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   }
 
 
-  const server = await prisma.server.findFirst({ where: { id: serverId } });
+  const server = await prisma.server.findFirst({ where: { id: serverId }, include: {customEmojis: {
+    select: {gif: true, id: true, name: true}
+  }} });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
@@ -380,6 +386,32 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
   emitServerUpdated(serverId, update);
   return [update, null];
 
+};
+
+
+interface AddServerAvatarOpts {
+  name: string;
+  serverId: string;
+  uploadedById: string;
+  base64: string;
+}
+
+
+export const addServerAvatar = async (opts: AddServerAvatarOpts) => {
+  const [data, error] = await nerimityCDN.uploadEmoji(opts.base64, opts.serverId);
+  if (error) return [null, generateError(error)] as const;
+
+  opts.name = opts.name.replace(/[^0-9a-zA-Z]/g, '_');
+
+  const result = await prisma.customEmoji.create({
+    data: {
+      id: data!.id,
+      name: opts.name,
+      gif: data!.gif || false,
+      serverId: opts.serverId,
+    },
+  });
+  return [result, null] as const;
 };
 
 
