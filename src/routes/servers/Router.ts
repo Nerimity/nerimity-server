@@ -22,6 +22,9 @@ import { serverRoleUpdateOrder } from './serverRoleUpdateOrder';
 import { serverUpdateOrder } from './serverUpdateOrder';
 import { serverChannelUpdateOrder } from './serverChannelUpdateOrder';
 import { serverEmojiAdd } from './serverEmojiAdd';
+import { serverEmojisGet } from './serverEmojisGet';
+import { serverEmojiUpdate } from './serverEmojiUpdate';
+import { serverEmojiDelete } from './serverEmojisDelete';
 
 
 const ServersRouter = Router();
@@ -56,5 +59,8 @@ serverMemberBanList(ServersRouter);
 serverMemberBanRemove(ServersRouter);
 
 serverEmojiAdd(ServersRouter);
+serverEmojisGet(ServersRouter);
+serverEmojiUpdate(ServersRouter);
+serverEmojiDelete(ServersRouter);
 
 export {ServersRouter};

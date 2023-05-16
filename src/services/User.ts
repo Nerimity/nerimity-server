@@ -154,7 +154,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       recipientId: friendId,
       closed: false,
     },
-    include: { channel: true, recipient: true }
+    include: { channel: {include: { _count: { select: { attachments: true } } }}, recipient: true }
   });
 
 

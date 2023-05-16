@@ -1,15 +1,15 @@
 import { Request, Response, Router } from 'express';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { addServerEmoji } from '../../services/Server';
+import { addServerEmoji, updateServerEmoji } from '../../services/Server';
 
-export function serverEmojiAdd(Router: Router) {
-  Router.post('/servers/:serverId/emojis', 
+export function serverEmojiUpdate(Router: Router) {
+  Router.post('/servers/:serverId/emojis/:id', 
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.ADMIN),
@@ -17,11 +17,8 @@ export function serverEmojiAdd(Router: Router) {
       .not().isEmpty().withMessage('Name is required')
       .isString().withMessage('Name must be a string.')
       .isLength({ min: 2, max: 15 }).withMessage('Name must be between 2 and 15 characters long.'),
-    body('emoji')
-      .not().isEmpty().withMessage('Emoji is required')
-      .isString().withMessage('Emoji must be a string.'),
     rateLimit({
-      name: 'server_add_emojis',
+      name: 'server_update_emojis',
       expireMS: 10000,
       requestCount: 10,
     }),
@@ -31,7 +28,6 @@ export function serverEmojiAdd(Router: Router) {
 
 interface Body {
   name: string;
-  emoji: string;
 }
 
 async function route (req: Request, res: Response) {
@@ -43,12 +39,7 @@ async function route (req: Request, res: Response) {
 
   const body: Body = req.body;
 
-  const [updated, error] = await addServerEmoji({
-    name: body.name,
-    base64: body.emoji,
-    serverId: req.serverCache.id,
-    uploadedById: req.accountCache.user.id
-  });
+  const [updated, error] = await updateServerEmoji(req.serverCache.id, req.params.id, body.name);
   if (error) {
     return res.status(400).json(error);
   }
