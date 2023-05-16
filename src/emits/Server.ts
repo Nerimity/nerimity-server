@@ -1,9 +1,9 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
-import { Channel, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
+import { Channel, CustomEmoji, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
 import { UpdateServerRoleOptions } from '../services/ServerRole';
 import { UpdateServerMember } from '../services/ServerMember';
 
@@ -111,6 +111,25 @@ export const emitServerUpdated = (serverId: string, updated: UpdateServerOptions
 
   io.in(serverId).emit(SERVER_UPDATED, {serverId, updated});
 };
+
+export const emitServerEmojiAdd = (serverId: string, emoji: CustomEmoji) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_EMOJI_ADD, {serverId, emoji});
+};
+
+export const emitServerEmojiRemove = (serverId: string, emojiId: string) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_EMOJI_REMOVE, {serverId, emojiId});
+};
+export const emitServerEmojiUpdate = (serverId: string, emojiId: string, name: string) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_EMOJI_UPDATE, {serverId, emojiId, name});
+};
+
+
 export const emitServerMemberUpdated = (serverId: string, userId: string, updated: UpdateServerMember) => {
   const io = getIO();
 

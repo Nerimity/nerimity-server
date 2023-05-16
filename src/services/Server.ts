@@ -7,7 +7,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
-import { emitServerChannelOrderUpdated, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
+import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentMessages } from './Message';
 import { MessageType } from '../types/Message';
@@ -49,6 +49,11 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         systemChannelId: channelId,
         defaultRoleId: roleId,
         hexColor: generateHexColor(),
+      },
+      include: {
+        customEmojis: {
+          select: {gif: true, id: true, name: true}
+        }
       }
     }),
     prisma.serverRole.create({
@@ -95,7 +100,11 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
 
 export const getServers = async (userId: string) => {
 
-  const user = await prisma.user.findFirst({ where: { id: userId }, include: { servers: true } });
+  const user = await prisma.user.findFirst({ where: { id: userId }, include: { servers: {include: {customEmojis: {select: {
+    id: true,
+    gif: true,
+    name: true,
+  }}}} } });
 
   const serverIds = user?.servers.map(server => server.id);
 
@@ -128,7 +137,9 @@ export const joinServer = async (userId: string, serverId: string): Promise<Cust
   }
 
 
-  const server = await prisma.server.findFirst({ where: { id: serverId } });
+  const server = await prisma.server.findFirst({ where: { id: serverId }, include: {customEmojis: {
+    select: {gif: true, id: true, name: true}
+  }} });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
@@ -383,6 +394,46 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
 };
 
 
+interface AddServerEmojiOpts {
+  name: string;
+  serverId: string;
+  uploadedById: string;
+  base64: string;
+}
+
+
+async function hasReachedMaxServerEmojis(serverId?: string) {
+  const emojiCount = await prisma.customEmoji.count({where: {serverId}});
+  return emojiCount > 30;
+}
+
+export const addServerEmoji = async (opts: AddServerEmojiOpts) => {
+  if (await hasReachedMaxServerEmojis(opts.serverId)) return [null, 'You have reached the maximum number of emojis for this server.'] as const;
+  const [data, error] = await nerimityCDN.uploadEmoji(opts.base64, opts.serverId);
+  if (error) return [null, generateError(error)] as const;
+
+  opts.name = opts.name.replace(/[^0-9a-zA-Z]/g, '_');
+
+  const result = await prisma.customEmoji.create({
+    data: {
+      id: data!.id,
+      name: opts.name,
+      gif: data!.gif || false,
+      serverId: opts.serverId,
+      uploadedById: opts.uploadedById
+    },
+  });
+
+  emitServerEmojiAdd(opts.serverId, result);
+  return [result, null] as const;
+};
+
+
+export const getServerEmojis = async (serverId: string) => {
+  const server = await prisma.server.findFirst({where: {id: serverId}, include: {customEmojis: { orderBy: {id: 'desc'}, include: {uploadedBy: true}}}});
+  if (!server) return [null, 'Server not found.'] as const;
+  return [server.customEmojis, null] as const;  
+};
 
 export const updateServerOrder = async (userId: string, orderedServerIds: string[]) => {
   const user = await prisma.user.findFirst({ where: { id: userId }, select: { servers: { select: { id: true } } } });
@@ -413,6 +464,29 @@ export const updateServerOrder = async (userId: string, orderedServerIds: string
 
   return [{ success: true }, null];
 };
+
+
+export const updateServerEmoji = async (serverId: string, emojiId: string, newName: string) => {
+  const emoji = await prisma.customEmoji.findFirst({where: {id: emojiId, serverId}});
+  if (!emoji) return [null, 'Emoji not found.'] as const;
+
+  newName = newName.trim().replace(/[^0-9a-zA-Z]/g, '_');
+
+  const newEmoji = await prisma.customEmoji.update({where: {id: emojiId}, data: {name: newName}});
+  emitServerEmojiUpdate(serverId, emojiId, newName);
+  return [newEmoji, null] as const;
+};
+
+export const deleteServerEmoji = async (serverId: string, emojiId: string) => {
+  const emoji = await prisma.customEmoji.findFirst({where: {id: emojiId, serverId}});
+  if (!emoji) return [null, 'Emoji not found.'] as const;
+  
+  await prisma.customEmoji.delete({where: {id: emoji.id}});
+  await nerimityCDN.deleteImage('emojis/' + emoji.id + (emoji.gif ? '.gif' : '.webp'));
+  emitServerEmojiRemove(serverId, emojiId);
+  return [true, null] as const;
+};
+
 
 
 

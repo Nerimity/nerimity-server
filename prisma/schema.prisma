@@ -48,6 +48,7 @@ model User {
   servers                Server[]
   createdServerRoles     ServerRole[]
   bannedServers          BannedServerMember[]
+  customEmojis           CustomEmoji[]
 
 
   posts                  Post[]
@@ -116,7 +117,24 @@ model Server {
   attachments Attachment[]
 
 
+  customEmojis CustomEmoji[]
+
+
 }
+
+
+model CustomEmoji {
+  id           String  @id
+  name         String
+  gif          Boolean
+
+  serverId     String
+  server       Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  uploadedById String 
+  uploadedBy   User    @relation(fields: [uploadedById], references: [id], onDelete: Cascade) 
+}
+
 
 model PublicServer {
   id              String    @id
