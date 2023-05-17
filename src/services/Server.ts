@@ -315,6 +315,11 @@ export const banServerMember = async (userId: string, serverId: string, shouldDe
     return [null, generateError('You can not kick yourself.')];
   }
 
+  const userToBan = await prisma.user.findFirst({where: {id: userId}, select: {id: true}});
+  if (!userToBan) {
+    return [null, generateError('Invalid userId')];
+  }
+
   const [, error] = await deleteOrLeaveServer(userId, serverId, true, false);
   if (error) return [null, error];
 
