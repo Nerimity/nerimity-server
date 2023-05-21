@@ -156,13 +156,15 @@ async function constructData(messageData: MessageDataCreate | MessageDataUpdate,
 }
 
 export const createMessage = async (opts: SendMessageOptions) => {
-  const message = await prisma.message.create({
+  const messageCreatedAt = dateToDateTime();
+  const createMessageQuery = prisma.message.create({
     data: await constructData({
       id: generateId(),
       content: opts.content || '',
       createdById: opts.userId,
       channelId: opts.channelId,
       type: opts.type,
+      createdAt: messageCreatedAt,
       ...(opts.attachment ? {
         attachments: {
           create: {
@@ -183,13 +185,13 @@ export const createMessage = async (opts: SendMessageOptions) => {
     },
   });
 
-
   // update channel last message
-  await prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: dateToDateTime(message.createdAt)}});
+  const updateLastMessageQuery = prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: messageCreatedAt}});
+
+  const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]);
+
   // update sender last seen
   opts.updateLastSeen !== false && await dismissChannelNotification(opts.userId, opts.channelId, false);
-
-  
 
   if (message.mentions.length && opts.serverId) {
     const userIds = message.mentions.map(mention => mention.id);
@@ -270,8 +272,6 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   return message;
 };
-
-
 
 interface MessageDeletedOptions {
   messageId: string,
