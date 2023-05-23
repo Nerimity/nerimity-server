@@ -36,11 +36,19 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const account = await prisma.account.findFirst({where: { id: req.accountCache.id }, select: {password: true, user: {select: {badges: true}}}});
-  if (!account) return res.status(404).json(generateError('Something went wrong. Try again later.'));
+  const moderatorAccount = await prisma.account.findFirst({where: { id: req.accountCache.id }, select: {password: true}});
+  if (!moderatorAccount) return res.status(404).json(generateError('Something went wrong. Try again later.'));
 
-  const isPasswordValid = await checkUserPassword(body.password, account.password);
+  const isPasswordValid = await checkUserPassword(body.password, moderatorAccount.password);
   if (!isPasswordValid) return res.status(403).json(generateError('Invalid password.', 'password'));
+
+
+  const account = await prisma.account.findFirst({
+    where: {userId}, 
+    select: {user: {select: {badges: true}}}
+  });
+
+  if (!account) return res.status(404).json(generateError('User does not exist.'));
 
 
   if (body.badges !== undefined) {
