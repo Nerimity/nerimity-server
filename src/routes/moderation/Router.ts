@@ -5,10 +5,14 @@ import { getUsersOnline } from './getUsersOnline';
 import { userBatchSuspend } from './userBatchSuspend';
 import { updateServer } from './updateServer';
 import { getServer } from './getServer';
+import { getUser } from './getUser';
+import { updateUser } from './updateUser';
 
 
 const ModerationRouter = Router();
 
+getUser(ModerationRouter);
+updateUser(ModerationRouter);
 getUsers(ModerationRouter);
 getUsersOnline(ModerationRouter);
 userBatchSuspend(ModerationRouter);
