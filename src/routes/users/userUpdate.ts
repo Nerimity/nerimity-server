@@ -27,8 +27,13 @@ export function userUpdate(Router: Router) {
       .isLength({ min: 4, max: 4 }).withMessage('Tag must be 4 characters long').optional({nullable: true }),
     body('password')
       .isString().withMessage('Password must be a string.')
-      .isLength({ min: 4, max: 255 }).withMessage('Password must be between 4 and 255 characters long.').optional({nullable: true }),
-
+      .optional({nullable: true }),
+    body('newPassword')
+      .isString().withMessage('New password must be a string.')
+      .isLength({ min: 4, max: 255 }).withMessage('New password must be between 4 and 255 characters long.').optional({nullable: true }),
+    body('socketId')
+      .isString().withMessage('socketId must be a string.')
+      .isLength({ min: 4, max: 164 }).withMessage('socketId must be between 4 and 255 characters long.').optional({nullable: true }),
     body('bio')
       .isString().withMessage('Bio must be a string.')
       .isLength({ min: 1, max: 1000 }).withMessage('Bio must be between 1 and 1000 characters long.').optional({nullable: true }),
@@ -41,9 +46,11 @@ interface Body {
   username?: string;
   tag?: string;
   password?: string;
+  newPassword?: string;
   avatar?: string;
   banner?: string;
   bio?: string | null;
+  socketId?: string;
 }
 
 async function route (req: Request, res: Response) {
@@ -57,12 +64,14 @@ async function route (req: Request, res: Response) {
 
   const [result, error] = await updateUser({
     userId: req.accountCache.user.id,
+    socketId: body.socketId,
     email: body.email,
     username: body.username,
     tag: body.tag,
     password: body.password,
     avatar: body.avatar,
     banner: body.banner,
+    newPassword: body.newPassword,
     ...(body.bio !== undefined ? { 
       profile: {
         bio: body.bio

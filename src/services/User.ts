@@ -14,6 +14,8 @@ import { Account, Follower, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { createPostNotification, fetchLatestPost, PostNotificationType } from './Post';
 import * as nerimityCDN from '../common/nerimityCDN';
+import { getIO } from '../socket/socket';
+import { AUTHENTICATE_ERROR } from '../common/ClientEventNames';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -46,7 +48,7 @@ export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<str
   const tag = generateTag();
   const usernameTagExists = await prisma.user.findFirst({ where: { username: opts.username, tag } });
   if (usernameTagExists) {
-    return [null, generateError('This username is used too often.', 'username')];
+    return [null, generateError('This username is used too often. Try again.', 'username')];
   }
 
   const hashedPassword = await bcrypt.hash(opts.password.trim(), 10);
@@ -236,10 +238,12 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
 
 interface UpdateUserProps {
   userId: string,
+  socketId?: string;
   email?: string,
   username?: string,
   tag?: string,
   password?: string
+  newPassword?: string;
   avatar?: string
   banner?: string
   profile?: {
@@ -247,12 +251,13 @@ interface UpdateUserProps {
   }
 }
 
-export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<User, CustomError>> => {
+export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<{user: User, newToken?: string}, CustomError>> => {
   const account = await prisma.account.findFirst({
     where: { userId: opts.userId },
     select: {
       user: true,
-      password: true
+      password: true,
+      passwordVersion: true
     }
   });
 
@@ -261,8 +266,9 @@ export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<Us
   }
 
 
-  if (opts.tag || opts.email || opts.username) {
+  if (opts.tag || opts.email || opts.username || opts.newPassword?.trim()) {
     const isPasswordValid = await checkUserPassword(opts.password, account.password);
+    if (!opts.password?.trim()) return [null, generateError('Password is required.', 'password')];
     if (!isPasswordValid) return [null, generateError('Invalid Password', 'password')];
   }
 
@@ -299,10 +305,17 @@ export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<Us
     }
   }
 
+  
+
 
   const updateResult = await prisma.account.update({
-    where: { userId: opts.userId }, data: {
+    where: { userId: opts.userId }, 
+    data: {
       ...addToObjectIfExists('email', opts.email?.trim()),
+      ...(opts.newPassword?.trim() ? {
+        password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+        passwordVersion: {increment: 1}
+      } : undefined),
       user: {
         update: {
           ...addToObjectIfExists('username', opts.username?.trim()),
@@ -321,7 +334,7 @@ export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<Us
         }
       },
     },
-    include: { user: true }
+    include: { user: true}
   });
 
   await removeAccountsCache([opts.userId]);
@@ -334,7 +347,18 @@ export const updateUser = async (opts: UpdateUserProps): Promise<CustomResult<Us
     ...addToObjectIfExists('banner', opts.banner),
   });
 
-  return [updateResult.user, null];
+  const newToken = opts.newPassword?.trim() ? generateToken(account.user.id, updateResult.passwordVersion) : undefined;
+
+  if (newToken) {
+    let broadcaster = getIO().in(opts.userId);
+    if (opts.socketId) {
+      broadcaster = broadcaster.except(opts.socketId);
+    }
+    broadcaster.emit(AUTHENTICATE_ERROR, {message: 'Invalid Token'});
+    broadcaster.disconnectSockets(true);
+  }
+
+  return [{user: updateResult.user, newToken}, null];
 };
 
 

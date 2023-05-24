@@ -45,7 +45,7 @@ async function route (req: Request, res: Response) {
 
   const account = await prisma.account.findFirst({
     where: {userId}, 
-    select: {user: {select: {badges: true}}}
+    select: {user: {select: {username: true, tag: true, badges: true}}}
   });
 
   if (!account) return res.status(404).json(generateError('User does not exist.'));
@@ -59,7 +59,16 @@ async function route (req: Request, res: Response) {
       return res.status(403).json(generateError(`Cannot modify the ${USER_BADGES.FOUNDER.name} badge`));
     }
   }
-
+  if (body.tag || body.username) {
+    const exists = await prisma.user.findFirst({
+      where: {
+        tag: body.tag?.trim() || account.user.tag,
+        username: body.username?.trim() || account.user.username,
+        NOT: { id: userId }
+      }
+    });
+    if (exists) return res.status(403).json(generateError('Someone already has this combination of tag and username.'));
+  }
 
   const update = {
     ...addToObjectIfExists('email', body.email),
