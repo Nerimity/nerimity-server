@@ -7,6 +7,10 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 import { checkUserPassword } from '../../services/User';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { USER_BADGES, hasBit } from '../../common/Bitwise';
+import bcrypt from 'bcrypt';
+import { removeAccountsCache } from '../../cache/UserCache';
+import { getIO } from '../../socket/socket';
+import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 
 export function updateUser(Router: Router) {
   Router.post('/moderation/users/:userId', 
@@ -23,6 +27,7 @@ interface Body {
   username?: string;
   tag?: string;
   badges?: number;
+  newPassword?: string;
   password?: string;
 }
 
@@ -72,6 +77,7 @@ async function route (req: Request, res: Response) {
 
   const update = {
     ...addToObjectIfExists('email', body.email),
+    ...(body.newPassword?.trim?.() ? {password: await bcrypt.hash(body.newPassword.trim(), 10)} : undefined),
     user: {
       update: {
         ...addToObjectIfExists('username', body.username),
@@ -94,7 +100,13 @@ async function route (req: Request, res: Response) {
       }
     }
   });
+  await removeAccountsCache([userId]);
 
+  if (body.newPassword?.trim()) {
+    let broadcaster = getIO().in(userId);
+    broadcaster.emit(AUTHENTICATE_ERROR, {message: 'Invalid Token'});
+    broadcaster.disconnectSockets(true);
+  }
 
   res.json(user);
 }
