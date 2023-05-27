@@ -27,6 +27,27 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
       mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      quotedMessages: {
+        select: {
+          id: true,
+          content: true,
+          mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+          editedAt: true,
+          createdAt: true,
+          channelId: true,
+          attachments: {select: {height: true, width: true, path: true, id: true}},
+          createdBy: {
+            select: {
+              id: true, 
+              username: true, 
+              tag: true, 
+              hexColor: true, 
+              avatar: true, 
+              badges: true
+            }
+          }
+        }
+      },
       attachments: {select: {height: true, width: true, path: true, id: true}}
     },
     take: limit,
@@ -92,6 +113,27 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
       mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      quotedMessages: {
+        select: {
+          id: true,
+          content: true,
+          mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+          editedAt: true,
+          createdAt: true,
+          channelId: true,
+          attachments: {select: {height: true, width: true, path: true, id: true}},
+          createdBy: {
+            select: {
+              id: true, 
+              username: true, 
+              tag: true, 
+              hexColor: true, 
+              avatar: true, 
+              badges: true
+            }
+          }
+        }
+      },
       attachments: {select: {height: true, width: true, path: true, id: true}}
     },
   });
@@ -132,10 +174,10 @@ interface SendMessageOptions {
 
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
-
 type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
 
 const userMentionRegex =/\[@:([\d]+)]/g;
+const quoteMessageRegex =/\[q:([\d]+)]/g;
 
 function constructData(messageData: MessageDataUpdate, update: true): Promise<any> 
 function constructData(messageData: MessageDataCreate, update?: false | undefined): Promise<any> 
@@ -145,9 +187,17 @@ async function constructData(messageData: MessageDataCreate | MessageDataUpdate,
     const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map(m => m[1]));
 
     if (mentionUserIds.length) {
-      const mentionedUsers = await prisma.user.findMany({where: {id: {in: mentionUserIds}}, select: {id: true}});
+      const users = await prisma.user.findMany({where: {id: {in: mentionUserIds}}, select: {id: true}});
       messageData.mentions = {
-        ...(update ? {set: mentionedUsers} : {connect: mentionedUsers}),
+        ...(update ? {set: users} : {connect: users}),
+      };
+    }
+
+    const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map(m => m[1])).slice(0, 5);
+    if (quotedMessageIds.length) {
+      const messages = await prisma.message.findMany({where: {id: {in: quotedMessageIds}, type: MessageType.CONTENT}, select: {id: true}});
+      messageData.quotedMessages = {
+        ...(update ? {set: messages} : {connect: messages}),
       };
     }
 
@@ -181,6 +231,27 @@ export const createMessage = async (opts: SendMessageOptions) => {
     include: {
       createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
       mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      quotedMessages: {
+        select: {
+          id: true,
+          content: true,
+          mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+          editedAt: true,
+          createdAt: true,
+          channelId: true,
+          attachments: {select: {height: true, width: true, path: true, id: true}},
+          createdBy: {
+            select: {
+              id: true, 
+              username: true, 
+              tag: true, 
+              hexColor: true, 
+              avatar: true, 
+              badges: true
+            }
+          }
+        }
+      },
       attachments: {select: {height: true, width: true, path: true, id: true}}
     },
   });

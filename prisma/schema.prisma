@@ -272,6 +272,8 @@ model Message {
 
   attachments Attachment[]
 
+  quotedMessages Message[] @relation(name: "quoted_messages")
+  quotedInMessages Message[] @relation(name: "quoted_messages")
 }
 
 model MessageMention {
