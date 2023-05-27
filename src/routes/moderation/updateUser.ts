@@ -77,7 +77,11 @@ async function route (req: Request, res: Response) {
 
   const update = {
     ...addToObjectIfExists('email', body.email),
-    ...(body.newPassword?.trim?.() ? {password: await bcrypt.hash(body.newPassword.trim(), 10)} : undefined),
+    ...(body.newPassword?.trim?.() ? {
+      password: await bcrypt.hash(body.newPassword.trim(), 10),
+      passwordVersion: {increment: 1},
+      
+    } : undefined),
     user: {
       update: {
         ...addToObjectIfExists('username', body.username),
@@ -103,7 +107,7 @@ async function route (req: Request, res: Response) {
   await removeAccountsCache([userId]);
 
   if (body.newPassword?.trim()) {
-    let broadcaster = getIO().in(userId);
+    const broadcaster = getIO().in(userId);
     broadcaster.emit(AUTHENTICATE_ERROR, {message: 'Invalid Token'});
     broadcaster.disconnectSockets(true);
   }
