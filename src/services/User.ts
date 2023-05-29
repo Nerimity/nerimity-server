@@ -39,7 +39,7 @@ export const getSuspensionDetails = async (userId: string) => {
 
 export const registerUser = async (opts: RegisterOpts): Promise<CustomResult<string, CustomError>> => {
 
-  const account = await exists(prisma.account, { where: { email: opts.email } });
+  const account = await exists(prisma.account, { where: { email: {equals: opts.email, mode: 'insensitive'} } });
 
   if (account) {
     return [null, generateError('Email already exists.', 'email')];
@@ -88,7 +88,7 @@ interface LoginOpts {
 }
 
 export const loginUser = async (opts: LoginOpts): Promise<CustomResult<string, CustomError>> => {
-  const account = await prisma.account.findFirst({ where: { email: opts.email }, include: { user: true } });
+  const account = await prisma.account.findFirst({ where: { email: {equals: opts.email, mode: 'insensitive'}  }, include: { user: true } });
   if (!account) {
     return [null, generateError('Invalid email address.', 'email')];
   }
