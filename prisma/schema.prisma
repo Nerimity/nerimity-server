@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["filteredRelationCount"]
+  previewFeatures = ["filteredRelationCount", "clientExtensions"]
 }
 
 datasource db {
@@ -49,6 +49,8 @@ model User {
   createdServerRoles     ServerRole[]
   bannedServers          BannedServerMember[]
   customEmojis           CustomEmoji[]
+
+  reactedMessageEmojis   MessageReaction[]
 
 
   posts                  Post[]
@@ -271,10 +273,25 @@ model Message {
   mentions    User[]  @relation(name: "mentioned_messages")
 
   attachments Attachment[]
+  reactions   MessageReaction[]
 
   quotedMessages Message[] @relation(name: "quoted_messages")
   quotedInMessages Message[] @relation(name: "quoted_messages")
 }
+
+model MessageReaction {
+  id  String   @id
+  name  String
+  emojiId String?
+  gif     Boolean?
+
+  reactedUsers User[]
+
+  messageId    String
+  message      Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+
 
 model MessageMention {
   id            String   @id

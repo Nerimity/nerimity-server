@@ -5,6 +5,7 @@ import { channelMessages } from './channelMessages';
 import { channelMessageUpdate } from './channelMessageUpdate';
 import { channelTypingIndicator } from './channelTypingIndicator';
 import { channelAttachments } from './channelAttachments';
+import { channelMessageReactionsAdd } from './channelMessageReactionsAdd';
 
 
 const ChannelsRouter = Router();
@@ -15,6 +16,8 @@ channelMessageCreate(ChannelsRouter);
 channelMessageUpdate(ChannelsRouter);
 channelMessageDelete(ChannelsRouter);
 channelTypingIndicator(ChannelsRouter);
+
+channelMessageReactionsAdd(ChannelsRouter);
 
 
 export { ChannelsRouter };

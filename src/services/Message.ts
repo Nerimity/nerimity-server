@@ -12,54 +12,83 @@ import { removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 
-export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string, beforeMessageId?: string) => {
+export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string, beforeMessageId?: string, requesterId?: string) => {
   if (limit > 100) return [];
   const messages = await prisma.message.findMany({
     where: {
       channelId,
       ...(afterMessageId ? {
-        id: {lt: afterMessageId}
+        id: { lt: afterMessageId }
       } : undefined),
       ...(beforeMessageId ? {
-        id: {gt: beforeMessageId}
+        id: { gt: beforeMessageId }
       } : undefined)
     },
     include: {
-      createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
-      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      createdBy: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true } },
+      mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
       quotedMessages: {
         select: {
           id: true,
           content: true,
-          mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+          mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
           editedAt: true,
           createdAt: true,
           channelId: true,
-          attachments: {select: {height: true, width: true, path: true, id: true}},
+          attachments: { select: { height: true, width: true, path: true, id: true } },
           createdBy: {
             select: {
-              id: true, 
-              username: true, 
-              tag: true, 
-              hexColor: true, 
-              avatar: true, 
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
               badges: true
             }
           }
         }
       },
-      attachments: {select: {height: true, width: true, path: true, id: true}}
+      reactions: {
+        select: {
+          reactedUsers: {where: {id: requesterId}},
+          emojiId: true,
+          gif: true,
+          name: true,
+          _count: {
+            select: {
+              reactedUsers: true
+            }
+          }
+        },
+        orderBy: {id: 'asc'}
+      },
+      attachments: { select: { height: true, width: true, path: true, id: true } }
     },
     take: limit,
-    orderBy: {createdAt: 'desc'},
+    orderBy: { createdAt: 'desc' },
     ...(beforeMessageId ? {
-      orderBy: {createdAt: 'asc'},
+      orderBy: { createdAt: 'asc' },
     } : undefined),
   });
 
-  if (beforeMessageId) return messages;
+  
+  const modifiedMessages = messages.map(message => {
 
-  return messages.reverse();
+    (message.reactions as any) = message.reactions.map(reaction => ({
+      ...reaction,
+      reacted: !!reaction.reactedUsers.length,
+      count: reaction._count.reactedUsers,
+      reactedUsers: undefined,
+      _count: undefined
+    }));
+    return message;
+  });
+  
+
+
+  if (beforeMessageId) return modifiedMessages;
+
+  return modifiedMessages.reverse();
 };
 
 
@@ -90,9 +119,9 @@ interface EditMessageOptions {
   messageId: string
 }
 
-export const editMessage = async (opts: EditMessageOptions): Promise<CustomResult<Partial<Message>, CustomError >> => {
+export const editMessage = async (opts: EditMessageOptions): Promise<CustomResult<Partial<Message>, CustomError>> => {
 
-  const messageExists = await exists(prisma.message, {where: {id: opts.messageId, createdById: opts.userId}});
+  const messageExists = await exists(prisma.message, { where: { id: opts.messageId, createdById: opts.userId } });
 
   if (!messageExists) {
     return [null, generateError('Message does not exist or is not created by you.')];
@@ -105,46 +134,46 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
   }
 
   const message = await prisma.message.update({
-    where: {id: opts.messageId},
+    where: { id: opts.messageId },
     data: await constructData({
       content,
       editedAt: dateToDateTime(),
     }, true),
     include: {
-      createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
-      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      createdBy: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true } },
+      mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
       quotedMessages: {
         select: {
           id: true,
           content: true,
-          mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+          mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
           editedAt: true,
           createdAt: true,
           channelId: true,
-          attachments: {select: {height: true, width: true, path: true, id: true}},
+          attachments: { select: { height: true, width: true, path: true, id: true } },
           createdBy: {
             select: {
-              id: true, 
-              username: true, 
-              tag: true, 
-              hexColor: true, 
-              avatar: true, 
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
               badges: true
             }
           }
         }
       },
-      attachments: {select: {height: true, width: true, path: true, id: true}}
+      attachments: { select: { height: true, width: true, path: true, id: true } }
     },
   });
-  
-  
+
+
   // emit 
   if (opts.serverId) {
     emitServerMessageUpdated(opts.channelId, opts.messageId, message);
     return [message, null];
   }
-  
+
   let channel = opts.channel;
 
   if (!channel) {
@@ -169,35 +198,35 @@ interface SendMessageOptions {
   content?: string,
   type: MessageType,
   updateLastSeen?: boolean // by default, this is true.
-  attachment?: {width?: number, height?: number, path: string}
+  attachment?: { width?: number, height?: number, path: string }
 }
 
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
 type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
 
-const userMentionRegex =/\[@:([\d]+)]/g;
-const quoteMessageRegex =/\[q:([\d]+)]/g;
+const userMentionRegex = /\[@:([\d]+)]/g;
+const quoteMessageRegex = /\[q:([\d]+)]/g;
 
-function constructData(messageData: MessageDataUpdate, update: true): Promise<any> 
-function constructData(messageData: MessageDataCreate, update?: false | undefined): Promise<any> 
+function constructData(messageData: MessageDataUpdate, update: true): Promise<any>
+function constructData(messageData: MessageDataCreate, update?: false | undefined): Promise<any>
 
-async function constructData(messageData: MessageDataCreate | MessageDataUpdate, update?: boolean){
+async function constructData(messageData: MessageDataCreate | MessageDataUpdate, update?: boolean) {
   if (typeof messageData.content === 'string') {
     const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map(m => m[1]));
 
     if (mentionUserIds.length) {
-      const users = await prisma.user.findMany({where: {id: {in: mentionUserIds}}, select: {id: true}});
+      const users = await prisma.user.findMany({ where: { id: { in: mentionUserIds } }, select: { id: true } });
       messageData.mentions = {
-        ...(update ? {set: users} : {connect: users}),
+        ...(update ? { set: users } : { connect: users }),
       };
     }
 
     const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map(m => m[1])).slice(0, 5);
     if (quotedMessageIds.length) {
-      const messages = await prisma.message.findMany({where: {id: {in: quotedMessageIds}, type: MessageType.CONTENT}, select: {id: true}});
+      const messages = await prisma.message.findMany({ where: { id: { in: quotedMessageIds }, type: MessageType.CONTENT }, select: { id: true } });
       messageData.quotedMessages = {
-        ...(update ? {set: messages} : {connect: messages}),
+        ...(update ? { set: messages } : { connect: messages }),
       };
     }
 
@@ -229,35 +258,35 @@ export const createMessage = async (opts: SendMessageOptions) => {
       } : undefined)
     }),
     include: {
-      createdBy: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true}},
-      mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+      createdBy: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true } },
+      mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
       quotedMessages: {
         select: {
           id: true,
           content: true,
-          mentions: {select: {id: true, username: true, tag: true, hexColor: true, avatar: true}},
+          mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
           editedAt: true,
           createdAt: true,
           channelId: true,
-          attachments: {select: {height: true, width: true, path: true, id: true}},
+          attachments: { select: { height: true, width: true, path: true, id: true } },
           createdBy: {
             select: {
-              id: true, 
-              username: true, 
-              tag: true, 
-              hexColor: true, 
-              avatar: true, 
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
               badges: true
             }
           }
         }
       },
-      attachments: {select: {height: true, width: true, path: true, id: true}}
+      attachments: { select: { height: true, width: true, path: true, id: true } }
     },
   });
 
   // update channel last message
-  const updateLastMessageQuery = prisma.channel.update({where: {id: opts.channelId}, data: {lastMessagedAt: messageCreatedAt}});
+  const updateLastMessageQuery = prisma.channel.update({ where: { id: opts.channelId }, data: { lastMessagedAt: messageCreatedAt } });
 
   const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]);
 
@@ -266,7 +295,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   if (message.mentions.length && opts.serverId) {
     const userIds = message.mentions.map(mention => mention.id);
-    const usersInServer = await prisma.user.findMany({where: {id: {in: userIds, not: opts.userId}, servers: {some: {id: opts.serverId}}}, select: {id: true}});
+    const usersInServer = await prisma.user.findMany({ where: { id: { in: userIds, not: opts.userId }, servers: { some: { id: opts.serverId } } }, select: { id: true } });
     await prisma.$transaction(usersInServer.map(user => prisma.messageMention.upsert({
       where: {
         mentionedById_mentionedToId_channelId: {
@@ -276,7 +305,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
         }
       },
       update: {
-        count: {increment: 1}
+        count: { increment: 1 }
       },
       create: {
         id: generateId(),
@@ -291,13 +320,13 @@ export const createMessage = async (opts: SendMessageOptions) => {
   }
 
 
-  
+
   // emit 
   if (opts.serverId) {
     emitServerMessageCreated(message, opts.socketId);
     return message;
   }
-  
+
   let channel = opts.channel;
 
   if (!channel) {
@@ -319,11 +348,11 @@ export const createMessage = async (opts: SendMessageOptions) => {
         mentionedById_mentionedToId_channelId: {
           channelId: channel.id,
           mentionedById: opts.userId,
-          mentionedToId:channel.inbox.recipientId
+          mentionedToId: channel.inbox.recipientId
         }
       },
       update: {
-        count: {increment: 1}
+        count: { increment: 1 }
       },
       create: {
         id: generateId(),
@@ -339,7 +368,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
 
   emitDMMessageCreated(channel, message, opts.socketId);
-  
+
 
   return message;
 };
@@ -353,10 +382,10 @@ interface MessageDeletedOptions {
 }
 
 export const deleteMessage = async (opts: MessageDeletedOptions) => {
-  const message = await prisma.message.findFirst({ where: {id: opts.messageId, channelId: opts.channelId}, include: {attachments: true} });
+  const message = await prisma.message.findFirst({ where: { id: opts.messageId, channelId: opts.channelId }, include: { attachments: true } });
   if (!message) return false;
-  
-  await prisma.message.delete({where: {id: opts.messageId}});
+
+  await prisma.message.delete({ where: { id: opts.messageId } });
 
   if (message.attachments?.[0]?.path) {
     deleteImage(message.attachments[0].path);
@@ -364,11 +393,11 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
 
 
   if (opts.serverId) {
-    emitServerMessageDeleted({channelId: opts.channelId, messageId: opts.messageId});
+    emitServerMessageDeleted({ channelId: opts.channelId, messageId: opts.messageId });
     return true;
   }
-  
-  
+
+
   let channel = opts.channel;
 
   if (!channel) {
@@ -379,6 +408,80 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   if (!channel?.inbox?.recipientId) {
     throw new Error('Channel not found!');
   }
-  emitDMMessageDeleted(channel, {channelId: opts.channelId, messageId: opts.messageId});
+  emitDMMessageDeleted(channel, { channelId: opts.channelId, messageId: opts.messageId });
   return true;
+};
+
+interface AddReactionOpts {
+  messageId: string;
+  channelId: string;
+  reactedByUserId: string;
+
+  name: string;
+  emojiId?: string;
+  gif?: boolean
+}
+
+export const addMessageReaction = async (opts: AddReactionOpts) => {
+
+  const message = await prisma.message.findFirst({
+    where: {
+      id: opts.messageId,
+      channelId: opts.channelId
+    },
+    include: {
+      reactions: {
+        where: {
+          messageId: opts.messageId,
+          ...addToObjectIfExists('emojiId', opts.emojiId),
+          ...addToObjectIfExists('name', opts.name),
+        },
+        include: {
+          _count: { select: { reactedUsers: { where: { id: opts.reactedByUserId } } } }
+        }
+      }
+    }
+  });
+
+
+  if (!message) return [null, generateError('Invalid messageId')] as const;
+
+  // check if already reacted
+  const existingReaction = message.reactions[0] as typeof message.reactions[0] | undefined;
+
+  if (existingReaction?._count.reactedUsers) {
+    return [null, generateError('You have already reacted.')] as const;
+  }
+
+
+  if (existingReaction?.id) {
+    await prisma.messageReaction.update({
+      where: { id: existingReaction.id },
+      data: { reactedUsers: { connect: { id: opts.reactedByUserId } } }
+    });
+  }
+
+  if (!existingReaction?.id) {
+    await prisma.messageReaction.create({
+      data: {
+        id: generateId(),
+        name: opts.name,
+        emojiId: opts.emojiId,
+        gif: opts.gif,
+        messageId: opts.messageId,
+        reactedUsers: { connect: { id: opts.reactedByUserId } }
+      }
+    });
+  }
+
+  const payload = {
+    reactedByUserId: opts.reactedByUserId,
+    messageId: opts.messageId,
+    channelId: opts.channelId,
+    emojiId: opts.emojiId,
+    name: opts.name,
+    gif: opts.gif,
+  };
+  return [payload, null] as const;
+
 };
