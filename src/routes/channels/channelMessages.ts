@@ -31,6 +31,6 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(generateError('Cannot get messages from a category channel'));
   }
 
-  const messages = await getMessagesByChannelId(req.channelCache.id, limit, after, before);
+  const messages = await getMessagesByChannelId(req.channelCache.id, limit, after, before, req.accountCache.user.id);
   res.json(messages);
 }

@@ -1,6 +1,6 @@
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
-import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageUpdated } from '../emits/Channel';
-import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageUpdated } from '../emits/Server';
+import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageUpdated } from '../emits/Channel';
+import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageReactionAdded, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
 import { dateToDateTime, exists, prisma } from '../common/database';
@@ -50,7 +50,7 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
       },
       reactions: {
         select: {
-          reactedUsers: {where: {id: requesterId}},
+          ...(requesterId ? {reactedUsers: { where: { id: requesterId } }}: undefined),
           emojiId: true,
           gif: true,
           name: true,
@@ -60,7 +60,7 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
             }
           }
         },
-        orderBy: {id: 'asc'}
+        orderBy: { id: 'asc' }
       },
       attachments: { select: { height: true, width: true, path: true, id: true } }
     },
@@ -71,19 +71,19 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
     } : undefined),
   });
 
-  
+
   const modifiedMessages = messages.map(message => {
 
     (message.reactions as any) = message.reactions.map(reaction => ({
       ...reaction,
-      reacted: !!reaction.reactedUsers.length,
+      reacted: !!reaction.reactedUsers?.length,
       count: reaction._count.reactedUsers,
       reactedUsers: undefined,
       _count: undefined
     }));
     return message;
   });
-  
+
 
 
   if (beforeMessageId) return modifiedMessages;
@@ -181,11 +181,9 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
   }
 
 
-  if (!channel?.inbox?.recipientId) {
-    return [null, generateError('Channel not found!')];
+  if (channel?.inbox?.recipientId) {
+    emitDMMessageUpdated(channel, opts.messageId, message);
   }
-
-  emitDMMessageUpdated(channel, opts.messageId, message);
 
   return [message, null];
 };
@@ -415,6 +413,8 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
 interface AddReactionOpts {
   messageId: string;
   channelId: string;
+  channel?: ChannelCache | null;
+  serverId?: string;
   reactedByUserId: string;
 
   name: string;
@@ -423,7 +423,6 @@ interface AddReactionOpts {
 }
 
 export const addMessageReaction = async (opts: AddReactionOpts) => {
-
   const message = await prisma.message.findFirst({
     where: {
       id: opts.messageId,
@@ -436,12 +435,14 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
           ...addToObjectIfExists('emojiId', opts.emojiId),
           ...addToObjectIfExists('name', opts.name),
         },
+        
         include: {
           _count: { select: { reactedUsers: { where: { id: opts.reactedByUserId } } } }
         }
       }
     }
   });
+
 
 
   if (!message) return [null, generateError('Invalid messageId')] as const;
@@ -453,16 +454,23 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
     return [null, generateError('You have already reacted.')] as const;
   }
 
+  let newCount = 0;
 
   if (existingReaction?.id) {
-    await prisma.messageReaction.update({
+    const reaction = await prisma.messageReaction.update({
       where: { id: existingReaction.id },
-      data: { reactedUsers: { connect: { id: opts.reactedByUserId } } }
+      data: { reactedUsers: { connect: { id: opts.reactedByUserId } } },
+      select: {_count: {select: {reactedUsers: true}}}
     });
+    newCount = reaction._count.reactedUsers;
   }
 
   if (!existingReaction?.id) {
-    await prisma.messageReaction.create({
+    const uniqueEmojiCount = await prisma.messageReaction.count({where: {messageId: opts.messageId}});
+    if (uniqueEmojiCount >= 15) {
+      return [null, generateError('Too many reactions.')] as const;
+    }
+    const reaction = await prisma.messageReaction.create({
       data: {
         id: generateId(),
         name: opts.name,
@@ -470,8 +478,10 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
         gif: opts.gif,
         messageId: opts.messageId,
         reactedUsers: { connect: { id: opts.reactedByUserId } }
-      }
+      },
+      select: {_count: {select: {reactedUsers: true}}}
     });
+    newCount = reaction._count.reactedUsers;
   }
 
   const payload = {
@@ -481,7 +491,31 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
     emojiId: opts.emojiId,
     name: opts.name,
     gif: opts.gif,
+    count: newCount
   };
+
+
+
+  // emit 
+  if (opts.serverId) {
+    emitServerMessageReactionAdded(opts.channelId, payload);
+    return [message, null];
+  }
+
+  let channel = opts.channel;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.reactedByUserId);
+  }
+
+
+  if (channel?.inbox?.recipientId) {
+    emitDMMessageReactionAdded(channel, payload);
+  }
+
+
+
+
   return [payload, null] as const;
 
 };

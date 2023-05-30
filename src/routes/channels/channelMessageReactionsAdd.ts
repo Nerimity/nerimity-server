@@ -4,6 +4,7 @@ import { channelVerification } from '../../middleware/channelVerification';
 import { addMessageReaction } from '../../services/Message';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
+import { rateLimit } from '../../middleware/rateLimit';
 
 export function channelMessageReactionsAdd(Router: Router) {
   Router.post('/channels/:channelId/messages/:messageId/reactions',
@@ -14,12 +15,17 @@ export function channelMessageReactionsAdd(Router: Router) {
       .isString().withMessage('name must be a string!')
       .isLength({ min: 1, max: 20 }).withMessage('name length must be between 1 and 20 characters.'),
     body('emojiId')
-      .optional(true)
+      .optional({values: 'falsy'})
       .isString().withMessage('emojiId must be a string!')
       .isLength({ min: 1, max: 20 }).withMessage('emojiId length must be between 1 and 20 characters.'),
     body('gif')
-      .optional(true)
+      .optional({values: 'falsy'})
       .isBoolean().withMessage('gif must be a boolean!'),
+    rateLimit({
+      name: 'reaction_add',
+      expireMS: 20000,
+      requestCount: 20,
+    }),
     route
   );
 }
@@ -34,20 +40,22 @@ interface Body {
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
   const { messageId } = req.params;
-  
+
   const validateError = customExpressValidatorResult(req);
 
   if (validateError) {
     return res.status(400).json(validateError);
   }
-  
+
   if (!body.name) {
     return res.status(403).json('Name is required!');
   }
 
   const [response, err] = await addMessageReaction({
-    reactedByUserId: req.accountCache.user.id,
+    serverId: req.serverCache.id,
+    channel: req.channelCache,
     channelId: req.channelCache.id,
+    reactedByUserId: req.accountCache.user.id,
     messageId,
     ...body
   });

@@ -1,7 +1,7 @@
 import { Channel, Message, User } from '@prisma/client';
 import { ChannelCache, InboxCache } from '../cache/ChannelCache';
 import { UserCache } from '../cache/UserCache';
-import { CHANNEL_TYPING, MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_UPDATED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
+import { CHANNEL_TYPING, MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_REACTION_ADDED, MESSAGE_UPDATED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
 import { UpdateServerChannelOptions } from '../services/Channel';
 import { getIO } from '../socket/socket';
 
@@ -29,6 +29,15 @@ export const emitDMMessageUpdated = (channel: ChannelCache, messageId: string, u
 
   io.in(userIds).emit(MESSAGE_UPDATED, {channelId: channel.id, messageId, updated});
 };
+export const emitDMMessageReactionAdded = (channel: ChannelCache, reaction: any) => {
+  const io = getIO();
+
+  const userIds = [channel.inbox?.recipientId as string, channel.inbox?.createdById as string];
+
+
+  io.in(userIds).emit(MESSAGE_REACTION_ADDED, reaction);
+};
+
 
 export const emitDMMessageDeleted = (channel: ChannelCache, data: {channelId: string, messageId: string}) => {
   const io = getIO();
