@@ -38,3 +38,4 @@ export const MESSAGE_UPDATED = 'message:updated';
 export const CHANNEL_TYPING = 'channel:typing';
 export const MESSAGE_DELETED = 'message:deleted';
 export const MESSAGE_REACTION_ADDED = 'message:reaction_added';
+export const MESSAGE_REACTION_REMOVED = 'message:reaction_removed';

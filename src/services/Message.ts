@@ -1,6 +1,6 @@
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
 import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageUpdated } from '../emits/Channel';
-import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageReactionAdded, emitServerMessageUpdated } from '../emits/Server';
+import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
 import { dateToDateTime, exists, prisma } from '../common/database';
@@ -443,8 +443,6 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
     }
   });
 
-
-
   if (!message) return [null, generateError('Invalid messageId')] as const;
 
   // check if already reacted
@@ -513,9 +511,92 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
     emitDMMessageReactionAdded(channel, payload);
   }
 
+  return [payload, null] as const;
+};
 
 
+
+interface RemoveReactionOpts {
+  messageId: string;
+  channelId: string;
+  channel?: ChannelCache | null;
+  serverId?: string;
+  reactionRemovedByUserId: string;
+
+  name: string;
+  emojiId?: string;
+}
+
+export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
+  const message = await prisma.message.findFirst({
+    where: {
+      id: opts.messageId,
+      channelId: opts.channelId
+    },
+    include: {
+      reactions: {
+        where: {
+          messageId: opts.messageId,
+          ...addToObjectIfExists('emojiId', opts.emojiId),
+          ...addToObjectIfExists('name', opts.name),
+        },
+        
+        include: {
+          _count: { select: { reactedUsers: { where: { id: opts.reactionRemovedByUserId } } } }
+        }
+      }
+    }
+  });
+
+  if (!message) return [null, generateError('Invalid messageId')] as const;
+
+  // check if already reacted
+  const existingReaction = message.reactions[0] as typeof message.reactions[0] | undefined;
+
+  if (!existingReaction?._count?.reactedUsers) {
+    return [null, generateError('You have already not reacted')] as const;
+  }
+
+  const reactionCount = await prisma.messageReaction.findFirst({where: {id: existingReaction.id}, select: {_count: {select: {reactedUsers: true}}}});
+  if (!reactionCount) return [null, generateError('Invalid Reaction')] as const;
+
+  if (reactionCount?._count.reactedUsers === 1) {
+    await prisma.messageReaction.delete({where: {id: existingReaction.id}});
+  }
+
+  if (reactionCount?._count.reactedUsers > 1) {
+    await prisma.messageReaction.update({where: {id: existingReaction.id}, data: {
+      reactedUsers: {
+        disconnect: {id: opts.reactionRemovedByUserId}
+      }
+    }});
+  }
+
+  const payload = {
+    reactionRemovedByUserId: opts.reactionRemovedByUserId,
+    messageId: opts.messageId,
+    channelId: opts.channelId,
+    emojiId: opts.emojiId,
+    name: opts.name,
+    count: reactionCount._count.reactedUsers - 1
+  };
+  
+  // emit 
+  if (opts.serverId) {
+    emitServerMessageReactionRemoved(opts.channelId, payload);
+    return [message, null];
+  }
+
+  let channel = opts.channel;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.reactionRemovedByUserId);
+  }
+
+
+  if (channel?.inbox?.recipientId) {
+    emitDMMessageReactionAdded(channel, payload);
+  }
 
   return [payload, null] as const;
-
 };
