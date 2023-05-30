@@ -279,7 +279,8 @@ export const createMessage = async (opts: SendMessageOptions) => {
           }
         }
       },
-      attachments: { select: { height: true, width: true, path: true, id: true } }
+      attachments: { select: { height: true, width: true, path: true, id: true } },
+      reactions: true
     },
   });
 
