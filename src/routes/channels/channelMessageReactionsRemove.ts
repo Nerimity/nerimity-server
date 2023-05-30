@@ -48,7 +48,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [response, err] = await removeMessageReaction({
-    serverId: req.serverCache.id,
+    serverId: req.serverCache?.id,
     channel: req.channelCache,
     channelId: req.channelCache.id,
     reactionRemovedByUserId: req.accountCache.user.id,

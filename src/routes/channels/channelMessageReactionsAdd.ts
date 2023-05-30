@@ -52,7 +52,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [response, err] = await addMessageReaction({
-    serverId: req.serverCache.id,
+    serverId: req.serverCache?.id,
     channel: req.channelCache,
     channelId: req.channelCache.id,
     reactedByUserId: req.accountCache.user.id,
