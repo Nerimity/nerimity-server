@@ -2,7 +2,6 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getMessagesByChannelId } from '../../services/Message';
 import { getAttachments } from '../../services/Attachment';
 
 export function channelAttachments(Router: Router) {
