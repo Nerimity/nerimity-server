@@ -1,5 +1,7 @@
 {
   "recommendations": [
-    "prisma.prisma"
+    "prisma.prisma",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
   ]
 }
