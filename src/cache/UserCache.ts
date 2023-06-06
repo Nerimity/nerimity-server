@@ -3,15 +3,18 @@ import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getAccountByUserId, getSuspensionDetails } from '../services/User';
-import { ACCOUNT_CACHE_KEY_STRING, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, USER_PRESENCE_KEY_STRING } from './CacheKeys';
-
+import {
+  ACCOUNT_CACHE_KEY_STRING,
+  CONNECTED_SOCKET_ID_KEY_SET,
+  CONNECTED_USER_ID_KEY_STRING,
+  USER_PRESENCE_KEY_STRING,
+} from './CacheKeys';
 
 export interface Presence {
   userId: string;
   status: number;
   custom?: string;
 }
-
 
 export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
   const multi = redisClient.multi();
@@ -34,23 +37,44 @@ export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
   return presences;
 }
 
-
-export async function updateCachePresence (userId: string, presence: Presence): Promise<boolean> {
+export async function updateCachePresence(
+  userId: string,
+  presence: Partial<Omit<Presence, 'custom'> & { custom?: string | null }> & {
+    userId: string;
+  }
+): Promise<boolean> {
   const key = USER_PRESENCE_KEY_STRING(userId);
-  
+  const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
+
+  const connectedCount = await redisClient.sCard(socketIdsKey);
+
+  if (connectedCount === 0) return false;
+
   if (presence.status === UserStatus.OFFLINE) {
     await redisClient.del(key);
     return true;
   }
 
-  await redisClient.set(key, JSON.stringify(presence));
+  const currentStatus = await getUserPresences([userId]);
+  if (!currentStatus?.[0] && !presence.status) return false;
+
+  if (presence.custom === null) presence.custom = undefined;
+
+  await redisClient.set(
+    key,
+    JSON.stringify({ ...currentStatus[0], ...presence })
+  );
   return true;
 }
 
 // returns true if the first user is connected.
-export async function addSocketUser(userId: string, socketId: string, presence: Presence) {
-  const socketIdsKey =  CONNECTED_SOCKET_ID_KEY_SET(userId);
-  const userIdKey =  CONNECTED_USER_ID_KEY_STRING(socketId);
+export async function addSocketUser(
+  userId: string,
+  socketId: string,
+  presence: Presence
+) {
+  const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
+  const userIdKey = CONNECTED_USER_ID_KEY_STRING(socketId);
   const presenceKey = USER_PRESENCE_KEY_STRING(userId);
 
   const count = await redisClient.sCard(socketIdsKey);
@@ -89,11 +113,11 @@ export async function socketDisconnect(socketId: string, userId: string) {
 export interface AccountCache {
   id: string;
   passwordVersion: number;
-  user: UserCache
+  user: UserCache;
 }
 
 export interface UserCache {
-  id: string
+  id: string;
   username: string;
   hexColor?: string;
   tag: string;
@@ -103,14 +127,21 @@ export interface UserCache {
   bot?: boolean;
 }
 
-
 export async function getUserIdBySocketId(socketId: string) {
   const userId = await redisClient.get(CONNECTED_USER_ID_KEY_STRING(socketId));
   if (!userId) return null;
   return userId;
 }
 
-export async function getAccountCache(userId: string, beforeCache?: (account: AccountCache) => Promise<any | undefined>): Promise<CustomResult<AccountCache, {type?: string, message: string, data?: any} | null>> {
+export async function getAccountCache(
+  userId: string,
+  beforeCache?: (account: AccountCache) => Promise<any | undefined>
+): Promise<
+  CustomResult<
+    AccountCache,
+    { type?: string; message: string; data?: any } | null
+  >
+> {
   // First, check in cache
   const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
   const cacheAccount = await redisClient.get(cacheKey);
@@ -132,10 +163,10 @@ export async function getAccountCache(userId: string, beforeCache?: (account: Ac
       tag: account.user.tag,
       avatar: account.user.avatar || undefined,
       banner: account.user.banner || undefined,
-      bot: account.user.bot || undefined
-    }
+      bot: account.user.bot || undefined,
+    },
   };
-  
+
   if (beforeCache) {
     const error = await beforeCache(accountCache);
     if (error) return [null, error];
@@ -147,42 +178,57 @@ export async function getAccountCache(userId: string, beforeCache?: (account: Ac
 }
 
 export async function removeAccountsCache(userIds: string[]) {
-  const keys = userIds.map(id => ACCOUNT_CACHE_KEY_STRING(id));
+  const keys = userIds.map((id) => ACCOUNT_CACHE_KEY_STRING(id));
   await redisClient.del(keys);
 }
 
-const beforeAuthenticateCache = async (account: AccountCache): Promise<{type?: string, message: string, data?: any} | undefined> => {
+const beforeAuthenticateCache = async (
+  account: AccountCache
+): Promise<{ type?: string; message: string; data?: any } | undefined> => {
   const suspendDetails = await getSuspensionDetails(account.user.id);
-  if (suspendDetails) return { message: 'You are suspended.', data: {type: 'suspend', reason: suspendDetails.reason, expire: suspendDetails.expireAt}};
+  if (suspendDetails)
+    return {
+      message: 'You are suspended.',
+      data: {
+        type: 'suspend',
+        reason: suspendDetails.reason,
+        expire: suspendDetails.expireAt,
+      },
+    };
 };
 
-export async function authenticateUser(token: string): Promise<CustomResult<AccountCache, {type?: string, message: string, data?: any}>> {
+export async function authenticateUser(
+  token: string
+): Promise<
+  CustomResult<AccountCache, { type?: string; message: string; data?: any }>
+> {
   const decryptedToken = decryptToken(token);
   if (!decryptedToken) {
-    return [null, {message: 'Invalid token.'}];
+    return [null, { message: 'Invalid token.' }];
   }
 
-  const [accountCache, error] = await getAccountCache(decryptedToken.userId, beforeAuthenticateCache);
+  const [accountCache, error] = await getAccountCache(
+    decryptedToken.userId,
+    beforeAuthenticateCache
+  );
 
   if (error) {
     return [null, error];
   }
 
   if (!accountCache) {
-    return [null, {message: 'Invalid token.'}];
+    return [null, { message: 'Invalid token.' }];
   }
   // compare password version
   if (accountCache.passwordVersion !== decryptedToken.passwordVersion) {
-    return [null, {message: 'Invalid token.'}];
+    return [null, { message: 'Invalid token.' }];
   }
   return [accountCache, null];
 }
-
-
 
 // Moderators Only
 export async function getAllConnectedUserIds() {
   const key = USER_PRESENCE_KEY_STRING('*');
   const keys = await redisClient.keys(key);
-  return keys.map(k => k.split(':')[1]);
+  return keys.map((k) => k.split(':')[1]);
 }

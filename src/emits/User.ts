@@ -1,31 +1,56 @@
 import { Inbox, User } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
-import { INBOX_OPENED, USER_PRESENCE_UPDATE, USER_UPDATED } from '../common/ClientEventNames';
+import {
+  INBOX_OPENED,
+  USER_PRESENCE_UPDATE,
+  USER_UPDATED,
+} from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
 import { emitToAll, getIO } from '../socket/socket';
 
-export const emitUserPresenceUpdate = (userId: string, presence: Presence, socketId?: string) => {
+export const emitUserPresenceUpdate = (
+  userId: string,
+  presence: Partial<Omit<Presence, 'custom'> & { custom?: null | string }> & {
+    userId: string;
+  }
+) => {
   emitToAll({
     event: USER_PRESENCE_UPDATE,
     userId,
     payload: presence,
-    excludeSocketId: socketId
+    excludeSelf: true,
   });
 };
 
-export const emitUserPresenceUpdateTo = (to: string | string[],  presence: Presence) => {
-  getIO().to(to).emit(USER_PRESENCE_UPDATE, presence);
+export const emitSelfPresenceUpdate = (
+  userId: string,
+  presence: Partial<Omit<Presence, 'custom'> & { custom?: null | string }> & {
+    userId: string;
+  }
+) => {
+  getIO().to(userId).emit(USER_PRESENCE_UPDATE, presence);
 };
 
+export const emitUserPresenceUpdateTo = (
+  to: string | string[],
+  presence: Presence
+) => {
+  getIO().to(to).emit(USER_PRESENCE_UPDATE, presence);
+};
 
 export const emitInboxOpened = (userId: string, inbox: Inbox) => {
   getIO().to(userId).emit(INBOX_OPENED, inbox);
 };
-export const emitNotificationDismissed = (userId: string, channelId: string) => {
-  getIO().to(userId).emit(NOTIFICATION_DISMISSED, {channelId});
+export const emitNotificationDismissed = (
+  userId: string,
+  channelId: string
+) => {
+  getIO().to(userId).emit(NOTIFICATION_DISMISSED, { channelId });
 };
 
-
-export const emitUserUpdated = (userId: string, updated: {email?: string} & Partial<User> ) => {
+export const emitUserUpdated = (
+  userId: string,
+  updated: { email?: string } & Partial<User>
+) => {
   getIO().to(userId).emit(USER_UPDATED, updated);
 };

@@ -5,14 +5,24 @@ import { authenticate } from '../../middleware/authenticate';
 import { UserStatus } from '../../types/User';
 import { updateUserPresence } from '../../services/User';
 import { rateLimit } from '../../middleware/rateLimit';
+import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 
 export function userUpdatePresence(Router: Router) {
-  Router.post('/users/presence',
+  Router.post(
+    '/users/presence',
     authenticate(),
     body('status')
-      .not().isEmpty().withMessage('Status is required.')
-      .isNumeric().withMessage('Invalid status.')
-      .isLength({ min: 0, max: 4 }).withMessage('Presence must be between 0 and 4.'),
+      .optional(true)
+      .isNumeric()
+      .withMessage('Invalid status.')
+      .isLength({ min: 0, max: 4 })
+      .withMessage('Status must be between 0 and 4.'),
+    body('custom')
+      .optional({ values: 'null' })
+      .isString()
+      .withMessage('Invalid custom status.')
+      .isLength({ min: 0, max: 100 })
+      .withMessage('custom status must be between 0 and 100.'),
     rateLimit({
       name: 'update_presence',
       expireMS: 5000,
@@ -22,13 +32,12 @@ export function userUpdatePresence(Router: Router) {
   );
 }
 
-
 interface Body {
-  status: UserStatus;
+  status?: UserStatus;
+  custom?: string | null;
 }
 
-async function route (req: Request, res: Response) {
-
+async function route(req: Request, res: Response) {
   const body: Body = req.body;
 
   const validateError = customExpressValidatorResult(req);
@@ -37,7 +46,21 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const [ successMessage, error ] = await updateUserPresence(req.accountCache.user.id, {status: body.status});
+  if (typeof body.custom === 'string' && !body.custom.trim()) {
+    body.custom = null;
+  }
+
+  if (body.custom) {
+    body.custom = body.custom.trim();
+  }
+
+  const [successMessage, error] = await updateUserPresence(
+    req.accountCache.user.id,
+    {
+      ...addToObjectIfExists('custom', body.custom),
+      ...addToObjectIfExists('status', body.status),
+    }
+  );
   if (error) {
     return res.status(400).json(error);
   }

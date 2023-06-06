@@ -29,6 +29,7 @@ model User {
   avatar                 String?
   banner                 String?
   status                 Int
+  customStatus           String?
   hexColor               String?
   bot                    Boolean?
   joinedAt               DateTime                @default(now())
