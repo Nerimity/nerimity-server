@@ -30,6 +30,7 @@ module.exports = {
     'semi': [
       'error',
       'always'
-    ]
+    ],
+    'no-multiple-empty-lines': 'error'
   }
 };
