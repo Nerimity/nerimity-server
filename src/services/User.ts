@@ -100,19 +100,31 @@ export const registerUser = async (
 };
 
 interface LoginOpts {
-  email: string;
+  email?: string;
+  username?: string;
+  tag?: string;
   password: string;
 }
 
 export const loginUser = async (
   opts: LoginOpts
 ): Promise<CustomResult<string, CustomError>> => {
+  const where = opts.email
+    ? ({ email: { equals: opts.email, mode: 'insensitive' } } as const)
+    : ({ user: { username: opts.username, tag: opts.tag } } as const);
+
   const account = await prisma.account.findFirst({
-    where: { email: { equals: opts.email, mode: 'insensitive' } },
+    where,
     include: { user: true },
   });
   if (!account) {
-    return [null, generateError('Invalid email address.', 'email')];
+    return [
+      null,
+      generateError(
+        opts.email ? 'Invalid email address.' : 'Invalid username/tag',
+        'email'
+      ),
+    ];
   }
 
   const isPasswordValid = await checkUserPassword(
