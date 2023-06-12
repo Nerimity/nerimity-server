@@ -1,4 +1,4 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import { login } from './login';
 import { register } from './register';
 import { userDetails } from './userDetails';
@@ -9,6 +9,7 @@ import { userOpenDMChannel } from './userOpenDMChannel';
 import { userUnfollow } from './userUnfollow';
 import { userUpdate } from './userUpdate';
 import { userUpdatePresence } from './userUpdatePresence';
+import { userUpdateServerSettings } from './userUpdateServerSettings';
 
 const UsersRouter = Router();
 
@@ -23,5 +24,6 @@ userFollow(UsersRouter);
 userUnfollow(UsersRouter);
 userFollowers(UsersRouter);
 userFollowing(UsersRouter);
+userUpdateServerSettings(UsersRouter);
 
-export {UsersRouter};
+export { UsersRouter };

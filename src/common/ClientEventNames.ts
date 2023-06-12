@@ -1,7 +1,8 @@
-
 export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
 export const USER_UPDATED = 'user:updated';
+
+export const USER_SERVER_SETTINGS_UPDATE = 'user:server_settings_update';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 
@@ -12,7 +13,6 @@ export const FRIEND_REQUEST_SENT = 'friend:request_sent';
 export const FRIEND_REQUEST_PENDING = 'friend:request_pending';
 export const FRIEND_REQUEST_ACCEPTED = 'friend:request_accepted';
 export const FRIEND_REMOVED = 'friend:removed';
-
 
 export const SERVER_JOINED = 'server:joined';
 export const SERVER_LEFT = 'server:left';

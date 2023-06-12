@@ -53,6 +53,8 @@ model User {
 
   reactedMessageEmojis   MessageReaction[]
 
+  joinedServerSettings ServerMemberSettings[] 
+
 
   posts                  Post[]
   likedPosts             PostLike[]
@@ -122,8 +124,24 @@ model Server {
 
   customEmojis CustomEmoji[]
 
-
+  memberSettings ServerMemberSettings[]
 }
+
+// Personal settings for joined servers
+model ServerMemberSettings {
+  id String @id
+
+  serverId String
+  userId   String
+
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  notificationSoundMode Int @default(0)
+
+  @@unique([userId, serverId])
+}
+
 
 
 model CustomEmoji {

@@ -1,8 +1,9 @@
-import { Inbox, User } from '@prisma/client';
+import { Inbox, ServerMemberSettings, User } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
 import {
   INBOX_OPENED,
   USER_PRESENCE_UPDATE,
+  USER_SERVER_SETTINGS_UPDATE,
   USER_UPDATED,
 } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
@@ -53,4 +54,12 @@ export const emitUserUpdated = (
   updated: { email?: string } & Partial<User>
 ) => {
   getIO().to(userId).emit(USER_UPDATED, updated);
+};
+
+export const emitUserServerSettingsUpdate = (
+  userId: string,
+  serverId: string,
+  updated: Partial<ServerMemberSettings>
+) => {
+  getIO().to(userId).emit(USER_SERVER_SETTINGS_UPDATE, { serverId, updated });
 };

@@ -46,8 +46,13 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const { servers, serverChannels, serverMembers, serverRoles } =
-    await getServers(cacheUser.id);
+  const {
+    servers,
+    serverChannels,
+    serverMembers,
+    serverRoles,
+    serverSettings,
+  } = await getServers(cacheUser.id);
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(
     cacheUser.id
@@ -125,6 +130,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       orderedServerIds: user.account?.serverOrderIds,
     },
     servers,
+    serverSettings,
     serverMembers,
     serverRoles,
     lastSeenServerChannelIds,

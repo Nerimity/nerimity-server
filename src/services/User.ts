@@ -8,6 +8,7 @@ import {
   emitInboxOpened,
   emitSelfPresenceUpdate,
   emitUserPresenceUpdate,
+  emitUserServerSettingsUpdate,
   emitUserUpdated,
 } from '../emits/User';
 import { ChannelType } from '../types/Channel';
@@ -551,4 +552,32 @@ export async function followerUsers(userId: string) {
   });
   if (!user) return [null, generateError('invalid User')];
   return [user?.followers.map((follower) => follower.followedBy), null];
+}
+
+export enum ServerNotificationSoundMode {
+  ALL = 0,
+  MENTIONS_ONLY = 1,
+  MUTE = 2,
+}
+
+interface UpdateServerSettings {
+  notificationSoundMode?: ServerNotificationSoundMode;
+}
+
+export async function UpdateServerSettings(
+  userId: string,
+  serverId: string,
+  update: UpdateServerSettings
+) {
+  await prisma.serverMemberSettings.upsert({
+    where: { userId_serverId: { userId, serverId } },
+    create: {
+      id: generateId(),
+      serverId,
+      userId,
+    },
+    update,
+  });
+
+  emitUserServerSettingsUpdate(userId, serverId, update);
 }
