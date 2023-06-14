@@ -327,7 +327,6 @@ model MessageMention {
 
 
   @@unique([mentionedById, mentionedToId, channelId])
-  @@unique([mentionedToId, channelId])
 
 }
 
