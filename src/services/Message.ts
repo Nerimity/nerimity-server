@@ -12,16 +12,35 @@ import { removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 
-export const getMessagesByChannelId = async (channelId: string, limit = 50, afterMessageId?: string, beforeMessageId?: string, requesterId?: string) => {
+interface GetMessageByChannelIdOpts {
+  limit?: number;
+  beforeMessageId?: string;
+  aroundMessageId?: string;
+  afterMessageId?: string;
+  requesterId?: string;
+}
+
+export const getMessagesByChannelId = async (channelId: string, opts?: GetMessageByChannelIdOpts) => {
+  const limit = opts?.limit || 50;
   if (limit > 100) return [];
+
+  if (opts?.aroundMessageId) {
+    const halfLimit = Math.round(limit / 2);
+    const [before, after]: any = await Promise.all([getMessagesByChannelId(channelId, {limit: halfLimit, beforeMessageId: opts.aroundMessageId + 1, requesterId: opts.requesterId}),
+                 getMessagesByChannelId(channelId, {limit: halfLimit, afterMessageId: opts.aroundMessageId, requesterId: opts.requesterId})]);
+
+    const result = [...after.reverse(), ...before.reverse()];
+    return result;
+  }
+
   const messages = await prisma.message.findMany({
     where: {
       channelId,
-      ...(afterMessageId ? {
-        id: { lt: afterMessageId }
+      ...(opts?.beforeMessageId ? {
+        id: { lt: opts.beforeMessageId }
       } : undefined),
-      ...(beforeMessageId ? {
-        id: { gt: beforeMessageId }
+      ...(opts?.afterMessageId ? {
+        id: { gt: opts.afterMessageId }
       } : undefined)
     },
     include: {
@@ -50,7 +69,7 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
       },
       reactions: {
         select: {
-          ...(requesterId ? {reactedUsers: { where: { id: requesterId } }}: undefined),
+          ...(opts?.requesterId ? {reactedUsers: { where: { id: opts.requesterId } }}: undefined),
           emojiId: true,
           gif: true,
           name: true,
@@ -66,7 +85,7 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
     },
     take: limit,
     orderBy: { createdAt: 'desc' },
-    ...(beforeMessageId ? {
+    ...(opts?.afterMessageId ? {
       orderBy: { createdAt: 'asc' },
     } : undefined),
   });
@@ -86,7 +105,7 @@ export const getMessagesByChannelId = async (channelId: string, limit = 50, afte
 
 
 
-  if (beforeMessageId) return modifiedMessages;
+  if (opts?.afterMessageId) return modifiedMessages;
 
   return modifiedMessages.reverse();
 };
