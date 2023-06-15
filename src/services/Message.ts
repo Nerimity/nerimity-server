@@ -29,7 +29,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
     const [before, after]: any = await Promise.all([getMessagesByChannelId(channelId, {limit: halfLimit, beforeMessageId: opts.aroundMessageId + 1, requesterId: opts.requesterId}),
                  getMessagesByChannelId(channelId, {limit: halfLimit, afterMessageId: opts.aroundMessageId, requesterId: opts.requesterId})]);
 
-    const result = [...after.reverse(), ...before.reverse()];
+    const result = [...before, ...after];
     return result;
   }
 
