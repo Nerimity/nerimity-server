@@ -217,6 +217,25 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     },
   });
 
+  const recipientInbox = await prisma.inbox.findFirst({
+    where: {
+      createdById: friendId,
+      recipientId: userId,
+    },
+  });
+  if (!recipientInbox) {
+    // also create a closed inbox for recipient
+    await prisma.inbox.create({
+      data: {
+        id: generateId(),
+        channelId: newChannel.id,
+        createdById: friendId,
+        recipientId: userId,
+        closed: true,
+      },
+    });
+  }
+
   emitInboxOpened(userId, newInbox);
 
   return [newInbox, null];

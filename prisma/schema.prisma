@@ -277,6 +277,9 @@ model Inbox {
   channel     Channel  @relation(fields: [channelId], references: [id])
   createdBy   User     @relation("inbox", fields: [createdById], references: [id])
   recipient   User     @relation("recipient_inbox", fields: [recipientId], references: [id])
+  lastSeen    DateTime?
+
+  @@unique([createdById, channelId])
 }
 
 model Message {
