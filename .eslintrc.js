@@ -20,5 +20,6 @@ module.exports = {
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
     'linebreak-style': 0,
+    "no-control-regex": 0
   }
 };

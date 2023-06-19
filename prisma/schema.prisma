@@ -299,6 +299,8 @@ model Message {
 
   quotedMessages Message[] @relation(name: "quoted_messages")
   quotedInMessages Message[] @relation(name: "quoted_messages")
+
+  embed Json?
 }
 
 model MessageReaction {
