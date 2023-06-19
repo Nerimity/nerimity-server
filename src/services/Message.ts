@@ -553,7 +553,7 @@ const addMessageEmbed = async (
   message: Message,
   opts: { serverId?: string; channel?: ChannelCache | null }
 ) => {
-  const url = message.content.match(urlRegex)?.[0].trim();
+  const url = message.content?.match(urlRegex)?.[0].trim();
   if (!url) return;
   const OGTags = await getOGTags(url);
   if (!OGTags) return;
