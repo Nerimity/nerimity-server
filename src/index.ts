@@ -1,3 +1,30 @@
+// import fetch from 'node-fetch';
+// import { parse } from 'node-html-parser';
+
+
+// async function getOGTags (url: string) {
+//   const res = await fetch(url, {  headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' }});
+//   if (!res) throw new Error("Something went wrong.")
+//   const html = await res.text();
+//   const root = parse(html);
+//   const head = root.querySelectorAll("head meta");
+
+//   const filterAndMapToEntries = head.filter(el => {
+//     const isOG = el.attributes.property?.startsWith("og:")
+//     return isOG
+//   }).map(el => ([el.attributes.property.split("og:")[1], el.attributes.content]));
+
+//   const toObject = Object.fromEntries(filterAndMapToEntries);
+  
+//   console.log(toObject)
+
+// }
+
+// getOGTags("https://twitter.com/compooter/status/597908517132042240")
+
+
+
+
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
