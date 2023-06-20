@@ -1,5 +1,6 @@
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 import { parse } from 'node-html-parser';
+import { proxyUrlImageDimensions } from './nerimityCDN';
 
 const mapper = new Map(
   Object.entries({
@@ -9,17 +10,23 @@ const mapper = new Map(
     url: 'url',
     description: 'description',
     image: 'imageUrl',
+    'image:width': 'imageWidth',
+    'image:height': 'imageHeight',
   })
 );
 
 type GetOGTagsReturn = Promise<false | Record<string, string | number>>;
 
-const fetchOpts = {
-  headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
-};
 export async function getOGTags(url: string): GetOGTagsReturn {
-  const res = await fetch(url, fetchOpts);
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
+  });
   if (!res) return false;
+
+  const isImage = res.headers.get('content-type')?.startsWith('image/');
+  if (isImage) {
+    return await getImageEmbed(url);
+  }
 
   const isHtml = res.headers.get('content-type')?.startsWith('text/html');
   if (!isHtml) return false;
@@ -43,6 +50,12 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const object = Object.fromEntries(entries);
   object.url = addProtocolToUrl(object.url || url);
 
+  if (object.imageUrl) {
+    object.imageMime = (await fetch(object.imageUrl)).headers.get(
+      'content-type'
+    );
+  }
+
   return object;
 }
 
@@ -52,3 +65,17 @@ const addProtocolToUrl = (unsafeUrl: string) => {
   if (startsWithHttp || startsWithHttps) return unsafeUrl;
   return `https://${unsafeUrl}`;
 };
+
+async function getImageEmbed(url: string): GetOGTagsReturn {
+  const [dimensions, err] = await proxyUrlImageDimensions(url);
+
+  if (err) return false;
+
+  return {
+    type: 'image',
+    imageUrl: url,
+    imageWidth: dimensions!.width,
+    imageHeight: dimensions!.height,
+    imageMime: (await fetch(url)).headers.get('content-type')!,
+  };
+}

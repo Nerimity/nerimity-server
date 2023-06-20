@@ -4,9 +4,30 @@ import { CustomResult } from './CustomResult';
 import env from './env';
 import internal from 'stream';
 
-
-
-export function uploadEmoji(base64: string, serverId: string): Promise<CustomResult<{path: string, id: string, gif: boolean}, any>> {
+export function proxyUrlImageDimensions(
+  url: string
+): Promise<CustomResult<{ width: number; height: number }, any>> {
+  return new Promise((resolve) => {
+    fetch(
+      env.NERIMITY_CDN +
+        `proxy-dimensions?url=${encodeURI(url)}&secret=${
+          env.NERIMITY_CDN_SECRET
+        }`,
+      {
+        method: 'GET',
+      }
+    )
+      .then(async (res) => {
+        if (res.status == 200) return resolve([await res.json(), null]);
+        resolve([null, true]);
+      })
+      .catch(() => [null, true]);
+  });
+}
+export function uploadEmoji(
+  base64: string,
+  serverId: string
+): Promise<CustomResult<{ path: string; id: string; gif: boolean }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
     const buffer = Buffer.from(base64.split(',')[1], 'base64');
@@ -21,14 +42,19 @@ export function uploadEmoji(base64: string, serverId: string): Promise<CustomRes
     fetch(env.NERIMITY_CDN + 'emojis', {
       method: 'POST',
       body: form,
-    }).then(async (res) => {
-      if (res.status == 200) return resolve([await res.json(), null]);
-      resolve([null, await res.json()]);
-    }).catch(() => [null, 'Could not connect to the CDN.']);
+    })
+      .then(async (res) => {
+        if (res.status == 200) return resolve([await res.json(), null]);
+        resolve([null, await res.json()]);
+      })
+      .catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
-export function uploadAvatar(base64: string, uniqueId: string): Promise<CustomResult<{path: string}, any>> {
+export function uploadAvatar(
+  base64: string,
+  uniqueId: string
+): Promise<CustomResult<{ path: string }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
     const buffer = Buffer.from(base64.split(',')[1], 'base64');
@@ -43,15 +69,19 @@ export function uploadAvatar(base64: string, uniqueId: string): Promise<CustomRe
     fetch(env.NERIMITY_CDN + 'avatars', {
       method: 'POST',
       body: form,
-    }).then(async (res) => {
-      if (res.status == 200) return resolve([await res.json(), null]);
-      resolve([null, await res.json()]);
-    }).catch(() => [null, 'Could not connect to the CDN.']);
+    })
+      .then(async (res) => {
+        if (res.status == 200) return resolve([await res.json(), null]);
+        resolve([null, await res.json()]);
+      })
+      .catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
-
-export function uploadBanner(base64: string, uniqueId: string): Promise<CustomResult<{path: string}, any>> {
+export function uploadBanner(
+  base64: string,
+  uniqueId: string
+): Promise<CustomResult<{ path: string }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
     const buffer = Buffer.from(base64.split(',')[1], 'base64');
@@ -66,10 +96,12 @@ export function uploadBanner(base64: string, uniqueId: string): Promise<CustomRe
     fetch(env.NERIMITY_CDN + 'banners', {
       method: 'POST',
       body: form,
-    }).then(async (res) => {
-      if (res.status == 200) return resolve([await res.json(), null]);
-      resolve([null, await res.json()]);
-    }).catch(() => [null, 'Could not connect to the CDN.']);
+    })
+      .then(async (res) => {
+        if (res.status == 200) return resolve([await res.json(), null]);
+        resolve([null, await res.json()]);
+      })
+      .catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
@@ -78,7 +110,11 @@ interface Dimensions {
   height: number;
 }
 
-export function uploadImage(readable: internal.Readable, filename: string, uniqueId: string): Promise<CustomResult<{path: string, dimensions: Dimensions}, any>>  {
+export function uploadImage(
+  readable: internal.Readable,
+  filename: string,
+  uniqueId: string
+): Promise<CustomResult<{ path: string; dimensions: Dimensions }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
 
@@ -89,25 +125,24 @@ export function uploadImage(readable: internal.Readable, filename: string, uniqu
     fetch(env.NERIMITY_CDN + 'attachments', {
       method: 'POST',
       body: form,
-    }).then(async (res) => {
-      if (res.status == 200) return resolve([await res.json(), null]);
-      resolve([null, await res.json()]);
-    }).catch(() => [null, 'Could not connect to the CDN.']);
+    })
+      .then(async (res) => {
+        if (res.status == 200) return resolve([await res.json(), null]);
+        resolve([null, await res.json()]);
+      })
+      .catch(() => [null, 'Could not connect to the CDN.']);
   });
 }
 
-
-
-export async function deleteImage(path: string)  {
+export async function deleteImage(path: string) {
   return await fetch(env.NERIMITY_CDN, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({path, secret: env.NERIMITY_CDN_SECRET}),
+    body: JSON.stringify({ path, secret: env.NERIMITY_CDN_SECRET }),
   });
 }
-
 
 // function base64MimeType(encoded: string) {
 //   let result = null;
