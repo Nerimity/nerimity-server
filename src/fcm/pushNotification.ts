@@ -43,6 +43,7 @@ export async function sendServerPushMessageNotification(
 
   const batchResponse = await admin.messaging().sendEachForMulticast({
     tokens,
+    android: { priority: 'high' },
     data: {
       content: message.content,
       type: message.type.toString(),
