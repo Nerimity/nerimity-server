@@ -510,7 +510,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
       [channel] = await getChannelCache(opts.channelId, opts.userId);
     }
     if (!server) {
-      [server] = await getServerCache(opts.serverId);
+      server = await getServerCache(opts.serverId);
     }
     sendServerPushMessageNotification(
       opts.serverId,
