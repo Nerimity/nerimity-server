@@ -4,6 +4,8 @@ import { prisma } from '../common/database';
 import { removeFCMTokens } from '../services/User';
 import { Message, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
+import { ChannelCache } from '../cache/ChannelCache';
+import { ServerCache } from '../cache/ServerCache';
 
 let credentials: any;
 try {
@@ -30,7 +32,9 @@ export async function sendServerPushMessageNotification(
       avatar?: string | null;
       hexColor: string | null;
     };
-  }
+  },
+  channel: ChannelCache,
+  server: ServerCache
 ) {
   if (!credentials) return;
   const tokens = (
@@ -45,12 +49,16 @@ export async function sendServerPushMessageNotification(
     tokens,
     android: { priority: 'high' },
     data: {
-      content: message.content,
+      content: message.content.substring(0, 50),
       type: message.type.toString(),
-      creatorUserId: message.createdBy.id,
-      creatorUsername: message.createdBy.username,
-      ...addToObjectIfExists('creatorAvatar', message.createdBy.avatar),
-      ...addToObjectIfExists('creatorHexColor', message.createdBy.hexColor),
+      channelName: channel.name!,
+      serverName: server.name,
+      channelId: message.channelId,
+      serverId,
+      cUserId: message.createdBy.id,
+      cName: message.createdBy.username,
+      ...addToObjectIfExists('cAvatar', message.createdBy.avatar),
+      ...addToObjectIfExists('cHexColor', message.createdBy.hexColor),
     },
   });
 

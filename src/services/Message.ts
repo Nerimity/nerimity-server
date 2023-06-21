@@ -25,6 +25,7 @@ import { deleteImage } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
 import { Channel } from 'diagnostics_channel';
 import { sendServerPushMessageNotification } from '../fcm/pushNotification';
+import { ServerCache, getServerCache } from '../cache/ServerCache';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -306,6 +307,7 @@ interface SendMessageOptions {
   userId: string;
   channelId: string;
   channel?: ChannelCache | null;
+  server?: ServerCache | null;
   serverId?: string;
   socketId?: string;
   content?: string;
@@ -500,9 +502,25 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   // emit
   let channel = opts.channel;
+  let server = opts.server;
+
   if (opts.serverId) {
     emitServerMessageCreated(message, opts.socketId);
-  } else {
+    if (!channel) {
+      [channel] = await getChannelCache(opts.channelId, opts.userId);
+    }
+    if (!server) {
+      [server] = await getServerCache(opts.serverId);
+    }
+    sendServerPushMessageNotification(
+      opts.serverId,
+      message,
+      channel!,
+      server!
+    );
+  }
+
+  if (!opts.serverId) {
     if (!channel) {
       [channel] = await getChannelCache(opts.channelId, opts.userId);
     }
@@ -543,11 +561,6 @@ export const createMessage = async (opts: SendMessageOptions) => {
   if (message.type === MessageType.CONTENT) {
     addMessageEmbed(message, { channel, serverId: opts.serverId });
   }
-
-  if (opts.serverId) {
-    sendServerPushMessageNotification(opts.serverId, message);
-  }
-
   return message;
 };
 const urlRegex = new RegExp(
@@ -571,7 +584,7 @@ const addMessageEmbed = async (
     emitServerMessageUpdated(message.channelId, message.id, { embed: OGTags });
     return;
   }
-  if (opts.channel) {
+  if (!opts.serverId && opts.channel) {
     emitDMMessageUpdated(opts.channel, message.id, { embed: OGTags });
   }
 };
