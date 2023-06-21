@@ -10,6 +10,7 @@ import { userUnfollow } from './userUnfollow';
 import { userUpdate } from './userUpdate';
 import { userUpdatePresence } from './userUpdatePresence';
 import { userUpdateServerSettings } from './userUpdateServerSettings';
+import { userRegisterFCM } from './userRegisterFCM';
 
 const UsersRouter = Router();
 
@@ -17,6 +18,7 @@ register(UsersRouter);
 login(UsersRouter);
 userUpdate(UsersRouter);
 
+userRegisterFCM(UsersRouter);
 userOpenDMChannel(UsersRouter);
 userUpdatePresence(UsersRouter);
 userDetails(UsersRouter);

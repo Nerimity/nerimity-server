@@ -600,3 +600,25 @@ export async function UpdateServerSettings(
 
   emitUserServerSettingsUpdate(userId, serverId, update);
 }
+
+export async function registerFCMToken(accountId: string, token: string) {
+  return await prisma.firebaseMessagingToken.upsert({
+    where: {
+      token,
+    },
+    update: {
+      token,
+      accountId,
+    },
+    create: {
+      token,
+      accountId,
+    },
+  });
+}
+
+export async function removeFCMTokens(tokens: string[]) {
+  return await prisma.firebaseMessagingToken.deleteMany({
+    where: { token: { in: tokens } },
+  });
+}

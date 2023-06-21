@@ -19,6 +19,14 @@ model Account {
   suspendCount    Int     @default(0) // How many times the user has been suspended.
   postNotificationCount  Int                     @default(0)
   serverOrderIds   String[]
+
+  FCMTokens        FirebaseMessagingToken[]
+}
+
+model FirebaseMessagingToken {
+  token String @unique
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 }
 
 model User {

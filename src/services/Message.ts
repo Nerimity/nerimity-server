@@ -24,6 +24,7 @@ import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
 import { Channel } from 'diagnostics_channel';
+import { sendServerPushMessageNotification } from '../fcm/pushNotification';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -541,6 +542,10 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   if (message.type === MessageType.CONTENT) {
     addMessageEmbed(message, { channel, serverId: opts.serverId });
+  }
+
+  if (opts.serverId) {
+    sendServerPushMessageNotification(opts.serverId, message);
   }
 
   return message;
