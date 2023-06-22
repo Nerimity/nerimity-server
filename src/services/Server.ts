@@ -221,15 +221,6 @@ export const joinServer = async (
     return [null, generateError('You are banned from this server')];
   }
 
-  if (server.systemChannelId) {
-    await createMessage({
-      channelId: server.systemChannelId,
-      type: MessageType.JOIN_SERVER,
-      serverId: serverId,
-      userId: userId,
-    });
-  }
-
   const [_, serverRoles, serverMember, serverChannels, serverMembers] =
     await prisma.$transaction([
       prisma.user.update({
@@ -251,6 +242,14 @@ export const joinServer = async (
       }),
     ]);
 
+  if (server.systemChannelId) {
+    await createMessage({
+      channelId: server.systemChannelId,
+      type: MessageType.JOIN_SERVER,
+      serverId: serverId,
+      userId: userId,
+    });
+  }
   const memberIds = serverMembers.map((sm) => sm.user.id);
   const memberPresences = await getUserPresences(memberIds);
 
