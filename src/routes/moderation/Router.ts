@@ -1,4 +1,4 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import { getServers } from './getServers';
 import { getUsers } from './getUsers';
 import { getUsersOnline } from './getUsersOnline';
@@ -8,18 +8,16 @@ import { getServer } from './getServer';
 import { getUser } from './getUser';
 import { updateUser } from './updateUser';
 
-
 const ModerationRouter = Router();
 
+userBatchSuspend(ModerationRouter);
 getUser(ModerationRouter);
 updateUser(ModerationRouter);
 getUsers(ModerationRouter);
 getUsersOnline(ModerationRouter);
-userBatchSuspend(ModerationRouter);
-
 
 getServer(ModerationRouter);
 updateServer(ModerationRouter);
 getServers(ModerationRouter);
 
-export {ModerationRouter};
+export { ModerationRouter };
