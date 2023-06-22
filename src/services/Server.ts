@@ -274,7 +274,10 @@ export const deleteOrLeaveServer = async (
   ban = false,
   leaveMessage = true
 ): Promise<CustomResult<boolean, CustomError>> => {
-  const server = await prisma.server.findFirst({ where: { id: serverId } });
+  const server = await prisma.server.findFirst({
+    where: { id: serverId },
+    include: { channels: { select: { id: true } } },
+  });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
@@ -352,7 +355,12 @@ export const deleteOrLeaveServer = async (
       });
     }
   }
-  emitServerLeft(userId, serverId, isServerCreator);
+  emitServerLeft(
+    userId,
+    serverId,
+    isServerCreator,
+    server.channels.map((c) => c.id)
+  );
 
   return [false, null];
 };

@@ -3,9 +3,11 @@ import { redisClient } from '../common/redis';
 import { SERVER_KEY_STRING } from './CacheKeys';
 
 export interface ServerCache {
-  id: string
-  name: string,
-  createdById: string,
+  id: string;
+  name: string;
+  createdById: string;
+  avatar?: string | null;
+  hexColor: string;
 }
 
 export const getServerCache = async (serverId: string) => {
@@ -13,13 +15,15 @@ export const getServerCache = async (serverId: string) => {
   const serverString = await redisClient.get(key);
   if (serverString) return JSON.parse(serverString);
 
-  const server = await prisma.server.findFirst({where: {id: serverId }});
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) return null;
 
   const serverCache: ServerCache = {
     name: server.name,
     id: server.id,
     createdById: server.createdById,
+    avatar: server.avatar,
+    hexColor: server.hexColor,
   };
   const serverCacheString = JSON.stringify(serverCache);
   await redisClient.set(key, serverCacheString);
