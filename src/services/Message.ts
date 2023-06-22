@@ -24,7 +24,10 @@ import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
 import { Channel } from 'diagnostics_channel';
-import { sendServerPushMessageNotification } from '../fcm/pushNotification';
+import {
+  sendDmPushNotification,
+  sendServerPushMessageNotification,
+} from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
 
 interface GetMessageByChannelIdOpts {
@@ -556,6 +559,8 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
 
     emitDMMessageCreated(channel, message, opts.socketId);
+
+    sendDmPushNotification(message, channel!);
   }
 
   if (message.type === MessageType.CONTENT) {

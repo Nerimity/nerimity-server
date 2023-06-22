@@ -71,3 +71,52 @@ export async function sendServerPushMessageNotification(
   if (!failedTokens.length) return;
   removeFCMTokens(failedTokens);
 }
+
+export async function sendDmPushNotification(
+  message: Message & {
+    createdBy: {
+      id: string;
+      username: string;
+      avatar?: string | null;
+      hexColor: string | null;
+    };
+  },
+  channel: ChannelCache
+) {
+  if (!credentials) return;
+  const recipientId = channel.inbox?.recipientId;
+  const tokens = (
+    await prisma.firebaseMessagingToken.findMany({
+      where: { account: { user: { id: recipientId } } },
+      select: { token: true },
+    })
+  ).map((fcm) => fcm.token);
+  if (!tokens.length) return;
+
+  const content = message?.content?.substring(0, 100);
+
+  const batchResponse = await admin.messaging().sendEachForMulticast({
+    tokens,
+    android: { priority: 'high' },
+    data: {
+      ...(content ? { content } : undefined),
+      type: message.type.toString(),
+      channelId: message.channelId,
+      cUserId: message.createdBy.id,
+      cName: message.createdBy.username,
+      ...(message.createdBy.avatar
+        ? { uAvatar: message.createdBy.avatar }
+        : undefined),
+      ...(message.createdBy.hexColor
+        ? { uHexColor: message.createdBy.hexColor }
+        : undefined),
+    },
+  });
+
+  const failedTokens = batchResponse.responses
+    .map((sendResponse, index) => sendResponse.error && tokens[index])
+    .filter((token) => token) as string[];
+
+  if (!failedTokens.length) return;
+  removeFCMTokens(failedTokens);
+}
