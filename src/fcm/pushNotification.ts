@@ -49,7 +49,7 @@ export async function sendServerPushMessageNotification(
     tokens,
     android: { priority: 'high' },
     data: {
-      content: message.content.substring(0, 50),
+      ...addToObjectIfExists('content', message?.content?.substring(0, 50)),
       type: message.type.toString(),
       channelName: channel.name!,
       serverName: server.name,
