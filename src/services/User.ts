@@ -182,7 +182,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     if (myInbox) {
       if (myInbox.closed) {
         myInbox.closed = false;
-        prisma.inbox.update({
+        await prisma.inbox.update({
           where: { id: myInbox.id },
           data: { closed: false },
         });
