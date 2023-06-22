@@ -20,7 +20,8 @@ type GetOGTagsReturn = Promise<false | Record<string, string | number>>;
 export async function getOGTags(url: string): GetOGTagsReturn {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
-  });
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+  }).catch(() => {});
   if (!res) return false;
 
   const isImage = res.headers.get('content-type')?.startsWith('image/');
