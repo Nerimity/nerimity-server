@@ -45,11 +45,13 @@ export async function sendServerPushMessageNotification(
   ).map((fcm) => fcm.token);
   if (!tokens.length) return;
 
+  const content = message?.content?.substring(0, 100);
+
   const batchResponse = await admin.messaging().sendEachForMulticast({
     tokens,
     android: { priority: 'high' },
     data: {
-      ...addToObjectIfExists('content', message?.content?.substring(0, 100)),
+      ...(content ? { content } : undefined),
       type: message.type.toString(),
       channelName: channel.name!,
       serverName: server.name,
@@ -57,8 +59,8 @@ export async function sendServerPushMessageNotification(
       serverId,
       cUserId: message.createdBy.id,
       cName: message.createdBy.username,
-      ...addToObjectIfExists('sAvatar', server.avatar),
-      ...addToObjectIfExists('sHexColor', server.hexColor),
+      ...(server.avatar ? { sAvatar: server.avatar } : undefined),
+      ...(server.hexColor ? { sHexColor: server.hexColor } : undefined),
     },
   });
 
