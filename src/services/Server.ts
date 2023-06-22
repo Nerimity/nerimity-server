@@ -419,7 +419,7 @@ export const banServerMember = async (
     return [null, generateError('Server does not exist.')];
   }
   if (server.createdById === userId) {
-    return [null, generateError('You can not kick yourself.')];
+    return [null, generateError('You can not ban yourself.')];
   }
 
   const userToBan = await prisma.user.findFirst({
