@@ -49,7 +49,7 @@ export async function sendServerPushMessageNotification(
     tokens,
     android: { priority: 'high' },
     data: {
-      ...addToObjectIfExists('content', message?.content?.substring(0, 50)),
+      ...addToObjectIfExists('content', message?.content?.substring(0, 100)),
       type: message.type.toString(),
       channelName: channel.name!,
       serverName: server.name,
@@ -57,8 +57,8 @@ export async function sendServerPushMessageNotification(
       serverId,
       cUserId: message.createdBy.id,
       cName: message.createdBy.username,
-      ...addToObjectIfExists('cAvatar', message.createdBy.avatar),
-      ...addToObjectIfExists('cHexColor', message.createdBy.hexColor),
+      ...addToObjectIfExists('sAvatar', server.avatar),
+      ...addToObjectIfExists('sHexColor', server.hexColor),
     },
   });
 
