@@ -341,6 +341,7 @@ export const deleteOrLeaveServer = async (
     }
     await prisma.$transaction(transactions);
 
+    await removeServerIdFromAccountOrder(userId, serverId);
     if (server.systemChannelId && leaveMessage) {
       await createMessage({
         channelId: server.systemChannelId,
@@ -351,7 +352,6 @@ export const deleteOrLeaveServer = async (
       });
     }
   }
-  await removeServerIdFromAccountOrder(userId, serverId);
   emitServerLeft(userId, serverId, isServerCreator);
 
   return [false, null];
