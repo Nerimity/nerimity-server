@@ -1,4 +1,4 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import { channelMessageCreate } from './channelMessageCreate';
 import { channelMessageDelete } from './channelMessageDelete';
 import { channelMessages } from './channelMessages';
@@ -7,7 +7,7 @@ import { channelTypingIndicator } from './channelTypingIndicator';
 import { channelAttachments } from './channelAttachments';
 import { channelMessageReactionsAdd } from './channelMessageReactionsAdd';
 import { channelMessageReactionsRemove } from './channelMessageReactionsRemove';
-
+import { channelMessageReactedUsers } from './channelMessageReactions';
 
 const ChannelsRouter = Router();
 
@@ -18,8 +18,8 @@ channelMessageUpdate(ChannelsRouter);
 channelMessageDelete(ChannelsRouter);
 channelTypingIndicator(ChannelsRouter);
 
+channelMessageReactedUsers(ChannelsRouter);
 channelMessageReactionsAdd(ChannelsRouter);
 channelMessageReactionsRemove(ChannelsRouter);
-
 
 export { ChannelsRouter };

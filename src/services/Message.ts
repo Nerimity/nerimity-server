@@ -844,3 +844,27 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
 
   return [payload, null] as const;
 };
+
+interface GetMessageReactedUsersOpts {
+  messageId: string;
+  name: string;
+  emojiId?: string;
+}
+
+export const getMessageReactedUsers = async (
+  opts: GetMessageReactedUsersOpts
+) => {
+  const reaction = await prisma.messageReaction.findFirst({
+    where: {
+      messageId: opts.messageId,
+      ...addToObjectIfExists('emojiId', opts.emojiId),
+      ...addToObjectIfExists('name', opts.name),
+    },
+    select: { reactedUsers: { take: 5 } },
+  });
+
+  if (!reaction)
+    return [null, generateError('Reaction does not exist.')] as const;
+
+  return [reaction.reactedUsers, null] as const;
+};
