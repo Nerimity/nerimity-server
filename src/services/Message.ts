@@ -851,6 +851,14 @@ interface GetMessageReactedUsersOpts {
   emojiId?: string;
 }
 
+function getMessageReactedUserIds(messageReactionId: string) {
+  return prisma.$queryRaw<{ B: string }[]>`
+    SELECT "B" FROM public."_MessageReactionToUser"
+      WHERE "A" = ${messageReactionId}
+      LIMIT 5
+  `.then((res) => res.map((q) => q.B));
+}
+
 export const getMessageReactedUsers = async (
   opts: GetMessageReactedUsersOpts
 ) => {
@@ -860,11 +868,23 @@ export const getMessageReactedUsers = async (
       ...addToObjectIfExists('emojiId', opts.emojiId),
       ...addToObjectIfExists('name', opts.name),
     },
-    select: { reactedUsers: { take: 5 } },
+    select: { id: true },
   });
 
   if (!reaction)
     return [null, generateError('Reaction does not exist.')] as const;
 
-  return [reaction.reactedUsers, null] as const;
+  // this is done this way to get the oldest reacted users first.
+  const userIds = await getMessageReactedUserIds(reaction.id);
+
+  if (!userIds.length) return [[], null] as const;
+
+  const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
+
+  // sort users.id by userIds
+  users.sort((a, b) => {
+    return userIds.indexOf(a.id) - userIds.indexOf(b.id);
+  });
+
+  return [users, null] as const;
 };
