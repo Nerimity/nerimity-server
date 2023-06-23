@@ -80,10 +80,9 @@ export function dateToDateTime(date?: Date | number) {
 }
 
 export function getMessageReactedUserIds(messageReactionId: string) {
-  return prisma.$queryRaw`
-    SELECT * FROM public."_MessageReactionToUser"
-      INNER JOIN "public"."User" ON "public"."User"."id" = "_MessageReactionToUser"."B" 
+  return prisma.$queryRaw<{ B: string }[]>`
+    SELECT "B" FROM public."_MessageReactionToUser"
       WHERE "A" = ${messageReactionId}
       LIMIT 5
-  `;
+  `.then((res) => res.map((q) => q.B));
 }

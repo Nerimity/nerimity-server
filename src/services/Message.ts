@@ -14,7 +14,7 @@ import {
 } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
-import { dateToDateTime, exists, prisma } from '../common/database';
+import { dateToDateTime, exists, getMessageReactedUserIds, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -851,13 +851,7 @@ interface GetMessageReactedUsersOpts {
   emojiId?: string;
 }
 
-function getMessageReactedUserIds(messageReactionId: string) {
-  return prisma.$queryRaw<{ B: string }[]>`
-    SELECT "B" FROM public."_MessageReactionToUser"
-      WHERE "A" = ${messageReactionId}
-      LIMIT 5
-  `.then((res) => res.map((q) => q.B));
-}
+
 
 export const getMessageReactedUsers = async (
   opts: GetMessageReactedUsersOpts
