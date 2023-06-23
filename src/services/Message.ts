@@ -580,10 +580,12 @@ const addMessageEmbed = async (
   if (!url) return;
   const OGTags = await getOGTags(url);
   if (!OGTags) return;
-  await prisma.message.update({
+  const res = await prisma.message.update({
     where: { id: message.id },
     data: { embed: OGTags },
-  });
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  }).catch(() => {});
+  if (!res) return;
   // emit
   if (opts.serverId) {
     emitServerMessageUpdated(message.channelId, message.id, { embed: OGTags });
