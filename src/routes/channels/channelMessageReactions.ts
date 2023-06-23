@@ -53,12 +53,7 @@ async function route(req: Request, res: Response) {
     return res.status(403).json('Name is required!');
   }
 
-  const q = {
-    name: query.name,
-    ...(query.emojiId && query.emojiId !== 'null'
-      ? { emojiId: query.emojiId }
-      : undefined),
-  };
+
 
   if (query.emojiId === 'null') delete query.emojiId;
   const [response, err] = await getMessageReactedUsers({
