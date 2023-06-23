@@ -26,7 +26,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
 
   const isImage = res.headers.get('content-type')?.startsWith('image/');
   if (isImage) {
-    return await getImageEmbed(url);
+    return await getImageEmbed(url, res);
   }
 
   const isHtml = res.headers.get('content-type')?.startsWith('text/html');
@@ -67,16 +67,20 @@ const addProtocolToUrl = (unsafeUrl: string) => {
   return `https://${unsafeUrl}`;
 };
 
-async function getImageEmbed(url: string): GetOGTagsReturn {
+async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
   const [dimensions, err] = await proxyUrlImageDimensions(url);
 
   if (err) return false;
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  const resForSure = res || await fetch(url).catch(() => {})
+  if (!resForSure) return false;
 
   return {
     type: 'image',
     imageUrl: url,
     imageWidth: dimensions!.width,
     imageHeight: dimensions!.height,
-    imageMime: (await fetch(url)).headers.get('content-type')!,
+    imageMime: resForSure.headers.get("content-type")!
   };
 }
