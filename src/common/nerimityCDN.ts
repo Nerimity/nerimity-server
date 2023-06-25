@@ -141,7 +141,8 @@ export async function deleteImage(path: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ path, secret: env.NERIMITY_CDN_SECRET }),
-  });
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+  }).catch(() => {});
 }
 
 // function base64MimeType(encoded: string) {
