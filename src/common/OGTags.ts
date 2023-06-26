@@ -44,7 +44,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
 
   const entries = filteredOGTags.map((el) => [
     mapper.get(el.attributes.property.split('og:')[1]),
-    el.attributes.content.substring(0, 1000),
+    el.attributes.content?.substring(0, 1000),
   ]);
   if (!entries.length) return false;
 
