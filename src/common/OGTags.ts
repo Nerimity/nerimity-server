@@ -39,12 +39,13 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const filteredOGTags = metaTags.filter((el) => {
     const isOG = el.attributes.property?.startsWith('og:');
     const isValidField = mapper.has(el.attributes.property?.split('og:')?.[1]);
-    return isOG && isValidField;
+    const hasContent = el.attributes.content;
+    return isOG && isValidField && hasContent;
   });
 
   const entries = filteredOGTags.map((el) => [
     mapper.get(el.attributes.property.split('og:')[1]),
-    el.attributes.content?.substring(0, 1000),
+    el.attributes.content.substring(0, 1000),
   ]);
   if (!entries.length) return false;
 
