@@ -644,29 +644,21 @@ export async function deleteAccount(userId: string) {
   }
 
   await prisma.$transaction([
-    prisma.firebaseMessagingToken.deleteMany({
-      where: { accountId: user.account?.id },
-    }),
     prisma.userProfile.delete({ where: { userId } }),
     prisma.serverChannelLastSeen.deleteMany({ where: { userId } }),
-    prisma.account.update({
-      where: { userId },
-      data: {
-        ipAddress: null,
-        password: null,
-        passwordVersion: { increment: 1 },
-        email: null,
-        user: {
-          update: {
-            avatar: null,
-            banner: null,
-            badges: 0,
+    prisma.user.update({
+      where: {id: userId},
+        data: {
+          avatar: null,
+          banner: null,
+          badges: 0,
 
-            customStatus: null,
-            username: `Deleted Account ${generateTag()}`,
-          },
+          customStatus: null,
+          username: `Deleted Account ${generateTag()}`,
         },
-      },
+    }),
+    prisma.account.delete({
+      where: { userId },
     }),
   ]);
   await removeAccountCacheByUserIds([userId]);

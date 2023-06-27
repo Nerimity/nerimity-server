@@ -10,8 +10,8 @@ datasource db {
 
 model Account {
   id              String  @id
-  email           String?  @unique
-  password        String?
+  email           String  @unique
+  password        String
   passwordVersion Int     @default(1)
   ipAddress       String?
   userId          String  @unique

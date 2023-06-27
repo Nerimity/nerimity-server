@@ -11,6 +11,7 @@ import { userUpdate } from './userUpdate';
 import { userUpdatePresence } from './userUpdatePresence';
 import { userUpdateServerSettings } from './userUpdateServerSettings';
 import { userRegisterFCM } from './userRegisterFCM';
+import { userDeleteAccount } from './userDeleteAccount';
 
 const UsersRouter = Router();
 
@@ -21,6 +22,7 @@ userUpdate(UsersRouter);
 userRegisterFCM(UsersRouter);
 userOpenDMChannel(UsersRouter);
 userUpdatePresence(UsersRouter);
+userDeleteAccount(UsersRouter);
 userDetails(UsersRouter);
 userFollow(UsersRouter);
 userUnfollow(UsersRouter);
