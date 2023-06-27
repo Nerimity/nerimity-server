@@ -1,22 +1,22 @@
-import { removeAccountsCache } from '../cache/UserCache';
+import { removeAccountCacheByUserIds } from '../cache/UserCache';
 import { emitErrorTo } from '../emits/Connection';
 
 interface DisconnectUsersOptions {
-  userIds: string[],
-  reason?: string,
-  expire?: string,
-  clearCache: boolean
+  userIds: string[];
+  reason?: string;
+  expire?: string;
+  clearCache: boolean;
 }
 
-export async function disconnectUsers (opts: DisconnectUsersOptions) {
+export async function disconnectUsers(opts: DisconnectUsersOptions) {
   if (opts.clearCache) {
-    await removeAccountsCache(opts.userIds);
+    await removeAccountCacheByUserIds(opts.userIds);
   }
-  
+
   emitErrorTo({
     to: opts.userIds,
     disconnect: true,
     message: 'You are suspended.',
-    data: { type: 'suspend', reason: opts.reason, expire: opts.expire }
+    data: { type: 'suspend', reason: opts.reason, expire: opts.expire },
   });
 }

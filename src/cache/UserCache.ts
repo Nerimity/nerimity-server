@@ -177,7 +177,7 @@ export async function getAccountCache(
   return [accountCache, null];
 }
 
-export async function removeAccountsCache(userIds: string[]) {
+export async function removeAccountCacheByUserIds(userIds: string[]) {
   const keys = userIds.map((id) => ACCOUNT_CACHE_KEY_STRING(id));
   await redisClient.del(keys);
 }

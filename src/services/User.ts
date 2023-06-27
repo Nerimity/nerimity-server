@@ -14,7 +14,7 @@ import {
 import { ChannelType } from '../types/Channel';
 import {
   Presence,
-  removeAccountsCache,
+  removeAccountCacheByUserIds,
   updateCachePresence,
 } from '../cache/UserCache';
 import { FriendStatus } from '../types/Friend';
@@ -130,7 +130,7 @@ export const loginUser = async (
 
   const isPasswordValid = await checkUserPassword(
     opts.password,
-    account.password
+    account.password!
   );
   if (!isPasswordValid) {
     return [null, generateError('Invalid password.', 'password')];
@@ -393,7 +393,7 @@ export const updateUser = async (
   if (opts.tag || opts.email || opts.username || opts.newPassword?.trim()) {
     const isPasswordValid = await checkUserPassword(
       opts.password,
-      account.password
+      account.password!
     );
     if (!opts.password?.trim())
       return [null, generateError('Password is required.', 'password')];
@@ -484,10 +484,10 @@ export const updateUser = async (
     include: { user: true },
   });
 
-  await removeAccountsCache([opts.userId]);
+  await removeAccountCacheByUserIds([opts.userId]);
 
   emitUserUpdated(opts.userId, {
-    email: updateResult.email,
+    email: updateResult.email!,
     username: updateResult.user.username,
     tag: updateResult.user.tag,
     ...addToObjectIfExists('avatar', opts.avatar),
@@ -621,4 +621,59 @@ export async function removeFCMTokens(tokens: string[]) {
   return await prisma.firebaseMessagingToken.deleteMany({
     where: { token: { in: tokens } },
   });
+}
+
+export async function deleteAccount(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      account: { select: { id: true } },
+      _count: { select: { servers: true } },
+    },
+  });
+
+  if (!user) {
+    return [null, generateError('Invalid userId.')] as const;
+  }
+
+  if (user?._count.servers) {
+    return [
+      null,
+      generateError('You must leave all servers before deleting your account.'),
+    ] as const;
+  }
+
+  await prisma.$transaction([
+    prisma.firebaseMessagingToken.deleteMany({
+      where: { accountId: user.account?.id },
+    }),
+    prisma.userProfile.delete({ where: { userId } }),
+    prisma.serverChannelLastSeen.deleteMany({ where: { userId } }),
+    prisma.account.update({
+      where: { userId },
+      data: {
+        ipAddress: null,
+        password: null,
+        passwordVersion: { increment: 1 },
+        email: null,
+        user: {
+          update: {
+            avatar: null,
+            banner: null,
+            badges: 0,
+
+            customStatus: null,
+            username: `Deleted Account ${generateTag()}`,
+          },
+        },
+      },
+    }),
+  ]);
+  await removeAccountCacheByUserIds([userId]);
+
+  const broadcaster = getIO().in(userId);
+  broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
+  broadcaster.disconnectSockets(true);
+
+  return [true, null] as const;
 }
