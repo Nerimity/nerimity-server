@@ -644,18 +644,18 @@ export async function deleteAccount(userId: string) {
   }
 
   await prisma.$transaction([
-    prisma.userProfile.delete({ where: { userId } }),
+    prisma.userProfile.deleteMany({ where: { userId } }),
     prisma.serverChannelLastSeen.deleteMany({ where: { userId } }),
     prisma.user.update({
-      where: {id: userId},
-        data: {
-          avatar: null,
-          banner: null,
-          badges: 0,
+      where: { id: userId },
+      data: {
+        avatar: null,
+        banner: null,
+        badges: 0,
 
-          customStatus: null,
-          username: `Deleted Account ${generateTag()}`,
-        },
+        customStatus: null,
+        username: `Deleted Account ${generateTag()}`,
+      },
     }),
     prisma.account.delete({
       where: { userId },
