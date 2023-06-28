@@ -52,7 +52,11 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const object = Object.fromEntries(entries);
   object.url = addProtocolToUrl(object.url || url);
 
-  if (object.imageUrl) {
+  if (
+    object.imageUrl &&
+    (object.imageUrl.startsWith('http://') ||
+      object.imageUrl.startsWith('https://'))
+  ) {
     object.imageMime = (await fetch(object.imageUrl)).headers.get(
       'content-type'
     );
@@ -74,7 +78,7 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
   if (err) return false;
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const resForSure = res || await fetch(url).catch(() => {})
+  const resForSure = res || (await fetch(url).catch(() => {}));
   if (!resForSure) return false;
 
   return {
@@ -82,6 +86,6 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
     imageUrl: url,
     imageWidth: dimensions!.width,
     imageHeight: dimensions!.height,
-    imageMime: resForSure.headers.get("content-type")!
+    imageMime: resForSure.headers.get('content-type')!,
   };
 }
