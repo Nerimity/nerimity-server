@@ -1,13 +1,17 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import {
+  customExpressValidatorResult,
+  generateError,
+} from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { checkUserPassword, deleteAccount } from '../../services/User';
 import { prisma } from '../../common/database';
 
 export function userDeleteAccount(Router: Router) {
-  Router.delete('/users/delete-account',
+  Router.delete(
+    '/users/delete-account',
     authenticate(),
     rateLimit({
       name: 'delete_account',
@@ -15,8 +19,11 @@ export function userDeleteAccount(Router: Router) {
       requestCount: 20,
     }),
     body('password')
-      .not().isEmpty().withMessage("Password required!")
-      .isString().withMessage("Password must be a string."),
+      .not()
+      .isEmpty()
+      .withMessage('Password required!')
+      .isString()
+      .withMessage('Password must be a string.'),
     route
   );
 }
@@ -25,7 +32,7 @@ interface Body {
   password: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body: Body = req.body;
 
   const validateError = customExpressValidatorResult(req);
@@ -33,10 +40,13 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const account = await prisma.account.findUnique({
-    where: { id: req.accountCache.id },
-    select: { password: true },
-  });
+  const account = await prisma.account
+    .findUnique({
+      where: { id: req.accountCache.id },
+      select: { password: true },
+    })
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    .catch(() => {});
 
   if (!account)
     return res
@@ -57,6 +67,5 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(error);
   }
 
-  res.json({status: true});   
-  
+  res.json({ status: true });
 }
