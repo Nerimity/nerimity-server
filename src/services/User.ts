@@ -644,6 +644,11 @@ export async function deleteAccount(userId: string) {
   }
 
   await prisma.$transaction([
+    prisma.follower.deleteMany({
+      where: {
+        OR: [{ followedById: userId }, { followedToId: userId }],
+      },
+    }),
     prisma.userProfile.deleteMany({ where: { userId } }),
     prisma.serverChannelLastSeen.deleteMany({ where: { userId } }),
     prisma.user.update({
