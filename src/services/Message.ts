@@ -14,7 +14,12 @@ import {
 } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
-import { dateToDateTime, exists, getMessageReactedUserIds, prisma } from '../common/database';
+import {
+  dateToDateTime,
+  exists,
+  getMessageReactedUserIds,
+  prisma,
+} from '../common/database';
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -580,11 +585,13 @@ const addMessageEmbed = async (
   if (!url) return;
   const OGTags = await getOGTags(url);
   if (!OGTags) return;
-  const res = await prisma.message.update({
-    where: { id: message.id },
-    data: { embed: OGTags },
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  }).catch(() => {});
+  const res = await prisma.message
+    .update({
+      where: { id: message.id },
+      data: { embed: OGTags },
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+    })
+    .catch(() => {});
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -823,6 +830,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
     emojiId: opts.emojiId,
     name: opts.name,
     count: reactionCount._count.reactedUsers - 1,
+    gif: existingReaction.gif,
   };
 
   // emit
@@ -852,8 +860,6 @@ interface GetMessageReactedUsersOpts {
   name: string;
   emojiId?: string;
 }
-
-
 
 export const getMessageReactedUsers = async (
   opts: GetMessageReactedUsersOpts
