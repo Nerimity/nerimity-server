@@ -600,6 +600,7 @@ export async function UpdateServerSettings(
       id: generateId(),
       serverId,
       userId,
+      ...update,
     },
     update,
   });
