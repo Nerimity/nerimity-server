@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { cert } from 'firebase-admin/app';
 import { prisma } from '../common/database';
-import { removeFCMTokens } from '../services/User';
+import { ServerNotificationPingMode, removeFCMTokens } from '../services/User';
 import { Message, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { ChannelCache } from '../cache/ChannelCache';
@@ -32,14 +32,57 @@ export async function sendServerPushMessageNotification(
       avatar?: string | null;
       hexColor: string | null;
     };
+    mentions: {
+      id: string;
+      username: string;
+      tag: string;
+      hexColor: string | null;
+      avatar: string | null;
+    }[];
   },
   channel: ChannelCache,
   server: ServerCache
 ) {
   if (!credentials) return;
+  const mentionedUserIds = message.mentions.map((user) => user.id);
   const tokens = (
     await prisma.firebaseMessagingToken.findMany({
-      where: { account: { user: { servers: { some: { id: serverId } } } } },
+      where: {
+        account: {
+          user: {
+            servers: {
+              some: {
+                id: serverId,
+              },
+            },
+            OR: [
+              {
+                joinedServerSettings: {
+                  none: { serverId: serverId },
+                },
+              },
+              {
+                joinedServerSettings: {
+                  some: {
+                    serverId: serverId,
+                    userId: { in: mentionedUserIds },
+                    notificationPingMode:
+                      ServerNotificationPingMode.MENTIONS_ONLY,
+                  },
+                },
+              },
+              {
+                joinedServerSettings: {
+                  some: {
+                    serverId: serverId,
+                    notificationPingMode: ServerNotificationPingMode.ALL,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
       select: { token: true },
     })
   ).map((fcm) => fcm.token);

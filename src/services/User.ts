@@ -578,9 +578,15 @@ export enum ServerNotificationSoundMode {
   MENTIONS_ONLY = 1,
   MUTE = 2,
 }
+export enum ServerNotificationPingMode {
+  ALL = 0,
+  MENTIONS_ONLY = 1,
+  MUTE = 2,
+}
 
 interface UpdateServerSettings {
   notificationSoundMode?: ServerNotificationSoundMode;
+  notificationPingMode?: ServerNotificationPingMode;
 }
 
 export async function UpdateServerSettings(

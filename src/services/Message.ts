@@ -34,6 +34,7 @@ import {
   sendServerPushMessageNotification,
 } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
+import { ServerNotificationPingMode } from './User';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -474,15 +475,32 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   if (message.mentions.length && opts.serverId) {
     const userIds = message.mentions.map((mention) => mention.id);
-    const usersInServer = await prisma.user.findMany({
+    const mentionedUsers = await prisma.user.findMany({
       where: {
         id: { in: userIds, not: opts.userId },
         servers: { some: { id: opts.serverId } },
+        OR: [
+          {
+            joinedServerSettings: {
+              none: { serverId: opts.serverId },
+            },
+          },
+          {
+            joinedServerSettings: {
+              some: {
+                serverId: opts.serverId,
+                NOT: {
+                  notificationPingMode: ServerNotificationPingMode.MUTE,
+                },
+              },
+            },
+          },
+        ],
       },
       select: { id: true },
     });
     await prisma.$transaction(
-      usersInServer.map((user) =>
+      mentionedUsers.map((user) =>
         prisma.messageMention.upsert({
           where: {
             mentionedById_mentionedToId_channelId: {
@@ -589,8 +607,8 @@ const addMessageEmbed = async (
     .update({
       where: { id: message.id },
       data: { embed: OGTags },
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
     })
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     .catch(() => {});
   if (!res) return;
   // emit

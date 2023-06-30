@@ -146,6 +146,8 @@ model ServerMemberSettings {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   notificationSoundMode Int @default(0)
+  notificationPingMode Int @default(0) // The red pill alert thing.
+
 
   @@unique([userId, serverId])
 }

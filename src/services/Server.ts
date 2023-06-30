@@ -160,7 +160,11 @@ export const getServers = async (userId: string) => {
       prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
       prisma.serverMemberSettings.findMany({
         where: { userId },
-        select: { serverId: true, notificationSoundMode: true },
+        select: {
+          serverId: true,
+          notificationSoundMode: true,
+          notificationPingMode: true,
+        },
       }),
     ]);
 
