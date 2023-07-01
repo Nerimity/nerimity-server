@@ -167,6 +167,7 @@ export const createServerChannel = async (
 export interface UpdateServerChannelOptions {
   name?: string;
   permissions?: number;
+  icon?: string | null;
 }
 
 export const updateServerChannel = async (

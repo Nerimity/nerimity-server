@@ -254,6 +254,7 @@ model Friend {
 model Channel {
   id                     String                  @id
   name                   String?
+  icon                   String?
   serverId               String?
   createdById            String?
   type                   Int
