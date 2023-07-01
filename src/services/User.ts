@@ -189,7 +189,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
         emitInboxOpened(userId, myInbox);
       }
 
-      return [myInbox, null];
+      return [myInbox, null] as const;
     }
   }
 
@@ -203,19 +203,26 @@ export const openDMChannel = async (userId: string, friendId: string) => {
         },
       });
 
-  const newInbox = await prisma.inbox.create({
-    data: {
-      id: generateId(),
-      channelId: newChannel.id,
-      createdById: userId,
-      recipientId: friendId,
-      closed: false,
-    },
-    include: {
-      channel: { include: { _count: { select: { attachments: true } } } },
-      recipient: true,
-    },
-  });
+  const newInbox = await prisma.inbox
+    .create({
+      data: {
+        id: generateId(),
+        channelId: newChannel.id,
+        createdById: userId,
+        recipientId: friendId,
+        closed: false,
+      },
+      include: {
+        channel: { include: { _count: { select: { attachments: true } } } },
+        recipient: true,
+      },
+    })
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    .catch(() => {});
+
+  if (!newInbox) {
+    return [null, generateError('Something went wrong.')] as const;
+  }
 
   const recipientInbox = await prisma.inbox.findFirst({
     where: {
@@ -238,7 +245,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
 
   emitInboxOpened(userId, newInbox);
 
-  return [newInbox, null];
+  return [newInbox, null] as const;
 };
 
 type PresencePayload = Partial<Omit<Omit<Presence, 'custom'>, 'userId'>> & {
