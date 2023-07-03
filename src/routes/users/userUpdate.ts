@@ -4,6 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { updateUser } from '../../services/User';
+import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 
 export function userUpdate(Router: Router) {
   Router.post('/users',
@@ -37,6 +38,8 @@ export function userUpdate(Router: Router) {
     body('bio')
       .isString().withMessage('Bio must be a string.')
       .isLength({ min: 1, max: 1000 }).withMessage('Bio must be between 1 and 1000 characters long.').optional({nullable: true }),
+    body('dmStatus')
+      .isInt({max: 0, min: 2}).withMessage('dmStatus must be a number.'),
     route
   );
 }
@@ -51,6 +54,7 @@ interface Body {
   banner?: string;
   bio?: string | null;
   socketId?: string;
+  dmStatus?: number;
 }
 
 async function route (req: Request, res: Response) {
@@ -72,6 +76,7 @@ async function route (req: Request, res: Response) {
     avatar: body.avatar,
     banner: body.banner,
     newPassword: body.newPassword,
+    ...addToObjectIfExists('dmStatus', body.dmStatus),
     ...(body.bio !== undefined ? { 
       profile: {
         bio: body.bio

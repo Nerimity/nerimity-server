@@ -366,6 +366,12 @@ export const getUserDetails = async (
   ];
 };
 
+
+export enum DmStatus {
+  ALL = 0,
+  FRIENDS = 1,
+  FRIENDS_AND_SERVERS = 2
+}
 interface UpdateUserProps {
   userId: string;
   socketId?: string;
@@ -376,6 +382,8 @@ interface UpdateUserProps {
   newPassword?: string;
   avatar?: string;
   banner?: string;
+  dmStatus?: DmStatus;
+
   profile?: {
     bio?: string | null;
   };
@@ -462,6 +470,7 @@ export const updateUser = async (
     where: { userId: opts.userId },
     data: {
       ...addToObjectIfExists('email', opts.email?.trim()),
+      ...addToObjectIfExists('dmStatus', opts.dmStatus),
       ...(opts.newPassword?.trim()
         ? {
             password: await bcrypt.hash(opts.newPassword!.trim(), 10),

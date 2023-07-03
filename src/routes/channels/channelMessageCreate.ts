@@ -15,6 +15,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { ChannelType } from '../../types/Channel';
+import { DmStatus } from '../../services/User';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -60,6 +61,12 @@ async function route(req: Request, res: Response) {
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  if (req.channelCache.inbox && !req.channelCache.inbox.canMessage) {
+    return res
+      .status(400)
+      .json(generateError('You cannot message this user.'));
   }
 
   if (req.channelCache.type === ChannelType.CATEGORY) {
