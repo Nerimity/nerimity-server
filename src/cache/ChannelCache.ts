@@ -4,33 +4,39 @@ import { redisClient } from '../common/redis';
 import { DmStatus } from '../services/User';
 import { ChannelType } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
-import { DM_CHANNEL_KEY_STRING, INBOX_KEY_STRING, SERVER_CHANNEL_KEY_STRING } from './CacheKeys';
+import {
+  DM_CHANNEL_KEY_STRING,
+  INBOX_KEY_STRING,
+  SERVER_CHANNEL_KEY_STRING,
+} from './CacheKeys';
 import { getServerCache, ServerCache } from './ServerCache';
 
-
 export interface ChannelCache {
-  id: string,
-  name?: string,
-  serverId?: string,
-  server?: ServerCache
-  inbox?: InboxCache
-  permissions: number,
-  createdById: string,
-  type: ChannelType
+  id: string;
+  name?: string;
+  serverId?: string;
+  server?: ServerCache;
+  inbox?: InboxCache;
+  permissions: number;
+  createdById: string;
+  type: ChannelType;
 }
 
 export interface InboxCache {
-  recipientId: string,
-  createdById: string,
+  recipientId: string;
+  createdById: string;
   canMessage: boolean;
 }
 
-export const getChannelCache = async (channelId: string, userId: string): Promise<CustomResult<ChannelCache, string>> => {
+export const getChannelCache = async (
+  channelId: string,
+  userId: string
+): Promise<CustomResult<ChannelCache, string>> => {
   // Check server channel in cache.
   const serverChannel = await getServerChannelCache(channelId);
   if (serverChannel) {
     const server = await getServerCache(serverChannel.serverId as string);
-    return [{...serverChannel, server}, null];
+    return [{ ...serverChannel, server }, null];
   }
 
   // Check DM channel in cache.
@@ -38,33 +44,37 @@ export const getChannelCache = async (channelId: string, userId: string): Promis
   if (dmChannel) {
     const inbox = await getInboxCache(channelId, userId);
     if (!inbox) return [null, 'Inbox not found.'];
-    return [{...dmChannel, inbox}, null];
+    return [{ ...dmChannel, inbox }, null];
   }
 
   // If not in cache, fetch from database.
-  const channel = await prisma.channel.findFirst({where: {id: channelId}});
+  const channel = await prisma.channel.findFirst({ where: { id: channelId } });
 
   if (!channel) return [null, 'Channel does not exist.'];
 
   if (channel.serverId) {
     const stringifiedChannel = JSON.stringify(channel);
-    await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), stringifiedChannel);
+    await redisClient.set(
+      SERVER_CHANNEL_KEY_STRING(channelId),
+      stringifiedChannel
+    );
 
-    return [{
-      ...JSON.parse(stringifiedChannel), 
-      server: await getServerCache(channel.serverId),
-    }, null];
+    return [
+      {
+        ...JSON.parse(stringifiedChannel),
+        server: await getServerCache(channel.serverId),
+      },
+      null,
+    ];
   }
-  
+
   // get inbox
   const inbox = await getInboxCache(channelId, userId);
-
 
   const stringifiedChannel = JSON.stringify(channel);
   await redisClient.set(DM_CHANNEL_KEY_STRING(channelId), stringifiedChannel);
 
-
-  return [{...JSON.parse(stringifiedChannel), inbox}, null];
+  return [{ ...JSON.parse(stringifiedChannel), inbox }, null];
 };
 
 const getDMChannelCache = async (channelId: string) => {
@@ -73,18 +83,25 @@ const getDMChannelCache = async (channelId: string) => {
   return JSON.parse(channel);
 };
 
-const getServerChannelCache = async (channelId: string): Promise<ChannelCache | null> => {
+const getServerChannelCache = async (
+  channelId: string
+): Promise<ChannelCache | null> => {
   const channel = await redisClient.get(SERVER_CHANNEL_KEY_STRING(channelId));
   if (!channel) return null;
   return JSON.parse(channel);
 };
 
-export const updateServerChannelCache = async (channelId: string, update: Partial<ChannelCache>) => {
+export const updateServerChannelCache = async (
+  channelId: string,
+  update: Partial<ChannelCache>
+) => {
   const cache = await getServerChannelCache(channelId);
   if (!cache) return;
-  await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), JSON.stringify({...cache, ...update}));
+  await redisClient.set(
+    SERVER_CHANNEL_KEY_STRING(channelId),
+    JSON.stringify({ ...cache, ...update })
+  );
 };
-
 
 export const deleteServerChannelCaches = async (channelIds: string[]) => {
   const multi = redisClient.multi();
@@ -95,9 +112,10 @@ export const deleteServerChannelCaches = async (channelIds: string[]) => {
   await multi.exec();
 };
 
-
 const getInboxCache = async (channelId: string, userId: string) => {
-  const cachedInboxStr = await redisClient.get(INBOX_KEY_STRING(channelId, userId));
+  const cachedInboxStr = await redisClient.get(
+    INBOX_KEY_STRING(channelId, userId)
+  );
   if (cachedInboxStr) {
     return JSON.parse(cachedInboxStr);
   }
@@ -105,43 +123,88 @@ const getInboxCache = async (channelId: string, userId: string) => {
   const inbox = await prisma.inbox.findFirst({
     where: {
       channelId,
-      createdById: userId
+      createdById: userId,
     },
     include: {
+      createdBy: {
+        select: {
+          account: {
+            select: {
+              dmStatus: true,
+            },
+          },
+        },
+      },
       recipient: {
         select: {
           account: {
             select: {
-              dmStatus: true
-            }
-          }
-        }
-      }
-    }
+              dmStatus: true,
+            },
+          },
+        },
+      },
+    },
   });
   if (!inbox) return null;
 
-  let canMessage = false;
-  const dmStatus = inbox.recipient.account?.dmStatus
+  let canMessage = true;
+  const requesterDmStatus = inbox.createdBy.account?.dmStatus;
+  const recipientDmStatus = inbox.recipient.account?.dmStatus;
 
-  if (dmStatus) {
-    const areFriends = await prisma.friend.findFirst({where: {status: FriendStatus.FRIENDS, recipientId: inbox.recipientId, userId}});
+  if (requesterDmStatus || recipientDmStatus) {
+    canMessage = false;
+    const areFriends = await prisma.friend.findFirst({
+      where: {
+        status: FriendStatus.FRIENDS,
+        recipientId: inbox.recipientId,
+        userId,
+      },
+    });
 
     canMessage = !!areFriends;
 
-    if (!areFriends && dmStatus === DmStatus.FRIENDS_AND_SERVERS) {
+    if (
+      (!areFriends &&
+        requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
+        recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS) ||
+      (requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
+        recipientDmStatus === DmStatus.OPEN) ||
+      (recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
+        requesterDmStatus === DmStatus.OPEN)
+    ) {
       const doesShareServers = await prisma.server.findFirst({
-        where: {serverMembers: {
-          some: {userId: {in: [inbox.recipientId, userId]}}
-        }}
-      })
+        where: {
+          AND: [
+            { serverMembers: { some: { userId: inbox.recipientId } } },
+            { serverMembers: { some: { userId } } },
+          ],
+        },
+      });
       canMessage = !!doesShareServers;
     }
   }
 
-
-
-  const stringifiedInbox = JSON.stringify({...inbox, canMessage, recipient: undefined });
+  const stringifiedInbox = JSON.stringify({
+    ...inbox,
+    canMessage,
+    recipient: undefined,
+  });
   await redisClient.set(INBOX_KEY_STRING(channelId, userId), stringifiedInbox);
+
   return JSON.parse(stringifiedInbox);
+};
+
+export const deleteAllInboxCache = async (userId: string) => {
+  const inboxList = await prisma.inbox.findMany({
+    where: { createdById: userId },
+    select: { recipientId: true, channelId: true },
+  });
+  const multi = redisClient.multi();
+  for (let i = 0; i < inboxList.length; i++) {
+    const inbox = inboxList[i];
+    multi.del(INBOX_KEY_STRING(inbox.channelId, inbox.recipientId));
+    multi.del(INBOX_KEY_STRING(inbox.channelId, userId));
+  }
+  await multi.exec();
 };

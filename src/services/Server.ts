@@ -32,6 +32,7 @@ import { emitUserPresenceUpdateTo } from '../emits/User';
 import * as nerimityCDN from '../common/nerimityCDN';
 import { prependOnceListener } from 'process';
 import { makeChannelsInCategoryPrivate } from './Channel';
+import { deleteAllInboxCache } from '../cache/ChannelCache';
 
 interface CreateServerOptions {
   name: string;
@@ -266,6 +267,7 @@ export const joinServer = async (
     memberPresences,
   });
 
+  deleteAllInboxCache(userId);
   const [userPresence] = await getUserPresences([userId]);
   userPresence && emitUserPresenceUpdateTo(serverId, userPresence);
 
@@ -310,6 +312,7 @@ export const deleteOrLeaveServer = async (
         serverId,
       },
     });
+    deleteAllInboxCache(userId);
     return [true, null];
   }
 
@@ -348,6 +351,7 @@ export const deleteOrLeaveServer = async (
     }
     await prisma.$transaction(transactions);
 
+    deleteAllInboxCache(userId);
     await removeServerIdFromAccountOrder(userId, serverId);
     if (server.systemChannelId && leaveMessage) {
       await createMessage({

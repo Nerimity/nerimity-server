@@ -1,3 +1,4 @@
+import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { getUserPresences } from '../cache/UserCache';
 import { exists, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
@@ -88,6 +89,7 @@ export const acceptFriend = async (userId: string, friendId: string) => {
     }),
   ]);
 
+  deleteAllInboxCache(userId);
   emitFriendRequestAccept(userId, friendId);
 
   const [userPresence, friendPresence] = await getUserPresences([
@@ -118,6 +120,7 @@ export const removeFriend = async (userId: string, friendId: string) => {
     }),
   ]);
 
+  deleteAllInboxCache(userId);
   emitFriendRemoved(userId, friendId);
   return [{ message: 'Removed!' }, null];
 };

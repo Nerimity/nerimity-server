@@ -30,6 +30,7 @@ import {
 import * as nerimityCDN from '../common/nerimityCDN';
 import { getIO } from '../socket/socket';
 import { AUTHENTICATE_ERROR } from '../common/ClientEventNames';
+import { deleteAllInboxCache } from '../cache/ChannelCache';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -366,11 +367,10 @@ export const getUserDetails = async (
   ];
 };
 
-
 export enum DmStatus {
-  ALL = 0,
-  FRIENDS = 1,
-  FRIENDS_AND_SERVERS = 2
+  OPEN = 0,
+  FRIENDS_AND_SERVERS = 1,
+  FRIENDS = 2,
 }
 interface UpdateUserProps {
   userId: string;
@@ -500,6 +500,10 @@ export const updateUser = async (
     include: { user: true },
   });
 
+  if (opts.dmStatus !== undefined) {
+    deleteAllInboxCache(opts.userId);
+  }
+
   await removeAccountCacheByUserIds([opts.userId]);
 
   emitUserUpdated(opts.userId, {
@@ -508,6 +512,7 @@ export const updateUser = async (
     tag: updateResult.user.tag,
     ...addToObjectIfExists('avatar', opts.avatar),
     ...addToObjectIfExists('banner', opts.banner),
+    ...addToObjectIfExists('dmStatus', opts.dmStatus),
   });
 
   const newToken = opts.newPassword?.trim()

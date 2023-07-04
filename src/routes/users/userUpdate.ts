@@ -7,39 +7,65 @@ import { updateUser } from '../../services/User';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 
 export function userUpdate(Router: Router) {
-  Router.post('/users',
+  Router.post(
+    '/users',
     authenticate(),
     rateLimit({
       name: 'user_update_limit',
       expireMS: 60000,
-      requestCount: 5,
+      requestCount: 10,
     }),
     body('email')
-      .isEmail().withMessage('Invalid email.')
-      .isLength({ min: 1, max: 320 }).withMessage('Email must be between 1 and 320 characters long.').optional({nullable: true }),
+      .isEmail()
+      .withMessage('Invalid email.')
+      .isLength({ min: 1, max: 320 })
+      .withMessage('Email must be between 1 and 320 characters long.')
+      .optional({ nullable: true }),
     body('username')
-      .isString().withMessage('Invalid username.')
-      .not().contains('@').withMessage('Username cannot contain the @ symbol')
-      .not().contains(':').withMessage('Username cannot contain the : symbol')
-      .isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.').optional({nullable: true }),
+      .isString()
+      .withMessage('Invalid username.')
+      .not()
+      .contains('@')
+      .withMessage('Username cannot contain the @ symbol')
+      .not()
+      .contains(':')
+      .withMessage('Username cannot contain the : symbol')
+      .isLength({ min: 3, max: 35 })
+      .withMessage('Username must be between 3 and 35 characters long.')
+      .optional({ nullable: true }),
     body('tag')
-      .isString().withMessage('Invalid tag.')
-      .isAlphanumeric().withMessage('Tag must be alphanumerical!')
-      .isLength({ min: 4, max: 4 }).withMessage('Tag must be 4 characters long').optional({nullable: true }),
+      .isString()
+      .withMessage('Invalid tag.')
+      .isAlphanumeric()
+      .withMessage('Tag must be alphanumerical!')
+      .isLength({ min: 4, max: 4 })
+      .withMessage('Tag must be 4 characters long')
+      .optional({ nullable: true }),
     body('password')
-      .isString().withMessage('Password must be a string.')
-      .optional({nullable: true }),
+      .isString()
+      .withMessage('Password must be a string.')
+      .optional({ nullable: true }),
     body('newPassword')
-      .isString().withMessage('New password must be a string.')
-      .isLength({ min: 4, max: 255 }).withMessage('New password must be between 4 and 255 characters long.').optional({nullable: true }),
+      .isString()
+      .withMessage('New password must be a string.')
+      .isLength({ min: 4, max: 255 })
+      .withMessage('New password must be between 4 and 255 characters long.')
+      .optional({ nullable: true }),
     body('socketId')
-      .isString().withMessage('socketId must be a string.')
-      .isLength({ min: 4, max: 164 }).withMessage('socketId must be between 4 and 255 characters long.').optional({nullable: true }),
+      .isString()
+      .withMessage('socketId must be a string.')
+      .isLength({ min: 4, max: 164 })
+      .withMessage('socketId must be between 4 and 255 characters long.')
+      .optional({ nullable: true }),
     body('bio')
-      .isString().withMessage('Bio must be a string.')
-      .isLength({ min: 1, max: 1000 }).withMessage('Bio must be between 1 and 1000 characters long.').optional({nullable: true }),
+      .isString()
+      .withMessage('Bio must be a string.')
+      .isLength({ min: 1, max: 1000 })
+      .withMessage('Bio must be between 1 and 1000 characters long.')
+      .optional({ nullable: true }),
     body('dmStatus')
-      .isInt({max: 0, min: 2}).withMessage('dmStatus must be a number.'),
+      .isInt({ min: 0, max: 2 })
+      .withMessage('dmStatus must be a number.'),
     route
   );
 }
@@ -57,7 +83,7 @@ interface Body {
   dmStatus?: number;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const validateError = customExpressValidatorResult(req);
@@ -77,11 +103,13 @@ async function route (req: Request, res: Response) {
     banner: body.banner,
     newPassword: body.newPassword,
     ...addToObjectIfExists('dmStatus', body.dmStatus),
-    ...(body.bio !== undefined ? { 
-      profile: {
-        bio: body.bio
-      }
-    } : undefined)
+    ...(body.bio !== undefined
+      ? {
+          profile: {
+            bio: body.bio,
+          },
+        }
+      : undefined),
   });
 
   if (error) {

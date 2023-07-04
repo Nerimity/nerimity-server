@@ -38,7 +38,9 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     where: { id: accountCache.user.id },
     include: {
       friends: { include: { recipient: true } },
-      account: { select: { email: true, serverOrderIds: true } },
+      account: {
+        select: { email: true, serverOrderIds: true, dmStatus: true },
+      },
     },
   });
 
@@ -128,6 +130,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       email: user.account?.email,
       customStatus: user.customStatus,
       orderedServerIds: user.account?.serverOrderIds,
+      dmStatus: user.account?.dmStatus,
     },
     servers,
     serverSettings,
