@@ -65,7 +65,8 @@ export function userUpdate(Router: Router) {
       .optional({ nullable: true }),
     body('dmStatus')
       .isInt({ min: 0, max: 2 })
-      .withMessage('dmStatus must be a number.'),
+      .withMessage('dmStatus must be a number.')
+      .optional({ nullable: true }),
     route
   );
 }
