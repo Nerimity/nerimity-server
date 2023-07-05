@@ -8,6 +8,7 @@ import { channelAttachments } from './channelAttachments';
 import { channelMessageReactionsAdd } from './channelMessageReactionsAdd';
 import { channelMessageReactionsRemove } from './channelMessageReactionsRemove';
 import { channelMessageReactedUsers } from './channelMessageReactions';
+import { channelDMClose } from './channelDmClose';
 
 const ChannelsRouter = Router();
 
@@ -21,5 +22,7 @@ channelTypingIndicator(ChannelsRouter);
 channelMessageReactedUsers(ChannelsRouter);
 channelMessageReactionsAdd(ChannelsRouter);
 channelMessageReactionsRemove(ChannelsRouter);
+
+channelDMClose(ChannelsRouter);
 
 export { ChannelsRouter };

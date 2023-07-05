@@ -1,6 +1,7 @@
 import { Inbox, ServerMemberSettings, User } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
 import {
+  INBOX_CLOSED,
   INBOX_OPENED,
   USER_PRESENCE_UPDATE,
   USER_SERVER_SETTINGS_UPDATE,
@@ -42,6 +43,10 @@ export const emitUserPresenceUpdateTo = (
 export const emitInboxOpened = (userId: string, inbox: Inbox) => {
   getIO().to(userId).emit(INBOX_OPENED, inbox);
 };
+export const emitInboxClosed = (userId: string, channelId: string) => {
+  getIO().to(userId).emit(INBOX_CLOSED, { channelId });
+};
+
 export const emitNotificationDismissed = (
   userId: string,
   channelId: string

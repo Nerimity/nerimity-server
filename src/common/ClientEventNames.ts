@@ -7,6 +7,7 @@ export const USER_SERVER_SETTINGS_UPDATE = 'user:server_settings_update';
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 
 export const INBOX_OPENED = 'inbox:opened';
+export const INBOX_CLOSED = 'inbox:closed';
 export const NOTIFICATION_DISMISSED = 'notification:dismissed';
 
 export const FRIEND_REQUEST_SENT = 'friend:request_sent';

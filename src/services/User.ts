@@ -5,6 +5,7 @@ import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import {
+  emitInboxClosed,
   emitInboxOpened,
   emitSelfPresenceUpdate,
   emitUserPresenceUpdate,
@@ -154,6 +155,27 @@ export const getAccountByUserId = (userId: string) => {
     where: { userId },
     select: { ...excludeFields('Account', ['password']), user: true },
   });
+};
+
+export const closeDMChannel = async (userId: string, channelId: string) => {
+  const inbox = await prisma.inbox.findFirst({
+    where: {
+      channelId,
+      createdById: userId,
+    },
+  });
+  if (!inbox) return [null, generateError('Channel does not exist.')] as const;
+
+  if (inbox.closed)
+    return [null, generateError('This channel is already closed.')] as const;
+
+  await prisma.inbox.update({
+    where: { id: inbox.id },
+    data: { closed: true },
+  });
+
+  emitInboxClosed(userId, channelId);
+  return [true, null] as const;
 };
 
 // this function is used to open a channel and inbox.
