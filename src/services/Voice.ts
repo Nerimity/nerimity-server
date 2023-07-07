@@ -1,11 +1,12 @@
 import { getUserIdBySocketId } from '../cache/UserCache';
-import { isUserInVoice } from '../cache/VoiceCache';
+import { addUserToVoice, isUserInVoice } from '../cache/VoiceCache';
 import { generateError } from '../common/errorHandler';
 
 export const joinVoiceChannel = async (
   userId: string,
   socketId: string,
-  channelId: string
+  channelId: string,
+  serverId?: string
 ) => {
   const socketUserId = await getUserIdBySocketId(socketId);
 
@@ -21,5 +22,9 @@ export const joinVoiceChannel = async (
     return [null, generateError('You are already in a call.')] as const;
   }
 
+  addUserToVoice(channelId, userId, {
+    socketId,
+    serverId,
+  });
   return [true, null] as const;
 };

@@ -24,6 +24,7 @@ export async function addUserToVoice(
 }
 
 export async function getVoiceUsersByChannelId(channelIds: string[]) {
+  if (!channelIds.length) return [];
   const multi = redisClient.multi();
   for (let i = 0; i < channelIds.length; i++) {
     const channelId = channelIds[i];

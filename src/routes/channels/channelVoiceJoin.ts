@@ -7,7 +7,7 @@ import { body } from 'express-validator';
 import { joinVoiceChannel } from '../../services/Voice';
 
 export function channelVoiceJoin(Router: Router) {
-  Router.get(
+  Router.post(
     '/channels/:channelId/voice/join',
     authenticate(),
     channelVerification(),
@@ -39,7 +39,8 @@ async function route(req: Request, res: Response) {
   const [result, error] = await joinVoiceChannel(
     req.accountCache.user.id,
     socketId,
-    req.channelCache.id
+    req.channelCache.id,
+    req.channelCache.serverId
   );
 
   if (error) {
