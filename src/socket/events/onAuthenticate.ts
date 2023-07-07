@@ -19,6 +19,10 @@ import {
 import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
 import { onDisconnect } from './onDisconnect';
+import {
+  addUserToVoice,
+  getVoiceUsersByChannelId,
+} from '../../cache/VoiceCache';
 
 interface Payload {
   token: string;
@@ -124,6 +128,11 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     return;
   }
 
+  const channels = [...serverChannels, ...inboxChannels];
+  const channelIds = channels.map((channel) => channel.id);
+
+  const voiceChannelUsers = await getVoiceUsersByChannelId(channelIds);
+
   socket.emit(AUTHENTICATED, {
     user: {
       ...cacheUser,
@@ -132,6 +141,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       orderedServerIds: user.account?.serverOrderIds,
       dmStatus: user.account?.dmStatus,
     },
+    voiceChannelUsers,
     servers,
     serverSettings,
     serverMembers,
@@ -140,7 +150,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     messageMentions,
     presences,
     friends: user.friends,
-    channels: [...serverChannels, ...inboxChannels],
+    channels,
     inbox: inboxResponse,
   });
 }

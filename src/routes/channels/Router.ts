@@ -9,10 +9,12 @@ import { channelMessageReactionsAdd } from './channelMessageReactionsAdd';
 import { channelMessageReactionsRemove } from './channelMessageReactionsRemove';
 import { channelMessageReactedUsers } from './channelMessageReactions';
 import { channelDMClose } from './channelDmClose';
+import { channelVoiceJoin } from './channelVoiceJoin';
 
 const ChannelsRouter = Router();
 
 channelMessages(ChannelsRouter);
+channelVoiceJoin(ChannelsRouter);
 channelAttachments(ChannelsRouter);
 channelMessageCreate(ChannelsRouter);
 channelMessageUpdate(ChannelsRouter);
