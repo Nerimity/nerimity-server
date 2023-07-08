@@ -17,7 +17,7 @@ export const joinVoiceChannel = async (
     ] as const;
   }
 
-  const isAlreadyInVoice = await isUserInVoice(channelId, userId);
+  const isAlreadyInVoice = await isUserInVoice(userId);
   if (isAlreadyInVoice) {
     return [null, generateError('You are already in a call.')] as const;
   }

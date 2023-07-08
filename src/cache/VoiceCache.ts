@@ -6,8 +6,8 @@ export interface VoiceCache {
   serverId?: string;
 }
 
-export async function isUserInVoice(channelId: string, userId: string) {
-  return redisClient.hExists(VOICE_USERS_KEY_HASH(channelId), userId);
+export async function isUserInVoice(userId: string) {
+  return redisClient.exists(VOICE_USER_CHANNEL_ID_SET(userId));
 }
 
 export async function addUserToVoice(
