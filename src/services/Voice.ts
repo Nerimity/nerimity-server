@@ -1,6 +1,12 @@
 import { getUserIdBySocketId } from '../cache/UserCache';
-import { addUserToVoice, isUserInVoice } from '../cache/VoiceCache';
+import {
+  addUserToVoice,
+  getVoiceUserByUserId,
+  isUserInVoice,
+  removeVoiceUserByUserId,
+} from '../cache/VoiceCache';
 import { generateError } from '../common/errorHandler';
+import { emitVoiceUserJoined, emitVoiceUserLeft } from '../emits/Voice';
 
 export const joinVoiceChannel = async (
   userId: string,
@@ -19,12 +25,24 @@ export const joinVoiceChannel = async (
 
   const isAlreadyInVoice = await isUserInVoice(userId);
   if (isAlreadyInVoice) {
-    return [null, generateError('You are already in a call.')] as const;
+    await leaveVoiceChannel(userId);
   }
 
-  addUserToVoice(channelId, userId, {
+  const voice = await addUserToVoice(channelId, userId, {
     socketId,
     serverId,
   });
+
+  emitVoiceUserJoined(channelId, voice);
+
+  return [true, null] as const;
+};
+
+export const leaveVoiceChannel = async (userId: string) => {
+  const voiceUser = await getVoiceUserByUserId(userId);
+  if (!voiceUser)
+    return [null, generateError("You're not in a call.")] as const;
+  await removeVoiceUserByUserId(userId);
+  emitVoiceUserLeft(userId, voiceUser.channelId);
   return [true, null] as const;
 };
