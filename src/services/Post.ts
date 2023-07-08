@@ -5,13 +5,20 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { deleteImage } from '../common/nerimityCDN';
 
-function constructInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
+function constructInclude(
+  requesterUserId: string,
+  continueIter = true
+): Prisma.PostInclude | null | undefined {
   return {
-    ...(continueIter ? {commentTo: {include: constructInclude(requesterUserId, false)}} :  undefined),
+    ...(continueIter
+      ? { commentTo: { include: constructInclude(requesterUserId, false) } }
+      : undefined),
     createdBy: true,
-    _count: {select: {likedBy: true, comments: true}},
-    likedBy: {select: {id: true},where: {likedById: requesterUserId}},
-    attachments: {select: {height: true, width: true, path: true, id: true}}
+    _count: { select: { likedBy: true, comments: true } },
+    likedBy: { select: { id: true }, where: { likedById: requesterUserId } },
+    attachments: {
+      select: { height: true, width: true, path: true, id: true },
+    },
   };
 }
 
@@ -19,7 +26,7 @@ interface CreatePostOpts {
   userId: string;
   content?: string;
   commentToId?: string;
-  attachment?: {width?: number, height?: number, path: string};
+  attachment?: { width?: number; height?: number; path: string };
 }
 export async function createPost(opts: CreatePostOpts) {
   const post = await prisma.post.create({
@@ -27,19 +34,21 @@ export async function createPost(opts: CreatePostOpts) {
       id: generateId(),
       content: opts.content?.trim(),
       createdById: opts.userId,
-      ...(opts.commentToId ? {commentToId: opts.commentToId} : undefined),
-      ...(opts.attachment ? {
-        attachments: {
-          create: {
-            id: generateId(),
-            height: opts.attachment.height,
-            width: opts.attachment.width,
-            path: opts.attachment.path            
+      ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
+      ...(opts.attachment
+        ? {
+            attachments: {
+              create: {
+                id: generateId(),
+                height: opts.attachment.height,
+                width: opts.attachment.width,
+                path: opts.attachment.path,
+              },
+            },
           }
-        }
-      } : undefined)
+        : undefined),
     },
-    include: constructInclude(opts.userId)
+    include: constructInclude(opts.userId),
   });
 
   if (opts.commentToId) {
@@ -50,61 +59,66 @@ export async function createPost(opts: CreatePostOpts) {
     });
   }
 
-
   return post;
 }
 
-
-export async function editPost(opts: {editById: string, postId: string, content: string}) {
-  const post = await prisma.post.findFirst({where: { createdById: opts.editById, deleted: null, id: opts.postId}, select: {id: true}});
+export async function editPost(opts: {
+  editById: string;
+  postId: string;
+  content: string;
+}) {
+  const post = await prisma.post.findFirst({
+    where: { createdById: opts.editById, deleted: null, id: opts.postId },
+    select: { id: true },
+  });
   if (!post) return [null, generateError('Post not found')] as const;
 
   const newPost = await prisma.post.update({
-    where: {id: opts.postId},
+    where: { id: opts.postId },
     data: {
       content: opts.content.trim(),
-      editedAt: dateToDateTime()
+      editedAt: dateToDateTime(),
     },
-    include: constructInclude(opts.editById)
+    include: constructInclude(opts.editById),
   });
 
   return [newPost, null] as const;
 }
 
 export async function getPostLikes(postId: string) {
-  const post = await prisma.post.findFirst({where: { deleted: null, id:postId}, select: {id: true}});
+  const post = await prisma.post.findFirst({
+    where: { deleted: null, id: postId },
+    select: { id: true },
+  });
   if (!post) return [null, generateError('Post not found')] as const;
 
   const postLikedByUsers = await prisma.postLike.findMany({
-    where: {postId},
-    orderBy: {createdAt: 'desc'},
-    select: {likedBy: true, createdAt: true}
+    where: { postId },
+    orderBy: { createdAt: 'desc' },
+    select: { likedBy: true, createdAt: true },
   });
-
 
   return [postLikedByUsers, null];
 }
-
-
 
 interface FetchPostsOpts {
   userId?: string;
   postId?: string; // get comments
   requesterUserId: string;
-  withReplies?: boolean
-} 
+  withReplies?: boolean;
+}
 
 export async function fetchPosts(opts: FetchPostsOpts) {
   const posts = await prisma.post.findMany({
     where: {
-      ...(opts.userId ? {createdById: opts.userId} : undefined),
-      ...((opts.userId && !opts.withReplies)? {commentToId: null} : undefined),
-      ...(opts.postId ? {commentToId: opts.postId} : undefined),
+      ...(opts.userId ? { createdById: opts.userId } : undefined),
+      ...(opts.userId && !opts.withReplies ? { commentToId: null } : undefined),
+      ...(opts.postId ? { commentToId: opts.postId } : undefined),
       deleted: null,
     },
-    orderBy: {createdAt: 'asc'},
+    orderBy: { createdAt: 'asc' },
     take: 50,
-    include: constructInclude(opts.requesterUserId)
+    include: constructInclude(opts.requesterUserId),
   });
 
   return posts;
@@ -112,17 +126,21 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 
 export async function fetchLikedPosts(userId: string, requesterUserId: string) {
   const likes = await prisma.postLike.findMany({
-    where: {likedById: userId},
-    include: {post: {include: constructInclude(requesterUserId)}},
-    orderBy: {createdAt: 'asc'},
+    where: { likedById: userId },
+    include: { post: { include: constructInclude(requesterUserId) } },
+    orderBy: { createdAt: 'asc' },
     take: 50,
   });
 
-  return likes.map(like => like.post);
+  return likes.map((like) => like.post);
 }
 
 export async function fetchLatestPost(userId: string, requesterUserId: string) {
-  const latestPost = await prisma.post.findFirst({ orderBy: {createdAt: 'desc'}, where: { deleted: null, commentToId: null, createdBy: {id: userId}}, include: constructInclude(requesterUserId)});
+  const latestPost = await prisma.post.findFirst({
+    orderBy: { createdAt: 'desc' },
+    where: { deleted: null, commentToId: null, createdBy: { id: userId } },
+    include: constructInclude(requesterUserId),
+  });
   return latestPost;
 }
 
@@ -131,31 +149,39 @@ export async function fetchPost(postId: string, requesterUserId: string) {
     where: {
       id: postId,
     },
-    orderBy: {createdAt: 'desc'},
+    orderBy: { createdAt: 'desc' },
     take: 50,
-    include: constructInclude(requesterUserId)
+    include: constructInclude(requesterUserId),
   });
 
   return post;
 }
 
-export async function likePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
-  const post = await prisma.post.findFirst({where: {deleted: null, id: postId}});
+export async function likePost(
+  userId: string,
+  postId: string
+): Promise<CustomResult<Post, CustomError>> {
+  const post = await prisma.post.findFirst({
+    where: { deleted: null, id: postId },
+  });
   if (!post) return [null, generateError('Post not found')];
 
-  const existingPost = await prisma.postLike.findFirst({where: {likedById: userId, postId}, select: {id: true}});
+  const existingPost = await prisma.postLike.findFirst({
+    where: { likedById: userId, postId },
+    select: { id: true },
+  });
   if (existingPost) {
     return [null, generateError('You have already liked this post!')];
   }
-  
+
   await prisma.postLike.create({
     data: {
       id: generateId(),
       likedById: userId,
       postId,
-    }
+    },
   });
-  const newPost = await fetchPost(postId, userId) as Post;
+  const newPost = (await fetchPost(postId, userId)) as Post;
 
   createPostNotification({
     type: PostNotificationType.LIKED,
@@ -166,22 +192,32 @@ export async function likePost(userId: string, postId: string): Promise<CustomRe
   return [newPost, null];
 }
 
-export async function unlikePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
-  const postLike = await prisma.postLike.findFirst({where: {likedById: userId, postId}});
+export async function unlikePost(
+  userId: string,
+  postId: string
+): Promise<CustomResult<Post, CustomError>> {
+  const postLike = await prisma.postLike.findFirst({
+    where: { likedById: userId, postId },
+  });
   if (!postLike) {
     return [null, generateError('You have not liked this post!')];
   }
-  
+
   await prisma.postLike.delete({
-    where: { id: postLike.id}
+    where: { id: postLike.id },
   });
-  const newPost = await fetchPost(postId, userId) as Post;
+  const newPost = (await fetchPost(postId, userId)) as Post;
   return [newPost, null];
 }
 
-
-export async function deletePost(postId: string, userId: string): Promise<CustomResult<boolean, CustomError>> {
-  const post = await prisma.post.findFirst({where: {id: postId, createdById: userId}, include: {attachments: true}} );
+export async function deletePost(
+  postId: string,
+  userId: string
+): Promise<CustomResult<boolean, CustomError>> {
+  const post = await prisma.post.findFirst({
+    where: { id: postId, createdById: userId },
+    include: { attachments: true },
+  });
   if (!post) {
     return [null, generateError('Post does not exist!')];
   }
@@ -192,13 +228,13 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
 
   await prisma.$transaction([
     prisma.post.update({
-      where: {id: postId},
+      where: { id: postId },
       data: {
         content: null,
         deleted: true,
-      }
+      },
     }),
-    prisma.postLike.deleteMany({where: {postId}})
+    prisma.postLike.deleteMany({ where: { postId } }),
   ]);
 
   return [true, null];
@@ -206,20 +242,20 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
 
 export async function getFeed(userId: string) {
   const feedPosts = await prisma.post.findMany({
-    orderBy: {createdAt: 'desc'},
+    orderBy: { createdAt: 'desc' },
     where: {
       commentTo: null,
-      deleted: null, 
+      deleted: null,
       OR: [
-        {createdById: userId},
+        { createdById: userId },
         {
           createdBy: {
             followers: {
-              some: {followedById: userId}
-            }
-          }
-        }
-      ]
+              some: { followedById: userId },
+            },
+          },
+        },
+      ],
     },
     include: constructInclude(userId),
     take: 50,
@@ -227,32 +263,41 @@ export async function getFeed(userId: string) {
   return feedPosts;
 }
 
-
 export enum PostNotificationType {
   LIKED = 0,
   REPLIED = 1,
-  FOLLOWED = 2
+  FOLLOWED = 2,
 }
 
 interface CreatePostNotificationProps {
-  toId?: string,
-  byId: string,
-  postId?: string
-  type: PostNotificationType
+  toId?: string;
+  byId: string;
+  postId?: string;
+  type: PostNotificationType;
 }
 
-export async function createPostNotification(opts: CreatePostNotificationProps){
-
+export async function createPostNotification(
+  opts: CreatePostNotificationProps
+) {
   let toId = opts.toId;
 
-  if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED) {
-    const post = await prisma.post.findFirst({where: {id: opts.postId}, select: {createdById: true}});
+  if (
+    opts.type === PostNotificationType.LIKED ||
+    opts.type === PostNotificationType.REPLIED
+  ) {
+    const post = await prisma.post.findFirst({
+      where: { id: opts.postId },
+      select: { createdById: true },
+    });
     if (!post) return;
     toId = post.createdById;
   }
 
   if (opts.type === PostNotificationType.REPLIED) {
-    const post = await prisma.post.findFirst({where: {id: opts.postId}, select: {commentTo: {select: {createdById: true}}}});
+    const post = await prisma.post.findFirst({
+      where: { id: opts.postId },
+      select: { commentTo: { select: { createdById: true } } },
+    });
     if (!post) return;
     toId = post.commentTo?.createdById;
   }
@@ -261,34 +306,36 @@ export async function createPostNotification(opts: CreatePostNotificationProps){
 
   if (opts.toId === opts.byId) return;
 
-
-  const alreadyExists = await prisma.postNotification.findFirst(({
+  const alreadyExists = await prisma.postNotification.findFirst({
     where: {
       byId: opts.byId,
       toId: toId,
       type: opts.type,
-      postId: opts.postId
-    }
-  }));
+      postId: opts.postId,
+    },
+  });
   if (alreadyExists) return;
 
-  await prisma.$transaction([
-    prisma.postNotification.create({
-      data: {
-        id: generateId(),
-        byId: opts.byId,
-        toId: toId,
-        type: opts.type,
-        postId: opts.postId
-      }
-    }),
-    prisma.account.update({
-      where: {userId: toId},
-      data: {
-        postNotificationCount: {increment: 1}
-      }
-    })
-  ]);
+  await prisma
+    .$transaction([
+      prisma.postNotification.create({
+        data: {
+          id: generateId(),
+          byId: opts.byId,
+          toId: toId,
+          type: opts.type,
+          postId: opts.postId,
+        },
+      }),
+      prisma.account.update({
+        where: { userId: toId },
+        data: {
+          postNotificationCount: { increment: 1 },
+        },
+      }),
+    ])
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    .catch(() => {});
 
   // // delete if more than 10 notifications exist
   // const tenthLatestRecord = await prisma.postNotification.findFirst({
@@ -306,24 +353,28 @@ export async function createPostNotification(opts: CreatePostNotificationProps){
   // });
 }
 
-
 export async function getPostNotifications(userId: string) {
   return await prisma.postNotification.findMany({
-    orderBy: {createdAt: 'desc'},
-    where: {toId: userId},
+    orderBy: { createdAt: 'desc' },
+    where: { toId: userId },
     take: 10,
     include: {
       by: true,
-      post: {include: constructInclude(userId)}
-    }
+      post: { include: constructInclude(userId) },
+    },
   });
 }
 
-
 export async function getPostNotificationCount(userId: string) {
-  const account = await prisma.account.findFirst({where: {userId}, select: {postNotificationCount: true}});
+  const account = await prisma.account.findFirst({
+    where: { userId },
+    select: { postNotificationCount: true },
+  });
   return account?.postNotificationCount;
 }
 export async function dismissPostNotification(userId: string) {
-  await prisma.account.update({where: {userId}, data: {postNotificationCount: 0}});
+  await prisma.account.update({
+    where: { userId },
+    data: { postNotificationCount: 0 },
+  });
 }
