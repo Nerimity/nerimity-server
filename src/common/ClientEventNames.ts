@@ -43,3 +43,4 @@ export const MESSAGE_REACTION_REMOVED = 'message:reaction_removed';
 
 export const VOICE_USER_JOINED = 'voice:user_joined';
 export const VOICE_USER_LEFT = 'voice:user_left';
+export const VOICE_SIGNAL_RECEIVED = 'voice:signal_received';
