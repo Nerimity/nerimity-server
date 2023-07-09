@@ -11,7 +11,6 @@ interface Payload {
 }
 
 export async function onVoiceSignal(socket: Socket, payload: Payload) {
-  console.log("test")
   const userId = await getUserIdBySocketId(socket.id);
   if (!userId) return;
 
