@@ -1,3 +1,4 @@
+import { getChannelCache } from '../cache/ChannelCache';
 import { getUserIdBySocketId } from '../cache/UserCache';
 import {
   addUserToVoice,
@@ -6,7 +7,8 @@ import {
   removeVoiceUserByUserId,
 } from '../cache/VoiceCache';
 import { generateError } from '../common/errorHandler';
-import { emitVoiceUserJoined, emitVoiceUserLeft } from '../emits/Voice';
+import { emitServerVoiceUserLeft, emitServerVoiceUserJoined, emitDMVoiceUserLeft, emitDMVoiceUserJoined } from '../emits/Voice';
+import { ChannelType, TextChannelTypes } from '../types/Channel';
 
 export const joinVoiceChannel = async (
   userId: string,
@@ -28,21 +30,64 @@ export const joinVoiceChannel = async (
     await leaveVoiceChannel(userId);
   }
 
+  const [channelCache] = await getChannelCache(channelId, userId);
+
+
+  if (!channelCache) {
+    return [
+      null,
+      generateError(`Channel does not exist.`)
+    ]
+  }
+
   const voice = await addUserToVoice(channelId, userId, {
     socketId,
     serverId,
   });
 
-  emitVoiceUserJoined(channelId, voice);
+  if (!TextChannelTypes.includes(channelCache.type)) {
+    return [
+      null,
+      generateError(`Cannot join voice channel.`)
+    ]
+  }
+
+
+
+
+  if (channelCache.serverId) {
+    emitServerVoiceUserJoined(channelId, voice);
+  } else {
+    emitDMVoiceUserJoined(channelCache, voice);
+  }
+
 
   return [true, null] as const;
 };
 
-export const leaveVoiceChannel = async (userId: string) => {
+export const leaveVoiceChannel = async (userId: string, channelId?: string) => {
   const voiceUser = await getVoiceUserByUserId(userId);
   if (!voiceUser)
     return [null, generateError("You're not in a call.")] as const;
+
+  if (channelId && voiceUser.channelId !== channelId) {
+    return [null, generateError("You are not in this channel.")] as const;
+  }
+  const [channelCache] = await getChannelCache(voiceUser.channelId, userId);
+
+  if (!channelCache) {
+    return [
+      null,
+      generateError(`Channel does not exist.`)
+    ]
+  }
   await removeVoiceUserByUserId(userId);
-  emitVoiceUserLeft(userId, voiceUser.channelId);
+
+  if (channelCache.serverId) {
+    emitServerVoiceUserLeft(voiceUser.channelId, userId);
+  } else {
+    emitDMVoiceUserLeft(channelCache, userId);
+  }
+
   return [true, null] as const;
 };

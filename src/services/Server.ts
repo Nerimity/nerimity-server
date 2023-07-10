@@ -34,6 +34,7 @@ import { prependOnceListener } from 'process';
 import { makeChannelsInCategoryPrivate } from './Channel';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
+import { leaveVoiceChannel } from './Voice';
 
 interface CreateServerOptions {
   name: string;
@@ -356,6 +357,8 @@ export const deleteOrLeaveServer = async (
       );
     }
     await prisma.$transaction(transactions);
+
+    await leaveVoiceChannel(userId);
 
     deleteAllInboxCache(userId);
     await removeServerIdFromAccountOrder(userId, serverId);

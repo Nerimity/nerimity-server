@@ -5,3 +5,4 @@ export enum ChannelType {
   CATEGORY = 2,
 }
 
+export const TextChannelTypes = [ChannelType.DM_TEXT, ChannelType.SERVER_TEXT];

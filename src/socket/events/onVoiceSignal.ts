@@ -22,6 +22,11 @@ export async function onVoiceSignal(socket: Socket, payload: Payload) {
   const recipientVoiceUser = await getVoiceUserByUserId(payload.toUserId)
   if (!recipientVoiceUser) return;
 
+  // are we in the same voice channel?
+  if (voiceUser.channelId !== recipientVoiceUser.channelId) {
+    return;
+  }
+
   // send signal to recipient
   getIO().to(recipientVoiceUser.socketId).emit(VOICE_SIGNAL_RECEIVED, {
     fromUserId: userId,
