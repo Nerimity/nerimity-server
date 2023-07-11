@@ -13,6 +13,9 @@ export const SERVER_MEMBERS_KEY_HASH = (serverId: string) => `${PREFIX}SERVER_ME
 export const CONNECTED_SOCKET_ID_KEY_SET = (userId: string) => `${PREFIX}SOCKET_USER_CONNECTED:${userId}`;
 export const CONNECTED_USER_ID_KEY_STRING = (socketId: string) => `${PREFIX}SOCKET_USER_ID:${socketId}`;
 
+export const VOICE_USERS_KEY_HASH = (channelId: string) => `${PREFIX}VOICE_USERS:${channelId}`
+export const VOICE_USER_CHANNEL_ID_SET = (userId: string) => `${PREFIX}VOICE_USER_CHANNEL_ID:${userId}`  
+
 export const USER_PRESENCE_KEY_STRING = (userId: string) => `${PREFIX}USER_PRESENCE:${userId}`;
 
 

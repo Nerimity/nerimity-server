@@ -35,6 +35,7 @@ import {
 } from '@prisma/client';
 import { UpdateServerRoleOptions } from '../services/ServerRole';
 import { UpdateServerMember } from '../services/ServerMember';
+import { VoiceCacheFormatted } from '../cache/VoiceCache';
 
 interface ServerJoinOpts {
   server: Server;
@@ -43,6 +44,7 @@ interface ServerJoinOpts {
   joinedMember: ServerMember & { user: User };
   roles: ServerRole[];
   memberPresences: Presence[];
+  voiceChannelUsers: VoiceCacheFormatted[]
 }
 
 export const emitServerJoined = (opts: ServerJoinOpts) => {
@@ -77,6 +79,7 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
     channels: opts.channels,
     roles: opts.roles,
     memberPresences: opts.memberPresences,
+    voiceChannelUsers: opts.voiceChannelUsers,
   });
 };
 

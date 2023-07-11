@@ -32,6 +32,7 @@ import * as nerimityCDN from '../common/nerimityCDN';
 import { getIO } from '../socket/socket';
 import { AUTHENTICATE_ERROR } from '../common/ClientEventNames';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
+import { leaveVoiceChannel } from './Voice';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -169,6 +170,9 @@ export const closeDMChannel = async (userId: string, channelId: string) => {
   if (inbox.closed)
     return [null, generateError('This channel is already closed.')] as const;
 
+
+  await leaveVoiceChannel(userId, channelId);
+
   await prisma.inbox.update({
     where: { id: inbox.id },
     data: { closed: true },
@@ -219,12 +223,12 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   const newChannel = inbox
     ? { id: inbox?.channelId }
     : await prisma.channel.create({
-        data: {
-          id: generateId(),
-          type: ChannelType.DM_TEXT,
-          createdById: userId,
-        },
-      });
+      data: {
+        id: generateId(),
+        type: ChannelType.DM_TEXT,
+        createdById: userId,
+      },
+    });
 
   const newInbox = await prisma.inbox
     .create({
@@ -241,7 +245,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
 
   if (!newInbox) {
     return [null, generateError('Something went wrong.')] as const;
@@ -495,9 +499,9 @@ export const updateUser = async (
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
       ...(opts.newPassword?.trim()
         ? {
-            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-            passwordVersion: { increment: 1 },
-          }
+          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+          passwordVersion: { increment: 1 },
+        }
         : undefined),
       user: {
         update: {
@@ -508,13 +512,13 @@ export const updateUser = async (
           ...addToObjectIfExists('profile', opts.profile),
           ...(opts.profile
             ? {
-                profile: {
-                  upsert: {
-                    create: opts.profile,
-                    update: opts.profile,
-                  },
+              profile: {
+                upsert: {
+                  create: opts.profile,
+                  update: opts.profile,
                 },
-              }
+              },
+            }
             : undefined),
         },
       },

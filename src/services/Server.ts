@@ -33,6 +33,8 @@ import * as nerimityCDN from '../common/nerimityCDN';
 import { prependOnceListener } from 'process';
 import { makeChannelsInCategoryPrivate } from './Channel';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
+import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
+import { leaveVoiceChannel } from './Voice';
 
 interface CreateServerOptions {
   name: string;
@@ -124,6 +126,7 @@ export const createServer = async (
     roles: [defaultRole],
     joinedMember: serverMember,
     memberPresences: [],
+    voiceChannelUsers: [],
   });
   return [server, null];
 };
@@ -258,6 +261,9 @@ export const joinServer = async (
   const memberIds = serverMembers.map((sm) => sm.user.id);
   const memberPresences = await getUserPresences(memberIds);
 
+  const channelIds = await serverChannels.map(channel => channel.id)
+  const voiceChannelUsers = await getVoiceUsersByChannelId(channelIds);
+
   emitServerJoined({
     server: server,
     channels: serverChannels,
@@ -265,6 +271,7 @@ export const joinServer = async (
     roles: serverRoles,
     joinedMember: serverMember,
     memberPresences,
+    voiceChannelUsers
   });
 
   deleteAllInboxCache(userId);
@@ -350,6 +357,8 @@ export const deleteOrLeaveServer = async (
       );
     }
     await prisma.$transaction(transactions);
+
+    await leaveVoiceChannel(userId);
 
     deleteAllInboxCache(userId);
     await removeServerIdFromAccountOrder(userId, serverId);
@@ -700,19 +709,19 @@ export async function updateServerChannelOrder(
 
           // update or add categoryId
           ...(opts.categoryId &&
-          opts.categoryId !== channel.categoryId &&
-          opts.orderedChannelIds.includes(channel.id)
+            opts.categoryId !== channel.categoryId &&
+            opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: opts.categoryId,
-              }
+              categoryId: opts.categoryId,
+            }
             : undefined),
           // remove categoryId
           ...(!opts.categoryId &&
-          channel.categoryId &&
-          opts.orderedChannelIds.includes(channel.id)
+            channel.categoryId &&
+            opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: null,
-              }
+              categoryId: null,
+            }
             : undefined),
         },
       })

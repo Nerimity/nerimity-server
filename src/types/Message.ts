@@ -4,4 +4,5 @@ export enum MessageType {
   LEAVE_SERVER = 2,
   KICK_USER = 3,
   BAN_USER = 4,
+  CALL_STARTED = 5,
 }
