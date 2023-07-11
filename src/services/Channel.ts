@@ -84,7 +84,7 @@ export const dismissChannelNotification = async (
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  await prisma.$transaction(transactions).catch(() => {});
+  await prisma.$transaction(transactions).catch(() => { });
 
   emit && emitNotificationDismissed(userId, channelId);
 };

@@ -62,6 +62,10 @@ export async function addUserToVoice(
   };
 }
 
+export async function countVoiceUsersInChannel(channelId: string) {
+  return redisClient.hLen(VOICE_USERS_KEY_HASH(channelId));
+}
+
 export async function getVoiceUsersByChannelId(
   channelIds: string[]
 ): Promise<VoiceCacheFormatted[]> {

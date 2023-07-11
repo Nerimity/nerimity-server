@@ -2,6 +2,7 @@ import { getChannelCache } from '../cache/ChannelCache';
 import { getUserIdBySocketId } from '../cache/UserCache';
 import {
   addUserToVoice,
+  countVoiceUsersInChannel,
   getVoiceUserByUserId,
   isUserInVoice,
   removeVoiceUserByUserId,
@@ -9,6 +10,8 @@ import {
 import { generateError } from '../common/errorHandler';
 import { emitServerVoiceUserLeft, emitServerVoiceUserJoined, emitDMVoiceUserLeft, emitDMVoiceUserJoined } from '../emits/Voice';
 import { ChannelType, TextChannelTypes } from '../types/Channel';
+import { MessageType } from '../types/Message';
+import { createMessage } from './Message';
 
 export const joinVoiceChannel = async (
   userId: string,
@@ -40,17 +43,30 @@ export const joinVoiceChannel = async (
     ]
   }
 
-  const voice = await addUserToVoice(channelId, userId, {
-    socketId,
-    serverId,
-  });
-
   if (!TextChannelTypes.includes(channelCache.type)) {
     return [
       null,
       generateError(`Cannot join voice channel.`)
     ]
   }
+
+
+  const count = await countVoiceUsersInChannel(channelId);
+
+  if (count === 0) {
+    createMessage({
+      type: MessageType.CALL_STARTED,
+      channelId,
+      userId,
+      serverId
+    })
+  }
+
+  const voice = await addUserToVoice(channelId, userId, {
+    socketId,
+    serverId,
+  });
+
 
 
 
