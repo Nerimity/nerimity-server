@@ -12,12 +12,17 @@ import { userUpdatePresence } from './userUpdatePresence';
 import { userUpdateServerSettings } from './userUpdateServerSettings';
 import { userRegisterFCM } from './userRegisterFCM';
 import { userDeleteAccount } from './userDeleteAccount';
+import { userBlock } from './userBlock';
+import { userUnblock } from './userUnblock';
 
 const UsersRouter = Router();
 
 register(UsersRouter);
 login(UsersRouter);
 userUpdate(UsersRouter);
+
+userBlock(UsersRouter);
+userUnblock(UsersRouter);
 
 userRegisterFCM(UsersRouter);
 userOpenDMChannel(UsersRouter);

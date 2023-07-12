@@ -152,7 +152,20 @@ const getInboxCache = async (channelId: string, userId: string) => {
   const requesterDmStatus = inbox.createdBy.account?.dmStatus;
   const recipientDmStatus = inbox.recipient.account?.dmStatus;
 
-  if (requesterDmStatus || recipientDmStatus) {
+  const blocked = await prisma.friend.findFirst({
+    where: {
+      status: FriendStatus.BLOCKED,
+      OR: [
+        { recipientId: inbox.recipientId, userId },
+        { recipientId: userId, userId: inbox.recipientId },
+      ]
+    }
+  });
+  if (blocked) {
+    canMessage = false;
+  }
+
+  if (!blocked && (requesterDmStatus || recipientDmStatus)) {
     canMessage = false;
     const areFriends = await prisma.friend.findFirst({
       where: {

@@ -1,3 +1,4 @@
+import { Friend } from '@prisma/client';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { getUserPresences } from '../cache/UserCache';
 import { exists, prisma } from '../common/database';
@@ -7,6 +8,8 @@ import {
   emitFriendRemoved,
   emitFriendRequestAccept,
   emitFriendRequestSent,
+  emitUserBlocked,
+  emitUserUnblocked,
 } from '../emits/Friend';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import { FriendStatus } from '../types/Friend';
@@ -29,6 +32,23 @@ export const addFriend = async (userId: string, friendId: string) => {
   if (alreadyFriends) {
     return [null, generateError('Already in friends list.')];
   }
+
+  // check if blocked
+
+  const blocked = await prisma.friend.findFirst({
+    where: {
+      status: FriendStatus.BLOCKED,
+      OR: [
+        { recipientId: userId, userId: friendId },
+        { recipientId: friendId, userId: userId }
+      ]
+    }
+  })
+
+  if (blocked) {
+    return [null, generateError("This user is blocked.")];
+  }
+
 
   const requesterObj = {
     id: generateId(),
@@ -124,3 +144,73 @@ export const removeFriend = async (userId: string, friendId: string) => {
   emitFriendRemoved(userId, friendId);
   return [{ message: 'Removed!' }, null];
 };
+
+
+export async function blockUser(requesterId: string, userToBlockId: string) {
+
+  const userToBlock = await prisma.user.findFirst({ where: { id: userToBlockId } });
+  if (!userToBlock) {
+    return [null, generateError("User does not exist.")] as const;
+  }
+
+  const friend = await prisma.friend.findFirst({
+    where: { userId: requesterId, recipientId: userToBlockId },
+  })
+  if (friend?.status === FriendStatus.BLOCKED) {
+    return [null, generateError("This user is already blocked.")] as const;
+  }
+  await prisma.$transaction([
+    prisma.friend.deleteMany({
+      where: {
+        OR: [
+          { userId: requesterId, recipientId: userToBlockId },
+          { userId: userToBlockId, recipientId: requesterId },
+        ]
+      }
+    }),
+    prisma.friend.create({
+      data: {
+        id: generateId(),
+        userId: requesterId,
+        recipientId: userToBlockId,
+        status: FriendStatus.BLOCKED,
+      }
+    }),
+    prisma.follower.deleteMany({
+      where: {
+        OR: [
+          { followedById: userToBlockId, followedToId: requesterId },
+          { followedById: requesterId, followedToId: userToBlockId }
+
+        ]
+      }
+    })
+  ])
+  await deleteAllInboxCache(requesterId);
+  //emit friend blocked
+  emitUserBlocked(requesterId, userToBlock);
+  return [true, null] as const;
+}
+
+export async function unblockUser(requesterId: string, userToUnBlockId: string) {
+  const friend = await prisma.friend.findFirst({
+    where: { userId: requesterId, recipientId: userToUnBlockId },
+  })
+
+  if (friend?.status !== FriendStatus.BLOCKED) {
+    return [null, generateError("This user is not blocked.")] as const;
+  }
+
+  await prisma.friend.delete({
+    where: {
+      id: friend.id
+    }
+  })
+  await deleteAllInboxCache(requesterId);
+
+
+  // emit friend unblocked
+  emitUserUnblocked(requesterId, userToUnBlockId);
+  return [true, null] as const;
+
+}
