@@ -742,18 +742,19 @@ export async function getUserNotifications(userId: string) {
     take: 20
   })
 
-  if (!notifications.length) return;
-  const ids = notifications.map(n => n.id);
+  if (notifications.length) {
 
-  // delete older notifications.
-  prisma.userNotification.deleteMany({
-    where: {
-      NOT: { id: { in: ids } },
-      userId
-    }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-  }).then(() => { })
+    const ids = notifications.map(n => n.id);
 
+    // delete older notifications.
+    prisma.userNotification.deleteMany({
+      where: {
+        NOT: { id: { in: ids } },
+        userId
+      }
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+    }).then(() => { })
+  }
 
   return notifications;
 }
