@@ -74,6 +74,23 @@ model User {
   mentionedMessages      Message[]               @relation(name: "mentioned_messages")
 
   profile                UserProfile?
+
+  notifications         UserNotification[]
+}
+
+model UserNotification {
+  id             String @id
+  userId         String
+
+  messageId      String?
+  serverId       String?
+
+  user           User     @relation(fields: [userId], references: [id])
+  message        Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  server         Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  serverMember   ServerMember? @relation(fields: [userId, serverId], references: [userId, serverId], onDelete: Cascade)
+
+  createdAt               DateTime                @default(now())
 }
 
 model UserProfile {
@@ -134,6 +151,8 @@ model Server {
   customEmojis CustomEmoji[]
 
   memberSettings ServerMemberSettings[]
+  memberNotifications         UserNotification[]
+
 }
 
 // Personal settings for joined servers
@@ -226,7 +245,7 @@ model ServerMember {
 
   roleIds  String[]
 
-
+  notifications         UserNotification[]
   @@unique([userId, serverId])
 
 }
@@ -313,6 +332,8 @@ model Message {
   quotedInMessages Message[] @relation(name: "quoted_messages")
 
   embed Json?
+
+  notifications         UserNotification[]
 }
 
 model MessageReaction {

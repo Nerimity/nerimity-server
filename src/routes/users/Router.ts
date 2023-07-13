@@ -14,6 +14,7 @@ import { userRegisterFCM } from './userRegisterFCM';
 import { userDeleteAccount } from './userDeleteAccount';
 import { userBlock } from './userBlock';
 import { userUnblock } from './userUnblock';
+import { userNotifications } from './userNotifications';
 
 const UsersRouter = Router();
 
@@ -28,7 +29,10 @@ userRegisterFCM(UsersRouter);
 userOpenDMChannel(UsersRouter);
 userUpdatePresence(UsersRouter);
 userDeleteAccount(UsersRouter);
+
+userNotifications(UsersRouter);
 userDetails(UsersRouter);
+
 userFollow(UsersRouter);
 userUnfollow(UsersRouter);
 userFollowers(UsersRouter);

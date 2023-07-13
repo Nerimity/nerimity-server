@@ -35,6 +35,7 @@ import {
 } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
 import { ServerNotificationPingMode } from './User';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -208,6 +209,62 @@ interface EditMessageOptions {
   messageId: string;
 }
 
+
+export const MessageInclude = {
+  createdBy: {
+    select: {
+      id: true,
+      username: true,
+      tag: true,
+      hexColor: true,
+      avatar: true,
+      badges: true,
+    },
+  },
+  mentions: {
+    select: {
+      id: true,
+      username: true,
+      tag: true,
+      hexColor: true,
+      avatar: true,
+    },
+  },
+  quotedMessages: {
+    select: {
+      id: true,
+      content: true,
+      mentions: {
+        select: {
+          id: true,
+          username: true,
+          tag: true,
+          hexColor: true,
+          avatar: true,
+        },
+      },
+      editedAt: true,
+      createdAt: true,
+      channelId: true,
+      attachments: {
+        select: { height: true, width: true, path: true, id: true },
+      },
+      createdBy: {
+        select: {
+          id: true,
+          username: true,
+          tag: true,
+          hexColor: true,
+          avatar: true,
+          badges: true,
+        },
+      },
+    },
+  },
+  attachments: {
+    select: { height: true, width: true, path: true, id: true },
+  },
+}
 export const editMessage = async (
   opts: EditMessageOptions
 ): Promise<CustomResult<Partial<Message>, CustomError>> => {
@@ -237,61 +294,7 @@ export const editMessage = async (
       },
       true
     ),
-    include: {
-      createdBy: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-          badges: true,
-        },
-      },
-      mentions: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-        },
-      },
-      quotedMessages: {
-        select: {
-          id: true,
-          content: true,
-          mentions: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-            },
-          },
-          editedAt: true,
-          createdAt: true,
-          channelId: true,
-          attachments: {
-            select: { height: true, width: true, path: true, id: true },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-            },
-          },
-        },
-      },
-      attachments: {
-        select: { height: true, width: true, path: true, id: true },
-      },
-    },
+    include: MessageInclude
   });
 
   // emit
@@ -473,7 +476,16 @@ export const createMessage = async (opts: SendMessageOptions) => {
   opts.updateLastSeen !== false &&
     (await dismissChannelNotification(opts.userId, opts.channelId, false));
 
+  let channel = opts.channel;
+  let server = opts.server;
+
   if (opts.serverId) {
+    if (!channel) {
+      [channel] = await getChannelCache(opts.channelId, opts.userId);
+    }
+    if (!server) {
+      server = await getServerCache(opts.serverId);
+    }
     let mentionUserIds: string[] = [];
 
     if (message.mentions.length) {
@@ -486,23 +498,14 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
 
     if (mentionUserIds.length) {
-      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message)
+      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message, channel!, server!)
     }
   }
 
 
   // emit
-  let channel = opts.channel;
-  let server = opts.server;
-
   if (opts.serverId) {
     emitServerMessageCreated(message, opts.socketId);
-    if (!channel) {
-      [channel] = await getChannelCache(opts.channelId, opts.userId);
-    }
-    if (!server) {
-      server = await getServerCache(opts.serverId);
-    }
     sendServerPushMessageNotification(
       opts.serverId,
       message,
@@ -873,10 +876,34 @@ export const getMessageReactedUsers = async (
 
   return [users, null] as const;
 };
-async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message) {
+async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
+
+  let filteredUserIds = [...userIds];
+  // is private channel 
+  if (hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit)) {
+
+    const roles = await prisma.serverRole.findMany({ where: { serverId }, select: { id: true, permissions: true } });
+    const defaultRole = roles.find(role => role.id === server.defaultRoleId);
+
+    const mentionedMembers = await prisma.serverMember.findMany({ where: { serverId, userId: { in: userIds } }, select: { roleIds: true, userId: true } });
+
+    filteredUserIds = mentionedMembers.filter(member => {
+      if (member.userId === server.createdById) return true;
+      const memberRoles = [defaultRole, ...member.roleIds.map(roleId => roles.find(r => r.id === roleId))];
+      const permissions = memberRoles.reduce((val, role) => {
+        if (!role) return val;
+        return addBit(val, role?.permissions);
+      }, 0)
+      return hasBit(permissions, ROLE_PERMISSIONS.ADMIN.bit);
+    }).map(member => member.userId)
+  }
+
+
+
+
   const mentionedUsers = await prisma.user.findMany({
     where: {
-      id: { in: userIds, not: requesterId },
+      id: { in: filteredUserIds, not: requesterId },
       servers: { some: { id: serverId } },
       OR: [
         {
@@ -899,8 +926,16 @@ async function addMention(userIds: string[], serverId: string, channelId: string
     select: { id: true },
   });
 
-  await prisma.$transaction(
-    mentionedUsers.map((user) =>
+  await prisma.$transaction([
+    prisma.userNotification.createMany({
+      data: mentionedUsers.map(user => ({
+        id: generateId(),
+        userId: user.id,
+        messageId: message.id,
+        serverId,
+      }))
+    }),
+    ...mentionedUsers.map((user) =>
       prisma.messageMention.upsert({
         where: {
           mentionedById_mentionedToId_channelId: {
@@ -923,6 +958,6 @@ async function addMention(userIds: string[], serverId: string, channelId: string
         },
       })
     )
-  );
+  ]);
 }
 

@@ -33,6 +33,8 @@ import { getIO } from '../socket/socket';
 import { AUTHENTICATE_ERROR } from '../common/ClientEventNames';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { leaveVoiceChannel } from './Voice';
+import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
+import { MessageInclude } from './Message';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -727,4 +729,20 @@ export async function deleteAccount(userId: string) {
   broadcaster.disconnectSockets(true);
 
   return [true, null] as const;
+}
+
+export async function getUserNotifications(userId: string) {
+
+  const [notifications] = await prisma.$transaction([
+    prisma.userNotification.findMany({
+      where: {
+        userId,
+      },
+      select: { server: true, serverMember: true, message: { include: MessageInclude } },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    })
+  ])
+
+  return notifications;
 }

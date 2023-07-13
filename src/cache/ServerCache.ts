@@ -8,6 +8,7 @@ export interface ServerCache {
   createdById: string;
   avatar?: string | null;
   hexColor: string;
+  defaultRoleId: string;
 }
 
 export const getServerCache = async (serverId: string) => {
@@ -24,6 +25,7 @@ export const getServerCache = async (serverId: string) => {
     createdById: server.createdById,
     avatar: server.avatar,
     hexColor: server.hexColor,
+    defaultRoleId: server.defaultRoleId
   };
   const serverCacheString = JSON.stringify(serverCache);
   await redisClient.set(key, serverCacheString);
