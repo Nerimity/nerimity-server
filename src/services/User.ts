@@ -733,16 +733,27 @@ export async function deleteAccount(userId: string) {
 
 export async function getUserNotifications(userId: string) {
 
-  const [notifications] = await prisma.$transaction([
-    prisma.userNotification.findMany({
-      where: {
-        userId,
-      },
-      select: { server: true, serverMember: true, message: { include: MessageInclude } },
-      orderBy: { createdAt: 'desc' },
-      take: 20
-    })
-  ])
+  const notifications = await prisma.userNotification.findMany({
+    where: {
+      userId,
+    },
+    select: { id: true, server: true, serverMember: true, message: { include: MessageInclude } },
+    orderBy: { createdAt: 'desc' },
+    take: 20
+  })
+
+  if (!notifications.length) return;
+  const ids = notifications.map(n => n.id);
+
+  // delete older notifications.
+  prisma.userNotification.deleteMany({
+    where: {
+      NOT: { id: { in: ids } },
+      userId
+    }
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+  }).then(() => { })
+
 
   return notifications;
 }
