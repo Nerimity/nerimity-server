@@ -473,15 +473,23 @@ export const createMessage = async (opts: SendMessageOptions) => {
   opts.updateLastSeen !== false &&
     (await dismissChannelNotification(opts.userId, opts.channelId, false));
 
-  if (message.mentions.length && opts.serverId) {
-    const userIds = message.mentions.map((mention) => mention.id);
-    await addMention(userIds, opts.serverId, opts.channelId, opts.userId, message)
+  if (opts.serverId) {
+    let mentionUserIds: string[] = [];
+
+    if (message.mentions.length) {
+      mentionUserIds = message.mentions.map((mention) => mention.id);
+    }
+
+    if (message.quotedMessages.length) {
+      const userIds = message.quotedMessages.map((message) => message.createdBy.id);
+      mentionUserIds = [...mentionUserIds, ...userIds];
+    }
+
+    if (mentionUserIds.length) {
+      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message)
+    }
   }
 
-  if (message.quotedMessages.length && opts.serverId) {
-    const userIds = message.quotedMessages.map((message) => message.createdBy.id);
-    await addMention(userIds, opts.serverId, opts.channelId, opts.userId, message)
-  }
 
   // emit
   let channel = opts.channel;
