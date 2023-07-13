@@ -75,13 +75,13 @@ export const getMessagesByChannelId = async (
       channelId,
       ...(opts?.beforeMessageId
         ? {
-            id: { lt: opts.beforeMessageId },
-          }
+          id: { lt: opts.beforeMessageId },
+        }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-            id: { gt: opts.afterMessageId },
-          }
+          id: { gt: opts.afterMessageId },
+        }
         : undefined),
     },
     include: {
@@ -159,8 +159,8 @@ export const getMessagesByChannelId = async (
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-          orderBy: { createdAt: 'asc' },
-        }
+        orderBy: { createdAt: 'asc' },
+      }
       : undefined),
   });
 
@@ -387,17 +387,17 @@ export const createMessage = async (opts: SendMessageOptions) => {
       createdAt: messageCreatedAt,
       ...(opts.attachment
         ? {
-            attachments: {
-              create: {
-                id: generateId(),
-                channelId: opts.channelId,
-                serverId: opts.serverId,
-                height: opts.attachment.height,
-                width: opts.attachment.width,
-                path: opts.attachment.path,
-              },
+          attachments: {
+            create: {
+              id: generateId(),
+              channelId: opts.channelId,
+              serverId: opts.serverId,
+              height: opts.attachment.height,
+              width: opts.attachment.width,
+              path: opts.attachment.path,
             },
-          }
+          },
+        }
         : undefined),
     }),
     include: {
@@ -475,55 +475,12 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   if (message.mentions.length && opts.serverId) {
     const userIds = message.mentions.map((mention) => mention.id);
-    const mentionedUsers = await prisma.user.findMany({
-      where: {
-        id: { in: userIds, not: opts.userId },
-        servers: { some: { id: opts.serverId } },
-        OR: [
-          {
-            joinedServerSettings: {
-              none: { serverId: opts.serverId },
-            },
-          },
-          {
-            joinedServerSettings: {
-              some: {
-                serverId: opts.serverId,
-                NOT: {
-                  notificationPingMode: ServerNotificationPingMode.MUTE,
-                },
-              },
-            },
-          },
-        ],
-      },
-      select: { id: true },
-    });
-    await prisma.$transaction(
-      mentionedUsers.map((user) =>
-        prisma.messageMention.upsert({
-          where: {
-            mentionedById_mentionedToId_channelId: {
-              channelId: opts.channelId,
-              mentionedById: opts.userId,
-              mentionedToId: user.id,
-            },
-          },
-          update: {
-            count: { increment: 1 },
-          },
-          create: {
-            id: generateId(),
-            count: 1,
-            channelId: opts.channelId,
-            mentionedById: opts.userId,
-            mentionedToId: user.id,
-            serverId: opts.serverId,
-            createdAt: dateToDateTime(message.createdAt),
-          },
-        })
-      )
-    );
+    await addMention(userIds, opts.serverId, opts.channelId, opts.userId, message)
+  }
+
+  if (message.quotedMessages.length && opts.serverId) {
+    const userIds = message.quotedMessages.map((message) => message.createdBy.id);
+    await addMention(userIds, opts.serverId, opts.channelId, opts.userId, message)
   }
 
   // emit
@@ -609,7 +566,7 @@ const addMessageEmbed = async (
       data: { embed: OGTags },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -908,3 +865,56 @@ export const getMessageReactedUsers = async (
 
   return [users, null] as const;
 };
+async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message) {
+  const mentionedUsers = await prisma.user.findMany({
+    where: {
+      id: { in: userIds, not: requesterId },
+      servers: { some: { id: serverId } },
+      OR: [
+        {
+          joinedServerSettings: {
+            none: { serverId: serverId },
+          },
+        },
+        {
+          joinedServerSettings: {
+            some: {
+              serverId: serverId,
+              NOT: {
+                notificationPingMode: ServerNotificationPingMode.MUTE,
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  });
+
+  await prisma.$transaction(
+    mentionedUsers.map((user) =>
+      prisma.messageMention.upsert({
+        where: {
+          mentionedById_mentionedToId_channelId: {
+            channelId: channelId,
+            mentionedById: requesterId,
+            mentionedToId: user.id,
+          },
+        },
+        update: {
+          count: { increment: 1 },
+        },
+        create: {
+          id: generateId(),
+          count: 1,
+          channelId: channelId,
+          mentionedById: requesterId,
+          mentionedToId: user.id,
+          serverId: serverId,
+          createdAt: dateToDateTime(message.createdAt),
+        },
+      })
+    )
+  );
+}
+
