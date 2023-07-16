@@ -292,6 +292,7 @@ export const editMessage = async (
         content,
         editedAt: dateToDateTime(),
       },
+      opts.userId,
       true
     ),
     include: MessageInclude
@@ -336,15 +337,18 @@ const quoteMessageRegex = /\[q:([\d]+)]/g;
 
 function constructData(
   messageData: MessageDataUpdate,
+  creatorId: string,
   update: true
 ): Promise<any>;
 function constructData(
   messageData: MessageDataCreate,
+  creatorId: string,
   update?: false | undefined
 ): Promise<any>;
 
 async function constructData(
   messageData: MessageDataCreate | MessageDataUpdate,
+  creatorId: string,
   update?: boolean
 ) {
   if (typeof messageData.content === 'string') {
@@ -366,10 +370,7 @@ async function constructData(
       [...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])
     ).slice(0, 5);
     if (quotedMessageIds.length) {
-      const messages = await prisma.message.findMany({
-        where: { id: { in: quotedMessageIds }, type: MessageType.CONTENT },
-        select: { id: true },
-      });
+      const messages = await quotableMessages(quotedMessageIds, creatorId)
       messageData.quotedMessages = {
         ...(update ? { set: messages } : { connect: messages }),
       };
@@ -401,8 +402,8 @@ export const createMessage = async (opts: SendMessageOptions) => {
             },
           },
         }
-        : undefined),
-    }),
+        : undefined)
+    }, opts.userId),
     include: {
       createdBy: {
         select: {
@@ -876,6 +877,38 @@ export const getMessageReactedUsers = async (
 
   return [users, null] as const;
 };
+
+
+
+async function quotableMessages(quotedMessageIds: string[], creatorId: string) {
+  const messages = await prisma.message.findMany({
+    where: { 
+      id: { in: quotedMessageIds }, 
+      type: MessageType.CONTENT,
+      channel: {
+        OR: [
+          {server: {serverMembers: {some: {userId: creatorId}}}}, // is server member
+          {
+            inbox: { // is inbox channel
+              some: {
+                OR: [
+                  {recipientId: creatorId},
+                  {createdById: creatorId}
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+  return messages;
+}
+
+
 async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
 
   let filteredUserIds = [...userIds];
