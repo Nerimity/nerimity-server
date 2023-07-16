@@ -25,6 +25,7 @@ import { serverEmojiAdd } from './serverEmojiAdd';
 import { serverEmojisGet } from './serverEmojisGet';
 import { serverEmojiUpdate } from './serverEmojiUpdate';
 import { serverEmojiDelete } from './serverEmojisDelete';
+import { serverInviteDelete } from './serverInviteDelete';
 
 
 const ServersRouter = Router();
@@ -39,6 +40,7 @@ serverUpdate(ServersRouter);
 serverInviteJoin(ServersRouter);
 serverInviteDetails(ServersRouter);
 serverInviteCreate(ServersRouter);
+serverInviteDelete(ServersRouter);
 serverInviteCustomCreate(ServersRouter);
 serverInvites(ServersRouter);
 

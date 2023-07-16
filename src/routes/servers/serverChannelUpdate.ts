@@ -22,6 +22,9 @@ export function serverChannelUpdate(Router: Router) {
       .withMessage('Name must be a string.')
       .isLength({ min: 4, max: 100 })
       .withMessage('Name must be between 4 and 100 characters long.')
+      .not()
+      .contains('#')
+      .withMessage('Channel cannot contain the # symbol')
       .optional({ nullable: true }),
     body('permissions')
       .isNumeric()

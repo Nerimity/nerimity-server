@@ -31,6 +31,31 @@ export const createServerInvite = async (serverId: string, creatorId: string): P
   return [serverInvite, null];
 };
 
+export const deleteServerInvite = async (serverId: string, inviteCode: string, requesterId: string) => {
+
+  const invite = await prisma.serverInvite.findFirst({
+    where: {
+      serverId,
+      OR: [
+        {createdById: requesterId},
+        {server: {createdById: requesterId}},
+      ],
+      code: inviteCode
+    }
+  })
+  if (!invite) return [null, generateError("Invalid invite code.")] as const;
+
+  await prisma.serverInvite.delete({
+    where: {
+      id: invite.id
+    }
+  }).catch(() => {});
+  return [true, null] as const;
+};
+
+
+
+
 export const createServerCustomInvite = async (code: string, serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
 
   code = code.trim();

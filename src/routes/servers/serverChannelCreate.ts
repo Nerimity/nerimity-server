@@ -14,6 +14,9 @@ export function serverChannelCreate(Router: Router) {
       .isString().withMessage('Name must be a string.')
       .trim()
       .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.')
+      .not()
+      .contains('#')
+      .withMessage('Channel cannot contain the # symbol')
       .optional(),
     body('type')
       .isNumeric().withMessage('type must be a number.')
