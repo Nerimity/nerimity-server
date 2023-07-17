@@ -32,7 +32,8 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const isHtml = res.headers.get('content-type')?.startsWith('text/html');
   if (!isHtml) return false;
 
-  const html = await res.text();
+  const html = await res.text().catch(() => {});
+  if (!html) return false;
   const root = parse(html);
   const metaTags = root.querySelectorAll('head meta');
 
