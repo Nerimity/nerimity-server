@@ -172,7 +172,6 @@ export const closeDMChannel = async (userId: string, channelId: string) => {
   if (inbox.closed)
     return [null, generateError('This channel is already closed.')] as const;
 
-
   await leaveVoiceChannel(userId, channelId);
 
   await prisma.inbox.update({
@@ -225,12 +224,12 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   const newChannel = inbox
     ? { id: inbox?.channelId }
     : await prisma.channel.create({
-      data: {
-        id: generateId(),
-        type: ChannelType.DM_TEXT,
-        createdById: userId,
-      },
-    });
+        data: {
+          id: generateId(),
+          type: ChannelType.DM_TEXT,
+          createdById: userId,
+        },
+      });
 
   const newInbox = await prisma.inbox
     .create({
@@ -247,7 +246,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+    .catch(() => {});
 
   if (!newInbox) {
     return [null, generateError('Something went wrong.')] as const;
@@ -409,6 +408,7 @@ interface UpdateUserProps {
   password?: string;
   newPassword?: string;
   avatar?: string;
+  avatarPoints?: number[];
   banner?: string;
   dmStatus?: DmStatus;
 
@@ -475,7 +475,8 @@ export const updateUser = async (
   if (opts.avatar) {
     const [data, error] = await nerimityCDN.uploadAvatar(
       opts.avatar,
-      opts.userId
+      opts.userId,
+      opts.avatarPoints
     );
     if (error) return [null, generateError(error)];
     if (data) {
@@ -501,9 +502,9 @@ export const updateUser = async (
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
       ...(opts.newPassword?.trim()
         ? {
-          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-          passwordVersion: { increment: 1 },
-        }
+            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+            passwordVersion: { increment: 1 },
+          }
         : undefined),
       user: {
         update: {
@@ -514,13 +515,13 @@ export const updateUser = async (
           ...addToObjectIfExists('profile', opts.profile),
           ...(opts.profile
             ? {
-              profile: {
-                upsert: {
-                  create: opts.profile,
-                  update: opts.profile,
+                profile: {
+                  upsert: {
+                    create: opts.profile,
+                    update: opts.profile,
+                  },
                 },
-              },
-            }
+              }
             : undefined),
         },
       },
@@ -732,28 +733,33 @@ export async function deleteAccount(userId: string) {
 }
 
 export async function getUserNotifications(userId: string) {
-
   const notifications = await prisma.userNotification.findMany({
     where: {
       userId,
     },
-    select: { id: true, server: true, serverMember: true, message: { include: MessageInclude } },
+    select: {
+      id: true,
+      server: true,
+      serverMember: true,
+      message: { include: MessageInclude },
+    },
     orderBy: { createdAt: 'desc' },
-    take: 20
-  })
+    take: 20,
+  });
 
   if (notifications.length) {
-
-    const ids = notifications.map(n => n.id);
+    const ids = notifications.map((n) => n.id);
 
     // delete older notifications.
-    prisma.userNotification.deleteMany({
-      where: {
-        NOT: { id: { in: ids } },
-        userId
-      }
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-    }).then(() => { })
+    prisma.userNotification
+      .deleteMany({
+        where: {
+          NOT: { id: { in: ids } },
+          userId,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+      })
+      .then(() => {});
   }
 
   return notifications;

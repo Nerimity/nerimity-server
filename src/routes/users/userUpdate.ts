@@ -78,6 +78,7 @@ interface Body {
   password?: string;
   newPassword?: string;
   avatar?: string;
+  avatarPoints?: number[];
   banner?: string;
   bio?: string | null;
   socketId?: string;
@@ -101,6 +102,7 @@ async function route(req: Request, res: Response) {
     tag: body.tag,
     password: body.password,
     avatar: body.avatar,
+    avatarPoints: body.avatarPoints,
     banner: body.banner,
     newPassword: body.newPassword,
     ...addToObjectIfExists('dmStatus', body.dmStatus),

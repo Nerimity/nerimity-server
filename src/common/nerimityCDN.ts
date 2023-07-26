@@ -53,7 +53,8 @@ export function uploadEmoji(
 
 export function uploadAvatar(
   base64: string,
-  uniqueId: string
+  uniqueId: string,
+  points?: number[]
 ): Promise<CustomResult<{ path: string }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
@@ -65,6 +66,9 @@ export function uploadAvatar(
     form.append('secret', env.NERIMITY_CDN_SECRET);
     form.append('id', uniqueId);
     form.append('file', buffer, 'temp.' + type);
+    if (points) {
+      form.append('points', JSON.stringify(points));
+    }
 
     fetch(env.NERIMITY_CDN + 'avatars', {
       method: 'POST',
