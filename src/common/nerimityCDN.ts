@@ -65,10 +65,10 @@ export function uploadAvatar(
 
     form.append('secret', env.NERIMITY_CDN_SECRET);
     form.append('id', uniqueId);
-    form.append('file', buffer, 'temp.' + type);
     if (points) {
       form.append('points', JSON.stringify(points));
     }
+    form.append('file', buffer, 'temp.' + type);
 
     fetch(env.NERIMITY_CDN + 'avatars', {
       method: 'POST',
