@@ -8,6 +8,8 @@ export function getStats(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
+  const firstDayOfWeek = getFirstDayOfWeek();
+
   const [
     totalRegisteredUsers,
     weeklyRegisteredUsers,
@@ -19,7 +21,7 @@ async function route(req: Request, res: Response) {
     prisma.user.count({
       where: {
         joinedAt: {
-          gte: dateToDateTime(getLastWeeksDate()),
+          gte: dateToDateTime(firstDayOfWeek),
         },
       },
     }),
@@ -28,7 +30,7 @@ async function route(req: Request, res: Response) {
     prisma.message.count({
       where: {
         createdAt: {
-          gte: dateToDateTime(getLastWeeksDate()),
+          gte: dateToDateTime(firstDayOfWeek),
         },
       },
     }),
@@ -43,8 +45,17 @@ async function route(req: Request, res: Response) {
   });
 }
 
-function getLastWeeksDate() {
-  const now = new Date();
+// Get the first day of the current week (Monday)
+function getFirstDayOfWeek() {
+  const date = new Date();
+  const day = date.getDay();
 
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+
+  date.setDate(diff);
+
+  date.setHours(0);
+  date.setMinutes(0);
+  date.setSeconds(0);
+  return date;
 }
