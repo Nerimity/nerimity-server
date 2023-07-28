@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { prisma } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
@@ -19,7 +19,7 @@ async function route(req: Request, res: Response) {
     prisma.user.count({
       where: {
         joinedAt: {
-          gte: getLastWeeksDate(),
+          gte: dateToDateTime(getLastWeeksDate()),
         },
       },
     }),
@@ -28,7 +28,7 @@ async function route(req: Request, res: Response) {
     prisma.message.count({
       where: {
         createdAt: {
-          gte: getLastWeeksDate(),
+          gte: dateToDateTime(getLastWeeksDate()),
         },
       },
     }),
