@@ -8,10 +8,12 @@ import { getServer } from './getServer';
 import { getUser } from './getUser';
 import { updateUser } from './updateUser';
 import { getStats } from './getStats';
+import { userBatchUnsuspend } from './userBatchUnsuspend';
 
 const ModerationRouter = Router();
 
 getStats(ModerationRouter);
+userBatchUnsuspend(ModerationRouter);
 userBatchSuspend(ModerationRouter);
 getUser(ModerationRouter);
 updateUser(ModerationRouter);

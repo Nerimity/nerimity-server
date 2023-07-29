@@ -23,6 +23,7 @@ async function route(req: Request, res: Response) {
       profile: true,
       account: {
         select: {
+          suspendCount: true,
           email: true,
         },
       },
