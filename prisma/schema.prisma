@@ -76,6 +76,7 @@ model User {
   profile                UserProfile?
 
   notifications         UserNotification[]
+  suspension            Suspension?
 }
 
 model UserNotification {
@@ -118,6 +119,7 @@ model Suspension {
   reason        String?
   suspendedById String
   userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id])
 }
 
 model Server {
