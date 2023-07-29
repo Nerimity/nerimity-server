@@ -94,16 +94,18 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const suspendedUserIds = suspendedUsers.map((suspend) => suspend.userId);
 
   // Only increment if not suspended
-  await prisma.$transaction(
-    sanitizedUserIds
-      .filter((id) => !suspendedUserIds.includes(id))
-      .map((userId) =>
-        prisma.account.update({
-          where: { userId },
-          data: { suspendCount: { increment: 1 } },
-        })
-      )
+  const incrementUserIds = sanitizedUserIds.filter(
+    (id) => !suspendedUserIds.includes(id)
   );
+
+  await prisma.account.updateMany({
+    where: {
+      userId: { in: incrementUserIds },
+    },
+    data: {
+      suspendCount: { increment: 1 },
+    },
+  });
 
   const expireDateTime = dateToDateTime(expireDate);
 
