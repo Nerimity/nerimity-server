@@ -32,7 +32,9 @@ export function userBatchSuspend(Router: Router) {
       .isLength({ min: 0, max: 5 })
       .withMessage('Days must be less than 99999'),
     body('reason')
-      .optional()
+      .not()
+      .isEmpty()
+      .withMessage('Reason is required.')
       .isString()
       .withMessage('Reason must be a string.')
       .isLength({ min: 0, max: 500 })
