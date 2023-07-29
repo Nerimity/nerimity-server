@@ -41,14 +41,19 @@ interface RegisterOpts {
   password: string;
 }
 
+export const isExpired = (expireDate: Date) => {
+  const now = new Date();
+  return now > expireDate;
+};
+
 export const getSuspensionDetails = async (userId: string) => {
   const suspend = await prisma.suspension.findFirst({ where: { userId } });
   if (!suspend) return false;
   if (!suspend.expireAt) return suspend;
 
-  const expireDate = new Date(suspend.expireAt);
-  const now = new Date();
-  if (expireDate > now) return suspend;
+  if (!isExpired(suspend.expireAt)) {
+    return suspend;
+  }
 
   await prisma.suspension.delete({ where: { userId } });
   return false;
