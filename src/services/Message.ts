@@ -35,7 +35,12 @@ import {
 } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
 import { ServerNotificationPingMode } from './User';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
+import {
+  CHANNEL_PERMISSIONS,
+  ROLE_PERMISSIONS,
+  addBit,
+  hasBit,
+} from '../common/Bitwise';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -76,13 +81,13 @@ export const getMessagesByChannelId = async (
       channelId,
       ...(opts?.beforeMessageId
         ? {
-          id: { lt: opts.beforeMessageId },
-        }
+            id: { lt: opts.beforeMessageId },
+          }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-          id: { gt: opts.afterMessageId },
-        }
+            id: { gt: opts.afterMessageId },
+          }
         : undefined),
     },
     include: {
@@ -160,8 +165,8 @@ export const getMessagesByChannelId = async (
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-        orderBy: { createdAt: 'asc' },
-      }
+          orderBy: { createdAt: 'asc' },
+        }
       : undefined),
   });
 
@@ -208,7 +213,6 @@ interface EditMessageOptions {
   content: string;
   messageId: string;
 }
-
 
 export const MessageInclude = {
   createdBy: {
@@ -264,7 +268,7 @@ export const MessageInclude = {
   attachments: {
     select: { height: true, width: true, path: true, id: true },
   },
-}
+};
 export const editMessage = async (
   opts: EditMessageOptions
 ): Promise<CustomResult<Partial<Message>, CustomError>> => {
@@ -295,7 +299,7 @@ export const editMessage = async (
       opts.userId,
       true
     ),
-    include: MessageInclude
+    include: MessageInclude,
   });
 
   // emit
@@ -370,7 +374,7 @@ async function constructData(
       [...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])
     ).slice(0, 5);
     if (quotedMessageIds.length) {
-      const messages = await quotableMessages(quotedMessageIds, creatorId)
+      const messages = await quotableMessages(quotedMessageIds, creatorId);
       messageData.quotedMessages = {
         ...(update ? { set: messages } : { connect: messages }),
       };
@@ -382,28 +386,31 @@ async function constructData(
 export const createMessage = async (opts: SendMessageOptions) => {
   const messageCreatedAt = dateToDateTime();
   const createMessageQuery = prisma.message.create({
-    data: await constructData({
-      id: generateId(),
-      content: opts.content || '',
-      createdById: opts.userId,
-      channelId: opts.channelId,
-      type: opts.type,
-      createdAt: messageCreatedAt,
-      ...(opts.attachment
-        ? {
-          attachments: {
-            create: {
-              id: generateId(),
-              channelId: opts.channelId,
-              serverId: opts.serverId,
-              height: opts.attachment.height,
-              width: opts.attachment.width,
-              path: opts.attachment.path,
-            },
-          },
-        }
-        : undefined)
-    }, opts.userId),
+    data: await constructData(
+      {
+        id: generateId(),
+        content: opts.content || '',
+        createdById: opts.userId,
+        channelId: opts.channelId,
+        type: opts.type,
+        createdAt: messageCreatedAt,
+        ...(opts.attachment
+          ? {
+              attachments: {
+                create: {
+                  id: generateId(),
+                  channelId: opts.channelId,
+                  serverId: opts.serverId,
+                  height: opts.attachment.height,
+                  width: opts.attachment.width,
+                  path: opts.attachment.path,
+                },
+              },
+            }
+          : undefined),
+      },
+      opts.userId
+    ),
     include: {
       createdBy: {
         select: {
@@ -494,15 +501,24 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
 
     if (message.quotedMessages.length) {
-      const userIds = message.quotedMessages.map((message) => message.createdBy.id);
+      const userIds = message.quotedMessages.map(
+        (message) => message.createdBy.id
+      );
       mentionUserIds = [...mentionUserIds, ...userIds];
     }
 
     if (mentionUserIds.length) {
-      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message, channel!, server!)
+      await addMention(
+        removeDuplicates(mentionUserIds),
+        opts.serverId,
+        opts.channelId,
+        opts.userId,
+        message,
+        channel!,
+        server!
+      );
     }
   }
-
 
   // emit
   if (opts.serverId) {
@@ -578,11 +594,11 @@ const addMessageEmbed = async (
       data: { embed: OGTags },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+    .catch(() => {});
   if (!res) return;
   // emit
   if (opts.serverId) {
-    emitServerMessageUpdated(message.channelId, message.id, { embed: OGTags });
+    emitServerMessageUpdated(message.channelId!, message.id, { embed: OGTags });
     return;
   }
   if (!opts.serverId && opts.channel) {
@@ -878,61 +894,70 @@ export const getMessageReactedUsers = async (
   return [users, null] as const;
 };
 
-
-
 async function quotableMessages(quotedMessageIds: string[], creatorId: string) {
   const messages = await prisma.message.findMany({
-    where: { 
-      id: { in: quotedMessageIds }, 
+    where: {
+      id: { in: quotedMessageIds },
       type: MessageType.CONTENT,
       channel: {
         OR: [
-          {server: {serverMembers: {some: {userId: creatorId}}}}, // is server member
+          { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
           {
-            inbox: { // is inbox channel
+            inbox: {
+              // is inbox channel
               some: {
-                OR: [
-                  {recipientId: creatorId},
-                  {createdById: creatorId}
-                ]
-              }
-            }
-          }
-        ]
-      }
+                OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+              },
+            },
+          },
+        ],
+      },
     },
     select: {
-      id: true
-    }
+      id: true,
+    },
   });
   return messages;
 }
 
-
-async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
-
+async function addMention(
+  userIds: string[],
+  serverId: string,
+  channelId: string,
+  requesterId: string,
+  message: Message,
+  channel: ChannelCache,
+  server: ServerCache
+) {
   let filteredUserIds = [...userIds];
-  // is private channel 
+  // is private channel
   if (hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit)) {
+    const roles = await prisma.serverRole.findMany({
+      where: { serverId },
+      select: { id: true, permissions: true },
+    });
+    const defaultRole = roles.find((role) => role.id === server.defaultRoleId);
 
-    const roles = await prisma.serverRole.findMany({ where: { serverId }, select: { id: true, permissions: true } });
-    const defaultRole = roles.find(role => role.id === server.defaultRoleId);
+    const mentionedMembers = await prisma.serverMember.findMany({
+      where: { serverId, userId: { in: userIds } },
+      select: { roleIds: true, userId: true },
+    });
 
-    const mentionedMembers = await prisma.serverMember.findMany({ where: { serverId, userId: { in: userIds } }, select: { roleIds: true, userId: true } });
-
-    filteredUserIds = mentionedMembers.filter(member => {
-      if (member.userId === server.createdById) return true;
-      const memberRoles = [defaultRole, ...member.roleIds.map(roleId => roles.find(r => r.id === roleId))];
-      const permissions = memberRoles.reduce((val, role) => {
-        if (!role) return val;
-        return addBit(val, role?.permissions);
-      }, 0)
-      return hasBit(permissions, ROLE_PERMISSIONS.ADMIN.bit);
-    }).map(member => member.userId)
+    filteredUserIds = mentionedMembers
+      .filter((member) => {
+        if (member.userId === server.createdById) return true;
+        const memberRoles = [
+          defaultRole,
+          ...member.roleIds.map((roleId) => roles.find((r) => r.id === roleId)),
+        ];
+        const permissions = memberRoles.reduce((val, role) => {
+          if (!role) return val;
+          return addBit(val, role?.permissions);
+        }, 0);
+        return hasBit(permissions, ROLE_PERMISSIONS.ADMIN.bit);
+      })
+      .map((member) => member.userId);
   }
-
-
-
 
   const mentionedUsers = await prisma.user.findMany({
     where: {
@@ -961,12 +986,12 @@ async function addMention(userIds: string[], serverId: string, channelId: string
 
   await prisma.$transaction([
     prisma.userNotification.createMany({
-      data: mentionedUsers.map(user => ({
+      data: mentionedUsers.map((user) => ({
         id: generateId(),
         userId: user.id,
         messageId: message.id,
         serverId,
-      }))
+      })),
     }),
     ...mentionedUsers.map((user) =>
       prisma.messageMention.upsert({
@@ -990,7 +1015,6 @@ async function addMention(userIds: string[], serverId: string, channelId: string
           createdAt: dateToDateTime(message.createdAt),
         },
       })
-    )
+    ),
   ]);
 }
-

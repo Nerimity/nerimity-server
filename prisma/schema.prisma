@@ -288,7 +288,7 @@ model Channel {
   lastMessagedAt         DateTime?
   createdAt              DateTime                @default(now())
   createdBy              User?                   @relation(fields: [createdById], references: [id])
-  server                 Server?                 @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  server                 Server?                 @relation(fields: [serverId], references: [id], onDelete: SetNull)
   inbox                  Inbox[]
   messages               Message[]
   messageMentions        MessageMention[]
@@ -298,6 +298,9 @@ model Channel {
 
   categories             Channel[] @relation(name: "channel_categories")
 
+
+  // when this channel is scheduled to delete.
+  deleting               Boolean?
 }
 
 model Inbox {
@@ -336,6 +339,13 @@ model Message {
   embed Json?
 
   notifications         UserNotification[]
+}
+
+// When deleting a channel or a server, we will delete 1000 messages every 1 minute
+// To not cause strain to the server.
+model ScheduleMessageDelete {
+  channelId   String   @id
+  scheduledAt DateTime @default(now())
 }
 
 model MessageReaction {

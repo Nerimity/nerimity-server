@@ -48,7 +48,9 @@ export const getChannelCache = async (
   }
 
   // If not in cache, fetch from database.
-  const channel = await prisma.channel.findFirst({ where: { id: channelId } });
+  const channel = await prisma.channel.findFirst({
+    where: { id: channelId, deleting: null },
+  });
 
   if (!channel) return [null, 'Channel does not exist.'];
 
@@ -158,8 +160,8 @@ const getInboxCache = async (channelId: string, userId: string) => {
       OR: [
         { recipientId: inbox.recipientId, userId },
         { recipientId: userId, userId: inbox.recipientId },
-      ]
-    }
+      ],
+    },
   });
   if (blocked) {
     canMessage = false;

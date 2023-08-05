@@ -84,7 +84,7 @@ export const dismissChannelNotification = async (
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  await prisma.$transaction(transactions).catch(() => { });
+  await prisma.$transaction(transactions).catch(() => {});
 
   emit && emitNotificationDismissed(userId, channelId);
 };
@@ -93,6 +93,7 @@ export const getAllMessageMentions = async (userId: string) => {
   const mentions = await prisma.messageMention.findMany({
     where: {
       mentionedToId: userId,
+      channel: { deleting: null },
     },
     select: {
       mentionedById: true,
@@ -108,7 +109,7 @@ export const getAllMessageMentions = async (userId: string) => {
 
 export const getLastSeenServerChannelIdsByUserId = async (userId: string) => {
   const results = await prisma.serverChannelLastSeen.findMany({
-    where: { userId },
+    where: { userId, channel: { deleting: null } },
     select: {
       channelId: true,
       lastSeen: true,
@@ -182,7 +183,7 @@ export const updateServerChannel = async (
   }
 
   const channel = await prisma.channel.findFirst({
-    where: { id: channelId, serverId: serverId },
+    where: { id: channelId, serverId: serverId, deleting: null },
     include: { category: { select: { permissions: true } } },
   });
   if (!channel) {
@@ -263,7 +264,7 @@ export const makeChannelsInCategoryPrivate = async (
   serverMembers?: ServerMemberCache[]
 ) => {
   const category = await prisma.channel.findFirst({
-    where: { id: categoryId },
+    where: { id: categoryId, deleting: null },
     select: { categories: { select: { id: true, permissions: true } } },
   });
 
@@ -323,13 +324,24 @@ export const deleteServerChannel = async (
 
   // Delete the channel
   const channel = await prisma.channel.findFirst({
-    where: { id: channelId, serverId: serverId },
+    where: { id: channelId, serverId: serverId, deleting: null },
   });
   if (!channel) {
     return [null, generateError('Channel does not exist.')];
   }
 
-  await prisma.channel.delete({ where: { id: channelId } });
+  await prisma.$transaction([
+    prisma.channel.update({
+      where: { id: channelId },
+      data: { deleting: true },
+    }),
+    prisma.scheduleMessageDelete.upsert({
+      where: { channelId },
+      create: { channelId },
+      update: {},
+    }),
+  ]);
+  deleteServerChannelCaches([channelId]);
 
   getIO().in(serverId).socketsLeave(channelId);
 

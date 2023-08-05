@@ -154,7 +154,7 @@ export const getServers = async (userId: string) => {
   const [serverChannels, serverMembers, serverRoles, serverSettings] =
     await prisma.$transaction([
       prisma.channel.findMany({
-        where: { serverId: { in: serverIds } },
+        where: { serverId: { in: serverIds }, deleting: null },
         include: { _count: { select: { attachments: true } } },
       }),
       prisma.serverMember.findMany({
@@ -241,7 +241,7 @@ export const joinServer = async (
         include: { user: true },
       }),
       prisma.channel.findMany({
-        where: { serverId: server.id },
+        where: { serverId: server.id, deleting: null },
         include: { _count: { select: { attachments: true } } },
       }),
       prisma.serverMember.findMany({
@@ -261,7 +261,7 @@ export const joinServer = async (
   const memberIds = serverMembers.map((sm) => sm.user.id);
   const memberPresences = await getUserPresences(memberIds);
 
-  const channelIds = await serverChannels.map(channel => channel.id)
+  const channelIds = await serverChannels.map((channel) => channel.id);
   const voiceChannelUsers = await getVoiceUsersByChannelId(channelIds);
 
   emitServerJoined({
@@ -271,7 +271,7 @@ export const joinServer = async (
     roles: serverRoles,
     joinedMember: serverMember,
     memberPresences,
-    voiceChannelUsers
+    voiceChannelUsers,
   });
 
   deleteAllInboxCache(userId);
@@ -325,7 +325,20 @@ export const deleteOrLeaveServer = async (
 
   if (isServerCreator) {
     // This one line also deletes related stuff from the database.
-    await prisma.server.delete({ where: { id: serverId } });
+    await prisma.$transaction([
+      prisma.server.delete({ where: { id: serverId } }),
+      prisma.channel.updateMany({
+        where: { serverId },
+        data: { deleting: true },
+      }),
+      ...server.channels.map(({ id }) =>
+        prisma.scheduleMessageDelete.upsert({
+          where: { channelId: id },
+          create: { channelId: id },
+          update: {},
+        })
+      ),
+    ]);
   } else {
     const transactions: any[] = [
       prisma.user.update({
@@ -709,19 +722,19 @@ export async function updateServerChannelOrder(
 
           // update or add categoryId
           ...(opts.categoryId &&
-            opts.categoryId !== channel.categoryId &&
-            opts.orderedChannelIds.includes(channel.id)
+          opts.categoryId !== channel.categoryId &&
+          opts.orderedChannelIds.includes(channel.id)
             ? {
-              categoryId: opts.categoryId,
-            }
+                categoryId: opts.categoryId,
+              }
             : undefined),
           // remove categoryId
           ...(!opts.categoryId &&
-            channel.categoryId &&
-            opts.orderedChannelIds.includes(channel.id)
+          channel.categoryId &&
+          opts.orderedChannelIds.includes(channel.id)
             ? {
-              categoryId: null,
-            }
+                categoryId: null,
+              }
             : undefined),
         },
       })

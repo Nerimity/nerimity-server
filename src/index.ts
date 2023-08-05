@@ -37,6 +37,7 @@ export const main = (): Promise<http.Server> =>
     prisma.$connect().then(() => {
       Log.info('Connected to PostgreSQL');
       scheduleBumpReset();
+      scheduleDeleteMessages();
       if (server.listening) return;
       server.listen(env.PORT, () => {
         Log.info('listening on *:' + env.PORT);
@@ -87,5 +88,46 @@ function scheduleBumpReset() {
   schedule.scheduleJob(rule, async () => {
     await prisma.publicServer.updateMany({ data: { bumpCount: 0 } });
     Log.info('All public server bumps have been reset to 0.');
+  });
+}
+
+// Messages are not deleted all at once to reduce database strain.
+function scheduleDeleteMessages() {
+  vacuumSchedule();
+  setInterval(async () => {
+    const details = await prisma.scheduleMessageDelete.findFirst();
+    if (!details) return;
+
+    const deletedCount = await prisma.$executeRaw`
+      DELETE FROM "Message"
+      WHERE id IN 
+      (
+          SELECT id 
+          FROM "Message"
+          WHERE "channelId"=${details.channelId}
+          LIMIT 1000       
+      );
+    `;
+    if (deletedCount < 1000) {
+      await prisma.$transaction([
+        prisma.scheduleMessageDelete.delete({
+          where: { channelId: details.channelId },
+        }),
+        prisma.channel.delete({ where: { id: details.channelId } }),
+      ]);
+    }
+    console.log('deleted', deletedCount, 'message(s).');
+  }, 60000);
+}
+
+// run vacuum once everyday.
+async function vacuumSchedule() {
+  // Schedule the task to run everyday at 0:00 UTC
+  const rule = new schedule.RecurrenceRule();
+  rule.hour = 0;
+  rule.minute = 0;
+
+  schedule.scheduleJob(rule, async () => {
+    await prisma.$queryRaw`VACUUM VERBOSE ANALYZE "Message"`;
   });
 }
