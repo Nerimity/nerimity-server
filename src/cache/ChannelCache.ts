@@ -223,3 +223,18 @@ export const deleteAllInboxCache = async (userId: string) => {
   }
   await multi.exec();
 };
+
+// delete all inbox cache for users that are inside a server
+export const deleteAllInboxCacheInServer = async (serverId: string) => {
+  const inboxList = await prisma.inbox.findMany({
+    where: { createdBy: { servers: { some: { id: serverId } } } },
+    select: { createdById: true, recipientId: true, channelId: true },
+  });
+  const multi = redisClient.multi();
+  for (let i = 0; i < inboxList.length; i++) {
+    const inbox = inboxList[i];
+    multi.del(INBOX_KEY_STRING(inbox.channelId, inbox.createdById));
+    multi.del(INBOX_KEY_STRING(inbox.channelId, inbox.recipientId));
+  }
+  await multi.exec();
+};

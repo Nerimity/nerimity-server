@@ -1,4 +1,4 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import { serverChannelCreate } from './serverChannelCreate';
 import { serverChannelDelete } from './serverChannelDelete';
 import { serverChannelUpdate } from './serverChannelUpdate';
@@ -7,7 +7,6 @@ import { serverInviteCreate } from './serverInviteCreate';
 import { serverInviteDetails } from './serverInviteDetails';
 import { serverInviteJoin } from './serverInviteJoin';
 import { serverInvites } from './ServerInvites';
-import { serverDeleteOrLeave } from './serverDeleteOrLeave';
 import { serverUpdate } from './serverUpdate';
 import { serverRoleCreate } from './serverRoleCreate';
 import { serverRoleUpdate } from './serverRoleUpdate';
@@ -26,15 +25,16 @@ import { serverEmojisGet } from './serverEmojisGet';
 import { serverEmojiUpdate } from './serverEmojiUpdate';
 import { serverEmojiDelete } from './serverEmojisDelete';
 import { serverInviteDelete } from './serverInviteDelete';
-
+import { serverLeave } from './serverLeave';
+import { serverDelete } from './serverDelete';
 
 const ServersRouter = Router();
-
 
 serverChannelUpdateOrder(ServersRouter);
 serverUpdateOrder(ServersRouter);
 serverCreate(ServersRouter);
-serverDeleteOrLeave(ServersRouter);
+serverDelete(ServersRouter);
+serverLeave(ServersRouter);
 serverUpdate(ServersRouter);
 
 serverInviteJoin(ServersRouter);
@@ -48,7 +48,6 @@ serverChannelCreate(ServersRouter);
 serverRoleUpdateOrder(ServersRouter);
 serverChannelUpdate(ServersRouter);
 serverChannelDelete(ServersRouter);
-
 
 serverRoleCreate(ServersRouter);
 serverRoleUpdate(ServersRouter);
@@ -65,4 +64,4 @@ serverEmojisGet(ServersRouter);
 serverEmojiUpdate(ServersRouter);
 serverEmojiDelete(ServersRouter);
 
-export {ServersRouter};
+export { ServersRouter };

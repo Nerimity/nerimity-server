@@ -30,9 +30,11 @@ import { createMessage, deleteRecentMessages } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import * as nerimityCDN from '../common/nerimityCDN';
-import { prependOnceListener } from 'process';
 import { makeChannelsInCategoryPrivate } from './Channel';
-import { deleteAllInboxCache } from '../cache/ChannelCache';
+import {
+  deleteAllInboxCache,
+  deleteAllInboxCacheInServer,
+} from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
 import { leaveVoiceChannel } from './Voice';
 
@@ -281,7 +283,41 @@ export const joinServer = async (
   return [server, null];
 };
 
-export const deleteOrLeaveServer = async (
+export const deleteServer = async (serverId: string) => {
+  const server = await prisma.server.findFirst({
+    where: { id: serverId },
+    include: { channels: { select: { id: true } } },
+  });
+
+  if (!server) {
+    return [null, generateError('Server does not exist.')] as const;
+  }
+
+  await deleteAllInboxCacheInServer(serverId);
+  await prisma.$transaction([
+    prisma.server.delete({ where: { id: serverId } }),
+    prisma.channel.updateMany({
+      where: { serverId },
+      data: { deleting: true },
+    }),
+    ...server.channels.map(({ id }) =>
+      prisma.scheduleMessageDelete.upsert({
+        where: { channelId: id },
+        create: { channelId: id },
+        update: {},
+      })
+    ),
+  ]);
+
+  emitServerLeft({
+    serverId,
+    serverDeleted: true,
+  });
+
+  return [true, null] as const;
+};
+
+export const leaveServer = async (
   userId: string,
   serverId: string,
   ban = false,
@@ -296,6 +332,10 @@ export const deleteOrLeaveServer = async (
   }
 
   const isServerCreator = server.createdById === userId;
+
+  if (isServerCreator) {
+    return [null, generateError('You cannot leave your own server.')];
+  }
 
   // check if user is in the server
   const isInServer = await exists(prisma.serverMember, {
@@ -323,74 +363,56 @@ export const deleteOrLeaveServer = async (
     return [true, null];
   }
 
-  if (isServerCreator) {
-    // This one line also deletes related stuff from the database.
-    await prisma.$transaction([
-      prisma.server.delete({ where: { id: serverId } }),
-      prisma.channel.updateMany({
-        where: { serverId },
-        data: { deleting: true },
-      }),
-      ...server.channels.map(({ id }) =>
-        prisma.scheduleMessageDelete.upsert({
-          where: { channelId: id },
-          create: { channelId: id },
-          update: {},
-        })
-      ),
-    ]);
-  } else {
-    const transactions: any[] = [
-      prisma.user.update({
-        where: { id: userId },
-        data: { servers: { disconnect: { id: serverId } } },
-      }),
-      prisma.serverMember.delete({
-        where: { userId_serverId: { serverId: serverId, userId: userId } },
-      }),
-      prisma.messageMention.deleteMany({
-        where: { serverId: serverId, mentionedToId: userId },
-      }),
-      prisma.serverChannelLastSeen.deleteMany({
-        where: { serverId: serverId, userId: userId },
-      }),
-      prisma.serverMemberSettings.deleteMany({
-        where: { serverId: serverId, userId: userId },
-      }),
-    ];
-    if (ban) {
-      transactions.push(
-        prisma.bannedServerMember.create({
-          data: {
-            id: generateId(),
-            userId,
-            serverId,
-          },
-        })
-      );
-    }
-    await prisma.$transaction(transactions);
-
-    await leaveVoiceChannel(userId);
-
-    deleteAllInboxCache(userId);
-    await removeServerIdFromAccountOrder(userId, serverId);
-    if (server.systemChannelId && leaveMessage) {
-      await createMessage({
-        channelId: server.systemChannelId,
-        type: MessageType.LEAVE_SERVER,
-        userId,
-        serverId,
-        updateLastSeen: false,
-      });
-    }
+  const transactions: any[] = [
+    prisma.user.update({
+      where: { id: userId },
+      data: { servers: { disconnect: { id: serverId } } },
+    }),
+    prisma.serverMember.delete({
+      where: { userId_serverId: { serverId: serverId, userId: userId } },
+    }),
+    prisma.messageMention.deleteMany({
+      where: { serverId: serverId, mentionedToId: userId },
+    }),
+    prisma.serverChannelLastSeen.deleteMany({
+      where: { serverId: serverId, userId: userId },
+    }),
+    prisma.serverMemberSettings.deleteMany({
+      where: { serverId: serverId, userId: userId },
+    }),
+  ];
+  if (ban) {
+    transactions.push(
+      prisma.bannedServerMember.create({
+        data: {
+          id: generateId(),
+          userId,
+          serverId,
+        },
+      })
+    );
   }
-  emitServerLeft(
+  await prisma.$transaction(transactions);
+
+  await leaveVoiceChannel(userId);
+
+  deleteAllInboxCache(userId);
+  await removeServerIdFromAccountOrder(userId, serverId);
+  if (server.systemChannelId && leaveMessage) {
+    await createMessage({
+      channelId: server.systemChannelId,
+      type: MessageType.LEAVE_SERVER,
+      userId,
+      serverId,
+      updateLastSeen: false,
+    });
+  }
+
+  emitServerLeft({
     userId,
     serverId,
-    isServerCreator,
-    server.channels.map((c) => c.id)
-  );
+    channelIds: server.channels.map((c) => c.id),
+  });
 
   return [false, null];
 };
@@ -404,7 +426,7 @@ export const kickServerMember = async (userId: string, serverId: string) => {
     return [null, generateError('You can not kick yourself.')];
   }
 
-  const [, error] = await deleteOrLeaveServer(userId, serverId, false, true);
+  const [, error] = await leaveServer(userId, serverId, false, true);
   if (error) return [null, error];
 
   if (server.systemChannelId) {
@@ -460,7 +482,7 @@ export const banServerMember = async (
     return [null, generateError('Invalid userId')];
   }
 
-  const [, error] = await deleteOrLeaveServer(userId, serverId, true, false);
+  const [, error] = await leaveServer(userId, serverId, true, false);
   if (error) return [null, error];
 
   if (shouldDeleteRecentMessages) {
