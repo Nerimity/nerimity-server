@@ -44,7 +44,7 @@ interface ServerJoinOpts {
   joinedMember: ServerMember & { user: User };
   roles: ServerRole[];
   memberPresences: Presence[];
-  voiceChannelUsers: VoiceCacheFormatted[]
+  voiceChannelUsers: VoiceCacheFormatted[];
 }
 
 export const emitServerJoined = (opts: ServerJoinOpts) => {
@@ -83,30 +83,32 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
   });
 };
 
-export const emitServerLeft = (
-  userId: string,
-  serverId: string,
-  serverDeleted: boolean,
-  channels: string[]
-) => {
+export const emitServerLeft = (opts: {
+  userId?: string;
+  serverId: string;
+  serverDeleted?: boolean;
+  channelIds?: string[];
+}) => {
   const io = getIO();
 
-  if (serverDeleted) {
-    io.in(serverId).emit(SERVER_LEFT, {
-      serverId: serverId,
+  if (opts.serverDeleted) {
+    io.in(opts.serverId).emit(SERVER_LEFT, {
+      serverId: opts.serverId,
     });
-    io.in(serverId).socketsLeave(serverId);
+    io.in(opts.serverId).socketsLeave(opts.serverId);
     return;
   }
 
-  io.in(userId).socketsLeave([serverId, ...channels]);
-  io.in(serverId).emit(SERVER_MEMBER_LEFT, {
-    serverId: serverId,
-    userId: userId,
+  if (!opts.userId || !opts.channelIds) return;
+
+  io.in(opts.userId).socketsLeave([opts.serverId, ...opts.channelIds]);
+  io.in(opts.serverId).emit(SERVER_MEMBER_LEFT, {
+    serverId: opts.serverId,
+    userId: opts.userId,
   });
 
-  io.in(userId).emit(SERVER_LEFT, {
-    serverId: serverId,
+  io.in(opts.userId).emit(SERVER_LEFT, {
+    serverId: opts.serverId,
   });
 };
 
