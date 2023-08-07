@@ -79,6 +79,20 @@ export const addFriend = async (userId: string, friendId: string) => {
 };
 
 export const acceptFriend = async (userId: string, friendId: string) => {
+  const isBlocked = await prisma.friend.findFirst({
+    where: {
+      OR: [
+        { userId: userId, recipientId: friendId },
+        { userId: friendId, recipientId: userId },
+      ],
+      status: FriendStatus.BLOCKED,
+    },
+  });
+
+  if (isBlocked) {
+    return [null, generateError('This friend is blocked.')];
+  }
+
   const friendRequest = await prisma.friend.findFirst({
     where: { userId: userId, recipientId: friendId },
   });
@@ -122,6 +136,20 @@ export const acceptFriend = async (userId: string, friendId: string) => {
 };
 
 export const removeFriend = async (userId: string, friendId: string) => {
+  const isBlocked = await prisma.friend.findFirst({
+    where: {
+      OR: [
+        { userId: userId, recipientId: friendId },
+        { userId: friendId, recipientId: userId },
+      ],
+      status: FriendStatus.BLOCKED,
+    },
+  });
+
+  if (isBlocked) {
+    return [null, generateError('This friend is already removed.')];
+  }
+
   const friendRequest = await prisma.friend.findFirst({
     where: { userId: userId, recipientId: friendId },
   });
@@ -154,6 +182,9 @@ export async function blockUser(requesterId: string, userToBlockId: string) {
 
   const friend = await prisma.friend.findFirst({
     where: { userId: requesterId, recipientId: userToBlockId },
+  });
+  const recipientFriend = await prisma.friend.findFirst({
+    where: { userId: userToBlockId, recipientId: requesterId },
   });
   if (friend?.status === FriendStatus.BLOCKED) {
     return [null, generateError('This user is already blocked.')] as const;
@@ -193,8 +224,12 @@ export async function blockUser(requesterId: string, userToBlockId: string) {
     }),
   ]);
   await deleteAllInboxCache(requesterId);
-  //emit friend blocked
-  emitUserBlocked(requesterId, userToBlock);
+  // emit friend blocked
+  emitUserBlocked(
+    requesterId,
+    userToBlock,
+    recipientFriend && recipientFriend.status !== FriendStatus.BLOCKED
+  );
   return [true, null] as const;
 }
 
