@@ -59,7 +59,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
 
   const [error] = await deleteServer(req.params.serverId);
   if (error) {
-    res.status(403).json(error);
+    return res.status(403).json(error);
   }
 
   res.status(200).json({ success: true });
