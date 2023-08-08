@@ -9,6 +9,7 @@ import { getUser } from './getUser';
 import { updateUser } from './updateUser';
 import { getStats } from './getStats';
 import { userBatchUnsuspend } from './userBatchUnsuspend';
+import { serverDelete } from '../servers/serverDelete';
 
 const ModerationRouter = Router();
 
@@ -20,6 +21,7 @@ updateUser(ModerationRouter);
 getUsers(ModerationRouter);
 getUsersOnline(ModerationRouter);
 
+serverDelete(ModerationRouter);
 getServer(ModerationRouter);
 updateServer(ModerationRouter);
 getServers(ModerationRouter);
