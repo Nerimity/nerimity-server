@@ -9,7 +9,7 @@ import { getUser } from './getUser';
 import { updateUser } from './updateUser';
 import { getStats } from './getStats';
 import { userBatchUnsuspend } from './userBatchUnsuspend';
-import { serverDelete } from '../servers/serverDelete';
+import { serverDelete } from './serverDelete';
 
 const ModerationRouter = Router();
 

@@ -11,7 +11,7 @@ import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { deleteServer } from '../../services/Server';
 
-export function userBatchSuspend(Router: Router) {
+export function serverDelete(Router: Router) {
   Router.delete<any>(
     '/moderation/servers/:serverId',
     authenticate(),
