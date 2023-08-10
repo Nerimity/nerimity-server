@@ -339,6 +339,8 @@ model Message {
   embed Json?
 
   notifications         UserNotification[]
+
+  @@index([channelId])
 }
 
 // When deleting a channel or a server, we will delete 1000 messages every 1 minute
