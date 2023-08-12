@@ -346,8 +346,10 @@ model Message {
 // When deleting a channel or a server, we will delete 1000 messages every 1 minute
 // To not cause strain to the server.
 model ScheduleMessageDelete {
-  channelId   String   @id
-  scheduledAt DateTime @default(now())
+  channelId           String   @id
+  deletingMessages    Boolean  @default(true)
+  deletingAttachments Boolean  @default(true)
+  scheduledAt         DateTime @default(now())
 }
 
 model MessageReaction {

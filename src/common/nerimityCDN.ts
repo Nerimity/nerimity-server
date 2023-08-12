@@ -149,6 +149,31 @@ export async function deleteImage(path: string) {
   }).catch(() => {});
 }
 
+// deletes 1000 images from a channel.
+export async function deleteChannelAttachmentBatch(
+  channelId: string
+): Promise<
+  CustomResult<
+    { count?: number; status: boolean },
+    { type: string; code?: string }
+  >
+> {
+  return new Promise((resolve) => {
+    fetch(env.NERIMITY_CDN + `channels/${channelId}/attachments/batch`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ secret: env.NERIMITY_CDN_SECRET }),
+    })
+      .then(async (res) => {
+        if (res.status == 200) return resolve([await res.json(), null]);
+        return resolve([null, await res.json()]);
+      })
+      .catch(() => resolve([null, { type: 'CDN_CONNECTION_FAIL' }]));
+  });
+}
+
 // function base64MimeType(encoded: string) {
 //   let result = null;
 //   if (typeof encoded !== 'string') {

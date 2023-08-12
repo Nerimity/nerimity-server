@@ -19,6 +19,7 @@ import { ModerationRouter } from './routes/moderation/Router';
 import { ExploreRouter } from './routes/explore/Router';
 import schedule from 'node-schedule';
 import { PostsRouter } from './routes/posts/Router';
+import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -97,6 +98,29 @@ function scheduleDeleteMessages() {
   setInterval(async () => {
     const details = await prisma.scheduleMessageDelete.findFirst();
     if (!details) return;
+    if (!details.deletingAttachments && !details.deletingMessages) {
+      await prisma.scheduleMessageDelete.delete({
+        where: { channelId: details.channelId },
+      });
+      return;
+    }
+
+    if (details.deletingAttachments) {
+      const [, err] = await deleteChannelAttachmentBatch(details.channelId);
+
+      if (err?.type && err.type !== 'INVALID_PATH') {
+        console.trace(err);
+      }
+
+      if (err?.type === 'INVALID_PATH') {
+        await prisma.scheduleMessageDelete.update({
+          where: { channelId: details.channelId },
+          data: { deletingAttachments: false },
+        });
+      }
+    }
+
+    if (!details.deletingMessages) return;
 
     const deletedCount = await prisma.$executeRaw`
       DELETE FROM "Message"
@@ -110,13 +134,14 @@ function scheduleDeleteMessages() {
     `;
     if (deletedCount < 1000) {
       await prisma.$transaction([
-        prisma.scheduleMessageDelete.delete({
+        prisma.scheduleMessageDelete.update({
           where: { channelId: details.channelId },
+          data: { deletingMessages: false },
         }),
         prisma.channel.delete({ where: { id: details.channelId } }),
       ]);
     }
-    console.log('deleted', deletedCount, 'message(s).');
+    Log.info('Deleted', deletedCount, 'message(s).');
   }, 60000);
 }
 
