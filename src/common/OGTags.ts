@@ -58,9 +58,10 @@ export async function getOGTags(url: string): GetOGTagsReturn {
     (object.imageUrl.startsWith('http://') ||
       object.imageUrl.startsWith('https://'))
   ) {
-    object.imageMime = (await fetch(object.imageUrl)).headers.get(
-      'content-type'
-    );
+    object.imageMime = (
+      await fetch(object.imageUrl).catch(() => {})
+    )?.headers.get('content-type');
+    if (!object.imageMime) return false;
   }
 
   return object;
