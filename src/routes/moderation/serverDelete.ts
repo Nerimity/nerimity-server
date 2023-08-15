@@ -10,6 +10,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { deleteServer } from '../../services/Server';
+import { Log } from '../../common/Log';
 
 export function serverDelete(Router: Router) {
   Router.delete<any>(
@@ -61,6 +62,10 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
   if (error) {
     return res.status(403).json(error);
   }
+
+  Log.info(
+    `Server (${req.serverCache.name}) deleted by ${req.accountCache.user.username} (${req.accountCache.user.id}) via moderation route.`
+  );
 
   res.status(200).json({ success: true });
 }
