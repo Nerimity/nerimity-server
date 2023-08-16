@@ -129,8 +129,12 @@ model Server {
   banner                 String?
   hexColor               String
   defaultChannelId       String
-  systemChannelId        String? // Used for system messages eg member joined message.
+  systemChannelId        String? @unique // Used for system messages eg member joined message. 
   defaultRoleId          String
+
+
+  systemChannel          Channel?                @relation("systemChannel", fields: [systemChannelId], references: [id], onDelete: SetNull)
+
   createdById            String
 
   createdAt              DateTime                @default(now())
@@ -154,6 +158,7 @@ model Server {
 
   memberSettings ServerMemberSettings[]
   memberNotifications         UserNotification[]
+
 
 }
 
@@ -301,6 +306,8 @@ model Channel {
 
   // when this channel is scheduled to delete.
   deleting               Boolean?
+
+  systemChannelServer    Server?  @relation("systemChannel")
 }
 
 model Inbox {
