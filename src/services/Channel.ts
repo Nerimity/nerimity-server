@@ -340,6 +340,14 @@ export const deleteServerChannel = async (
       create: { channelId },
       update: {},
     }),
+    ...(server.systemChannelId === channel.id
+      ? [
+          prisma.server.update({
+            where: { id: server.id },
+            data: { systemChannelId: null },
+          }),
+        ]
+      : []),
   ]);
   deleteServerChannelCaches([channelId]);
 
