@@ -76,7 +76,6 @@ export const createServer = async (
           name: opts.name.trim(),
           createdById: opts.creatorId,
           defaultChannelId: channelId,
-          systemChannelId: channelId,
           defaultRoleId: roleId,
           hexColor: generateHexColor(),
         },
@@ -119,7 +118,13 @@ export const createServer = async (
         data: { id: serverMemberId, serverId, userId: opts.creatorId },
         include: { user: true },
       }),
+      prisma.server.update({
+        where: { id: serverId },
+        data: { systemChannelId: channelId },
+      }),
     ]);
+
+  server.systemChannelId = channelId;
 
   emitServerJoined({
     server: server,
