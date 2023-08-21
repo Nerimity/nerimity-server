@@ -73,14 +73,22 @@ export async function editPost(opts: {
   });
   if (!post) return [null, generateError('Post not found')] as const;
 
-  const newPost = await prisma.post.update({
-    where: { id: opts.postId },
-    data: {
-      content: opts.content.trim(),
-      editedAt: dateToDateTime(),
-    },
-    include: constructInclude(opts.editById),
-  });
+  const newPost = await prisma.post
+    .update({
+      where: { id: opts.postId },
+      data: {
+        content: opts.content.trim(),
+        editedAt: dateToDateTime(),
+      },
+      include: constructInclude(opts.editById),
+    })
+    .catch(() => {});
+
+  if (!newPost)
+    return [
+      null,
+      generateError('Something went wrong. Try again later.'),
+    ] as const;
 
   return [newPost, null] as const;
 }
