@@ -9,18 +9,23 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 
 export function serverChannelCreate(Router: Router) {
-  Router.post('/servers/:serverId/channels', 
+  Router.post(
+    '/servers/:serverId/channels',
     body('name')
-      .isString().withMessage('Name must be a string.')
+      .isString()
+      .withMessage('Name must be a string.')
       .trim()
-      .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.')
+      .isLength({ min: 4, max: 100 })
+      .withMessage('Name must be between 4 and 100 characters long.')
       .not()
       .contains('#')
       .withMessage('Channel cannot contain the # symbol')
       .optional(),
     body('type')
-      .isNumeric().withMessage('type must be a number.')
-      .isLength({ min: 1, max: 2 }).withMessage('type can be either 1 or 2.')
+      .isNumeric()
+      .withMessage('type must be a number.')
+      .isInt({ gt: 0, lt: 4 })
+      .withMessage('type must be ')
       .optional(),
     authenticate(),
     serverMemberVerification(),
@@ -34,22 +39,25 @@ interface Body {
   type?: ChannelType;
 }
 
-
-async function route (req: Request, res: Response) {
-  const body =  req.body as Body;
+async function route(req: Request, res: Response) {
+  const body = req.body as Body;
 
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
   }
 
-  const type = body.type ||  ChannelType.SERVER_TEXT;
+  const type = body.type || ChannelType.SERVER_TEXT;
+
+  let channelName = 'New Channel';
+  if (type === ChannelType.CATEGORY) channelName = 'New Category';
+  if (type === ChannelType.VOTE) channelName = 'New Voting Channel';
 
   const [newChannel, error] = await createServerChannel({
-    channelName: body.name?.trim() || (type === ChannelType.CATEGORY ? 'New Category' : 'New Channel'),
+    channelName: body.name?.trim() || channelName,
     creatorId: req.accountCache.user.id,
     serverId: req.serverCache.id,
-    channelType: body.type
+    channelType: body.type,
   });
   // const [newChannel, error] = await createServerChannel(req.serverCache.id, 'New Channel', req.accountCache.user.id);
 
