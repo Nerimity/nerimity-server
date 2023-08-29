@@ -37,6 +37,7 @@ import {
 } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
 import { leaveVoiceChannel } from './Voice';
+import { deleteServerMemberCache } from '../cache/ServerMemberCache';
 
 interface CreateServerOptions {
   name: string;
@@ -350,6 +351,7 @@ export const leaveServer = async (
     return [null, generateError('You are not in this server.')];
   }
 
+  await deleteServerMemberCache(serverId, userId);
   if (!isInServer && ban) {
     const isBanned = await prisma.bannedServerMember.findFirst({
       where: { serverId, userId },
