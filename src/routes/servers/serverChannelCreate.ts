@@ -51,7 +51,6 @@ async function route(req: Request, res: Response) {
 
   let channelName = 'New Channel';
   if (type === ChannelType.CATEGORY) channelName = 'New Category';
-  if (type === ChannelType.VOTE) channelName = 'New Voting Channel';
 
   const [newChannel, error] = await createServerChannel({
     channelName: body.name?.trim() || channelName,
