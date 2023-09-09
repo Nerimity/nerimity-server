@@ -24,7 +24,7 @@ export function serverChannelCreate(Router: Router) {
     body('type')
       .isNumeric()
       .withMessage('type must be a number.')
-      .isInt({ gt: 0, lt: 4 })
+      .isInt({ gt: 0, lt: 3 })
       .withMessage('type must be ')
       .optional(),
     authenticate(),
