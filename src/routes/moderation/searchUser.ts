@@ -29,6 +29,7 @@ async function route(req: Request, res: Response) {
         { tag: { contains: search, mode: 'insensitive' } },
         { id: search },
         { account: { ipAddress: { contains: search } } },
+        { account: { email: { contains: search, mode: 'insensitive' } } },
       ],
     },
     orderBy: {
