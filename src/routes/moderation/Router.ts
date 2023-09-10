@@ -10,12 +10,14 @@ import { updateUser } from './updateUser';
 import { getStats } from './getStats';
 import { userBatchUnsuspend } from './userBatchUnsuspend';
 import { serverDelete } from './serverDelete';
+import { searchUsers } from './searchUser';
 
 const ModerationRouter = Router();
 
 getStats(ModerationRouter);
 userBatchUnsuspend(ModerationRouter);
 userBatchSuspend(ModerationRouter);
+searchUsers(ModerationRouter);
 getUser(ModerationRouter);
 updateUser(ModerationRouter);
 getUsers(ModerationRouter);
