@@ -13,7 +13,6 @@ model Account {
   email           String  @unique
   password        String
   passwordVersion Int     @default(1)
-  ipAddress       String?
   userId          String  @unique
   user            User    @relation(fields: [userId], references: [id])
   suspendCount    Int     @default(0) // How many times the user has been suspended.
@@ -23,6 +22,7 @@ model Account {
 
   FCMTokens        FirebaseMessagingToken[]
 }
+
 
 model FirebaseMessagingToken {
   token String @unique
@@ -77,7 +77,24 @@ model User {
 
   notifications         UserNotification[]
   suspension            Suspension?
+
+  devices               UserDevice[]
 }
+
+// Used for ip banning.
+// In the future, account owners to see whos logged in to your account.
+model UserDevice {
+  id          String    @id
+  userId      String
+  ipAddress   String
+
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@index([userId, ipAddress])
+}
+
 
 model UserNotification {
   id             String @id

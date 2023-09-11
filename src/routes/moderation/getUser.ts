@@ -21,6 +21,7 @@ async function route(req: Request, res: Response) {
     include: {
       suspension: true,
       profile: true,
+      devices: { orderBy: { createdAt: 'desc' } },
       account: {
         select: {
           suspendCount: true,

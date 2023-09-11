@@ -9,6 +9,8 @@ import {
   CONNECTED_USER_ID_KEY_STRING,
   USER_PRESENCE_KEY_STRING,
 } from './CacheKeys';
+import { dateToDateTime, prisma } from '../common/database';
+import { generateId } from '../common/flakeId';
 
 export interface Presence {
   userId: string;
@@ -198,7 +200,8 @@ const beforeAuthenticateCache = async (
 };
 
 export async function authenticateUser(
-  token: string
+  token: string,
+  ipAddress: string
 ): Promise<
   CustomResult<AccountCache, { type?: string; message: string; data?: any }>
 > {
@@ -223,7 +226,28 @@ export async function authenticateUser(
   if (accountCache.passwordVersion !== decryptedToken.passwordVersion) {
     return [null, { message: 'Invalid token.' }];
   }
+
+  addDevice(accountCache.user.id, ipAddress);
+
   return [accountCache, null];
+}
+
+async function addDevice(userId: string, ipAddress: string) {
+  const device = await prisma.userDevice.findFirst({
+    where: { userId, ipAddress },
+  });
+
+  if (device) {
+    await prisma.userDevice.update({
+      where: { id: device.id },
+      data: { lastSeenAt: dateToDateTime() },
+    });
+    return;
+  }
+
+  await prisma.userDevice.create({
+    data: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime() },
+  });
 }
 
 // Moderators Only

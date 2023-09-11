@@ -19,17 +19,20 @@ import {
 import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
 import { onDisconnect } from './onDisconnect';
-import {
-  addUserToVoice,
-  getVoiceUsersByChannelId,
-} from '../../cache/VoiceCache';
+import { getVoiceUsersByChannelId } from '../../cache/VoiceCache';
 
 interface Payload {
   token: string;
 }
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
-  const [accountCache, error] = await authenticateUser(payload.token);
+  const ip = (
+    socket.handshake.headers['cf-connecting-ip'] ||
+    socket.handshake.headers['x-forwarded-for'] ||
+    socket.handshake.address
+  )?.toString();
+
+  const [accountCache, error] = await authenticateUser(payload.token, ip);
 
   if (error !== null) {
     emitError(socket, { ...error, disconnect: true });

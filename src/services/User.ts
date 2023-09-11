@@ -727,6 +727,7 @@ export async function deleteAccount(userId: string) {
     prisma.account.delete({
       where: { userId },
     }),
+    prisma.userDevice.deleteMany({ where: { userId } }),
   ]);
   await removeAccountCacheByUserIds([userId]);
 
