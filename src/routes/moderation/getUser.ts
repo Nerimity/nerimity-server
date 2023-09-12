@@ -33,9 +33,9 @@ async function route(req: Request, res: Response) {
 
   if (!user) return null;
 
-  if (!user.suspension?.expireAt) return res.json(user);
-  if (!isExpired(user.suspension.expireAt)) return res.json(user);
-  user.suspension = null;
+  if (user.suspension?.expireAt && isExpired(user.suspension.expireAt)) {
+    user.suspension = null;
+  }
 
   res.json(user);
 }

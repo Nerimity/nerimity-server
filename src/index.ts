@@ -39,6 +39,7 @@ export const main = (): Promise<http.Server> =>
       Log.info('Connected to PostgreSQL');
       scheduleBumpReset();
       scheduleDeleteMessages();
+      removeIPAddressSchedule();
       if (server.listening) return;
       server.listen(env.PORT, () => {
         Log.info('listening on *:' + env.PORT);
@@ -155,4 +156,21 @@ async function vacuumSchedule() {
   schedule.scheduleJob(rule, async () => {
     await prisma.$queryRaw`VACUUM VERBOSE ANALYZE "Message"`;
   });
+}
+
+// remove ip addresses that are last seen more than 15 days ago.
+async function removeIPAddressSchedule() {
+  // Schedule the task to run everyday at 0:00 UTC
+  const rule = new schedule.RecurrenceRule();
+  rule.hour = 0;
+  rule.minute = 0;
+
+  await prisma.userDevice.deleteMany({
+    where: {
+      lastSeenAt: {
+        lte: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+      },
+    },
+  });
+  schedule.scheduleJob(rule, async () => {});
 }
