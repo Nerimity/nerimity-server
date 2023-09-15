@@ -158,7 +158,7 @@ async function vacuumSchedule() {
   });
 }
 
-// remove ip addresses that are last seen more than 15 days ago.
+// remove ip addresses that are last seen more than 7 days ago.
 async function removeIPAddressSchedule() {
   // Schedule the task to run everyday at 0:00 UTC
   const rule = new schedule.RecurrenceRule();
@@ -168,7 +168,7 @@ async function removeIPAddressSchedule() {
   await prisma.userDevice.deleteMany({
     where: {
       lastSeenAt: {
-        lte: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+        lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       },
     },
   });

@@ -37,8 +37,11 @@ export function userBatchSuspend(Router: Router) {
       .withMessage('Reason is required.')
       .isString()
       .withMessage('Reason must be a string.')
-      .isLength({ min: 0, max: 500 })
-      .withMessage('Reason must be less than 500 characters long.'),
+      .isLength({ min: 0, max: 500 }),
+    body('ipBan')
+      .optional(true)
+      .isBoolean()
+      .withMessage('ipBan must be a boolean.'),
     body('password')
       .isString()
       .withMessage('Password must be a string!')
@@ -54,7 +57,15 @@ interface Body {
   days: number;
   reason?: string;
   password: string;
+  ipBan?: boolean;
 }
+
+const DAY_IN_MS = 86400000;
+const expireAfter = (days: number) => {
+  const now = Date.now();
+  const expireDate = new Date(now + DAY_IN_MS * days);
+  return expireDate;
+};
 
 async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const validateError = customExpressValidatorResult(req);
@@ -85,9 +96,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
 
-  const DAY_IN_MS = 86400000;
-  const now = Date.now();
-  const expireDate = new Date(now + DAY_IN_MS * req.body.days);
+  const expireDateTime = dateToDateTime(expireAfter(req.body.days));
 
   const suspendedUsers = await prisma.suspension.findMany({
     where: { userId: { in: sanitizedUserIds } },
@@ -109,8 +118,6 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     },
   });
 
-  const expireDateTime = dateToDateTime(expireDate);
-
   await prisma.$transaction(
     sanitizedUserIds.map((userId) =>
       prisma.suspension.upsert({
@@ -131,12 +138,54 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     )
   );
 
+  await prisma.firebaseMessagingToken.deleteMany({
+    where: { account: { userId: { in: sanitizedUserIds } } },
+  });
+
   await disconnectUsers({
     userIds: sanitizedUserIds,
     clearCache: true,
     reason: req.body.reason,
     expire: expireDateTime,
   });
+
+  if (req.body.ipBan) {
+    const ipExpireDateTime = dateToDateTime(expireAfter(7));
+
+    const suspendedUserDevices = await prisma.userDevice.findMany({
+      where: { userId: { in: sanitizedUserIds } },
+    });
+    const suspendedUserIps = suspendedUserDevices.map(
+      (device) => device.ipAddress
+    );
+
+    const userDevicesWithSameIPs = await prisma.userDevice.findMany({
+      where: { ipAddress: { in: suspendedUserIps } },
+    });
+    const ips = userDevicesWithSameIPs.map((device) => device.ipAddress);
+    const userIds = userDevicesWithSameIPs.map((device) => device.userId);
+
+    await prisma.$transaction(
+      ips.map((ip) =>
+        prisma.bannedIp.upsert({
+          where: { ipAddress: ip },
+          create: {
+            id: generateId(),
+            ipAddress: ip,
+            expireAt: ipExpireDateTime,
+          },
+          update: {},
+        })
+      )
+    );
+    await disconnectUsers({
+      userIds: userIds,
+      clearCache: true,
+      type: 'ip-ban',
+      message: 'You have been IP Banned',
+      expire: ipExpireDateTime,
+    });
+  }
 
   res.status(200).json({ success: true });
 }

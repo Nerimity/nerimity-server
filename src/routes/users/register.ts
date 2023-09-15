@@ -1,30 +1,52 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import {
+  customExpressValidatorResult,
+  generateError,
+} from '../../common/errorHandler';
 import { turnstileVerify } from '../../common/turnstileVerify';
 import { rateLimit } from '../../middleware/rateLimit';
-import { registerUser } from '../../services/User';
+import { isIpBanned, registerUser } from '../../services/User';
 
 export function register(Router: Router) {
-  Router.post('/users/register',
+  Router.post(
+    '/users/register',
     body('token')
-      .isString().withMessage('Token must be a string.')
-      .isLength({ min: 1, max: 5000 }).withMessage('Token must be between 1 and 5000 characters long.')
+      .isString()
+      .withMessage('Token must be a string.')
+      .isLength({ min: 1, max: 5000 })
+      .withMessage('Token must be between 1 and 5000 characters long.')
       .optional(true),
     body('email')
-      .not().isEmpty().withMessage('Email is required.')
-      .isEmail().withMessage('Invalid email.')
-      .isLength({ min: 1, max: 320 }).withMessage('Email must be between 1 and 320 characters long.'),
+      .not()
+      .isEmpty()
+      .withMessage('Email is required.')
+      .isEmail()
+      .withMessage('Invalid email.')
+      .isLength({ min: 1, max: 320 })
+      .withMessage('Email must be between 1 and 320 characters long.'),
     body('username')
-      .not().isEmpty().withMessage('Username is required.')
-      .isString().withMessage('Invalid username.')
-      .not().contains('@').withMessage('Username cannot contain the @ symbol')
-      .not().contains(':').withMessage('Username cannot contain the : symbol')
-      .isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.'),
+      .not()
+      .isEmpty()
+      .withMessage('Username is required.')
+      .isString()
+      .withMessage('Invalid username.')
+      .not()
+      .contains('@')
+      .withMessage('Username cannot contain the @ symbol')
+      .not()
+      .contains(':')
+      .withMessage('Username cannot contain the : symbol')
+      .isLength({ min: 3, max: 35 })
+      .withMessage('Username must be between 3 and 35 characters long.'),
     body('password')
-      .not().isEmpty().withMessage('Password is required.')
-      .isString().withMessage('Password must be a string.')
-      .isLength({ min: 4, max: 255 }).withMessage('Password must be between 4 and 255 characters long.'),
+      .not()
+      .isEmpty()
+      .withMessage('Password is required.')
+      .isString()
+      .withMessage('Password must be a string.')
+      .isLength({ min: 4, max: 255 })
+      .withMessage('Password must be between 4 and 255 characters long.'),
     rateLimit({
       name: 'register_limit',
       message: 'Something went wrong! Please try again in 1 minute.',
@@ -43,7 +65,7 @@ interface Body {
   token: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const validateError = customExpressValidatorResult(req);
@@ -55,10 +77,17 @@ async function route (req: Request, res: Response) {
   const validToken = await turnstileVerify(body.token);
 
   if (!validToken) {
-    return res.status(401).json(generateError('Invalid captcha! Please try again.', 'token'));
+    return res
+      .status(401)
+      .json(generateError('Invalid captcha! Please try again.', 'token'));
   }
 
-  const [ userToken, errors ] = await registerUser({
+  const ipBanned = await isIpBanned(req.userIP);
+  if (ipBanned) {
+    return res.status(401).json(generateError('You are IP banned.'));
+  }
+
+  const [userToken, errors] = await registerUser({
     email: body.email,
     username: body.username,
     password: body.password,

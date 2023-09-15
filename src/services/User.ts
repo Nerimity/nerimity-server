@@ -21,7 +21,7 @@ import {
 import { FriendStatus } from '../types/Friend';
 import { excludeFields, exists, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
-import { Account, Follower, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import {
   createPostNotification,
@@ -33,7 +33,6 @@ import { getIO } from '../socket/socket';
 import { AUTHENTICATE_ERROR } from '../common/ClientEventNames';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { leaveVoiceChannel } from './Voice';
-import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { MessageInclude } from './Message';
 interface RegisterOpts {
   email: string;
@@ -44,6 +43,18 @@ interface RegisterOpts {
 export const isExpired = (expireDate: Date) => {
   const now = new Date();
   return now > expireDate;
+};
+
+export const isIpBanned = async (ipAddress: string) => {
+  const ban = await prisma.bannedIp.findFirst({ where: { ipAddress } });
+  if (!ban) return false;
+  if (!ban.expireAt) return ban;
+
+  if (!isExpired(ban.expireAt)) {
+    return ban;
+  }
+  await prisma.bannedIp.delete({ where: { ipAddress } });
+  return false;
 };
 
 export const getSuspensionDetails = async (userId: string) => {

@@ -2,7 +2,11 @@ import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
-import { getAccountByUserId, getSuspensionDetails } from '../services/User';
+import {
+  getAccountByUserId,
+  getSuspensionDetails,
+  isIpBanned,
+} from '../services/User';
 import {
   ACCOUNT_CACHE_KEY_STRING,
   CONNECTED_SOCKET_ID_KEY_SET,
@@ -185,7 +189,8 @@ export async function removeAccountCacheByUserIds(userIds: string[]) {
 }
 
 const beforeAuthenticateCache = async (
-  account: AccountCache
+  account: AccountCache,
+  ipAddress: string
 ): Promise<{ type?: string; message: string; data?: any } | undefined> => {
   const suspendDetails = await getSuspensionDetails(account.user.id);
   if (suspendDetails)
@@ -197,6 +202,16 @@ const beforeAuthenticateCache = async (
         expire: suspendDetails.expireAt,
       },
     };
+  const ipBanned = await isIpBanned(ipAddress);
+  if (ipBanned) {
+    return {
+      message: 'You are IP banned.',
+      data: {
+        type: 'ip-ban',
+        expire: ipBanned.expireAt,
+      },
+    };
+  }
 };
 
 export async function authenticateUser(
@@ -212,7 +227,7 @@ export async function authenticateUser(
 
   const [accountCache, error] = await getAccountCache(
     decryptedToken.userId,
-    beforeAuthenticateCache
+    (account) => beforeAuthenticateCache(account, ipAddress)
   );
 
   if (error) {

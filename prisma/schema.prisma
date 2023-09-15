@@ -24,6 +24,13 @@ model Account {
 }
 
 
+// make a model to store all the ips that have been banned. it will also have an expire date
+model BannedIp {
+  id String @id
+  ipAddress String @unique
+  expireAt  DateTime
+}
+
 model FirebaseMessagingToken {
   token String @unique
   accountId String

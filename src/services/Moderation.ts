@@ -3,6 +3,8 @@ import { emitErrorTo } from '../emits/Connection';
 
 interface DisconnectUsersOptions {
   userIds: string[];
+  message?: string;
+  type?: string;
   reason?: string;
   expire?: string;
   clearCache: boolean;
@@ -16,7 +18,11 @@ export async function disconnectUsers(opts: DisconnectUsersOptions) {
   emitErrorTo({
     to: opts.userIds,
     disconnect: true,
-    message: 'You are suspended.',
-    data: { type: 'suspend', reason: opts.reason, expire: opts.expire },
+    message: opts.message || 'You are suspended.',
+    data: {
+      type: opts.type || 'suspend',
+      reason: opts.reason,
+      expire: opts.expire,
+    },
   });
 }
