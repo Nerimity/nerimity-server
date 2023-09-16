@@ -215,6 +215,23 @@ export async function authenticateUser(
     return [null, { message: 'Invalid token.' }];
   }
 
+  const [accountCache, error] = await getAccountCache(
+    decryptedToken.userId,
+    beforeAuthenticateCache
+  );
+
+  if (error) {
+    return [null, error];
+  }
+
+  if (!accountCache) {
+    return [null, { message: 'Invalid token.' }];
+  }
+  // compare password version
+  if (accountCache.passwordVersion !== decryptedToken.passwordVersion) {
+    return [null, { message: 'Invalid token.' }];
+  }
+
   const isIpAllowed = await isIPAllowedCache(ipAddress);
 
   if (!isIpAllowed) {
@@ -232,23 +249,6 @@ export async function authenticateUser(
       ];
     }
     await addAllowedIPCache(ipAddress);
-  }
-
-  const [accountCache, error] = await getAccountCache(
-    decryptedToken.userId,
-    beforeAuthenticateCache
-  );
-
-  if (error) {
-    return [null, error];
-  }
-
-  if (!accountCache) {
-    return [null, { message: 'Invalid token.' }];
-  }
-  // compare password version
-  if (accountCache.passwordVersion !== decryptedToken.passwordVersion) {
-    return [null, { message: 'Invalid token.' }];
   }
 
   addDevice(accountCache.user.id, ipAddress);
@@ -299,5 +299,5 @@ export async function removeAllowedIPsCache(ipAddresses: string[]) {
 export async function isIPAllowedCache(ipAddress: string) {
   const key = BANNED_IP_KEY_SET();
   const exists = await redisClient.sIsMember(key, ipAddress);
-  return !exists;
+  return exists;
 }
