@@ -11,6 +11,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { disconnectUsers } from '../../services/Moderation';
 import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
+import { removeAllowedIPsCache } from '../../cache/UserCache';
 
 export function userBatchSuspend(Router: Router) {
   Router.post(
@@ -164,6 +165,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     });
     const ips = userDevicesWithSameIPs.map((device) => device.ipAddress);
     const userIds = userDevicesWithSameIPs.map((device) => device.userId);
+    await removeAllowedIPsCache(ips);
 
     await prisma.$transaction(
       ips.map((ip) =>

@@ -9,6 +9,7 @@ import {
 } from '../services/User';
 import {
   ACCOUNT_CACHE_KEY_STRING,
+  BANNED_IP_KEY_SET,
   CONNECTED_SOCKET_ID_KEY_SET,
   CONNECTED_USER_ID_KEY_STRING,
   USER_PRESENCE_KEY_STRING,
@@ -189,8 +190,7 @@ export async function removeAccountCacheByUserIds(userIds: string[]) {
 }
 
 const beforeAuthenticateCache = async (
-  account: AccountCache,
-  ipAddress: string
+  account: AccountCache
 ): Promise<{ type?: string; message: string; data?: any } | undefined> => {
   const suspendDetails = await getSuspensionDetails(account.user.id);
   if (suspendDetails)
@@ -202,16 +202,6 @@ const beforeAuthenticateCache = async (
         expire: suspendDetails.expireAt,
       },
     };
-  const ipBanned = await isIpBanned(ipAddress);
-  if (ipBanned) {
-    return {
-      message: 'You are IP banned.',
-      data: {
-        type: 'ip-ban',
-        expire: ipBanned.expireAt,
-      },
-    };
-  }
 };
 
 export async function authenticateUser(
@@ -225,9 +215,28 @@ export async function authenticateUser(
     return [null, { message: 'Invalid token.' }];
   }
 
+  const isIpAllowed = await isIPAllowedCache(ipAddress);
+
+  if (!isIpAllowed) {
+    const ipBanned = await isIpBanned(ipAddress);
+    if (ipBanned) {
+      return [
+        null,
+        {
+          message: 'You are IP banned.',
+          data: {
+            type: 'ip-ban',
+            expire: ipBanned.expireAt,
+          },
+        },
+      ];
+    }
+    await addAllowedIPCache(ipAddress);
+  }
+
   const [accountCache, error] = await getAccountCache(
     decryptedToken.userId,
-    (account) => beforeAuthenticateCache(account, ipAddress)
+    beforeAuthenticateCache
   );
 
   if (error) {
@@ -270,4 +279,25 @@ export async function getAllConnectedUserIds() {
   const key = USER_PRESENCE_KEY_STRING('*');
   const keys = await redisClient.keys(key);
   return keys.map((k) => k.split(':')[1]);
+}
+
+export async function addAllowedIPCache(ipAddress: string) {
+  const key = BANNED_IP_KEY_SET();
+  const multi = redisClient.multi();
+
+  multi.sAdd(key, ipAddress);
+  // expire key every 1 hour
+  multi.expire(key, 60 * 60);
+  await multi.exec();
+}
+
+export async function removeAllowedIPsCache(ipAddresses: string[]) {
+  const key = BANNED_IP_KEY_SET();
+  await redisClient.sRem(key, ipAddresses);
+}
+
+export async function isIPAllowedCache(ipAddress: string) {
+  const key = BANNED_IP_KEY_SET();
+  const exists = await redisClient.sIsMember(key, ipAddress);
+  return !exists;
 }
