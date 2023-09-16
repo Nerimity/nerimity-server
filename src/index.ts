@@ -165,12 +165,13 @@ async function removeIPAddressSchedule() {
   rule.hour = 0;
   rule.minute = 0;
 
-  await prisma.userDevice.deleteMany({
-    where: {
-      lastSeenAt: {
-        lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+  schedule.scheduleJob(rule, async () => {
+    await prisma.userDevice.deleteMany({
+      where: {
+        lastSeenAt: {
+          lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
       },
-    },
+    });
   });
-  schedule.scheduleJob(rule, async () => {});
 }
