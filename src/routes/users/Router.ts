@@ -15,8 +15,13 @@ import { userDeleteAccount } from './userDeleteAccount';
 import { userBlock } from './userBlock';
 import { userUnblock } from './userUnblock';
 import { userNotifications } from './userNotifications';
+import { userEmailConfirmCodeSend } from './userEmailConfirmCodeSend';
+import { userEmailConfirmCode } from './userEmailConfirmCode';
 
 const UsersRouter = Router();
+
+userEmailConfirmCode(UsersRouter);
+userEmailConfirmCodeSend(UsersRouter);
 
 register(UsersRouter);
 login(UsersRouter);

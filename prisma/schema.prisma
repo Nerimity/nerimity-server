@@ -21,6 +21,10 @@ model Account {
   dmStatus               Int                     @default(0)
 
   FCMTokens        FirebaseMessagingToken[]
+
+  emailConfirmed  Boolean @default(false)
+  emailConfirmCode String?
+
 }
 
 

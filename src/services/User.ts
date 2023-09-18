@@ -1,6 +1,10 @@
 import { UserStatus } from '../types/User';
 import bcrypt from 'bcrypt';
-import { generateHexColor, generateTag } from '../common/random';
+import {
+  generateEmailConfirmCode,
+  generateHexColor,
+  generateTag,
+} from '../common/random';
 import { generateToken } from '../common/JWT';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -34,6 +38,7 @@ import { AUTHENTICATE_ERROR } from '../common/ClientEventNames';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { leaveVoiceChannel } from './Voice';
 import { MessageInclude } from './Message';
+import env from '../common/env';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -780,4 +785,68 @@ export async function getUserNotifications(userId: string) {
   }
 
   return notifications;
+}
+
+export async function sendEmailConfirmCode(userId: string) {
+  const account = await prisma.account.findUnique({
+    where: { userId },
+    select: { email: true, emailConfirmed: true },
+  });
+
+  if (!account) {
+    return [null, generateError('Invalid userId.')] as const;
+  }
+
+  if (account.emailConfirmed) {
+    return [null, generateError('Email already verified.')] as const;
+  }
+
+  const code = generateEmailConfirmCode();
+
+  await prisma.account.update({
+    where: { userId },
+    data: {
+      emailConfirmCode: code,
+    },
+  });
+
+  if (env.DEV_MODE) {
+    return [{ message: `DEV MODE: Email verify code: ${code}` }, null] as const;
+  }
+  return [{ message: 'Email confirmation code sent.' }, null] as const;
+}
+
+export async function verifyEmailConfirmCode(userId: string, code: string) {
+  const account = await prisma.account.findUnique({
+    where: { userId },
+    select: { email: true, emailConfirmCode: true, emailConfirmed: true },
+  });
+
+  if (!account) {
+    return [null, generateError('Invalid userId.')] as const;
+  }
+
+  if (account.emailConfirmed) {
+    return [null, generateError('Email already verified.')] as const;
+  }
+
+  if (!account.emailConfirmCode) {
+    return [
+      null,
+      generateError('You must request email verification first.'),
+    ] as const;
+  }
+
+  if (account.emailConfirmCode !== code) {
+    return [null, generateError('Invalid code.')] as const;
+  }
+
+  await prisma.account.update({
+    where: { userId },
+    data: {
+      emailConfirmed: true,
+      emailConfirmCode: null,
+    },
+  });
+  return [true, null] as const;
 }

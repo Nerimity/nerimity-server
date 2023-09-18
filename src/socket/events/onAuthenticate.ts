@@ -46,7 +46,12 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     include: {
       friends: { include: { recipient: true } },
       account: {
-        select: { email: true, serverOrderIds: true, dmStatus: true },
+        select: {
+          email: true,
+          serverOrderIds: true,
+          dmStatus: true,
+          emailConfirmed: true,
+        },
       },
     },
   });
@@ -143,6 +148,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       customStatus: user.customStatus,
       orderedServerIds: user.account?.serverOrderIds,
       dmStatus: user.account?.dmStatus,
+      emailConfirmed: user.account?.emailConfirmed,
     },
     voiceChannelUsers,
     servers,
