@@ -39,6 +39,7 @@ import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { leaveVoiceChannel } from './Voice';
 import { MessageInclude } from './Message';
 import env from '../common/env';
+import { sendMail } from '../common/mailer';
 interface RegisterOpts {
   email: string;
   username: string;
@@ -813,6 +814,13 @@ export async function sendEmailConfirmCode(userId: string) {
   if (env.DEV_MODE) {
     return [{ message: `DEV MODE: Email verify code: ${code}` }, null] as const;
   }
+
+  await sendMail({
+    to: account.email,
+    subject: 'Confirmation Code',
+    body: `Your confirmation code is: ${code}`,
+  });
+
   return [{ message: 'Email confirmation code sent.' }, null] as const;
 }
 
