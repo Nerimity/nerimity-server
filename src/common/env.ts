@@ -2,7 +2,7 @@ import { Log } from './Log';
 
 const origin = (): string | string[] => {
   if (!process.env.ORIGIN) {
-    Log.warn('ORIGIN is not provided in .env. \'*\' will be used by default.');
+    Log.warn("ORIGIN is not provided in .env. '*' will be used by default.");
     return '*';
   }
   if (process.env.ORIGIN.startsWith('[')) {
@@ -10,7 +10,6 @@ const origin = (): string | string[] => {
   }
   return process.env.ORIGIN;
 };
-
 
 export default {
   DEV_MODE: process.env.DEV_MODE === 'true',
@@ -24,10 +23,20 @@ export default {
   NERIMITY_CDN: process.env.NERIMITY_CDN as string,
   NERIMITY_CDN_SECRET: process.env.NERIMITY_CDN_SECRET as string,
 
-  MAX_CHANNELS_PER_SERVER: parseInt(process.env.MAX_CHANNELS_PER_SERVER || '0') as number,
-  MAX_INVITES_PER_SERVER: parseInt(process.env.MAX_INVITES_PER_SERVER || '0') as number,
-  MAX_ROLES_PER_SERVER: parseInt(process.env.MAX_ROLES_PER_SERVER || '0') as number,
+  MAX_CHANNELS_PER_SERVER: parseInt(
+    process.env.MAX_CHANNELS_PER_SERVER || '0'
+  ) as number,
+  MAX_INVITES_PER_SERVER: parseInt(
+    process.env.MAX_INVITES_PER_SERVER || '0'
+  ) as number,
+  MAX_ROLES_PER_SERVER: parseInt(
+    process.env.MAX_ROLES_PER_SERVER || '0'
+  ) as number,
 
   DEFAULT_SERVER_ROLE_COLOR: process.env.DEFAULT_SERVER_ROLE_COLOR as string,
-  TURNSTILE_SECRET: process.env.TURNSTILE_SECRET as string,
+
+  SMTP_SERVICE: process.env.SMTP_SERVICE as string,
+  SMTP_USER: process.env.SMTP_USER as string,
+  SMTP_PASS: process.env.SMTP_PASS as string,
+  SMTP_FROM: process.env.SMTP_FROM as string,
 };
