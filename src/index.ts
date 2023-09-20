@@ -176,5 +176,3 @@ async function removeIPAddressSchedule() {
     });
   });
 }
-
-sendConfirmCodeMail('23464', 'saawalkhn@googlemail.com');
