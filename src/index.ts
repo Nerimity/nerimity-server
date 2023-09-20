@@ -20,6 +20,7 @@ import { ExploreRouter } from './routes/explore/Router';
 import schedule from 'node-schedule';
 import { PostsRouter } from './routes/posts/Router';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
+import { sendConfirmCodeMail } from './common/mailer';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -175,3 +176,5 @@ async function removeIPAddressSchedule() {
     });
   });
 }
+
+sendConfirmCodeMail('23464', 'saawalkhn@googlemail.com');
