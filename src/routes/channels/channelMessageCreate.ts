@@ -63,10 +63,14 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  if (req.channelCache.inbox && !req.channelCache.inbox.canMessage) {
+  if (req.channelCache.serverId && !req.accountCache.emailConfirmed) {
     return res
       .status(400)
-      .json(generateError('You cannot message this user.'));
+      .json(generateError('You must confirm your email first.'));
+  }
+
+  if (req.channelCache.inbox && !req.channelCache.inbox.canMessage) {
+    return res.status(400).json(generateError('You cannot message this user.'));
   }
 
   if (!TextChannelTypes.includes(req.channelCache.type)) {

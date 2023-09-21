@@ -448,6 +448,7 @@ export const updateUser = async (
       user: true,
       password: true,
       passwordVersion: true,
+      email: true,
     },
   });
 
@@ -528,6 +529,11 @@ export const updateUser = async (
             passwordVersion: { increment: 1 },
           }
         : undefined),
+
+      ...(opts.email && opts.email !== account.email
+        ? { emailConfirmed: false }
+        : undefined),
+
       user: {
         update: {
           ...addToObjectIfExists('username', opts.username?.trim()),
@@ -535,6 +541,7 @@ export const updateUser = async (
           ...addToObjectIfExists('avatar', opts.avatar),
           ...addToObjectIfExists('banner', opts.banner),
           ...addToObjectIfExists('profile', opts.profile),
+
           ...(opts.profile
             ? {
                 profile: {
@@ -856,5 +863,7 @@ export async function verifyEmailConfirmCode(userId: string, code: string) {
       emailConfirmCode: null,
     },
   });
+
+  await removeAccountCacheByUserIds([userId]);
   return [true, null] as const;
 }

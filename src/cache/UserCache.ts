@@ -119,6 +119,7 @@ export async function socketDisconnect(socketId: string, userId: string) {
 
 export interface AccountCache {
   id: string;
+  emailConfirmed?: boolean;
   passwordVersion: number;
   user: UserCache;
 }
@@ -162,6 +163,7 @@ export async function getAccountCache(
   const accountCache: AccountCache = {
     id: account.id,
     passwordVersion: account.passwordVersion,
+    emailConfirmed: account.emailConfirmed,
     user: {
       id: account.user.id,
       username: account.user.username,
