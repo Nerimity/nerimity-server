@@ -1,4 +1,5 @@
-import { createAdapter, RedisAdapter } from '@socket.io/redis-adapter';
+import { createAdapter } from '@socket.io/redis-streams-adapter';
+
 import socketIO from 'socket.io';
 import http from 'http';
 import { redisClient } from '../common/redis';
@@ -10,34 +11,24 @@ let io: socketIO.Server;
 
 export async function createIO(server: http.Server) {
   io = new socketIO.Server(server, {
-    transports: ['websocket']
+    transports: ['websocket'],
   });
 
-  const pub = redisClient;
-  const sub = redisClient.duplicate();
-  await sub.connect();
-
-  io.adapter(createAdapter(pub, sub));
+  io.adapter(createAdapter(redisClient));
   io.on('connection', onConnection);
-
 }
 
 export function getIO() {
   return io as socketIO.Server;
 }
 
-export function getIOAdapter() {
-  return io.of('/').adapter as RedisAdapter;
-}
-
 interface EmitToAllOptions {
   event: string;
   payload: any;
   userId: string;
-  excludeSocketId?: string
-  excludeSelf?: boolean
+  excludeSocketId?: string;
+  excludeSelf?: boolean;
 }
-
 
 // emit to your friends and your servers.
 // Note: when broadcasting to an empty array, it will emit to everyone :(
