@@ -7,17 +7,13 @@ name: Testing
 
 on:
   push:
-    branches: [ main ]
-
-
-
+    branches: [main]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    container: node:16
-    
+    container: node:18
+
     services:
       # Label used to access the service container
       postgres:
@@ -42,23 +38,22 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v2
-          
+
       - run: |
           npm i -g pnpm
           pnpm i
       - run: pnpm run prisma:migrate_dev
         env:
-          DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
+          DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
       - run: pnpm test
         env:
-          DATABASE_URL: "postgresql://postgres:123@postgres:5432/postgres"
+          DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
           DEV_MODE: true
           REDIS_HOST: redis
           REDIS_PORT: 6379
-          JWT_SECRET: "change me"
+          JWT_SECRET: 'change me'
           PORT: 80
           MAX_CHANNELS_PER_SERVER: 100
           MAX_INVITES_PER_SERVER: 10
           MAX_ROLES_PER_SERVER: 30
-          DEFAULT_SERVER_ROLE_COLOR: "#fff"
-        
+          DEFAULT_SERVER_ROLE_COLOR: '#fff'
