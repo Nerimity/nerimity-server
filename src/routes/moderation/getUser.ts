@@ -24,6 +24,8 @@ async function route(req: Request, res: Response) {
       devices: { orderBy: { createdAt: 'desc' } },
       account: {
         select: {
+          emailConfirmed: true,
+          emailConfirmCode: true,
           suspendCount: true,
           email: true,
         },
