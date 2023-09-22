@@ -67,6 +67,10 @@ export function userUpdate(Router: Router) {
       .isInt({ min: 0, max: 2 })
       .withMessage('dmStatus must be a number.')
       .optional({ nullable: true }),
+    body('confirmEmail')
+      .isBoolean()
+      .withMessage('confirmEmail must be a boolean.')
+      .optional({ nullable: true }),
     route
   );
 }
@@ -83,6 +87,7 @@ interface Body {
   bio?: string | null;
   socketId?: string;
   dmStatus?: number;
+  emailConfirmed?: boolean;
 }
 
 async function route(req: Request, res: Response) {
@@ -106,6 +111,7 @@ async function route(req: Request, res: Response) {
     banner: body.banner,
     newPassword: body.newPassword,
     ...addToObjectIfExists('dmStatus', body.dmStatus),
+    emailConfirmed: body.emailConfirmed,
     ...(body.bio !== undefined
       ? {
           profile: {

@@ -433,6 +433,7 @@ interface UpdateUserProps {
   avatarPoints?: number[];
   banner?: string;
   dmStatus?: DmStatus;
+  emailConfirmed?: boolean;
 
   profile?: {
     bio?: string | null;
@@ -523,6 +524,7 @@ export const updateUser = async (
     data: {
       ...addToObjectIfExists('email', opts.email?.trim()),
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
+      ...addToObjectIfExists('emailConfirmed', opts.emailConfirmed),
       ...(opts.newPassword?.trim()
         ? {
             password: await bcrypt.hash(opts.newPassword!.trim(), 10),
