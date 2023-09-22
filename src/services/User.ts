@@ -818,9 +818,9 @@ export async function sendEmailConfirmCode(userId: string) {
     },
   });
 
-  // if (env.DEV_MODE) {
-  //   return [{ message: `DEV MODE: Email verify code: ${code}` }, null] as const;
-  // }
+  if (env.DEV_MODE) {
+    return [{ message: `DEV MODE: Email verify code: ${code}` }, null] as const;
+  }
 
   sendConfirmCodeMail(code, account.email);
 
