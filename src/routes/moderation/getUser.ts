@@ -26,6 +26,8 @@ async function route(req: Request, res: Response) {
         select: {
           suspendCount: true,
           email: true,
+          emailConfirmCode: true,
+          emailConfirmed: true,
         },
       },
     },

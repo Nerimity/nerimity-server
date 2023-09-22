@@ -31,6 +31,8 @@ interface Body {
   badges?: number;
   newPassword?: string;
   password?: string;
+
+  emailConfirmed?: boolean;
 }
 
 async function route(req: Request, res: Response) {
@@ -101,6 +103,12 @@ async function route(req: Request, res: Response) {
 
   const update = {
     ...addToObjectIfExists('email', body.email),
+    ...(body.emailConfirmed !== undefined
+      ? {
+          emailConfirmed: true,
+          emailConfirmCode: null,
+        }
+      : undefined),
     ...(body.newPassword?.trim?.()
       ? {
           password: await bcrypt.hash(body.newPassword.trim(), 10),
