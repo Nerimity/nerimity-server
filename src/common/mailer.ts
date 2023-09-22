@@ -42,5 +42,5 @@ export async function sendConfirmCodeMail(code: string, to: string) {
     to,
     subject: 'Confirmation Code',
     body: string,
-  }).then(console.log);
+  });
 }

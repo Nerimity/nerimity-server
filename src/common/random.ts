@@ -7,6 +7,14 @@ function generateRandom(length: number) {
   }
   return str;
 }
+function generateRandomNum(length: number) {
+  const chars = '0123456789';
+  let str = '';
+  for (let i = 0; i < length; i++) {
+    str += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return str;
+}
 
 export function generateTag() {
   return generateRandom(4);
@@ -17,7 +25,7 @@ export function generateServerInviteCode() {
 }
 
 export function generateEmailConfirmCode() {
-  return generateRandom(5);
+  return generateRandomNum(5);
 }
 
 export function generateHexColor() {

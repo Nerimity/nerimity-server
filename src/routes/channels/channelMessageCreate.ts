@@ -66,7 +66,7 @@ async function route(req: Request, res: Response) {
   if (req.channelCache.serverId && !req.accountCache.emailConfirmed) {
     return res
       .status(400)
-      .json(generateError('You must confirm your email first.'));
+      .json(generateError('You must confirm your email to send messages.'));
   }
 
   if (req.channelCache.inbox && !req.channelCache.inbox.canMessage) {
