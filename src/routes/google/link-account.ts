@@ -1,9 +1,8 @@
 import { Request, Response, Router } from 'express';
-import { authenticate } from '../../middleware/authenticate';
 import { googleOAuth2Client } from '../../middleware/GoogleOAuth2Client';
 import { rateLimit } from '../../middleware/rateLimit';
 import { body } from 'express-validator';
-import { decryptToken } from '../../common/JWT';
+
 import { generateError } from '../../common/errorHandler';
 import { authenticateUser } from '../../cache/UserCache';
 
@@ -51,7 +50,11 @@ async function route(req: Request, res: Response) {
 
   const client = req.GoogleOAuth2Client!;
 
-  const getTokenRes = await client.getToken(body.code);
+  const getTokenRes = await client.getToken(body.code).catch(() => {});
+  if (!getTokenRes) {
+    return res.status(400).json(generateError('Invalid code.'));
+  }
+
   const refreshToken = getTokenRes.tokens.refresh_token;
 
   if (!refreshToken) {
@@ -59,4 +62,9 @@ async function route(req: Request, res: Response) {
   }
 
   client.setCredentials({ refresh_token: refreshToken });
+  client.getAccessToken().then((res) => {
+    console.log(res.token);
+  });
+
+  res.json({ status: true });
 }
