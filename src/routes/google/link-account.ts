@@ -6,6 +6,7 @@ import { body } from 'express-validator';
 import { generateError } from '../../common/errorHandler';
 import jwt from 'jsonwebtoken';
 import env from '../../common/env';
+import { addGoogleConnection } from '../../services/Connection';
 
 export function linkAccountWithGoogle(Router: Router) {
   Router.post(
@@ -40,22 +41,23 @@ interface Body {
 async function route(req: Request, res: Response) {
   const body: Body = req.body;
 
-  const token = await verifyAsync(body.nerimityToken).catch(() => { });
+  const token = await verifyAsync(body.nerimityToken).catch(() => {});
 
   if (!token) {
-    return res.status(400).json(generateError('Token expired. Please try again.'));
+    return res
+      .status(400)
+      .json(generateError('Token expired. Please try again.'));
   }
 
-  const { c, uid } = token as { c: "google", uid: string };
+  const { c, uid } = token as { c: 'google'; uid: string };
 
   if (c !== 'google') {
     return res.status(400).json(generateError('Invalid token.'));
   }
 
-
   const client = req.GoogleOAuth2Client!;
 
-  const getTokenRes = await client.getToken(body.code).catch(() => { });
+  const getTokenRes = await client.getToken(body.code).catch(() => {});
   if (!getTokenRes) {
     return res.status(400).json(generateError('Invalid code.'));
   }
@@ -67,17 +69,23 @@ async function route(req: Request, res: Response) {
   }
 
   client.setCredentials({ refresh_token: refreshToken });
-  client.getAccessToken().then((res) => {
-    console.log(res.token);
-  });
+  const accessTokenRes = await client.getAccessToken();
+  console.log(refreshToken);
+  console.log(accessTokenRes.token);
+
+  const [status, error] = await addGoogleConnection(uid, refreshToken);
+
+  if (error) {
+    return res.status(400).json(error);
+  }
 
   res.json({ status: true });
 }
 
-
-const verifyAsync = async (token: string) => new Promise((resolve, reject) => {
-  jwt.verify(token, env.JWT_CONNECTIONS_SECRET, (err, decoded) => {
-    if (err) return reject(err);
-    return resolve(decoded);
+const verifyAsync = async (token: string) =>
+  new Promise((resolve, reject) => {
+    jwt.verify(token, env.JWT_CONNECTIONS_SECRET, (err, decoded) => {
+      if (err) return reject(err);
+      return resolve(decoded);
+    });
   });
-}); 
