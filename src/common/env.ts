@@ -15,6 +15,7 @@ export default {
   DEV_MODE: process.env.DEV_MODE === 'true',
   PORT: parseInt(process.env.PORT as string),
   JWT_SECRET: process.env.JWT_SECRET as string,
+  JWT_CONNECTIONS_SECRET: process.env.JWT_CONNECTIONS_SECRET as string,
   DATABASE_URL: process.env.DATABASE_URL as string,
   REDIS_HOST: process.env.REDIS_HOST as string,
   REDIS_PORT: parseInt(process.env.REDIS_PORT as string),

@@ -4,7 +4,8 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { body } from 'express-validator';
 
 import { generateError } from '../../common/errorHandler';
-import { authenticateUser } from '../../cache/UserCache';
+import jwt from 'jsonwebtoken';
+import env from '../../common/env';
 
 export function linkAccountWithGoogle(Router: Router) {
   Router.post(
@@ -39,18 +40,22 @@ interface Body {
 async function route(req: Request, res: Response) {
   const body: Body = req.body;
 
-  const [cachedAccount, error] = await authenticateUser(
-    body.nerimityToken,
-    req.userIP
-  );
+  const token = await verifyAsync(body.nerimityToken).catch(() => { });
 
-  if (error !== null) {
-    return res.status(401).json(generateError(error.message));
+  if (!token) {
+    return res.status(400).json(generateError('Token expired. Please try again.'));
   }
+
+  const { c, uid } = token as { c: "google", uid: string };
+
+  if (c !== 'google') {
+    return res.status(400).json(generateError('Invalid token.'));
+  }
+
 
   const client = req.GoogleOAuth2Client!;
 
-  const getTokenRes = await client.getToken(body.code).catch(() => {});
+  const getTokenRes = await client.getToken(body.code).catch(() => { });
   if (!getTokenRes) {
     return res.status(400).json(generateError('Invalid code.'));
   }
@@ -68,3 +73,11 @@ async function route(req: Request, res: Response) {
 
   res.json({ status: true });
 }
+
+
+const verifyAsync = async (token: string) => new Promise((resolve, reject) => {
+  jwt.verify(token, env.JWT_CONNECTIONS_SECRET, (err, decoded) => {
+    if (err) return reject(err);
+    return resolve(decoded);
+  });
+}); 
