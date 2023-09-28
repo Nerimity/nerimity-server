@@ -3,7 +3,7 @@ import { ChannelCache } from './cache/ChannelCache';
 import { ServerCache } from './cache/ServerCache';
 import { ServerMemberCache } from './cache/ServerMemberCache';
 import { AccountCache } from './cache/UserCache';
-import { Auth } from 'googleapis';
+// import { Auth } from 'googleapis';
 
 declare global {
   namespace Express {
@@ -16,7 +16,7 @@ declare global {
       rateLimited?: number;
       userIP: string;
       errorMessage?: string;
-      GoogleOAuth2Client?: Auth.OAuth2Client;
+      // GoogleOAuth2Client?: Auth.OAuth2Client;
 
       fileInfo?: {
         name: string;

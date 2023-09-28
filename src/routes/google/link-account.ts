@@ -1,12 +1,12 @@
 import { Request, Response, Router } from 'express';
-import { googleOAuth2Client } from '../../middleware/GoogleOAuth2Client';
 import { rateLimit } from '../../middleware/rateLimit';
 import { body } from 'express-validator';
 
 import { generateError } from '../../common/errorHandler';
 import jwt from 'jsonwebtoken';
 import env from '../../common/env';
-import { addGoogleConnection } from '../../services/Connection';
+import { addGoogleConnection } from '../../services/UserConnection';
+import { googleOAuth2Client } from '../../common/GoogleOAuth2Client';
 
 export function linkAccountWithGoogle(Router: Router) {
   Router.post(
@@ -23,11 +23,11 @@ export function linkAccountWithGoogle(Router: Router) {
       .withMessage('code is required.')
       .isString()
       .withMessage('code must be a string!'),
-    googleOAuth2Client,
     rateLimit({
       name: 'google-link-account',
       expireMS: 60000,
-      requestCount: 3,
+      requestCount: 10,
+      useIP: true,
     }),
     route
   );
@@ -41,7 +41,7 @@ interface Body {
 async function route(req: Request, res: Response) {
   const body: Body = req.body;
 
-  const token = await verifyAsync(body.nerimityToken).catch(() => {});
+  const token = await verifyAsync(body.nerimityToken).catch(() => { });
 
   if (!token) {
     return res
@@ -49,15 +49,15 @@ async function route(req: Request, res: Response) {
       .json(generateError('Token expired. Please try again.'));
   }
 
-  const { c, uid } = token as { c: 'google'; uid: string };
+  const { c, uId } = token as { c: 'google'; uId: string };
 
   if (c !== 'google') {
     return res.status(400).json(generateError('Invalid token.'));
   }
 
-  const client = req.GoogleOAuth2Client!;
+  const client = googleOAuth2Client();
 
-  const getTokenRes = await client.getToken(body.code).catch(() => {});
+  const getTokenRes = await client.getToken(body.code).catch(() => { });
   if (!getTokenRes) {
     return res.status(400).json(generateError('Invalid code.'));
   }
@@ -73,13 +73,13 @@ async function route(req: Request, res: Response) {
   console.log(refreshToken);
   console.log(accessTokenRes.token);
 
-  const [status, error] = await addGoogleConnection(uid, refreshToken);
+  const [connection, error] = await addGoogleConnection(uId, refreshToken);
 
   if (error) {
     return res.status(400).json(error);
   }
 
-  res.json({ status: true });
+  res.json({ connection });
 }
 
 const verifyAsync = async (token: string) =>
