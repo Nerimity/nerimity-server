@@ -1,9 +1,11 @@
+import { updateAccountCache } from '../cache/UserCache';
 import { googleOAuth2Client } from '../common/GoogleOAuth2Client';
 import aes from '../common/aes';
 import { prisma } from '../common/database';
 import env from '../common/env';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
+import { emitUserConnectionAdded, emitUserConnectionRemoved } from '../emits/User';
 
 export const ConnectionProviders = {
   Google: 'GOOGLE',
@@ -38,6 +40,8 @@ export const addGoogleConnection = async (
     }),
   ]);
 
+  emitUserConnectionAdded(userId, newConnection);
+
   return [newConnection, null] as const;
 };
 
@@ -68,6 +72,12 @@ export const removeGoogleConnection = async (userId: string) => {
       id: connection.id,
     },
   });
+  emitUserConnectionRemoved(userId, connection.id);
+
+  updateAccountCache(userId, {
+    googleAccessToken: undefined,
+    googleRefreshToken: undefined
+  })
 
   return [true, null] as const;
 

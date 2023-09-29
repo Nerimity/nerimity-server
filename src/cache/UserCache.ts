@@ -122,6 +122,9 @@ export interface AccountCache {
   emailConfirmed?: boolean;
   passwordVersion: number;
   user: UserCache;
+
+  googleRefreshToken?: string;
+  googleAccessToken?: string;
 }
 
 export interface UserCache {
@@ -184,6 +187,14 @@ export async function getAccountCache(
   // Save to cache
   await redisClient.set(cacheKey, JSON.stringify(accountCache));
   return [accountCache, null];
+}
+export async function updateAccountCache(userId: string, update: Partial<AccountCache>) {
+  const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
+  const [account, error] = await getAccountCache(userId);
+  if (error) return [null, error] as const;
+  const newAccount = { ...account, ...update };
+  await redisClient.set(cacheKey, JSON.stringify(newAccount));
+  return [newAccount, null] as const;
 }
 
 export async function removeAccountCacheByUserIds(userIds: string[]) {

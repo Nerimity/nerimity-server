@@ -8,7 +8,7 @@ import env from '../../common/env';
 import { addGoogleConnection } from '../../services/UserConnection';
 import { googleOAuth2Client } from '../../common/GoogleOAuth2Client';
 
-export function linkAccountWithGoogle(Router: Router) {
+export function googleLink(Router: Router) {
   Router.post(
     '/google/link-account',
     body('nerimityToken')
@@ -67,11 +67,6 @@ async function route(req: Request, res: Response) {
   if (!refreshToken) {
     return res.status(400).json(generateError('Invalid code.'));
   }
-
-  client.setCredentials({ refresh_token: refreshToken });
-  const accessTokenRes = await client.getAccessToken();
-  console.log(refreshToken);
-  console.log(accessTokenRes.token);
 
   const [connection, error] = await addGoogleConnection(uId, refreshToken);
 

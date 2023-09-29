@@ -4,7 +4,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { removeGoogleConnection } from '../../services/UserConnection';
 import { authenticate } from '../../middleware/authenticate';
 
-export function unlinkAccountWithGoogle(Router: Router) {
+export function googleUnlink(Router: Router) {
   Router.post(
     '/google/unlink-account',
     authenticate(),

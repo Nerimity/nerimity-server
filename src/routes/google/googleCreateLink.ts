@@ -4,7 +4,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import jwt from 'jsonwebtoken';
 import env from '../../common/env';
 import { googleOAuth2Client } from '../../common/GoogleOAuth2Client';
-export function createGoogleAuthLink(Router: Router) {
+export function googleCreateLink(Router: Router) {
   Router.get(
     '/google/create-link',
     authenticate(),

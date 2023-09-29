@@ -1,12 +1,15 @@
 import { Router } from 'express';
-import { linkAccountWithGoogle } from './link-account';
-import { createGoogleAuthLink } from './create-link';
-import { unlinkAccountWithGoogle } from './unlink-account';
+import { googleLink } from './googleLink';
+import { googleCreateLink } from './googleCreateLink';
+import { googleUnlink } from './googleUnlink';
+import { googleGetAccessToken } from './googleGetAccessToken';
+
 
 const GoogleRouter = Router();
 
-linkAccountWithGoogle(GoogleRouter);
-createGoogleAuthLink(GoogleRouter);
-unlinkAccountWithGoogle(GoogleRouter);
+googleLink(GoogleRouter);
+googleCreateLink(GoogleRouter);
+googleUnlink(GoogleRouter);
+googleGetAccessToken(GoogleRouter);
 
 export { GoogleRouter };
