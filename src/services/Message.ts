@@ -630,7 +630,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   if (message.attachments?.[0]?.path && message.attachments[0].provider === AttachmentProviders.Local) {
     deleteImage(message.attachments[0].path);
   }
-  if (message.attachments[0].provider === AttachmentProviders.GoogleDrive) {
+  if (message.attachments?.[0]?.provider === AttachmentProviders.GoogleDrive) {
     Log.warn("TODO: Delete Google Drive attachment when deleting a message.");
   }
 
