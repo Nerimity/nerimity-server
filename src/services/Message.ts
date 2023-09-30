@@ -133,7 +133,7 @@ export const getMessagesByChannelId = async (
           createdAt: true,
           channelId: true,
           attachments: {
-            select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
+            select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true, createdAt: true },
           },
           createdBy: {
             select: {
@@ -164,7 +164,7 @@ export const getMessagesByChannelId = async (
         orderBy: { id: 'asc' },
       },
       attachments: {
-        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
+        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true, createdAt: true },
       },
     },
     take: limit,
@@ -257,7 +257,7 @@ export const MessageInclude = {
       createdAt: true,
       channelId: true,
       attachments: {
-        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
+        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true, createdAt: true },
       },
       createdBy: {
         select: {
@@ -272,7 +272,7 @@ export const MessageInclude = {
     },
   },
   attachments: {
-    select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
+    select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true, createdAt: true },
   },
 };
 export const editMessage = async (
@@ -452,7 +452,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
           createdAt: true,
           channelId: true,
           attachments: {
-            select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
+            select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true, createdAt: true },
           },
           createdBy: {
             select: {
@@ -467,7 +467,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
         },
       },
       attachments: {
-        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
+        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true, createdAt: true },
       },
       reactions: true,
     },

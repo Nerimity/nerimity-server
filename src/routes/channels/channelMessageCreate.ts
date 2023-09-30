@@ -17,6 +17,7 @@ import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { ChannelType, TextChannelTypes } from '../../types/Channel';
 import { DmStatus } from '../../services/User';
 import { Attachment } from '@prisma/client';
+import { dateToDateTime } from '../../common/database';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -111,7 +112,7 @@ async function route(req: Request, res: Response) {
       .json(generateError('You cannot send messages in this channel.'));
   }
 
-  if (!body.content?.trim() && !req.fileInfo?.file) {
+  if (!body.content?.trim() && !req.fileInfo?.file && !body.googleDriveAttachment) {
     return res
       .status(400)
       .json(generateError('content or attachment is required.'));
@@ -152,6 +153,7 @@ async function route(req: Request, res: Response) {
       fileId: body.googleDriveAttachment.id,
       mime: body.googleDriveAttachment.mime,
       provider: AttachmentProviders.GoogleDrive,
+      createdAt: dateToDateTime() as unknown as Date
     };
   }
 
