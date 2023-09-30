@@ -434,7 +434,12 @@ model MessageMention {
 model Attachment {
   id          String @id
   
-  path        String
+  provider    String @default("local")
+  fileId     String?
+  mime        String?
+
+
+  path        String?
   width       Int?
   height      Int?
 

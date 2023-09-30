@@ -23,7 +23,7 @@ import {
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
-import { Message } from '@prisma/client';
+import { Attachment, Message } from '@prisma/client';
 import { removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
@@ -41,6 +41,7 @@ import {
   addBit,
   hasBit,
 } from '../common/Bitwise';
+import { Log } from '../common/Log';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -49,6 +50,11 @@ interface GetMessageByChannelIdOpts {
   afterMessageId?: string;
   requesterId?: string;
 }
+
+export const AttachmentProviders = {
+  Local: "local", // nerimity cdn
+  GoogleDrive: "google_drive",
+} as const
 
 export const getMessagesByChannelId = async (
   channelId: string,
@@ -81,13 +87,13 @@ export const getMessagesByChannelId = async (
       channelId,
       ...(opts?.beforeMessageId
         ? {
-            id: { lt: opts.beforeMessageId },
-          }
+          id: { lt: opts.beforeMessageId },
+        }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-            id: { gt: opts.afterMessageId },
-          }
+          id: { gt: opts.afterMessageId },
+        }
         : undefined),
     },
     include: {
@@ -127,7 +133,7 @@ export const getMessagesByChannelId = async (
           createdAt: true,
           channelId: true,
           attachments: {
-            select: { height: true, width: true, path: true, id: true },
+            select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
           },
           createdBy: {
             select: {
@@ -158,15 +164,15 @@ export const getMessagesByChannelId = async (
         orderBy: { id: 'asc' },
       },
       attachments: {
-        select: { height: true, width: true, path: true, id: true },
+        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
       },
     },
     take: limit,
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-          orderBy: { createdAt: 'asc' },
-        }
+        orderBy: { createdAt: 'asc' },
+      }
       : undefined),
   });
 
@@ -251,7 +257,7 @@ export const MessageInclude = {
       createdAt: true,
       channelId: true,
       attachments: {
-        select: { height: true, width: true, path: true, id: true },
+        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
       },
       createdBy: {
         select: {
@@ -266,7 +272,7 @@ export const MessageInclude = {
     },
   },
   attachments: {
-    select: { height: true, width: true, path: true, id: true },
+    select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
   },
 };
 export const editMessage = async (
@@ -330,7 +336,7 @@ interface SendMessageOptions {
   content?: string;
   type: MessageType;
   updateLastSeen?: boolean; // by default, this is true.
-  attachment?: { width?: number; height?: number; path: string };
+  attachment?: Partial<Attachment>;
 }
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
@@ -396,17 +402,15 @@ export const createMessage = async (opts: SendMessageOptions) => {
         createdAt: messageCreatedAt,
         ...(opts.attachment
           ? {
-              attachments: {
-                create: {
-                  id: generateId(),
-                  channelId: opts.channelId,
-                  serverId: opts.serverId,
-                  height: opts.attachment.height,
-                  width: opts.attachment.width,
-                  path: opts.attachment.path,
-                },
+            attachments: {
+              create: {
+                ...opts.attachment,
+                id: generateId(),
+                channelId: opts.channelId,
+                serverId: opts.serverId,
               },
-            }
+            },
+          }
           : undefined),
       },
       opts.userId
@@ -448,7 +452,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
           createdAt: true,
           channelId: true,
           attachments: {
-            select: { height: true, width: true, path: true, id: true },
+            select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
           },
           createdBy: {
             select: {
@@ -463,7 +467,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
         },
       },
       attachments: {
-        select: { height: true, width: true, path: true, id: true },
+        select: { height: true, width: true, path: true, id: true, provider: true, fileId: true, mime: true },
       },
       reactions: true,
     },
@@ -594,7 +598,7 @@ const addMessageEmbed = async (
       data: { embed: OGTags },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -623,8 +627,11 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
 
   await prisma.message.delete({ where: { id: opts.messageId } });
 
-  if (message.attachments?.[0]?.path) {
+  if (message.attachments?.[0]?.path && message.attachments[0].provider === AttachmentProviders.Local) {
     deleteImage(message.attachments[0].path);
+  }
+  if (message.attachments[0].provider === AttachmentProviders.GoogleDrive) {
+    Log.warn("TODO: Delete Google Drive attachment when deleting a message.");
   }
 
   if (opts.serverId) {
