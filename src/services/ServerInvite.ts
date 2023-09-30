@@ -57,6 +57,15 @@ export const deleteServerInvite = async (serverId: string, inviteCode: string, r
 
 
 export const createServerCustomInvite = async (code: string, serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
+  const server = await prisma.server.findFirst({where: {id: serverId}, select: {verified: true}});
+
+  if (!server) {
+    return [null, generateError('Server not found.')];
+  }
+
+  if (!server.verified) {
+    return [null, generateError('Server must be verified to create custom invites.')];
+  }
 
   code = code.trim();
 
