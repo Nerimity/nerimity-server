@@ -1,4 +1,4 @@
-import { updateAccountCache } from '../cache/UserCache';
+import { removeGoogleAccessTokenCache } from '../cache/UserCache';
 import { googleOAuth2Client } from '../common/GoogleOAuth2Client';
 import aes from '../common/aes';
 import { prisma } from '../common/database';
@@ -72,12 +72,9 @@ export const removeGoogleConnection = async (userId: string) => {
       id: connection.id,
     },
   });
+  await removeGoogleAccessTokenCache(userId);
   emitUserConnectionRemoved(userId, connection.id);
 
-  updateAccountCache(userId, {
-    googleAccessToken: undefined,
-    googleRefreshToken: undefined
-  })
 
   return [true, null] as const;
 

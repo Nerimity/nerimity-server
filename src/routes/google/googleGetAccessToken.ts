@@ -8,7 +8,7 @@ import env from '../../common/env';
 import { prisma } from '../../common/database';
 import { generateError } from '../../common/errorHandler';
 import { googleOAuth2Client } from '../../common/GoogleOAuth2Client';
-import { updateAccountCache } from '../../cache/UserCache';
+import { addGoogleAccessTokenCache, getGoogleAccessTokenCache } from '../../cache/UserCache';
 
 export function googleGetAccessToken(Router: Router) {
   Router.get(
@@ -26,43 +26,32 @@ export function googleGetAccessToken(Router: Router) {
 
 
 async function route(req: Request, res: Response) {
-  let encryptedRefreshToken = req.accountCache.googleRefreshToken;
+  const encryptedAccessToken = await getGoogleAccessTokenCache(req.accountCache.user.id);
 
-  if (!encryptedRefreshToken) {
-    const connection = await prisma.userConnection.findFirst({
-      where: {
-        provider: ConnectionProviders.Google,
-        userId: req.accountCache.user.id,
-      }
-    });
+  const accessToken = encryptedAccessToken ? aes.decrypt(encryptedAccessToken, env.CONNECTIONS_SECRET) : undefined;
+  if (accessToken) return res.json({ accessToken });
 
-    if (!connection) return res.status(400).json(generateError('You have not linked your Google account.'));
-    encryptedRefreshToken = connection.refreshToken;
-  }
+  const connection = await prisma.userConnection.findFirst({
+    where: {
+      provider: ConnectionProviders.Google,
+      userId: req.accountCache.user.id,
+    }
+  });
 
-  const decryptedRefreshToken = aes.decrypt(encryptedRefreshToken, env.CONNECTIONS_SECRET);
-  const decryptedAccessToken = req.accountCache.googleAccessToken ? aes.decrypt(req.accountCache.googleAccessToken, env.CONNECTIONS_SECRET) : undefined;
+  if (!connection) return res.status(400).json(generateError('You have not linked your Google account.'));
 
+
+  const refreshToken = aes.decrypt(connection.refreshToken, env.CONNECTIONS_SECRET);
   const oAuth2Client = googleOAuth2Client();
 
   oAuth2Client.setCredentials({
-    access_token: decryptedAccessToken,
-    refresh_token: decryptedRefreshToken
+    refresh_token: refreshToken
   })
 
   const newAccessTokenRes = await oAuth2Client.getAccessToken().catch(() => { });
+  if (!newAccessTokenRes?.token) return res.status(400).json(generateError('Something went wrong.'));
 
-  if (!newAccessTokenRes || !newAccessTokenRes.token) return res.status(400).json(generateError('Something went wrong.'));
-
-  if (newAccessTokenRes.token !== decryptedAccessToken) {
-    await updateAccountCache(req.accountCache.user.id, {
-      googleAccessToken: aes.encrypt(newAccessTokenRes.token, env.CONNECTIONS_SECRET),
-      googleRefreshToken: encryptedRefreshToken
-    })
-  }
-
-  // get token expire time and set redis to expire the token.
-  // oAuth2Client.getTokenInfo(newAccessTokenRes.token).then(res => console.log(res))
+  await addGoogleAccessTokenCache(req.accountCache.user.id, aes.encrypt(newAccessTokenRes.token, env.CONNECTIONS_SECRET));
 
   res.json({ accessToken: newAccessTokenRes.token });
 }
