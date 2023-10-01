@@ -38,6 +38,7 @@ import {
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
 import { leaveVoiceChannel } from './Voice';
 import { deleteServerMemberCache } from '../cache/ServerMemberCache';
+import { Log } from '../common/Log';
 
 interface CreateServerOptions {
   name: string;
@@ -319,6 +320,10 @@ export const deleteServer = async (serverId: string) => {
     serverId,
     serverDeleted: true,
   });
+
+  Log.info(
+    `Server (${server.name}) deleted.`
+  );
 
   return [true, null] as const;
 };
@@ -751,19 +756,19 @@ export async function updateServerChannelOrder(
 
           // update or add categoryId
           ...(opts.categoryId &&
-          opts.categoryId !== channel.categoryId &&
-          opts.orderedChannelIds.includes(channel.id)
+            opts.categoryId !== channel.categoryId &&
+            opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: opts.categoryId,
-              }
+              categoryId: opts.categoryId,
+            }
             : undefined),
           // remove categoryId
           ...(!opts.categoryId &&
-          channel.categoryId &&
-          opts.orderedChannelIds.includes(channel.id)
+            channel.categoryId &&
+            opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: null,
-              }
+              categoryId: null,
+            }
             : undefined),
         },
       })

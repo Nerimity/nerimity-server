@@ -24,8 +24,5 @@ async function route(req: Request, res: Response) {
   if (error) {
     return res.status(500).json(error);
   }
-  Log.info(
-    `Server (${req.serverCache.name}) deleted by ${req.accountCache.user.username} (${req.accountCache.user.id})`
-  );
   res.json({ status: true });
 }
