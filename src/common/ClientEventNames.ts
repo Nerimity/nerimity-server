@@ -2,6 +2,10 @@ export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
 export const USER_UPDATED = 'user:updated';
 
+export const USER_CONNECTION_ADDED = 'user:connection_added';
+export const USER_CONNECTION_REMOVED = 'user:connection_removed';
+
+
 export const USER_SERVER_SETTINGS_UPDATE = 'user:server_settings_update';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';

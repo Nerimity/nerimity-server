@@ -15,6 +15,8 @@ export default {
   DEV_MODE: process.env.DEV_MODE === 'true',
   PORT: parseInt(process.env.PORT as string),
   JWT_SECRET: process.env.JWT_SECRET as string,
+  CONNECTIONS_SECRET: process.env.CONNECTIONS_SECRET as string,
+  JWT_CONNECTIONS_SECRET: process.env.JWT_CONNECTIONS_SECRET as string,
   DATABASE_URL: process.env.DATABASE_URL as string,
   REDIS_HOST: process.env.REDIS_HOST as string,
   REDIS_PORT: parseInt(process.env.REDIS_PORT as string),
@@ -41,4 +43,8 @@ export default {
   SMTP_USER: process.env.SMTP_USER as string,
   SMTP_PASS: process.env.SMTP_PASS as string,
   SMTP_FROM: process.env.SMTP_FROM as string,
+
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID as string,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,
+  GOOGLE_REDIRECT_URL: process.env.GOOGLE_REDIRECT_URL as string,
 };

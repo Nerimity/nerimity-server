@@ -52,6 +52,7 @@
     "express-validator": "^7.0.1",
     "firebase-admin": "^11.10.1",
     "form-data": "^4.0.0",
+    "googleapis": "^126.0.1",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^2.7.0",
     "node-html-parser": "^6.1.10",

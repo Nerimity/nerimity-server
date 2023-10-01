@@ -3,6 +3,8 @@ import { Presence } from '../cache/UserCache';
 import {
   INBOX_CLOSED,
   INBOX_OPENED,
+  USER_CONNECTION_ADDED,
+  USER_CONNECTION_REMOVED,
   USER_PRESENCE_UPDATE,
   USER_SERVER_SETTINGS_UPDATE,
   USER_UPDATED,
@@ -68,3 +70,15 @@ export const emitUserServerSettingsUpdate = (
 ) => {
   getIO().to(userId).emit(USER_SERVER_SETTINGS_UPDATE, { serverId, updated });
 };
+
+
+export const emitUserConnectionRemoved = (
+  userId: string,
+  connectionId: string
+) => {
+  getIO().to(userId).emit(USER_CONNECTION_REMOVED, { connectionId });
+}
+
+export const emitUserConnectionAdded = (userId: string, connection: { provider: string, id: string, connectedAt: Date; }) => {
+  getIO().to(userId).emit(USER_CONNECTION_ADDED, { connection });
+}

@@ -21,6 +21,7 @@ import schedule from 'node-schedule';
 import { PostsRouter } from './routes/posts/Router';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
 import { sendConfirmCodeMail } from './common/mailer';
+import { GoogleRouter } from './routes/google/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -80,6 +81,7 @@ app.use('/api', ChannelsRouter);
 app.use('/api', FriendsRouter);
 app.use('/api', ExploreRouter);
 app.use('/api', PostsRouter);
+app.use('/api', GoogleRouter);
 
 function scheduleBumpReset() {
   // Schedule the task to run every Monday at 0:00 UTC

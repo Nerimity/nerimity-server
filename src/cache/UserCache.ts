@@ -12,6 +12,7 @@ import {
   BANNED_IP_KEY_SET,
   CONNECTED_SOCKET_ID_KEY_SET,
   CONNECTED_USER_ID_KEY_STRING,
+  GOOGLE_ACCESS_TOKEN,
   USER_PRESENCE_KEY_STRING,
 } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
@@ -185,6 +186,14 @@ export async function getAccountCache(
   await redisClient.set(cacheKey, JSON.stringify(accountCache));
   return [accountCache, null];
 }
+export async function updateAccountCache(userId: string, update: Partial<AccountCache>) {
+  const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
+  const [account, error] = await getAccountCache(userId);
+  if (error) return [null, error] as const;
+  const newAccount = { ...account, ...update };
+  await redisClient.set(cacheKey, JSON.stringify(newAccount));
+  return [newAccount, null] as const;
+}
 
 export async function removeAccountCacheByUserIds(userIds: string[]) {
   const keys = userIds.map((id) => ACCOUNT_CACHE_KEY_STRING(id));
@@ -302,4 +311,25 @@ export async function isIPAllowedCache(ipAddress: string) {
   const key = BANNED_IP_KEY_SET();
   const exists = await redisClient.sIsMember(key, ipAddress);
   return exists;
+}
+
+
+export async function addGoogleAccessTokenCache(userId: string, accessToken: string) {
+  const key = GOOGLE_ACCESS_TOKEN(userId);
+  const multi = redisClient.multi();
+  multi.set(key, accessToken);
+  multi.expire(key, 3000);
+  return await multi.exec()
+}
+
+export async function removeGoogleAccessTokenCache(userId: string) {
+  const key = GOOGLE_ACCESS_TOKEN(userId);
+  await redisClient.del(key);
+}
+
+export async function getGoogleAccessTokenCache(userId: string) {
+  const key = GOOGLE_ACCESS_TOKEN(userId);
+  const result = await redisClient.get(key);
+  if (!result) return null;
+  return result;
 }

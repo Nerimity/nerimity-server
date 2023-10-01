@@ -24,7 +24,6 @@ model Account {
 
   emailConfirmed  Boolean @default(false)
   emailConfirmCode String?
-
 }
 
 
@@ -90,6 +89,19 @@ model User {
   suspension            Suspension?
 
   devices               UserDevice[]
+
+  connections           UserConnection[]
+}
+
+model UserConnection {
+  id String @id
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  public Boolean
+  provider String
+  refreshToken String
+  connectedAt DateTime @default(now())
 }
 
 // Used for ip banning.
@@ -422,7 +434,12 @@ model MessageMention {
 model Attachment {
   id          String @id
   
-  path        String
+  provider    String @default("local")
+  fileId     String?
+  mime        String?
+
+
+  path        String?
   width       Int?
   height      Int?
 

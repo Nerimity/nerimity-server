@@ -44,6 +44,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   const user = await prisma.user.findFirst({
     where: { id: accountCache.user.id },
     include: {
+      connections: { select: { id: true, provider: true, connectedAt: true } },
       friends: { include: { recipient: true } },
       account: {
         select: {
@@ -51,6 +52,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
           serverOrderIds: true,
           dmStatus: true,
           emailConfirmed: true,
+
         },
       },
     },
@@ -149,6 +151,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       orderedServerIds: user.account?.serverOrderIds,
       dmStatus: user.account?.dmStatus,
       emailConfirmed: user.account?.emailConfirmed,
+      connections: user.connections
     },
     voiceChannelUsers,
     servers,

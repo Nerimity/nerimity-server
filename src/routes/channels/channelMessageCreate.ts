@@ -9,13 +9,15 @@ import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../types/Message';
-import { createMessage } from '../../services/Message';
+import { AttachmentProviders, createMessage } from '../../services/Message';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { ChannelType, TextChannelTypes } from '../../types/Channel';
 import { DmStatus } from '../../services/User';
+import { Attachment } from '@prisma/client';
+import { dateToDateTime } from '../../common/database';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -40,6 +42,28 @@ export function channelMessageCreate(Router: Router) {
       .withMessage('SocketId must be a string!')
       .isLength({ min: 1, max: 255 })
       .withMessage('SocketId length must be between 1 and 255 characters.'),
+
+    body('googleDriveAttachment')
+      .optional(true)
+      .isObject()
+      .withMessage('googleDriveFile must be an object!'),
+
+    body('googleDriveAttachment.id')
+      .optional(true)
+      .isString()
+      .withMessage('googleDriveAttachment id must be a string!')
+      .isLength({ min: 1, max: 255 })
+      .withMessage('googleDriveAttachment id length must be between 1 and 255 characters.'),
+
+    body('googleDriveAttachment.mime')
+      .optional(true)
+      .isString()
+      .withMessage('googleDriveAttachment mime must be a string!')
+      .isLength({ min: 1, max: 255 })
+      .withMessage('googleDriveAttachment mime length must be between 1 and 255 characters.'),
+
+
+
     rateLimit({
       name: 'create_message',
       expireMS: 20000,
@@ -52,6 +76,10 @@ export function channelMessageCreate(Router: Router) {
 interface Body {
   content?: string;
   socketId?: string;
+  googleDriveAttachment?: {
+    id: string;
+    mime: string;
+  };
 }
 
 async function route(req: Request, res: Response) {
@@ -61,6 +89,11 @@ async function route(req: Request, res: Response) {
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  if (body.googleDriveAttachment) {
+    if (!body.googleDriveAttachment.id) return res.status(400).json(generateError('googleDriveAttachment id is required'));
+    if (!body.googleDriveAttachment.mime) return res.status(400).json(generateError('googleDriveAttachment mime is required'));
   }
 
   if (req.channelCache.serverId && !req.accountCache.emailConfirmed) {
@@ -79,15 +112,13 @@ async function route(req: Request, res: Response) {
       .json(generateError('You cannot send messages in this channel.'));
   }
 
-  if (!body.content?.trim() && !req.fileInfo?.file) {
+  if (!body.content?.trim() && !req.fileInfo?.file && !body.googleDriveAttachment) {
     return res
       .status(400)
       .json(generateError('content or attachment is required.'));
   }
 
-  let attachment:
-    | { width?: number; height?: number; path: string }
-    | undefined = undefined;
+  let attachment: Partial<Attachment> | undefined = undefined;
 
   if (req.fileInfo?.file) {
     const [uploadedImage, err] = await uploadImage(
@@ -114,6 +145,15 @@ async function route(req: Request, res: Response) {
       width: uploadedImage!.dimensions.width,
       height: uploadedImage!.dimensions.height,
       path: uploadedImage!.path,
+    };
+  }
+
+  if (body.googleDriveAttachment) {
+    attachment = {
+      fileId: body.googleDriveAttachment.id,
+      mime: body.googleDriveAttachment.mime,
+      provider: AttachmentProviders.GoogleDrive,
+      createdAt: dateToDateTime() as unknown as Date
     };
   }
 
