@@ -10,8 +10,9 @@ import { updateUser } from './updateUser';
 import { getStats } from './getStats';
 import { userBatchUnsuspend } from './userBatchUnsuspend';
 import { serverDelete } from './serverDelete';
-import { searchUsers } from './searchUser';
+import { searchUsers } from './searchUsers';
 import { getUsersWithSameIPAddress } from './getUsersWithSameIPAddress';
+import { searchServers } from './searchServers';
 
 const ModerationRouter = Router();
 
@@ -20,6 +21,7 @@ userBatchUnsuspend(ModerationRouter);
 userBatchSuspend(ModerationRouter);
 getUsersWithSameIPAddress(ModerationRouter);
 searchUsers(ModerationRouter);
+searchServers(ModerationRouter);
 getUser(ModerationRouter);
 updateUser(ModerationRouter);
 getUsers(ModerationRouter);
