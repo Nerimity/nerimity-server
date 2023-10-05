@@ -45,6 +45,12 @@ export const CHANNEL_PERMISSIONS = {
     description: 'Enable sending messages in the channel. Server admins can still send messages.',
     bit: 2,
     icon: 'mail'
+  },
+  JOIN_VOICE: {
+    name: 'Join Voice',
+    description: 'Enable joining voice channels in the channel. Server admins can still join voice channels.',
+    bit: 4,
+    icon: 'call'
   }
 };
 

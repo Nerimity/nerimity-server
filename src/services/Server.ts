@@ -12,6 +12,7 @@ import { generateId } from '../common/flakeId';
 import {
   CHANNEL_PERMISSIONS,
   ROLE_PERMISSIONS,
+  addBit,
   hasBit,
 } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
@@ -106,7 +107,7 @@ export const createServer = async (
           name: 'General',
           serverId: serverId,
           type: ChannelType.SERVER_TEXT,
-          permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
+          permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
           createdById: opts.creatorId,
           order: 1,
         },

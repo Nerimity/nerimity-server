@@ -84,7 +84,7 @@ export const dismissChannelNotification = async (
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  await prisma.$transaction(transactions).catch(() => {});
+  await prisma.$transaction(transactions).catch(() => { });
 
   emit && emitNotificationDismissed(userId, channelId);
 };
@@ -153,7 +153,7 @@ export const createServerChannel = async (
       name: opts.channelName,
       serverId: opts.serverId,
       type: opts.channelType ?? ChannelType.SERVER_TEXT,
-      permissions: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
+      permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
       createdById: opts.creatorId,
       order: channelCount + 1,
     },
@@ -342,11 +342,11 @@ export const deleteServerChannel = async (
     }),
     ...(server.systemChannelId === channel.id
       ? [
-          prisma.server.update({
-            where: { id: server.id },
-            data: { systemChannelId: null },
-          }),
-        ]
+        prisma.server.update({
+          where: { id: server.id },
+          data: { systemChannelId: null },
+        }),
+      ]
       : []),
   ]);
   deleteServerChannelCaches([channelId]);

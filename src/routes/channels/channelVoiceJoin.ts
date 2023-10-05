@@ -5,12 +5,18 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { body } from 'express-validator';
 import { joinVoiceChannel } from '../../services/Voice';
+import { CHANNEL_PERMISSIONS } from '../../common/Bitwise';
+import { channelPermissions } from '../../middleware/channelPermissions';
 
 export function channelVoiceJoin(Router: Router) {
   Router.post(
     '/channels/:channelId/voice/join',
     authenticate(),
     channelVerification(),
+    channelPermissions({
+      bit: CHANNEL_PERMISSIONS.JOIN_VOICE.bit,
+      message: 'You are not allowed to join voice in this channel.',
+    }),
     rateLimit({
       name: 'channel_voice_join',
       expireMS: 20000,
