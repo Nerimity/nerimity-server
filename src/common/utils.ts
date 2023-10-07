@@ -4,10 +4,19 @@ export function removeDuplicates(arr: any[]) {
 }
 
 export function arrayDiff<T>(arr1: any[], arr2: any[], key?: string) {
-  return arr1.filter(function(i: any) {
+  return arr1.filter(function (i: any) {
     if (!key) {
       return arr2.indexOf(i) < 0;
     }
     return !arr2.find(i2 => i2[key] === i[key]);
   }) as unknown as T;
+}
+
+
+export function omitFromObject<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K> {
+  const result = { ...object };
+  for (const key of keys) {
+    delete result[key];
+  }
+  return result;
 }

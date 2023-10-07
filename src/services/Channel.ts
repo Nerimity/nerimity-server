@@ -357,3 +357,22 @@ export const deleteServerChannel = async (
 
   return [channelId, null];
 };
+
+export const upsertChannelNotice = async (channelId: string, content: string) => {
+  const notice = await prisma.chatNotice.upsert({
+    where: { channelId },
+    create: { id: generateId(), channelId, content },
+    update: { content },
+  });
+
+  return [notice, null] as const;
+}
+
+export const deleteChannelNotice = async (channelId: string) => {
+  const res = await prisma.chatNotice.delete({
+    where: { channelId },
+    select: { id: true }
+  }).catch(() => { });
+  if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
+  return [true, null] as const;
+}
