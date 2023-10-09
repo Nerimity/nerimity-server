@@ -17,8 +17,16 @@ import { userUnblock } from './userUnblock';
 import { userNotifications } from './userNotifications';
 import { userEmailConfirmCodeSend } from './userEmailConfirmCodeSend';
 import { userEmailConfirmCode } from './userEmailConfirmCode';
+import { userChannelNoticeDelete } from './userChannelNoticeDelete';
+import { userChannelNoticeGet } from './userChannelNoticeGet';
+import { userChannelNoticeUpdate } from './userChannelNoticeUpdate';
 
 const UsersRouter = Router();
+
+
+userChannelNoticeDelete(UsersRouter);
+userChannelNoticeGet(UsersRouter);
+userChannelNoticeUpdate(UsersRouter);
 
 userEmailConfirmCode(UsersRouter);
 userEmailConfirmCodeSend(UsersRouter);

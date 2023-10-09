@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { deleteChannelNotice } from '../../services/Channel';
 
-export function userUpdateChannelNotice(Router: Router) {
+export function userChannelNoticeDelete(Router: Router) {
   Router.delete('/users/channel-notice',
     authenticate(),
     rateLimit({

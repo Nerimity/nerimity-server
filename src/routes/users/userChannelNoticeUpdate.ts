@@ -6,7 +6,7 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { upsertChannelNotice } from '../../services/Channel';
 
-export function userUpdateChannelNotice(Router: Router) {
+export function userChannelNoticeUpdate(Router: Router) {
   Router.put('/users/channel-notice',
     authenticate(),
     body('content')
