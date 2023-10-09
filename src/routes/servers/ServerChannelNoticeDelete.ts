@@ -26,7 +26,7 @@ export function serverChannelNoticeDelete(Router: Router) {
 
 async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
-  const [status, error] = await deleteChannelNotice(req.channelCache.id);
+  const [status, error] = await deleteChannelNotice({ channelId: req.channelCache.id });
   if (error) {
     return res.status(400).json(error);
   }
