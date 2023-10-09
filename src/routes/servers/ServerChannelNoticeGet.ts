@@ -1,8 +1,6 @@
 import { Request, Response, Router } from 'express';
 
-import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { getChannelNotice } from '../../services/Channel';
@@ -14,11 +12,10 @@ export function serverChannelNoticeGet(Router: Router) {
     authenticate(),
     serverMemberVerification(),
     channelVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     rateLimit({
-      name: 'server_channel_notice_delete',
+      name: 'server_channel_notice_get',
       expireMS: 10000,
-      requestCount: 10,
+      requestCount: 20,
     }),
     route
   );

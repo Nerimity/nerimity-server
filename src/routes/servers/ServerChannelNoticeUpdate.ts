@@ -19,6 +19,7 @@ export function serverChannelNoticeUpdate(Router: Router) {
     channelVerification(),
     memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     body('content')
+      .trim()
       .isString()
       .withMessage('Content must be a string.')
       .isLength({ min: 4, max: 300 })
