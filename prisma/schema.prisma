@@ -91,6 +91,7 @@ model User {
   devices               UserDevice[]
 
   connections           UserConnection[]
+  notice ChatNotice?
 }
 
 model UserConnection {
@@ -348,6 +349,8 @@ model Channel {
   deleting               Boolean?
 
   systemChannelServer    Server?  @relation("systemChannel")
+
+  notice ChatNotice?
 }
 
 model Inbox {
@@ -528,4 +531,20 @@ model PostLike {
   createdAt   DateTime @default(now())
 
   @@unique([postId, likedById])
+}
+
+model ChatNotice {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // For server channels
+  channelId   String? @unique
+  channel     Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // For dms
+  userId      String? @unique
+  user        User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content     String
 }

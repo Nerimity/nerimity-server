@@ -27,8 +27,16 @@ import { serverEmojiDelete } from './serverEmojisDelete';
 import { serverInviteDelete } from './serverInviteDelete';
 import { serverLeave } from './serverLeave';
 import { serverDelete } from './serverDelete';
+import { serverChannelNoticeDelete } from './ServerChannelNoticeDelete';
+import { serverChannelNoticeUpdate } from './ServerChannelNoticeUpdate';
+
 
 const ServersRouter = Router();
+
+
+
+serverChannelNoticeDelete(ServersRouter);
+serverChannelNoticeUpdate(ServersRouter);
 
 serverChannelUpdateOrder(ServersRouter);
 serverUpdateOrder(ServersRouter);
