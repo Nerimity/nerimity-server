@@ -376,3 +376,12 @@ export const deleteChannelNotice = async (channelId: string) => {
   if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
   return [true, null] as const;
 }
+
+export const getChannelNotice = async (channelId: string) => {
+  const res = await prisma.chatNotice.findUnique({
+    where: { channelId },
+    select: { content: true, updatedAt: true, channelId: true, userId: true }
+  }).catch(() => { });
+  if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
+  return [res, null] as const;
+}

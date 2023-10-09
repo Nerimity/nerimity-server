@@ -5,11 +5,11 @@ import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { deleteChannelNotice } from '../../services/Channel';
+import { getChannelNotice } from '../../services/Channel';
 import { channelVerification } from '../../middleware/channelVerification';
 
-export function serverChannelNoticeDelete(Router: Router) {
-  Router.delete(
+export function serverChannelNoticeGet(Router: Router) {
+  Router.get(
     '/servers/:serverId/channels/:channelId/notice',
     authenticate(),
     serverMemberVerification(),
@@ -26,10 +26,10 @@ export function serverChannelNoticeDelete(Router: Router) {
 
 async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
-  const [status, error] = await deleteChannelNotice(req.channelCache.id);
+  const [notice, error] = await getChannelNotice(req.channelCache.id);
   if (error) {
     return res.status(400).json(error);
   }
 
-  res.json({ status });
+  res.json({ notice });
 }

@@ -29,11 +29,13 @@ import { serverLeave } from './serverLeave';
 import { serverDelete } from './serverDelete';
 import { serverChannelNoticeDelete } from './ServerChannelNoticeDelete';
 import { serverChannelNoticeUpdate } from './ServerChannelNoticeUpdate';
+import { serverChannelNoticeGet } from './ServerChannelNoticeGet';
 
 const ServersRouter = Router();
 
 
 
+serverChannelNoticeGet(ServersRouter);
 serverChannelNoticeDelete(ServersRouter);
 serverChannelNoticeUpdate(ServersRouter);
 
