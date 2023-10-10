@@ -24,8 +24,8 @@ import { userChannelNoticeUpdate } from './userChannelNoticeUpdate';
 const UsersRouter = Router();
 
 
-userChannelNoticeDelete(UsersRouter);
 userChannelNoticeGet(UsersRouter);
+userChannelNoticeDelete(UsersRouter);
 userChannelNoticeUpdate(UsersRouter);
 
 userEmailConfirmCode(UsersRouter);

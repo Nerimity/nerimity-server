@@ -5,7 +5,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { getChannelNotice } from '../../services/Channel';
 
 export function userChannelNoticeGet(Router: Router) {
-  Router.delete('/users/channel-notice',
+  Router.get('/users/channel-notice',
     authenticate(),
     rateLimit({
       name: 'user_channel_notice_get',
