@@ -10,7 +10,7 @@ import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../types/Message';
 import { AttachmentProviders, createMessage } from '../../services/Message';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermission, memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
@@ -28,7 +28,7 @@ export function channelMessageCreate(Router: Router) {
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
       message: 'You are not allowed to send messages in this channel.',
     }),
-    memberHasRolePermission(ROLE_PERMISSIONS.SEND_MESSAGE),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.SEND_MESSAGE),
     connectBusboyWrapper,
     body('content')
       .optional(true)
@@ -118,6 +118,13 @@ async function route(req: Request, res: Response) {
       .json(generateError('content or attachment is required.'));
   }
 
+  let canMentionEveryone = body.content?.includes('[@:e]');
+  if (canMentionEveryone) {
+    const [hasMentionEveryonePerm] = memberHasRolePermission(req, ROLE_PERMISSIONS.MENTION_EVERYONE);
+    canMentionEveryone = !!hasMentionEveryonePerm;
+  }
+
+
   let attachment: Partial<Attachment> | undefined = undefined;
 
   if (req.fileInfo?.file) {
@@ -167,6 +174,7 @@ async function route(req: Request, res: Response) {
     socketId: body.socketId,
     type: MessageType.CONTENT,
     attachment,
+    everyoneMentioned: canMentionEveryone,
   });
 
   res.json(message);

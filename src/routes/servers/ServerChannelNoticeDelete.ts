@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { deleteChannelNotice } from '../../services/Channel';
@@ -14,7 +14,7 @@ export function serverChannelNoticeDelete(Router: Router) {
     authenticate(),
     serverMemberVerification(),
     channelVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     rateLimit({
       name: 'server_channel_notice_delete',
       expireMS: 10000,

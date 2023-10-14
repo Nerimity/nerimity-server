@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { createServerChannel } from '../../services/Channel';
 import { ChannelType } from '../../types/Channel';
@@ -29,7 +29,7 @@ export function serverChannelCreate(Router: Router) {
       .optional(),
     authenticate(),
     serverMemberVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     route
   );
 }

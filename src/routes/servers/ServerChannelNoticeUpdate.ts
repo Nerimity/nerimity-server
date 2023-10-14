@@ -5,7 +5,7 @@ import {
 } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { upsertChannelNotice } from '../../services/Channel';
@@ -17,7 +17,7 @@ export function serverChannelNoticeUpdate(Router: Router) {
     authenticate(),
     serverMemberVerification(),
     channelVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     body('content')
       .trim()
       .isString()

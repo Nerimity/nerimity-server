@@ -4,16 +4,16 @@ import { prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerRole, updateServerRoleOrder } from '../../services/ServerRole';
 
 export function serverRoleUpdateOrder(Router: Router) {
-  Router.post('/servers/:serverId/roles/order', 
+  Router.post('/servers/:serverId/roles/order',
     authenticate(),
     serverMemberVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_ROLES),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('roleIds')
       .isArray().withMessage('roleIds must be an array.'),
     rateLimit({
@@ -31,7 +31,7 @@ interface Body {
 
 
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const bodyErrors = customExpressValidatorResult(req);

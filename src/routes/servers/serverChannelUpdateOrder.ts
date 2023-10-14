@@ -3,16 +3,16 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerChannelOrder } from '../../services/Server';
 
 export function serverChannelUpdateOrder(Router: Router) {
-  Router.post('/servers/:serverId/channels/order', 
+  Router.post('/servers/:serverId/channels/order',
     authenticate(),
     serverMemberVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_CHANNELS),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     body('channelIds')
       .isArray().withMessage('channelIds must be an array.'),
     body('categoryId')
@@ -32,7 +32,7 @@ interface Body {
   categoryId?: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const bodyErrors = customExpressValidatorResult(req);

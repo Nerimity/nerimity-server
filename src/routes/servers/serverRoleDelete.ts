@@ -3,15 +3,15 @@ import { prisma } from '../../common/database';
 import { generateError } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { deleteServerRole } from '../../services/ServerRole';
 
 export function serverRoleDelete(Router: Router) {
-  Router.delete('/servers/:serverId/roles/:roleId', 
+  Router.delete('/servers/:serverId/roles/:roleId',
     authenticate(),
     serverMemberVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_ROLES),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     route
   );
 }
@@ -19,9 +19,9 @@ export function serverRoleDelete(Router: Router) {
 
 
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
 
-  const role = await prisma.serverRole.findFirst({where: {id: req.params.roleId}});
+  const role = await prisma.serverRole.findFirst({ where: { id: req.params.roleId } });
   if (!role) {
     return res.status(400).json(generateError('Role does not exist.'));
   }

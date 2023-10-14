@@ -3,17 +3,17 @@ import { body, matchedData } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServerMember } from '../../services/ServerMember';
 
 export function serverMemberUpdate(Router: Router) {
-  Router.post('/servers/:serverId/members/:userId', 
+  Router.post('/servers/:serverId/members/:userId',
     authenticate(),
     serverMemberVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.MANAGE_ROLES),
-    body('roleIds').isArray().withMessage('roleIds must be an array of strings.').optional({nullable: true}),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
+    body('roleIds').isArray().withMessage('roleIds must be an array of strings.').optional({ nullable: true }),
     body('roleIds.*')
       .isString().withMessage('roleIds must be a string.')
       .optional({}),
@@ -32,7 +32,7 @@ interface Body {
 
 
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
 
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
@@ -47,6 +47,6 @@ async function route (req: Request, res: Response) {
   if (error) {
     return res.status(400).json(error);
   }
-  res.json(updated);    
+  res.json(updated);
 
 }

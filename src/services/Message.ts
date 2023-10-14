@@ -87,13 +87,13 @@ export const getMessagesByChannelId = async (
       channelId,
       ...(opts?.beforeMessageId
         ? {
-            id: { lt: opts.beforeMessageId },
-          }
+          id: { lt: opts.beforeMessageId },
+        }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-            id: { gt: opts.afterMessageId },
-          }
+          id: { gt: opts.afterMessageId },
+        }
         : undefined),
     },
     include: {
@@ -189,8 +189,8 @@ export const getMessagesByChannelId = async (
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-          orderBy: { createdAt: 'asc' },
-        }
+        orderBy: { createdAt: 'asc' },
+      }
       : undefined),
   });
 
@@ -373,6 +373,7 @@ interface SendMessageOptions {
   type: MessageType;
   updateLastSeen?: boolean; // by default, this is true.
   attachment?: Partial<Attachment>;
+  everyoneMentioned?: boolean
 }
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
@@ -438,15 +439,15 @@ export const createMessage = async (opts: SendMessageOptions) => {
         createdAt: messageCreatedAt,
         ...(opts.attachment
           ? {
-              attachments: {
-                create: {
-                  ...opts.attachment,
-                  id: generateId(),
-                  channelId: opts.channelId,
-                  serverId: opts.serverId,
-                },
+            attachments: {
+              create: {
+                ...opts.attachment,
+                id: generateId(),
+                channelId: opts.channelId,
+                serverId: opts.serverId,
               },
-            }
+            },
+          }
           : undefined),
       },
       opts.userId
@@ -554,16 +555,22 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
     let mentionUserIds: string[] = [];
 
-    if (message.mentions.length) {
-      mentionUserIds = message.mentions.map((mention) => mention.id);
+    if (opts.everyoneMentioned) {
+      const serverMembers = await prisma.serverMember.findMany({ where: { serverId: opts.serverId, NOT: { userId: opts.userId } }, select: { userId: true } });
+      mentionUserIds = serverMembers.map((member) => member.userId);
+    } else {
+      if (message.mentions.length) {
+        mentionUserIds = message.mentions.map((mention) => mention.id);
+      }
+
+      if (message.quotedMessages.length) {
+        const userIds = message.quotedMessages.map(
+          (message) => message.createdBy.id
+        );
+        mentionUserIds = [...mentionUserIds, ...userIds];
+      }
     }
 
-    if (message.quotedMessages.length) {
-      const userIds = message.quotedMessages.map(
-        (message) => message.createdBy.id
-      );
-      mentionUserIds = [...mentionUserIds, ...userIds];
-    }
 
     if (mentionUserIds.length) {
       await addMention(
@@ -652,7 +659,7 @@ const addMessageEmbed = async (
       data: { embed: OGTags },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return;
   // emit
   if (opts.serverId) {

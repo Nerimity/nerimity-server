@@ -4,7 +4,7 @@ import { emitInboxTyping, emitServerTyping } from '../../emits/Channel';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 
 export function channelTypingIndicator(Router: Router) {
@@ -16,7 +16,7 @@ export function channelTypingIndicator(Router: Router) {
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
       message: 'You are not allowed to send messages in this channel.',
     }),
-    memberHasRolePermission(ROLE_PERMISSIONS.SEND_MESSAGE),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.SEND_MESSAGE),
     rateLimit({
       name: 'channel_typing',
       expireMS: 10000,

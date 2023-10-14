@@ -3,16 +3,16 @@ import { body, param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
-import { memberHasRolePermission } from '../../middleware/memberHasRolePermission';
+import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { addServerEmoji, updateServerEmoji } from '../../services/Server';
 
 export function serverEmojiUpdate(Router: Router) {
-  Router.post('/servers/:serverId/emojis/:id', 
+  Router.post('/servers/:serverId/emojis/:id',
     authenticate(),
     serverMemberVerification(),
-    memberHasRolePermission(ROLE_PERMISSIONS.ADMIN),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     body('name')
       .not().isEmpty().withMessage('Name is required')
       .isString().withMessage('Name must be a string.')
@@ -30,7 +30,7 @@ interface Body {
   name: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
 
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
@@ -43,6 +43,6 @@ async function route (req: Request, res: Response) {
   if (error) {
     return res.status(400).json(error);
   }
-  res.json(updated);    
+  res.json(updated);
 
 }

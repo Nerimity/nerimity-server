@@ -90,6 +90,12 @@ export const ROLE_PERMISSIONS = {
     description: 'Permission to ban users.',
     bit: 32,
     // icon: 'mail'
+  },
+  MENTION_EVERYONE: {
+    name: 'Mention Everyone',
+    description: 'mentionEveryoneDescription',
+    bit: 64,
+    //icon: 'mention'
   }
 };
 
