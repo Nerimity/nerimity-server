@@ -246,12 +246,12 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   const newChannel = inbox
     ? { id: inbox?.channelId }
     : await prisma.channel.create({
-        data: {
-          id: generateId(),
-          type: ChannelType.DM_TEXT,
-          createdById: userId,
-        },
-      });
+      data: {
+        id: generateId(),
+        type: ChannelType.DM_TEXT,
+        createdById: userId,
+      },
+    });
 
   const newInbox = await prisma.inbox
     .create({
@@ -268,7 +268,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
 
   if (!newInbox) {
     return [null, generateError('Something went wrong.')] as const;
@@ -525,9 +525,9 @@ export const updateUser = async (
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
       ...(opts.newPassword?.trim()
         ? {
-            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-            passwordVersion: { increment: 1 },
-          }
+          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+          passwordVersion: { increment: 1 },
+        }
         : undefined),
 
       ...(opts.email && opts.email !== account.email
@@ -544,13 +544,13 @@ export const updateUser = async (
 
           ...(opts.profile
             ? {
-                profile: {
-                  upsert: {
-                    create: opts.profile,
-                    update: opts.profile,
-                  },
+              profile: {
+                upsert: {
+                  create: opts.profile,
+                  update: opts.profile,
                 },
-              }
+              },
+            }
             : undefined),
         },
       },
@@ -602,6 +602,21 @@ export async function followUser(
 
   if (requesterId === followToId) {
     return [null, generateError('You cannot follow yourself.')];
+  }
+
+  // check if blocked
+  const blocked = await prisma.friend.findFirst({
+    where: {
+      status: FriendStatus.BLOCKED,
+      OR: [
+        { recipientId: requesterId, userId: followToId },
+        { recipientId: followToId, userId: requesterId },
+      ],
+    },
+  });
+
+  if (blocked) {
+    return [null, generateError('This user is blocked.')];
   }
 
   await prisma.follower.create({
@@ -789,7 +804,7 @@ export async function getUserNotifications(userId: string) {
         },
         // eslint-disable-next-line @typescript-eslint/no-empty-function
       })
-      .then(() => {});
+      .then(() => { });
   }
 
   return notifications;
