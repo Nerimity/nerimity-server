@@ -1,6 +1,6 @@
 import { createAdapter } from '@socket.io/redis-streams-adapter';
 
-import socketIO from 'socket.io';
+import * as socketIO from 'socket.io';
 import http from 'http';
 import { redisClient } from '../common/redis';
 import { onConnection } from './events/onConnection';

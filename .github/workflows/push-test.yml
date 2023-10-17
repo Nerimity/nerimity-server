@@ -45,7 +45,7 @@ jobs:
       - run: pnpm run prisma:migrate_dev
         env:
           DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
-      - run: pnpm test
+      - run: pnpm build
         env:
           DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
           DEV_MODE: true

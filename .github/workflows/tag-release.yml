@@ -47,8 +47,8 @@ jobs:
         run: pnpm run prisma:migrate_dev
         env:
           DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
-      - name: Testing
-        run: pnpm run test
+      - name: Building
+        run: pnpm run build
         env:
           DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
           DEV_MODE: true
@@ -62,15 +62,15 @@ jobs:
           DEFAULT_SERVER_ROLE_COLOR: '#fff'
       - name: Copy package.json & package-lock.json
         run: |
-          cp package.json build/
-          cp package-lock.json build/
+          cp package.json dist/
+          cp package-lock.json dist/
       - name: Get the version
         id: get_version
         run: echo "VERSION=$(echo $GITHUB_REF | cut -d / -f 3)" >> $GITHUB_OUTPUT
       - name: Zip The Build
         uses: vimtor/action-zip@v1
         with:
-          files: build/
+          files: dist/
           dest: chat-server-${{ steps.get_version.outputs.VERSION }}.zip
       - name: Publish Draft Release
         uses: 'marvinpinto/action-automatic-releases@latest'

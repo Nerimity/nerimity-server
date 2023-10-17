@@ -31,28 +31,25 @@ const app = express();
 const server = http.createServer(app);
 
 // eslint-disable-next-line no-async-promise-executor
-export const main = (): Promise<http.Server> =>
-  new Promise(async (resolve) => {
-    await connectRedis();
-    Log.info('Connected to Redis');
-    createIO(server);
+const main = async () => {
+  await connectRedis();
+  Log.info('Connected to Redis');
+  createIO(server);
 
-    prisma.$connect().then(() => {
-      Log.info('Connected to PostgreSQL');
-      scheduleBumpReset();
-      scheduleDeleteMessages();
-      removeIPAddressSchedule();
-      if (server.listening) return;
-      server.listen(env.PORT, () => {
-        Log.info('listening on *:' + env.PORT);
-        resolve(server);
-      });
+  prisma.$connect().then(() => {
+    Log.info('Connected to PostgreSQL');
+    scheduleBumpReset();
+    scheduleDeleteMessages();
+    removeIPAddressSchedule();
+    if (server.listening) return;
+
+    server.listen(env.PORT, () => {
+      Log.info('listening on *:' + env.PORT);
     });
-  });
 
-if (process.env.TEST !== 'true') {
-  main();
+  });
 }
+main();
 
 app.use(
   cors({

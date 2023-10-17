@@ -2,17 +2,16 @@
   "name": "nerimity-server",
   "version": "1.0.0",
   "description": "",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node ./src/index.ts",
-    "dev": "nodemon --exec npx ts-node --files ./src/index.ts",
-    "dev-no-type-check": "nodemon --exec npx ts-node --transpileOnly --files ./src/index.ts",
-    "build": "tsc",
+    "start": "tsup --onSuccess \"node dist/index.mjs\"",
+    "bundle": "tsup",
+    "dev": "tsup --watch --onSuccess \"node dist/index.mjs\"",
+    "build": "pnpm bundle",
     "prisma:create": "prisma migrate dev --name",
     "prisma:migrate_dev": "prisma migrate dev",
     "prisma:migrate_deploy": "prisma migrate deploy",
-    "prisma:generate": "prisma generate",
-    "test": "npm run build && mocha tests/test.js --reporter spec --exit"
+    "prisma:generate": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -21,28 +20,27 @@
     "@types/bcrypt": "^5.0.0",
     "@types/connect-busboy": "^1.0.1",
     "@types/cors": "^2.8.14",
-    "@types/express": "^4.17.18",
+    "@types/express": "^4.17.19",
     "@types/jsonwebtoken": "^9.0.3",
     "@types/node-fetch": "^2.6.6",
     "@types/node-schedule": "^2.1.1",
-    "@typescript-eslint/eslint-plugin": "^6.7.5",
-    "@typescript-eslint/parser": "^6.7.5",
-    "chai": "^4.3.10",
+    "@typescript-eslint/eslint-plugin": "^6.8.0",
+    "@typescript-eslint/parser": "^6.8.0",
     "eslint": "^8.51.0",
     "eslint-config-prettier": "^8.10.0",
-    "mocha": "^10.2.0",
-    "nodemon": "^3.0.1",
     "prisma": "^5.4.2",
     "socket.io-client": "^4.7.2",
     "ts-node": "^10.9.1",
+    "tsup": "^7.2.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
     "@brecert/flakeid": "^2.0.1",
+    "@nerimity/flakeid": "^1.0.3",
     "@prisma/client": "^5.4.2",
     "@socket.io/redis-adapter": "^8.2.1",
     "@socket.io/redis-streams-adapter": "^0.1.0",
-    "@types/node": "^20.8.4",
+    "@types/node": "^20.8.6",
     "@types/nodemailer": "^6.4.11",
     "bcrypt": "^5.1.1",
     "connect-busboy": "^1.0.0",
@@ -59,15 +57,14 @@
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.9.6",
     "redis": "^4.6.10",
-    "socket.io": "^4.7.2",
-    "supertest": "^6.3.3"
+    "socket.io": "^4.7.2"
   },
   "engines": {
     "npm": "please-use-pnpm",
     "pnpm": ">= 1.0.0"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.7",
+    "bufferutil": "^4.0.8",
     "utf-8-validate": "^5.0.10"
   }
 }

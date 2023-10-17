@@ -6,15 +6,14 @@ import { Message, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { ChannelCache } from '../cache/ChannelCache';
 import { ServerCache } from '../cache/ServerCache';
+import { Log } from '../common/Log';
 
 let credentials: any;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   credentials = require('../fcm-credentials.json');
 } catch {
-  console.log(
-    'Warning> fcm-credentials.json was not provided. Mobile push notifications will not work.'
-  );
+  Log.warn("fcm-credentials.json was not provided. Mobile push notifications will not work.")
 }
 
 if (credentials) {
