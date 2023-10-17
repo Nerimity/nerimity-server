@@ -6,19 +6,11 @@ import { redisClient } from '../common/redis';
 import { onConnection } from './events/onConnection';
 import { getServerIds } from '../services/Server';
 import { getFriendIds } from '../services/Friend';
-import { Log } from '../common/Log';
-
-try {
-  var { eiows } = await import('eiows'); // linux only
-} catch (e) {
-  Log.warn("eiows not found.")
-}
 
 let io: socketIO.Server;
 
 export async function createIO(server: http.Server) {
   io = new socketIO.Server(server, {
-    ...(eiows ? { wsEngine: eiows?.Server } : undefined),
     transports: ['websocket'],
   });
 
