@@ -4,9 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "start": "tsup --onSuccess \"node dist/index.mjs\"",
+    "start": "tsup --onSuccess \"node --enable-source-maps dist/index.mjs\"",
     "bundle": "tsup",
-    "dev": "tsup --watch --onSuccess \"node dist/index.mjs\"",
+    "dev": "tsup --watch --onSuccess \"node --enable-source-maps dist/index.mjs\"",
     "build": "pnpm bundle",
     "prisma:create": "prisma migrate dev --name",
     "prisma:migrate_dev": "prisma migrate dev",
