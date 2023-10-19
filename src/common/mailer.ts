@@ -2,10 +2,10 @@ import nodemailer from 'nodemailer';
 import env from './env';
 
 const transporter = nodemailer.createTransport({
-  service: process.env.SMTP_SERVICE,
+  service: env.SMTP_SERVICE,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
   },
 });
 
