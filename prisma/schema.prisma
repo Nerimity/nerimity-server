@@ -92,6 +92,8 @@ model User {
 
   connections           UserConnection[]
   notice ChatNotice?
+
+  auditActions          AuditLog[]
 }
 
 model UserConnection {
@@ -547,4 +549,28 @@ model ChatNotice {
   user        User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   content     String
+}
+
+
+model AuditLog {
+  id          String   @id
+  createdAt   DateTime @default(now())
+
+  actionById   String
+  actionBy     User     @relation(fields: [actionById], references: [id])
+  actionType   Int
+
+
+
+  serverName   String? 
+  serverId     String?
+
+  channelId    String?
+  channelName  String?
+
+  userId       String?
+  username     String?
+  
+  ipAddress    String?
+  reason       String?
 }
