@@ -537,7 +537,14 @@ export const createMessage = async (opts: SendMessageOptions) => {
   const [message] = await prisma.$transaction([
     createMessageQuery,
     updateLastMessageQuery,
-  ]);
+  ]).catch((e) => {
+    console.log(e)
+    return []
+  });
+
+  if (!message) {
+    return [null, "Couldn't create message"] as const;
+  }
 
   // update sender last seen
   opts.updateLastSeen !== false &&
@@ -602,7 +609,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
 
     if (!channel?.inbox?.recipientId) {
-      throw new Error('Channel not found!');
+      return [null, 'Channel not found!'] as const;
     }
 
     // For DM channels, mentions are notifications for everything.
@@ -639,7 +646,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   if (message.type === MessageType.CONTENT) {
     addMessageEmbed(message, { channel, serverId: opts.serverId });
   }
-  return message;
+  return [message, null] as const;
 };
 const urlRegex = new RegExp(
   '(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))'
@@ -684,7 +691,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
     where: { id: opts.messageId, channelId: opts.channelId },
     include: { attachments: true },
   });
-  if (!message) return false;
+  if (!message) return [false, 'Message not found!'] as const;
 
   await prisma.message.delete({ where: { id: opts.messageId } });
 
@@ -700,7 +707,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
       channelId: opts.channelId,
       messageId: opts.messageId,
     });
-    return true;
+    return [true, null] as const;
   }
 
   let channel = opts.channel;
@@ -710,13 +717,13 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   }
 
   if (!channel?.inbox?.recipientId) {
-    throw new Error('Channel not found!');
+    return [null, 'Channel not found!'] as const;
   }
   emitDMMessageDeleted(channel, {
     channelId: opts.channelId,
     messageId: opts.messageId,
   });
-  return true;
+  return [true, null] as const;
 };
 
 interface AddReactionOpts {

@@ -12,10 +12,9 @@ import { MessageType } from '../../types/Message';
 import { AttachmentProviders, createMessage } from '../../services/Message';
 import { memberHasRolePermission, memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
-import { uploadImage } from '../../common/nerimityCDN';
+import { deleteImage, uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
-import { ChannelType, TextChannelTypes } from '../../types/Channel';
-import { DmStatus } from '../../services/User';
+import { TextChannelTypes } from '../../types/Channel';
 import { Attachment } from '@prisma/client';
 import { dateToDateTime } from '../../common/database';
 
@@ -164,7 +163,7 @@ async function route(req: Request, res: Response) {
     };
   }
 
-  const message = await createMessage({
+  const [message, error] = await createMessage({
     channelId: req.channelCache.id,
     content: body.content,
     userId: req.accountCache.user.id,
@@ -176,6 +175,13 @@ async function route(req: Request, res: Response) {
     attachment,
     everyoneMentioned: canMentionEveryone,
   });
+
+  if (error) {
+    if (req.fileInfo?.file && attachment?.path) {
+      deleteImage(attachment.path)
+    }
+    return res.status(400).json(generateError(error));
+  }
 
   res.json(message);
 }
