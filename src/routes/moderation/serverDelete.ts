@@ -11,6 +11,8 @@ import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { deleteServer } from '../../services/Server';
 import { Log } from '../../common/Log';
+import { generateId } from '../../common/flakeId';
+import { AuditLogType } from '../../common/AuditLog';
 
 export function serverDelete(Router: Router) {
   Router.delete<any>(
@@ -58,10 +60,28 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
 
-  const [error] = await deleteServer(req.params.serverId);
+  const server = await prisma.server.findUnique({
+    where: { id: req.params.serverId },
+  });
+
+  if (!server)
+    return res.status(404).json(generateError('Server does not exist.'));
+
+  const [, error] = await deleteServer(req.params.serverId);
   if (error) {
     return res.status(403).json(error);
   }
+
+
+  await prisma.auditLog.create({
+    data: {
+      id: generateId(),
+      actionType: AuditLogType.serverDelete,
+      actionById: req.accountCache.user.id,
+      serverName: server.name,
+      serverId: server.id,
+    }
+  })
 
   res.status(200).json({ success: true });
 }

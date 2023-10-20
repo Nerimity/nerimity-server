@@ -10,6 +10,8 @@ import {
 import { checkUserPassword } from '../../services/User';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { emitServerUpdated } from '../../emits/Server';
+import { generateId } from '../../common/flakeId';
+import { AuditLogType } from '../../common/AuditLog';
 
 export function updateServer(Router: Router) {
   Router.post(
@@ -78,6 +80,17 @@ async function route(req: Request, res: Response) {
   });
 
   emitServerUpdated(serverId, update);
+
+  await prisma.auditLog.create({
+    data: {
+      id: generateId(),
+      actionType: AuditLogType.serverUpdate,
+      actionById: req.accountCache.user.id,
+      serverName: server.name,
+      serverId: server.id,
+    }
+  })
+
 
   res.json(server);
 }

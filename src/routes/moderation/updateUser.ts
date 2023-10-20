@@ -14,6 +14,8 @@ import bcrypt from 'bcrypt';
 import { removeAccountCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
+import { AuditLogType } from '../../common/AuditLog';
+import { generateId } from '../../common/flakeId';
 
 export function updateUser(Router: Router) {
   Router.post(
@@ -105,15 +107,15 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('email', body.email),
     ...(body.emailConfirmed !== undefined
       ? {
-          emailConfirmed: true,
-          emailConfirmCode: null,
-        }
+        emailConfirmed: true,
+        emailConfirmCode: null,
+      }
       : undefined),
     ...(body.newPassword?.trim?.()
       ? {
-          password: await bcrypt.hash(body.newPassword.trim(), 10),
-          passwordVersion: { increment: 1 },
-        }
+        password: await bcrypt.hash(body.newPassword.trim(), 10),
+        passwordVersion: { increment: 1 },
+      }
       : undefined),
     user: {
       update: {
@@ -143,6 +145,18 @@ async function route(req: Request, res: Response) {
     broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
     broadcaster.disconnectSockets(true);
   }
+
+
+  await prisma.auditLog.create({
+    data: {
+      id: generateId(),
+      actionType: AuditLogType.userUpdate,
+      actionById: req.accountCache.user.id,
+      username: user.user.username,
+      userId: user.user.id,
+    }
+  })
+
 
   res.json(user);
 }
