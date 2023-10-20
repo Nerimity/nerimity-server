@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { dateToDateTime, prisma } from '../../common/database';
+import { prisma } from '../../common/database';
 import {
   customExpressValidatorResult,
   generateError,
@@ -8,10 +8,10 @@ import {
 import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
-import { disconnectUsers } from '../../services/Moderation';
 import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { removeAccountCacheByUserIds } from '../../cache/UserCache';
+import { AuditLogType } from '../../common/AuditLog';
 
 export function userBatchUnsuspend(Router: Router) {
   Router.delete(
@@ -68,11 +68,32 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
 
-  await prisma.suspension.deleteMany({
-    where: { userId: { in: sanitizedUserIds } },
-  });
+  const [, unsuspendUsers] = await prisma.$transaction([
+    prisma.suspension.deleteMany({
+      where: { userId: { in: sanitizedUserIds } },
+    }),
+    prisma.user.findMany({
+      where: { id: { in: sanitizedUserIds } },
+      select: { id: true, username: true },
+    })
+  ]);
+
+
 
   await removeAccountCacheByUserIds(sanitizedUserIds);
+
+
+  await prisma.auditLog.createMany({
+    data: unsuspendUsers.map(user => ({
+      id: generateId(),
+      actionType: AuditLogType.userUnsuspend,
+      actionById: req.accountCache.user.id,
+      username: user.username,
+      userId: user.id,
+    }))
+  })
+
+
 
   res.status(200).json({ success: true });
 }

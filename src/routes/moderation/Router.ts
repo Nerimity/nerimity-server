@@ -13,9 +13,11 @@ import { serverDelete } from './serverDelete';
 import { searchUsers } from './searchUsers';
 import { getUsersWithSameIPAddress } from './getUsersWithSameIPAddress';
 import { searchServers } from './searchServers';
+import { getAuditLogs } from './getAuditLogs';
 
 const ModerationRouter = Router();
 
+getAuditLogs(ModerationRouter);
 getStats(ModerationRouter);
 userBatchUnsuspend(ModerationRouter);
 userBatchSuspend(ModerationRouter);

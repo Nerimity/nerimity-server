@@ -12,6 +12,7 @@ import { disconnectUsers } from '../../services/Moderation';
 import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { removeAllowedIPsCache } from '../../cache/UserCache';
+import { AuditLogType } from '../../common/AuditLog';
 
 export function userBatchSuspend(Router: Router) {
   Router.post(
@@ -180,6 +181,8 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
         })
       )
     );
+
+
     await disconnectUsers({
       userIds: userIds,
       clearCache: true,
@@ -188,6 +191,25 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       expire: ipExpireDateTime,
     });
   }
+
+  const newSuspendedUsers = await prisma.user.findMany({
+    where: { id: { in: sanitizedUserIds } },
+    select: { id: true, username: true },
+  })
+
+
+  await prisma.auditLog.createMany({
+    data: newSuspendedUsers.map(user => ({
+      id: generateId(),
+      actionType: AuditLogType.userSuspend,
+      actionById: req.accountCache.user.id,
+      username: user.username,
+      userId: user.id,
+      reason: req.body.reason,
+      expireAt: expireDateTime
+    }))
+  })
+
 
   res.status(200).json({ success: true });
 }
