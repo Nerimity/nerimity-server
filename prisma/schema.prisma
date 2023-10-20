@@ -573,4 +573,5 @@ model AuditLog {
   
   ipAddress    String?
   reason       String?
+  expireAt     DateTime?
 }
