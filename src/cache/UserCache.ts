@@ -18,13 +18,21 @@ import {
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 
+
+export interface ActivityStatus {
+  socketId: string;
+  name: string;
+  action: string;
+  startedAt?: number;
+}
 export interface Presence {
   userId: string;
   status: number;
-  custom?: string;
+  custom?: string | null;
+  activity?: ActivityStatus | null;
 }
 
-export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
+export async function getUserPresences(userIds: string[], includeSocketId = false): Promise<Presence[]> {
   const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
     const userId = userIds[i];
@@ -39,6 +47,9 @@ export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
     const result = results[i] as string;
     if (!result) continue;
     const presence = JSON.parse(result);
+    if (!includeSocketId && presence.activity) {
+      delete presence.activity.socketId;
+    }
     presences.push(presence);
   }
 
@@ -47,7 +58,7 @@ export async function getUserPresences(userIds: string[]): Promise<Presence[]> {
 
 export async function updateCachePresence(
   userId: string,
-  presence: Partial<Omit<Presence, 'custom'> & { custom?: string | null }> & {
+  presence: Partial<Presence> & {
     userId: string;
   }
 ): Promise<boolean> {
@@ -63,10 +74,11 @@ export async function updateCachePresence(
     return true;
   }
 
-  const currentStatus = await getUserPresences([userId]);
+  const currentStatus = await getUserPresences([userId], true);
   if (!currentStatus?.[0] && !presence.status) return false;
 
   if (presence.custom === null) presence.custom = undefined;
+  if (presence.activity === null) presence.activity = undefined;
 
   await redisClient.set(
     key,

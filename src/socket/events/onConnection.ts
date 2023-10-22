@@ -1,10 +1,11 @@
 import { Socket } from 'socket.io';
-import { AUTHENTICATE, NOTIFICATION_DISMISS, VOICE_SIGNAL_SEND } from '../../common/ServerEventNames';
+import { AUTHENTICATE, NOTIFICATION_DISMISS, UPDATE_ACTIVITY, VOICE_SIGNAL_SEND } from '../../common/ServerEventNames';
 import { emitError } from '../../emits/Connection';
 import { onAuthenticate } from './onAuthenticate';
 import { onDisconnect } from './onDisconnect';
 import { onNotificationDismiss } from './onNotificationDismiss';
 import { onVoiceSignal } from './onVoiceSignal';
+import { onChangeActivity } from './onChangeActivity';
 
 export function onConnection(socket: Socket) {
   let didEmitAuthenticate = false;
@@ -15,9 +16,8 @@ export function onConnection(socket: Socket) {
   });
 
   socket.on(NOTIFICATION_DISMISS, (data) => onNotificationDismiss(socket, data));
-
-
   socket.on(VOICE_SIGNAL_SEND, (data) => onVoiceSignal(socket, data));
+  socket.on(UPDATE_ACTIVITY, (data) => onChangeActivity(socket, data))
 
 
   socket.on('disconnect', () => onDisconnect(socket));

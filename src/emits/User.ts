@@ -14,7 +14,7 @@ import { emitToAll, getIO } from '../socket/socket';
 
 export const emitUserPresenceUpdate = (
   userId: string,
-  presence: Partial<Omit<Presence, 'custom'> & { custom?: null | string }> & {
+  presence: Partial<Presence> & {
     userId: string;
   }
 ) => {
