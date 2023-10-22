@@ -18,11 +18,10 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
     action: payload.action,
     name: payload.name,
     startedAt: payload.startedAt,
-    userId,
-  } as Partial<ActivityStatus & { userId: string }> | null
+  } as Partial<ActivityStatus> | null
 
   if (payload) {
-    // check if startedAt is a number or null
+    // check if startedAt is a number or undefined
     if (typeof payload.startedAt !== 'number' && payload.startedAt !== undefined) {
       return;
     }
@@ -39,7 +38,6 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
 
   const shouldEmit = await updateCachePresence(userId, { activity: activity as ActivityStatus, userId })
   delete activity?.socketId
-  delete activity?.userId
   if (shouldEmit) emitUserPresenceUpdate(userId, { activity: activity as ActivityStatus, userId });
   emitSelfPresenceUpdate(userId, { activity: activity as ActivityStatus, userId });
 }

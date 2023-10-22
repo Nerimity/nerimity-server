@@ -12,7 +12,7 @@ import { leaveVoiceChannel } from '../../services/Voice';
 export async function onDisconnect(socket: Socket) {
   const userId = await getUserIdBySocketId(socket.id);
   if (!userId) return;
-  const presence = await getUserPresences([userId]);
+  const presence = await getUserPresences([userId], true);
   const isLastDisconnect = await socketDisconnect(socket.id, userId);
 
   if (!isLastDisconnect && presence[0]?.activity?.socketId === socket.id) {
