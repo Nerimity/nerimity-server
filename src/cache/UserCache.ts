@@ -102,7 +102,7 @@ export async function addSocketUser(
   const multi = redisClient.multi();
   multi.sAdd(socketIdsKey, socketId);
   multi.set(userIdKey, userId);
-  if (presence.status !== UserStatus.OFFLINE) {
+  if (!count && presence.status !== UserStatus.OFFLINE) {
     multi.set(presenceKey, JSON.stringify(presence));
   }
   await multi.exec();
