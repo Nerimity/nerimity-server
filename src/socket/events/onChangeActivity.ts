@@ -1,6 +1,6 @@
 import { Socket } from 'socket.io';
 import { ActivityStatus, getUserIdBySocketId, updateCachePresence } from '../../cache/UserCache';
-import { emitSelfPresenceUpdate, emitUserPresenceUpdate } from '../../emits/User';
+import { emitUserPresenceUpdate } from '../../emits/User';
 
 interface Payload {
   name: string;
@@ -38,7 +38,7 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
 
   const shouldEmit = await updateCachePresence(userId, { activity: activity as ActivityStatus, userId })
   delete activity?.socketId
-  if (shouldEmit) emitUserPresenceUpdate(userId, { activity: activity as ActivityStatus, userId });
-  emitSelfPresenceUpdate(userId, { activity: activity as ActivityStatus, userId });
+
+  emitUserPresenceUpdate(userId, { activity: activity as ActivityStatus, userId }, !shouldEmit);
 }
 

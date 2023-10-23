@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io';
 import { getUserIdBySocketId, getUserPresences, socketDisconnect, updateCachePresence } from '../../cache/UserCache';
 import { prisma } from '../../common/database';
-import { emitSelfPresenceUpdate, emitUserPresenceUpdate } from '../../emits/User';
+import { emitUserPresenceUpdate } from '../../emits/User';
 import { UserStatus } from '../../types/User';
 import {
   getVoiceUserByUserId,
@@ -17,8 +17,8 @@ export async function onDisconnect(socket: Socket) {
 
   if (!isLastDisconnect && presence[0]?.activity?.socketId === socket.id) {
     const shouldEmit = await updateCachePresence(userId, { activity: null, userId })
-    if (shouldEmit) emitUserPresenceUpdate(userId, { activity: null, userId });
-    emitSelfPresenceUpdate(userId, { activity: null, userId });
+    emitUserPresenceUpdate(userId, { activity: null, userId }, !shouldEmit);
+
   }
 
   const user = await prisma.user.findFirst({

@@ -16,23 +16,18 @@ export const emitUserPresenceUpdate = (
   userId: string,
   presence: Partial<Presence> & {
     userId: string;
-  }
+  },
+  selfOnly = false
 ) => {
+  if (selfOnly) {
+    getIO().to(userId).emit(USER_PRESENCE_UPDATE, presence);
+    return;
+  }
   emitToAll({
     event: USER_PRESENCE_UPDATE,
     userId,
     payload: presence,
-    excludeSelf: true,
   });
-};
-
-export const emitSelfPresenceUpdate = (
-  userId: string,
-  presence: Partial<Omit<Presence, 'custom'> & { custom?: null | string }> & {
-    userId: string;
-  }
-) => {
-  getIO().to(userId).emit(USER_PRESENCE_UPDATE, presence);
 };
 
 export const emitUserPresenceUpdateTo = (

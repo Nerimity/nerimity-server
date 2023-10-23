@@ -11,7 +11,6 @@ import { CustomResult } from '../common/CustomResult';
 import {
   emitInboxClosed,
   emitInboxOpened,
-  emitSelfPresenceUpdate,
   emitUserPresenceUpdate,
   emitUserServerSettingsUpdate,
   emitUserUpdated,
@@ -337,10 +336,9 @@ export const updateUserPresence = async (
   } else {
     emitPayload = { ...presence, userId: user.id };
   }
-  emitSelfPresenceUpdate(userId, emitPayload);
-  if (shouldEmit) {
-    emitUserPresenceUpdate(userId, emitPayload);
-  }
+
+  emitUserPresenceUpdate(userId, emitPayload, !shouldEmit);
+
 
   return ['Presence updated.', null];
 };
