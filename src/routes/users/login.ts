@@ -1,11 +1,11 @@
 import { Request, Response, Router } from 'express';
-import { loginUser } from '../../services/User';
 import { body } from 'express-validator';
 import {
   customExpressValidatorResult,
   generateError,
 } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
+import { loginUserWithEmail, loginWithUsernameAndTag } from '../../services/UserAuthentication';
 
 export function login(Router: Router) {
   Router.post(
@@ -72,14 +72,27 @@ async function route(req: Request, res: Response) {
     tag = split[1];
   }
 
-  const [userToken, error] = await loginUser({
-    email: body.email,
-    username,
-    tag,
-    password: body.password,
-  });
-  if (error) {
-    return res.status(400).json(error);
+  if (body.email) {
+    const [userToken, error] = await loginUserWithEmail({
+      email: body.email,
+      password: body.password,
+    });
+    if (error) {
+      return res.status(400).json(error);
+    }
+    res.json({ token: userToken });
   }
-  res.json({ token: userToken });
+
+  if (username && tag) {
+    const [userToken, error] = await loginWithUsernameAndTag({
+      username,
+      tag,
+      password: body.password,
+    });
+    if (error) {
+      return res.status(400).json(error);
+    }
+    res.json({ token: userToken });
+  }
+
 }

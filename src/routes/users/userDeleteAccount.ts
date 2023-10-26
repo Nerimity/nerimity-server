@@ -6,8 +6,9 @@ import {
 } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { checkUserPassword, deleteAccount } from '../../services/User';
+import { deleteAccount } from '../../services/User';
 import { prisma } from '../../common/database';
+import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function userDeleteAccount(Router: Router) {
   Router.delete(
@@ -46,7 +47,7 @@ async function route(req: Request, res: Response) {
       select: { password: true },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
 
   if (!account)
     return res
@@ -54,8 +55,8 @@ async function route(req: Request, res: Response) {
       .json(generateError('Something went wrong. Try again later.'));
 
   const isPasswordValid = await checkUserPassword(
-    body.password,
-    account.password
+    account.password,
+    body.password
   );
 
   if (!isPasswordValid)

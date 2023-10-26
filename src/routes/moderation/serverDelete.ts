@@ -7,12 +7,11 @@ import {
 } from '../../common/errorHandler';
 
 import { authenticate } from '../../middleware/authenticate';
-import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { deleteServer } from '../../services/Server';
-import { Log } from '../../common/Log';
 import { generateId } from '../../common/flakeId';
 import { AuditLogType } from '../../common/AuditLog';
+import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function serverDelete(Router: Router) {
   Router.delete<any>(
@@ -54,8 +53,8 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
       .json(generateError('Something went wrong. Try again later.'));
 
   const isPasswordValid = await checkUserPassword(
+    account.password,
     req.body.password,
-    account.password!
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -71,7 +70,6 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
   if (error) {
     return res.status(403).json(error);
   }
-
 
   await prisma.auditLog.create({
     data: {

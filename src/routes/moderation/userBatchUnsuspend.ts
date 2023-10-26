@@ -8,10 +8,10 @@ import {
 import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
-import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { removeAccountCacheByUserIds } from '../../cache/UserCache';
 import { AuditLogType } from '../../common/AuditLog';
+import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function userBatchUnsuspend(Router: Router) {
   Router.delete(
@@ -55,8 +55,8 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       .json(generateError('Something went wrong. Try again later.'));
 
   const isPasswordValid = await checkUserPassword(
+    account.password,
     req.body.password,
-    account.password!
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -78,10 +78,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     })
   ]);
 
-
-
   await removeAccountCacheByUserIds(sanitizedUserIds);
-
 
   await prisma.auditLog.createMany({
     data: unsuspendUsers.map(user => ({
@@ -92,8 +89,6 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       userId: user.id,
     }))
   })
-
-
 
   res.status(200).json({ success: true });
 }

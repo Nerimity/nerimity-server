@@ -7,11 +7,11 @@ import {
   customExpressValidatorResult,
   generateError,
 } from '../../common/errorHandler';
-import { checkUserPassword } from '../../services/User';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { emitServerUpdated } from '../../emits/Server';
 import { generateId } from '../../common/flakeId';
 import { AuditLogType } from '../../common/AuditLog';
+import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function updateServer(Router: Router) {
   Router.post(
@@ -54,8 +54,8 @@ async function route(req: Request, res: Response) {
       .json(generateError('Something went wrong. Try again later.'));
 
   const isPasswordValid = await checkUserPassword(
+    account.password,
     req.body.password,
-    account.password!
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -90,7 +90,6 @@ async function route(req: Request, res: Response) {
       serverId: server.id,
     }
   })
-
 
   res.json(server);
 }

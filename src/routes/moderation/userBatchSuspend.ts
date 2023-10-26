@@ -9,10 +9,10 @@ import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
 import { disconnectUsers } from '../../services/Moderation';
-import { checkUserPassword } from '../../services/User';
 import { isModMiddleware } from './isModMiddleware';
 import { removeAllowedIPsCache } from '../../cache/UserCache';
 import { AuditLogType } from '../../common/AuditLog';
+import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function userBatchSuspend(Router: Router) {
   Router.post(
@@ -85,8 +85,8 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       .json(generateError('Something went wrong. Try again later.'));
 
   const isPasswordValid = await checkUserPassword(
+    account.password,
     req.body.password,
-    account.password!
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -182,7 +182,6 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       )
     );
 
-
     await disconnectUsers({
       userIds: userIds,
       clearCache: true,
@@ -197,7 +196,6 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     select: { id: true, username: true },
   })
 
-
   await prisma.auditLog.createMany({
     data: newSuspendedUsers.map(user => ({
       id: generateId(),
@@ -209,7 +207,6 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       expireAt: expireDateTime
     }))
   })
-
 
   res.status(200).json({ success: true });
 }

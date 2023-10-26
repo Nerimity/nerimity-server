@@ -6,7 +6,8 @@ import {
 } from '../../common/errorHandler';
 import { turnstileVerify } from '../../common/turnstileVerify';
 import { rateLimit } from '../../middleware/rateLimit';
-import { isIpBanned, registerUser } from '../../services/User';
+import { isIpBanned } from '../../services/User';
+import { registerUser } from '../../services/UserAuthentication';
 
 export function register(Router: Router) {
   Router.post(

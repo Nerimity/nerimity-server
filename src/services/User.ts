@@ -1,4 +1,3 @@
-import { UserStatus } from '../types/User';
 import bcrypt from 'bcrypt';
 import {
   generateEmailConfirmCode,
@@ -22,7 +21,7 @@ import {
   updateCachePresence,
 } from '../cache/UserCache';
 import { FriendStatus } from '../types/Friend';
-import { excludeFields, exists, prisma } from '../common/database';
+import { excludeFields, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
@@ -38,12 +37,8 @@ import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { leaveVoiceChannel } from './Voice';
 import { MessageInclude } from './Message';
 import env from '../common/env';
-import { sendConfirmCodeMail, sendMail } from '../common/mailer';
-interface RegisterOpts {
-  email: string;
-  username: string;
-  password: string;
-}
+import { sendConfirmCodeMail } from '../common/mailer';
+import { checkUserPassword } from './UserAuthentication';
 
 export const isExpired = (expireDate: Date) => {
   const now = new Date();
@@ -74,105 +69,6 @@ export const getSuspensionDetails = async (userId: string) => {
   await prisma.suspension.delete({ where: { userId } });
   return false;
 };
-
-export const registerUser = async (
-  opts: RegisterOpts
-): Promise<CustomResult<string, CustomError>> => {
-  const account = await exists(prisma.account, {
-    where: { email: { equals: opts.email, mode: 'insensitive' } },
-  });
-
-  if (account) {
-    return [null, generateError('Email already exists.', 'email')];
-  }
-
-  const tag = generateTag();
-  const usernameTagExists = await prisma.user.findFirst({
-    where: { username: opts.username, tag },
-  });
-  if (usernameTagExists) {
-    return [
-      null,
-      generateError('This username is used too often. Try again.', 'username'),
-    ];
-  }
-
-  const hashedPassword = await bcrypt.hash(opts.password.trim(), 10);
-
-  const newAccount = await prisma.account.create({
-    data: {
-      id: generateId(),
-      email: opts.email,
-      user: {
-        create: {
-          id: generateId(),
-          username: opts.username.trim(),
-          tag,
-          status: UserStatus.ONLINE,
-          hexColor: generateHexColor(),
-        },
-      },
-      password: hashedPassword,
-      passwordVersion: 0,
-    },
-
-    include: { user: true },
-  });
-
-  const userId = newAccount?.user?.id as unknown as string;
-
-  const token = generateToken(userId, newAccount.passwordVersion);
-
-  return [token, null];
-};
-
-interface LoginOpts {
-  email?: string;
-  username?: string;
-  tag?: string;
-  password: string;
-}
-
-export const loginUser = async (
-  opts: LoginOpts
-): Promise<CustomResult<string, CustomError>> => {
-  const where = opts.email
-    ? ({ email: { equals: opts.email, mode: 'insensitive' } } as const)
-    : ({ user: { username: opts.username, tag: opts.tag } } as const);
-
-  const account = await prisma.account.findFirst({
-    where,
-    include: { user: true },
-  });
-  if (!account) {
-    return [
-      null,
-      generateError(
-        opts.email ? 'Invalid email address.' : 'Invalid username/tag',
-        'email'
-      ),
-    ];
-  }
-
-  const isPasswordValid = await checkUserPassword(
-    opts.password,
-    account.password!
-  );
-  if (!isPasswordValid) {
-    return [null, generateError('Invalid password.', 'password')];
-  }
-  const userId = account.user?.id as unknown as string;
-
-  const token = generateToken(userId, account.passwordVersion);
-
-  return [token, null];
-};
-
-export const checkUserPassword = async (
-  password: string | undefined,
-  encrypted: string
-): Promise<boolean> =>
-  !password ? false : bcrypt.compare(password, encrypted);
 
 export const getAccountByUserId = (userId: string) => {
   return prisma.account.findFirst({
@@ -339,7 +235,6 @@ export const updateUserPresence = async (
 
   emitUserPresenceUpdate(userId, emitPayload, !shouldEmit);
 
-
   return ['Presence updated.', null];
 };
 
@@ -456,8 +351,8 @@ export const updateUser = async (
 
   if (opts.tag || opts.email || opts.username || opts.newPassword?.trim()) {
     const isPasswordValid = await checkUserPassword(
+      account.password,
       opts.password,
-      account.password!
     );
     if (!opts.password?.trim())
       return [null, generateError('Password is required.', 'password')];

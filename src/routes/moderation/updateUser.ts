@@ -2,12 +2,10 @@ import { Request, Response, Router } from 'express';
 import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { body } from 'express-validator';
 import {
   customExpressValidatorResult,
   generateError,
 } from '../../common/errorHandler';
-import { checkUserPassword } from '../../services/User';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { USER_BADGES, hasBit } from '../../common/Bitwise';
 import bcrypt from 'bcrypt';
@@ -16,6 +14,7 @@ import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 import { AuditLogType } from '../../common/AuditLog';
 import { generateId } from '../../common/flakeId';
+import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function updateUser(Router: Router) {
   Router.post(
@@ -56,8 +55,8 @@ async function route(req: Request, res: Response) {
       .json(generateError('Something went wrong. Try again later.'));
 
   const isPasswordValid = await checkUserPassword(
+    moderatorAccount.password,
     body.password,
-    moderatorAccount.password!
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -146,7 +145,6 @@ async function route(req: Request, res: Response) {
     broadcaster.disconnectSockets(true);
   }
 
-
   await prisma.auditLog.create({
     data: {
       id: generateId(),
@@ -156,7 +154,6 @@ async function route(req: Request, res: Response) {
       userId: user.user.id,
     }
   })
-
 
   res.json(user);
 }
