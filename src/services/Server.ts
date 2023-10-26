@@ -551,10 +551,10 @@ export const updateServer = async (
   }
 
   if (update.avatar) {
-    const [data, error] = await nerimityCDN.uploadAvatar(
-      update.avatar,
-      serverId
-    );
+    const [data, error] = await nerimityCDN.uploadAvatar({
+      base64: update.avatar,
+      uniqueId: serverId
+    });
     if (error) return [null, generateError(error)];
     if (data) {
       update.avatar = data.path;

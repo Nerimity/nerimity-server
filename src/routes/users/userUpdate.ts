@@ -3,8 +3,8 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { updateUser } from '../../services/User';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
+import { updateUser } from '../../services/UserManagement';
 
 export function userUpdate(Router: Router) {
   Router.post(
@@ -108,10 +108,10 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('dmStatus', body.dmStatus),
     ...(body.bio !== undefined
       ? {
-          profile: {
-            bio: body.bio,
-          },
-        }
+        profile: {
+          bio: body.bio,
+        },
+      }
       : undefined),
   });
 

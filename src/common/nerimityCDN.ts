@@ -10,9 +10,7 @@ export function proxyUrlImageDimensions(
   return new Promise((resolve) => {
     fetch(
       env.NERIMITY_CDN +
-        `proxy-dimensions?url=${encodeURI(url)}&secret=${
-          env.NERIMITY_CDN_SECRET
-        }`,
+      `proxy-dimensions?url=${encodeURI(url)}&secret=${env.NERIMITY_CDN_SECRET}`,
       {
         method: 'GET',
       }
@@ -51,35 +49,41 @@ export function uploadEmoji(
   });
 }
 
-export function uploadAvatar(
+interface UploadAvatarOpts {
   base64: string,
   uniqueId: string,
   points?: number[]
-): Promise<CustomResult<{ path: string }, any>> {
-  return new Promise((resolve) => {
-    const form = new FormData();
-    const buffer = Buffer.from(base64.split(',')[1], 'base64');
+}
+export async function uploadAvatar(opts: UploadAvatarOpts) {
 
-    // const mimeType = base64MimeType(base64);
-    const type = base64.split(';')[0].split('/')[1];
+  const form = new FormData();
+  const bufferString = opts.base64.split(',')[1];
+  if (!bufferString) return [null, 'Invalid base64 data.'] as const;
+  const buffer = Buffer.from(bufferString, 'base64');
 
-    form.append('secret', env.NERIMITY_CDN_SECRET);
-    form.append('id', uniqueId);
-    if (points) {
-      form.append('points', JSON.stringify(points));
-    }
-    form.append('file', buffer, 'temp.' + type);
+  const type = opts.base64.split(';')[0]?.split('/')[1];
+  if (!type) return [null, 'Invalid type.'] as const;
 
-    fetch(env.NERIMITY_CDN + 'avatars', {
-      method: 'POST',
-      body: form,
+  form.append('secret', env.NERIMITY_CDN_SECRET);
+  form.append('id', opts.uniqueId);
+
+  if (opts.points) {
+    form.append('points', JSON.stringify(opts.points));
+  }
+
+  form.append('file', buffer, 'temp.' + type);
+
+  const [res, err] = await fetch(env.NERIMITY_CDN + 'avatars', {
+    method: 'POST',
+    body: form,
+  })
+    .then(async (res) => {
+      if (res.status == 200) return [await res.json() as { path: string }, null] as const;
+      return [null, await res.json()] as const;
     })
-      .then(async (res) => {
-        if (res.status == 200) return resolve([await res.json(), null]);
-        resolve([null, await res.json()]);
-      })
-      .catch(() => [null, 'Could not connect to the CDN.']);
-  });
+    .catch(() => ([null, 'Could not connect to the CDN.'] as const));
+
+  return [res, err] as const
 }
 
 export function uploadBanner(
@@ -146,7 +150,7 @@ export async function deleteImage(path: string) {
     },
     body: JSON.stringify({ path, secret: env.NERIMITY_CDN_SECRET }),
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 // deletes 1000 images from a channel.

@@ -23,7 +23,6 @@ import { userChannelNoticeUpdate } from './userChannelNoticeUpdate';
 
 const UsersRouter = Router();
 
-
 userChannelNoticeGet(UsersRouter);
 userChannelNoticeDelete(UsersRouter);
 userChannelNoticeUpdate(UsersRouter);

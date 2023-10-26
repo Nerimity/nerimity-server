@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { verifyEmailConfirmCode } from '../../services/User';
+import { verifyEmailConfirmCode } from '../../services/UserManagement';
 
 export function userEmailConfirmCode(Router: Router) {
   Router.post(
