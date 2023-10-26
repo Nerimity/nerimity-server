@@ -64,7 +64,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
       return [
         null,
         generateError('This email is already used by someone else.'),
-      ];
+      ] as const;
     }
   }
 
@@ -74,7 +74,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
       uniqueId: opts.userId,
       points: opts.avatarPoints
     });
-    if (error) return [null, generateError(error)];
+    if (error) return [null, generateError(error)] as const;
     if (data) {
       opts.avatar = data.path;
     }
@@ -85,7 +85,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
       opts.banner,
       opts.userId
     );
-    if (error) return [null, generateError(error)];
+    if (error) return [null, generateError(error)] as const;
     if (data) {
       opts.banner = data.path;
     }
@@ -116,7 +116,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
     disconnectSockets(opts.userId, opts.socketId);
   }
 
-  return [{ user: updateResult.user, newToken }, null];
+  return [{ user: updateResult.user, newToken }, null] as const;
 };
 
 const getAccountByUserId = async (userId: string) => {
