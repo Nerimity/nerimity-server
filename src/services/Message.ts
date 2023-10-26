@@ -34,7 +34,7 @@ import {
   sendServerPushMessageNotification,
 } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
-import { ServerNotificationPingMode } from './User';
+import { ServerNotificationPingMode } from './User/User';
 import {
   CHANNEL_PERMISSIONS,
   ROLE_PERMISSIONS,
@@ -577,7 +577,6 @@ export const createMessage = async (opts: SendMessageOptions) => {
         mentionUserIds = [...mentionUserIds, ...userIds];
       }
     }
-
 
     if (mentionUserIds.length) {
       await addMention(

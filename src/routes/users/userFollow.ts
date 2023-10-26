@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { followUser, updateUser } from '../../services/User';
+import { followUser, updateUser } from '../../services/User/User';
 
 export function userFollow(Router: Router) {
   Router.post('/users/:userId/follow',
@@ -21,7 +21,7 @@ interface Params {
   userId: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.params as unknown as Params;
 
   const [, error] = await followUser(req.accountCache.user.id, body.userId);
@@ -30,6 +30,6 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(error);
   }
 
-  res.json({status: true});   
-  
+  res.json({ status: true });
+
 }

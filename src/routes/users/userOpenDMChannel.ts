@@ -3,7 +3,7 @@ import { param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { openDMChannel } from '../../services/User';
+import { openDMChannel } from '../../services/User/User';
 
 export function userOpenDMChannel(Router: Router) {
   Router.post(

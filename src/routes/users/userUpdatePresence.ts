@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { UserStatus } from '../../types/User';
-import { updateUserPresence } from '../../services/User';
+import { updateUserPresence } from '../../services/User/User';
 import { rateLimit } from '../../middleware/rateLimit';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 

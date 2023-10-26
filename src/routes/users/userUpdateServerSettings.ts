@@ -7,7 +7,7 @@ import {
   ServerNotificationPingMode,
   ServerNotificationSoundMode,
   UpdateServerSettings,
-} from '../../services/User';
+} from '../../services/User/User';
 
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';

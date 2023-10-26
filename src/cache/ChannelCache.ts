@@ -1,7 +1,7 @@
 import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
-import { DmStatus } from '../services/User';
+import { DmStatus } from '../services/User/User';
 import { ChannelType } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
 import {

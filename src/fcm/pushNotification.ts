@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { cert } from 'firebase-admin/app';
 import { prisma } from '../common/database';
-import { ServerNotificationPingMode, removeFCMTokens } from '../services/User';
+import { ServerNotificationPingMode, removeFCMTokens } from '../services/User/User';
 import { Message, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { ChannelCache } from '../cache/ChannelCache';

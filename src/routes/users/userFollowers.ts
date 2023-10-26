@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { followerUsers } from '../../services/User';
+import { followerUsers } from '../../services/User/User';
 
 export function userFollowers(Router: Router) {
   Router.get('/users/:userId?/followers',
@@ -20,7 +20,7 @@ interface Params {
   userId?: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const params = req.params as unknown as Params;
 
   const [followers, error] = await followerUsers(params.userId || req.accountCache.user.id);
@@ -28,6 +28,6 @@ async function route (req: Request, res: Response) {
   if (error) {
     return res.status(400).json(error);
   }
-  res.json(followers);   
-  
+  res.json(followers);
+
 }

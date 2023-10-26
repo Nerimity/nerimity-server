@@ -6,7 +6,7 @@ import {
   getAccountByUserId,
   getSuspensionDetails,
   isIpBanned,
-} from '../services/User';
+} from '../services/User/User';
 import {
   ACCOUNT_CACHE_KEY_STRING,
   BANNED_IP_KEY_SET,
@@ -17,7 +17,6 @@ import {
 } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
-
 
 export interface ActivityStatus {
   socketId: string;
@@ -324,7 +323,6 @@ export async function isIPAllowedCache(ipAddress: string) {
   const exists = await redisClient.sIsMember(key, ipAddress);
   return exists;
 }
-
 
 export async function addGoogleAccessTokenCache(userId: string, accessToken: string) {
   const key = GOOGLE_ACCESS_TOKEN(userId);

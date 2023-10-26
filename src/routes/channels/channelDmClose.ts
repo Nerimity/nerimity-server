@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { closeDMChannel } from '../../services/User';
+import { closeDMChannel } from '../../services/User/User';
 
 export function channelDMClose(Router: Router) {
   Router.delete(

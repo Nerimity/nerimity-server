@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { registerFCMToken } from '../../services/User';
+import { registerFCMToken } from '../../services/User/User';
 import { rateLimit } from '../../middleware/rateLimit';
 
 export function userRegisterFCM(Router: Router) {

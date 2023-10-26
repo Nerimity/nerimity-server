@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { isExpired } from '../../services/User';
+import { isExpired } from '../../services/User/User';
 
 export function getUsersWithSameIPAddress(Router: Router) {
   Router.get(

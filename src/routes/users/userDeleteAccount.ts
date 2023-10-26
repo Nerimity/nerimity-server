@@ -8,7 +8,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { prisma } from '../../common/database';
 import { checkUserPassword } from '../../services/UserAuthentication';
-import { deleteAccount } from '../../services/UserManagement';
+import { deleteAccount } from '../../services/User/UserManagement';
 
 export function userDeleteAccount(Router: Router) {
   Router.delete(

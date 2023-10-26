@@ -1,29 +1,29 @@
-import { CustomError, generateError } from '../common/errorHandler';
-import { CustomResult } from '../common/CustomResult';
+import { CustomError, generateError } from '../../common/errorHandler';
+import { CustomResult } from '../../common/CustomResult';
 import {
   emitInboxClosed,
   emitInboxOpened,
   emitUserPresenceUpdate,
   emitUserServerSettingsUpdate,
   emitUserUpdated,
-} from '../emits/User';
-import { ChannelType } from '../types/Channel';
+} from '../../emits/User';
+import { ChannelType } from '../../types/Channel';
 import {
   Presence,
   updateCachePresence,
-} from '../cache/UserCache';
-import { FriendStatus } from '../types/Friend';
-import { excludeFields, prisma } from '../common/database';
-import { generateId } from '../common/flakeId';
+} from '../../cache/UserCache';
+import { FriendStatus } from '../../types/Friend';
+import { excludeFields, prisma } from '../../common/database';
+import { generateId } from '../../common/flakeId';
 
 import {
   createPostNotification,
   fetchLatestPost,
   PostNotificationType,
-} from './Post';
+} from '../Post';
 
-import { leaveVoiceChannel } from './Voice';
-import { MessageInclude } from './Message';
+import { leaveVoiceChannel } from '../Voice';
+import { MessageInclude } from '../Message';
 
 export const isExpired = (expireDate: Date) => {
   const now = new Date();

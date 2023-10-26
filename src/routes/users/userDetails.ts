@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { getUserDetails } from '../../services/User';
+import { getUserDetails } from '../../services/User/User';
 
 export function userDetails(Router: Router) {
   Router.get('/users/:userId?',
@@ -15,9 +15,7 @@ export function userDetails(Router: Router) {
   );
 }
 
-
-
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
 
   const validateError = customExpressValidatorResult(req);
 

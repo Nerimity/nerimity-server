@@ -4,7 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
-import { updateUser } from '../../services/UserManagement';
+import { updateUser } from '../../services/User/updateUser';
 
 export function userUpdate(Router: Router) {
   Router.post(
