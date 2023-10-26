@@ -32,7 +32,9 @@
     "socket.io-client": "^4.7.2",
     "ts-node": "^10.9.1",
     "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "@types/node": "^20.8.6",
+    "@types/nodemailer": "^6.4.11"
   },
   "dependencies": {
     "@brecert/flakeid": "^2.0.1",
@@ -40,8 +42,6 @@
     "@prisma/client": "^5.4.2",
     "@socket.io/redis-adapter": "^8.2.1",
     "@socket.io/redis-streams-adapter": "^0.1.0",
-    "@types/node": "^20.8.6",
-    "@types/nodemailer": "^6.4.11",
     "bcrypt": "^5.1.1",
     "connect-busboy": "^1.0.0",
     "cors": "^2.8.5",

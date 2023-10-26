@@ -20,12 +20,6 @@ dependencies:
   '@socket.io/redis-streams-adapter':
     specifier: ^0.1.0
     version: 0.1.0(socket.io-adapter@2.5.2)
-  '@types/node':
-    specifier: ^20.8.6
-    version: 20.8.6
-  '@types/nodemailer':
-    specifier: ^6.4.11
-    version: 6.4.11
   bcrypt:
     specifier: ^5.1.1
     version: 5.1.1
@@ -99,12 +93,18 @@ devDependencies:
   '@types/jsonwebtoken':
     specifier: ^9.0.3
     version: 9.0.3
+  '@types/node':
+    specifier: ^20.8.6
+    version: 20.8.6
   '@types/node-fetch':
     specifier: ^2.6.6
     version: 2.6.6
   '@types/node-schedule':
     specifier: ^2.1.1
     version: 2.1.1
+  '@types/nodemailer':
+    specifier: ^6.4.11
+    version: 6.4.11
   '@typescript-eslint/eslint-plugin':
     specifier: ^6.8.0
     version: 6.8.0(@typescript-eslint/parser@6.8.0)(eslint@8.51.0)(typescript@5.2.2)
@@ -1008,7 +1008,7 @@ packages:
     resolution: {integrity: sha512-Ld2c0frwpGT4VseuoeboCXQ7UJIkK3X7Lx/4YsZEiUHtHsthWAOCYtf6PAiLhMtfwV0cWJRabLBS3+LD8x6Nrw==}
     dependencies:
       '@types/node': 20.8.6
-    dev: false
+    dev: true
 
   /@types/qs@6.9.8:
     resolution: {integrity: sha512-u95svzDlTysU5xecFNTgfFG5RUWu1A9P0VzgpcIiGZA9iraHOdSzcxMxQ55DyeRaGCSxQi7LxXDI4rzq/MYfdg==}
