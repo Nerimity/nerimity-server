@@ -31,7 +31,7 @@ export const getBlockedUserIds = async (userIds: string[], blockedUserId: string
     where: {
       status: FriendStatus.BLOCKED,
       recipientId: blockedUserId,
-      userId: { in: removeDuplicates(userIds) },
+      userId: { in: removeDuplicates(userIds).filter(id => id) },
     },
     select: { userId: true },
   })
