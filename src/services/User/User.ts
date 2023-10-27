@@ -24,6 +24,19 @@ import {
 
 import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
+import { removeDuplicates } from '../../common/utils';
+
+export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
+  const blockedUsers = await prisma.friend.findMany({
+    where: {
+      status: FriendStatus.BLOCKED,
+      recipientId: blockedUserId,
+      userId: { in: removeDuplicates(userIds) },
+    },
+    select: { userId: true },
+  })
+  return blockedUsers.map(b => b.userId)
+}
 
 export const isExpired = (expireDate: Date) => {
   const now = new Date();

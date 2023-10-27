@@ -4,6 +4,8 @@ import { dateToDateTime, prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { deleteImage } from '../common/nerimityCDN';
+import { FriendStatus } from '../types/Friend';
+import { getBlockedUserIds } from './User/User';
 
 function constructInclude(
   requesterUserId: string,
@@ -29,6 +31,21 @@ interface CreatePostOpts {
   attachment?: { width?: number; height?: number; path: string };
 }
 export async function createPost(opts: CreatePostOpts) {
+
+  if (opts.commentToId) {
+    const comment = await prisma.post.findUnique({
+      where: { id: opts.commentToId },
+    })
+    if (!comment) {
+      return [null, generateError('Comment not found')] as const
+    }
+    const blockedUserIds = await getBlockedUserIds([comment.createdById], opts.userId);
+    if (blockedUserIds.length) {
+      return [null, generateError('You have been blocked by this user!')] as const
+    }
+
+  }
+
   const post = await prisma.post.create({
     data: {
       id: generateId(),
@@ -37,15 +54,15 @@ export async function createPost(opts: CreatePostOpts) {
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
         ? {
-            attachments: {
-              create: {
-                id: generateId(),
-                height: opts.attachment.height,
-                width: opts.attachment.width,
-                path: opts.attachment.path,
-              },
+          attachments: {
+            create: {
+              id: generateId(),
+              height: opts.attachment.height,
+              width: opts.attachment.width,
+              path: opts.attachment.path,
             },
-          }
+          },
+        }
         : undefined),
     },
     include: constructInclude(opts.userId),
@@ -59,7 +76,7 @@ export async function createPost(opts: CreatePostOpts) {
     });
   }
 
-  return post;
+  return [post, null] as const;
 }
 
 export async function editPost(opts: {
@@ -82,7 +99,7 @@ export async function editPost(opts: {
       },
       include: constructInclude(opts.editById),
     })
-    .catch(() => {});
+    .catch(() => { });
 
   if (!newPost)
     return [
@@ -129,7 +146,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     include: constructInclude(opts.requesterUserId),
   });
 
-  return posts;
+  return blockedCheckResult(posts, opts.requesterUserId);
 }
 
 export async function fetchLikedPosts(userId: string, requesterUserId: string) {
@@ -140,20 +157,77 @@ export async function fetchLikedPosts(userId: string, requesterUserId: string) {
     take: 50,
   });
 
-  return likes.map((like) => like.post);
+  return blockedCheckResult(likes, requesterUserId);
 }
 
 export async function fetchLatestPost(userId: string, requesterUserId: string) {
-  const latestPost = await prisma.post.findFirst({
+  const post = await prisma.post.findFirst({
     orderBy: { createdAt: 'desc' },
     where: { deleted: null, commentToId: null, createdBy: { id: userId } },
     include: constructInclude(requesterUserId),
   });
-  return latestPost;
+
+  if (!post) return null;
+
+  return (await blockedCheckResult([post], requesterUserId))[0];
+}
+
+const constructBlockedPostTemplate = (post: Post & { commentTo?: Post }) => {
+  return {
+    id: post.id,
+    commentToId: post.commentToId,
+    createdBy: post.createdBy,
+    commentTo: post.commentTo,
+    quotedPostId: post.quotedPostId,
+    block: true,
+  }
+}
+
+type PostWithCommentTo = Partial<Post> & {
+  commentTo?: Partial<Post>;
+}
+
+export async function blockedCheckResult(posts: PostWithCommentTo[], requesterUserId: string) {
+  const blockedUserIds = await getBlockedUserIds(getAllUserIdsFromPosts(posts), requesterUserId);
+  if (!blockedUserIds.length) return posts;
+
+  const customPosts: (PostWithCommentTo[]) = reconstructPostsIfBlocked(blockedUserIds, posts);
+
+  return customPosts;
+}
+
+const getAllUserIdsFromPosts = (posts: PostWithCommentTo[]) => {
+  const userIds: string[] = [];
+  for (let i = 0; i < posts.length; i++) {
+    const post = posts[i];
+    if (!post) continue;
+    userIds.push(post.createdById!);
+    if (post.commentTo) {
+      userIds.push(...getAllUserIdsFromPosts([post.commentTo]));
+    }
+  }
+  return userIds;
+}
+
+const reconstructPostsIfBlocked = (blockedByUserIds: string[], posts: PostWithCommentTo[]) => {
+  const customPosts: (PostWithCommentTo[]) = [];
+
+  for (let i = 0; i < posts.length; i++) {
+    let post: PostWithCommentTo = { ...posts[i] };
+    if (!post) continue;
+    if (post.createdById && blockedByUserIds.includes(post.createdById)) {
+      post = constructBlockedPostTemplate(post as Post);
+    }
+    if (post.commentTo) {
+      post.commentTo = reconstructPostsIfBlocked(blockedByUserIds, [post.commentTo as Post])[0];
+    }
+    customPosts.push(post);
+  }
+  return customPosts;
 }
 
 export async function fetchPost(postId: string, requesterUserId: string) {
-  const post = prisma.post.findFirst({
+  const post = await prisma.post.findFirst({
     where: {
       id: postId,
     },
@@ -161,8 +235,9 @@ export async function fetchPost(postId: string, requesterUserId: string) {
     take: 50,
     include: constructInclude(requesterUserId),
   });
+  if (!post) return null;
 
-  return post;
+  return (await blockedCheckResult([post], requesterUserId))[0];
 }
 
 export async function likePost(
@@ -180,6 +255,11 @@ export async function likePost(
   });
   if (existingPost) {
     return [null, generateError('You have already liked this post!')];
+  }
+
+  const blockedUserIds = await getBlockedUserIds([post.createdById], userId);
+  if (blockedUserIds.length) {
+    return [null, generateError('You have been blocked by this user!')]
   }
 
   await prisma.postLike.create({
@@ -343,7 +423,7 @@ export async function createPostNotification(
       }),
     ])
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
 
   // // delete if more than 10 notifications exist
   // const tenthLatestRecord = await prisma.postNotification.findFirst({

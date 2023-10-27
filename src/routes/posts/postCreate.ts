@@ -7,9 +7,8 @@ import { createPost } from '../../services/Post';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { uploadImage } from '../../common/nerimityCDN';
 
-
 export function postCreate(Router: Router) {
-  Router.post('/posts', 
+  Router.post('/posts',
     authenticate(),
     rateLimit({
       name: 'create_post',
@@ -29,13 +28,12 @@ export function postCreate(Router: Router) {
   );
 }
 
-
 interface Body {
   content: string;
   postId?: string; // Used if you want to reply to a post
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const validateError = customExpressValidatorResult(req);
@@ -47,8 +45,7 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(generateError('content or attachment is required.'));
   }
 
-
-  let attachment: { width?: number; height?: number; path: string} | undefined = undefined;
+  let attachment: { width?: number; height?: number; path: string } | undefined = undefined;
 
   if (req.fileInfo?.file) {
     const [uploadedImage, err] = await uploadImage(req.fileInfo?.file, req.fileInfo.info.filename, req.accountCache.user.id);
@@ -67,17 +64,19 @@ async function route (req: Request, res: Response) {
       height: uploadedImage!.dimensions.height,
       path: uploadedImage!.path
     };
-    
+
   }
 
-
-  const post = await createPost({
+  const [post, error] = await createPost({
     content: body.content,
     userId: req.accountCache.user.id,
     commentToId: body.postId,
     attachment
   });
 
+  if (error) {
+    return res.status(400).json(error);
+  }
 
   res.json(post);
 }
