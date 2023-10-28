@@ -157,7 +157,7 @@ export async function fetchLikedPosts(userId: string, requesterUserId: string) {
     take: 50,
   });
 
-  return blockedCheckResult(likes, requesterUserId);
+  return blockedCheckResult(likes.map((like) => like.post), requesterUserId);
 }
 
 export async function fetchLatestPost(userId: string, requesterUserId: string) {
