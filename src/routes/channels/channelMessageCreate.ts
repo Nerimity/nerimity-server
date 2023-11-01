@@ -117,6 +117,7 @@ async function route(req: Request, res: Response) {
     }
 
     const isServerNotPublicAndNotSupporter =
+      req.serverCache &&
       !isServerPublic(req.serverCache) &&
       !isSupporterOrModerator(req.accountCache.user);
 
