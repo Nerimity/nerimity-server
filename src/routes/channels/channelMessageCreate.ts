@@ -4,19 +4,29 @@ import {
   customExpressValidatorResult,
   generateError,
 } from '../../common/errorHandler';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS } from '../../common/Bitwise';
+import {
+  CHANNEL_PERMISSIONS,
+  ROLE_PERMISSIONS,
+  USER_BADGES,
+  hasBit,
+} from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../types/Message';
 import { AttachmentProviders, createMessage } from '../../services/Message';
-import { memberHasRolePermission, memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
+import {
+  memberHasRolePermission,
+  memberHasRolePermissionMiddleware,
+} from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { deleteImage, uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { TextChannelTypes } from '../../types/Channel';
 import { Attachment } from '@prisma/client';
 import { dateToDateTime } from '../../common/database';
+import { ChannelCache } from '../../cache/ChannelCache';
+import { AccountCache, UserCache } from '../../cache/UserCache';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -52,16 +62,18 @@ export function channelMessageCreate(Router: Router) {
       .isString()
       .withMessage('googleDriveAttachment id must be a string!')
       .isLength({ min: 1, max: 255 })
-      .withMessage('googleDriveAttachment id length must be between 1 and 255 characters.'),
+      .withMessage(
+        'googleDriveAttachment id length must be between 1 and 255 characters.'
+      ),
 
     body('googleDriveAttachment.mime')
       .optional(true)
       .isString()
       .withMessage('googleDriveAttachment mime must be a string!')
       .isLength({ min: 1, max: 255 })
-      .withMessage('googleDriveAttachment mime length must be between 1 and 255 characters.'),
-
-
+      .withMessage(
+        'googleDriveAttachment mime length must be between 1 and 255 characters.'
+      ),
 
     rateLimit({
       name: 'create_message',
@@ -90,9 +102,43 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  const hasAttachment = body.googleDriveAttachment || req.fileInfo?.file;
+
+  if (hasAttachment) {
+    if (!isEmailConfirmed(req.accountCache)) {
+      return res
+        .status(400)
+        .json(
+          generateError(
+            'You must confirm your email to send attachment messages.'
+          )
+        );
+    }
+
+    const isPrivateChannelAndNotSupporter =
+      isPrivateChannel(req.channelCache) &&
+      !isSupporterOrModerator(req.accountCache.user);
+
+    if (isPrivateChannelAndNotSupporter) {
+      return res
+        .status(400)
+        .json(
+          generateError(
+            'You must be a Nerimity supporter to send attachment messages to a private channel.'
+          )
+        );
+    }
+  }
+
   if (body.googleDriveAttachment) {
-    if (!body.googleDriveAttachment.id) return res.status(400).json(generateError('googleDriveAttachment id is required'));
-    if (!body.googleDriveAttachment.mime) return res.status(400).json(generateError('googleDriveAttachment mime is required'));
+    if (!body.googleDriveAttachment.id)
+      return res
+        .status(400)
+        .json(generateError('googleDriveAttachment id is required'));
+    if (!body.googleDriveAttachment.mime)
+      return res
+        .status(400)
+        .json(generateError('googleDriveAttachment mime is required'));
   }
 
   if (req.channelCache.serverId && !req.accountCache.emailConfirmed) {
@@ -111,7 +157,11 @@ async function route(req: Request, res: Response) {
       .json(generateError('You cannot send messages in this channel.'));
   }
 
-  if (!body.content?.trim() && !req.fileInfo?.file && !body.googleDriveAttachment) {
+  if (
+    !body.content?.trim() &&
+    !req.fileInfo?.file &&
+    !body.googleDriveAttachment
+  ) {
     return res
       .status(400)
       .json(generateError('content or attachment is required.'));
@@ -119,10 +169,12 @@ async function route(req: Request, res: Response) {
 
   let canMentionEveryone = body.content?.includes('[@:e]');
   if (canMentionEveryone) {
-    const [hasMentionEveryonePerm] = memberHasRolePermission(req, ROLE_PERMISSIONS.MENTION_EVERYONE);
+    const [hasMentionEveryonePerm] = memberHasRolePermission(
+      req,
+      ROLE_PERMISSIONS.MENTION_EVERYONE
+    );
     canMentionEveryone = !!hasMentionEveryonePerm;
   }
-
 
   let attachment: Partial<Attachment> | undefined = undefined;
 
@@ -159,7 +211,7 @@ async function route(req: Request, res: Response) {
       fileId: body.googleDriveAttachment.id,
       mime: body.googleDriveAttachment.mime,
       provider: AttachmentProviders.GoogleDrive,
-      createdAt: dateToDateTime() as unknown as Date
+      createdAt: dateToDateTime() as unknown as Date,
     };
   }
 
@@ -178,10 +230,27 @@ async function route(req: Request, res: Response) {
 
   if (error) {
     if (req.fileInfo?.file && attachment?.path) {
-      deleteImage(attachment.path)
+      deleteImage(attachment.path);
     }
     return res.status(400).json(generateError(error));
   }
 
   res.json(message);
 }
+
+const isEmailConfirmed = (user: AccountCache) => {
+  return user.emailConfirmed;
+};
+
+const isSupporterOrModerator = (user: UserCache) => {
+  return (
+    hasBit(user.badges, USER_BADGES.SUPPORTER.bit) ||
+    hasBit(user.badges, USER_BADGES.FOUNDER.bit) ||
+    hasBit(user.badges, USER_BADGES.ADMIN.bit)
+  );
+};
+
+const isPrivateChannel = (channel: ChannelCache) => {
+  if (!channel.serverId) return false;
+  return hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+};
