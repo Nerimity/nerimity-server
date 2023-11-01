@@ -27,6 +27,7 @@ import { Attachment } from '@prisma/client';
 import { dateToDateTime } from '../../common/database';
 import { ChannelCache } from '../../cache/ChannelCache';
 import { AccountCache, UserCache } from '../../cache/UserCache';
+import { ServerCache } from '../../cache/ServerCache';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -115,6 +116,19 @@ async function route(req: Request, res: Response) {
         );
     }
 
+    const isServerNotPublicAndNotSupporter =
+      !isServerPublic(req.serverCache) &&
+      !isSupporterOrModerator(req.accountCache.user);
+
+    if (isServerNotPublicAndNotSupporter) {
+      return res
+        .status(400)
+        .json(
+          generateError(
+            'You must be a Nerimity supporter to send attachment messages to a private server.'
+          )
+        );
+    }
     const isPrivateChannelAndNotSupporter =
       isPrivateChannel(req.channelCache) &&
       !isSupporterOrModerator(req.accountCache.user);
@@ -253,4 +267,8 @@ const isSupporterOrModerator = (user: UserCache) => {
 const isPrivateChannel = (channel: ChannelCache) => {
   if (!channel.serverId) return false;
   return hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+};
+
+const isServerPublic = (server: ServerCache) => {
+  return server.public;
 };

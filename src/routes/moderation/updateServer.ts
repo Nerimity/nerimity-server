@@ -55,7 +55,7 @@ async function route(req: Request, res: Response) {
 
   const isPasswordValid = await checkUserPassword(
     account.password,
-    req.body.password,
+    req.body.password
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -88,8 +88,8 @@ async function route(req: Request, res: Response) {
       actionById: req.accountCache.user.id,
       serverName: server.name,
       serverId: server.id,
-    }
-  })
+    },
+  });
 
   res.json(server);
 }

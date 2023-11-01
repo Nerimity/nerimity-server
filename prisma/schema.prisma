@@ -192,6 +192,7 @@ model Server {
   bannedUsers            BannedServerMember[]
   verified               Boolean                @default(false)
 
+  // oops, it should be camel cased. 
   PublicServer           PublicServer?
 
   attachments Attachment[]
