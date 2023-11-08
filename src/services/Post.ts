@@ -145,24 +145,24 @@ export async function fetchPosts(opts: FetchPostsOpts) {
       ...(opts.postId ? { commentToId: opts.postId } : undefined),
       deleted: null,
     },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: 'desc' },
     take: 50,
     include: constructInclude(opts.requesterUserId),
   });
 
-  return blockedCheckResult(posts, opts.requesterUserId);
+  return blockedCheckResult(posts.reverse(), opts.requesterUserId);
 }
 
 export async function fetchLikedPosts(userId: string, requesterUserId: string) {
   const likes = await prisma.postLike.findMany({
     where: { likedById: userId },
     include: { post: { include: constructInclude(requesterUserId) } },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: 'desc' },
     take: 50,
   });
 
   return blockedCheckResult(
-    likes.map((like) => like.post),
+    likes.map((like) => like.post).reverse(),
     requesterUserId
   );
 }
