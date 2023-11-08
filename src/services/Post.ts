@@ -31,19 +31,23 @@ interface CreatePostOpts {
   attachment?: { width?: number; height?: number; path: string };
 }
 export async function createPost(opts: CreatePostOpts) {
-
   if (opts.commentToId) {
     const comment = await prisma.post.findUnique({
       where: { id: opts.commentToId },
-    })
+    });
     if (!comment) {
-      return [null, generateError('Comment not found')] as const
+      return [null, generateError('Comment not found')] as const;
     }
-    const blockedUserIds = await getBlockedUserIds([comment.createdById], opts.userId);
+    const blockedUserIds = await getBlockedUserIds(
+      [comment.createdById],
+      opts.userId
+    );
     if (blockedUserIds.length) {
-      return [null, generateError('You have been blocked by this user!')] as const
+      return [
+        null,
+        generateError('You have been blocked by this user!'),
+      ] as const;
     }
-
   }
 
   const post = await prisma.post.create({
@@ -54,15 +58,15 @@ export async function createPost(opts: CreatePostOpts) {
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
         ? {
-          attachments: {
-            create: {
-              id: generateId(),
-              height: opts.attachment.height,
-              width: opts.attachment.width,
-              path: opts.attachment.path,
+            attachments: {
+              create: {
+                id: generateId(),
+                height: opts.attachment.height,
+                width: opts.attachment.width,
+                path: opts.attachment.path,
+              },
             },
-          },
-        }
+          }
         : undefined),
     },
     include: constructInclude(opts.userId),
@@ -99,7 +103,7 @@ export async function editPost(opts: {
       },
       include: constructInclude(opts.editById),
     })
-    .catch(() => { });
+    .catch(() => {});
 
   if (!newPost)
     return [
@@ -157,7 +161,10 @@ export async function fetchLikedPosts(userId: string, requesterUserId: string) {
     take: 50,
   });
 
-  return blockedCheckResult(likes.map((like) => like.post), requesterUserId);
+  return blockedCheckResult(
+    likes.map((like) => like.post),
+    requesterUserId
+  );
 }
 
 export async function fetchLatestPost(userId: string, requesterUserId: string) {
@@ -180,18 +187,27 @@ const constructBlockedPostTemplate = (post: Post & { commentTo?: Post }) => {
     commentTo: post.commentTo,
     quotedPostId: post.quotedPostId,
     block: true,
-  }
-}
+  };
+};
 
 type PostWithCommentTo = Partial<Post> & {
   commentTo?: Partial<Post>;
-}
+};
 
-export async function blockedCheckResult(posts: PostWithCommentTo[], requesterUserId: string) {
-  const blockedUserIds = await getBlockedUserIds(getAllUserIdsFromPosts(posts), requesterUserId);
+export async function blockedCheckResult(
+  posts: PostWithCommentTo[],
+  requesterUserId: string
+) {
+  const blockedUserIds = await getBlockedUserIds(
+    getAllUserIdsFromPosts(posts),
+    requesterUserId
+  );
   if (!blockedUserIds.length) return posts;
 
-  const customPosts: (PostWithCommentTo[]) = reconstructPostsIfBlocked(blockedUserIds, posts);
+  const customPosts: PostWithCommentTo[] = reconstructPostsIfBlocked(
+    blockedUserIds,
+    posts
+  );
 
   return customPosts;
 }
@@ -207,10 +223,13 @@ const getAllUserIdsFromPosts = (posts: PostWithCommentTo[]) => {
     }
   }
   return userIds;
-}
+};
 
-const reconstructPostsIfBlocked = (blockedByUserIds: string[], posts: PostWithCommentTo[]) => {
-  const customPosts: (PostWithCommentTo[]) = [];
+const reconstructPostsIfBlocked = (
+  blockedByUserIds: string[],
+  posts: PostWithCommentTo[]
+) => {
+  const customPosts: PostWithCommentTo[] = [];
 
   for (let i = 0; i < posts.length; i++) {
     let post: PostWithCommentTo = { ...posts[i] };
@@ -219,12 +238,14 @@ const reconstructPostsIfBlocked = (blockedByUserIds: string[], posts: PostWithCo
       post = constructBlockedPostTemplate(post as Post);
     }
     if (post.commentTo) {
-      post.commentTo = reconstructPostsIfBlocked(blockedByUserIds, [post.commentTo as Post])[0];
+      post.commentTo = reconstructPostsIfBlocked(blockedByUserIds, [
+        post.commentTo as Post,
+      ])[0];
     }
     customPosts.push(post);
   }
   return customPosts;
-}
+};
 
 export async function fetchPost(postId: string, requesterUserId: string) {
   const post = await prisma.post.findFirst({
@@ -259,7 +280,7 @@ export async function likePost(
 
   const blockedUserIds = await getBlockedUserIds([post.createdById], userId);
   if (blockedUserIds.length) {
-    return [null, generateError('You have been blocked by this user!')]
+    return [null, generateError('You have been blocked by this user!')];
   }
 
   await prisma.postLike.create({
@@ -423,7 +444,7 @@ export async function createPostNotification(
       }),
     ])
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+    .catch(() => {});
 
   // // delete if more than 10 notifications exist
   // const tenthLatestRecord = await prisma.postNotification.findFirst({
