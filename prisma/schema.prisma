@@ -363,7 +363,7 @@ model Ticket {
   id          String   @id
   title       String
   category    Int
-
+  status      Int      @default(2)
   channelId   String   @unique
   channel     Channel  @relation(fields: [channelId], references: [id])
 
@@ -372,6 +372,7 @@ model Ticket {
   openedById  String
   openedBy    User     @relation(fields: [openedById], references: [id])
   openedAt    DateTime @default(now())
+
 }
 
 model Inbox {

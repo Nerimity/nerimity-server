@@ -11,6 +11,13 @@ export enum TicketCategory {
   OTHER = 3,
 }
 
+export enum TicketStatus {
+  WAITING_FOR_MODERATOR_RESPONSE = 0,
+  WAITING_FOR_USER_RESPONSE = 1,
+  CLOSED_AS_DONE = 2,
+  CLOSED_AS_INVALID = 3,
+}
+
 interface CreateTicketOpts {
   title: string;
   category: TicketCategory;
@@ -32,6 +39,7 @@ export const createTicket = async (opts: CreateTicketOpts) => {
       ticket: {
         create: {
           id: generateId(),
+          status: TicketStatus.WAITING_FOR_MODERATOR_RESPONSE,
           category: opts.category,
           title: opts.title,
           openedById: opts.requestedById,
@@ -59,6 +67,7 @@ export const getOwnTickets = async (userId: string) => {
     orderBy: { openedAt: 'desc' },
     select: {
       id: true,
+      status: true,
       category: true,
       title: true,
       openedAt: true,
