@@ -362,10 +362,12 @@ model Channel {
 model Ticket {
   id          String   @id
   title       String
-  category    String
+  category    Int
 
   channelId   String   @unique
   channel     Channel  @relation(fields: [channelId], references: [id])
+
+  lastUpdatedAt DateTime @default(now())
 
   openedById  String
   openedBy    User     @relation(fields: [openedById], references: [id])
