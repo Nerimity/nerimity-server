@@ -360,7 +360,7 @@ model Channel {
 }
 
 model Ticket {
-  id          String   @id
+  id          Int   @id @default(autoincrement())
   title       String
   category    Int
   status      Int      @default(2)
