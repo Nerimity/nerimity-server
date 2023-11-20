@@ -38,7 +38,6 @@ export const createTicket = async (opts: CreateTicketOpts) => {
       createdById: opts.requestedById,
       ticket: {
         create: {
-          id: generateId(),
           status: TicketStatus.WAITING_FOR_MODERATOR_RESPONSE,
           category: opts.category,
           title: opts.title,
@@ -76,4 +75,20 @@ export const getOwnTickets = async (userId: string) => {
     },
   });
   return tickets;
+};
+
+export const getTicketById = async (ticketId: string, userId: string) => {
+  const ticket = await prisma.ticket.findFirst({
+    where: { openedById: userId, id: parseInt(ticketId) },
+    select: {
+      id: true,
+      status: true,
+      category: true,
+      title: true,
+      openedAt: true,
+      channelId: true,
+      lastUpdatedAt: true,
+    },
+  });
+  return ticket;
 };
