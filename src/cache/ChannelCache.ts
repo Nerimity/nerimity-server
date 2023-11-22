@@ -21,10 +21,12 @@ export interface ServerChannelCache {
 
 export interface DMChannelCache {
   inbox: InboxCache;
+  type: ChannelType.DM_TEXT;
 }
 
 export interface TicketChannelCache {
   name: string;
+  type: ChannelType.TICKET;
 }
 
 export interface BaseChannelCache {
@@ -32,10 +34,8 @@ export interface BaseChannelCache {
   createdById: string;
 }
 
-export type ChannelCache =
-  | BaseChannelCache
-  | ServerChannelCache
-  | DMChannelCache;
+export type ChannelCache = BaseChannelCache &
+  (ServerChannelCache | DMChannelCache | TicketChannelCache);
 
 export interface InboxCache {
   recipientId: string;
