@@ -26,6 +26,7 @@ interface UpdateUserProps {
 
   profile?: {
     bio?: string | null;
+    pronouns?: string | null;
   };
 }
 

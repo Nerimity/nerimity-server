@@ -8,10 +8,7 @@ import {
   emitUserUpdated,
 } from '../../emits/User';
 import { ChannelType } from '../../types/Channel';
-import {
-  Presence,
-  updateCachePresence,
-} from '../../cache/UserCache';
+import { Presence, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
 import { excludeFields, prisma } from '../../common/database';
 import { generateId } from '../../common/flakeId';
@@ -26,17 +23,20 @@ import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
 import { removeDuplicates } from '../../common/utils';
 
-export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
+export const getBlockedUserIds = async (
+  userIds: string[],
+  blockedUserId: string
+) => {
   const blockedUsers = await prisma.friend.findMany({
     where: {
       status: FriendStatus.BLOCKED,
       recipientId: blockedUserId,
-      userId: { in: removeDuplicates(userIds).filter(id => id) },
+      userId: { in: removeDuplicates(userIds).filter((id) => id) },
     },
     select: { userId: true },
-  })
-  return blockedUsers.map(b => b.userId)
-}
+  });
+  return blockedUsers.map((b) => b.userId);
+};
 
 export const isExpired = (expireDate: Date) => {
   const now = new Date();
@@ -139,12 +139,12 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   const newChannel = inbox
     ? { id: inbox?.channelId }
     : await prisma.channel.create({
-      data: {
-        id: generateId(),
-        type: ChannelType.DM_TEXT,
-        createdById: userId,
-      },
-    });
+        data: {
+          id: generateId(),
+          type: ChannelType.DM_TEXT,
+          createdById: userId,
+        },
+      });
 
   const newInbox = await prisma.inbox
     .create({
@@ -161,7 +161,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+    .catch(() => {});
 
   if (!newInbox) {
     return [null, generateError('Something went wrong.')] as const;
@@ -251,7 +251,12 @@ export const getUserDetails = async (
         where: { followedById: requesterId },
         select: { followedToId: true },
       },
-      profile: { select: { bio: true } },
+      profile: {
+        select: {
+          bio: true,
+          pronouns: true,
+        },
+      },
       _count: {
         select: {
           followers: true,
@@ -475,9 +480,8 @@ export async function getUserNotifications(userId: string) {
         },
         // eslint-disable-next-line @typescript-eslint/no-empty-function
       })
-      .then(() => { });
+      .then(() => {});
   }
 
   return notifications;
 }
-

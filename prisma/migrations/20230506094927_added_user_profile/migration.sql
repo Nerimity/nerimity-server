@@ -2,6 +2,7 @@
 CREATE TABLE "UserProfile" (
     "userId" TEXT NOT NULL,
     "bio" TEXT,
+    "pronouns" TEXT,
 
     CONSTRAINT "UserProfile_pkey" PRIMARY KEY ("userId")
 );

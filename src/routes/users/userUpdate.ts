@@ -63,6 +63,12 @@ export function userUpdate(Router: Router) {
       .isLength({ min: 1, max: 1000 })
       .withMessage('Bio must be between 1 and 1000 characters long.')
       .optional({ nullable: true }),
+    body('pronouns')
+      .isString()
+      .withMessage('Pronouns must be a string.')
+      .isLength({ min: 1, max: 16 })
+      .withMessage('Pronouns must be between 1 and 16 characters.')
+      .optional({ nullable: true }),
     body('dmStatus')
       .isInt({ min: 0, max: 2 })
       .withMessage('dmStatus must be a number.')
@@ -81,6 +87,7 @@ interface Body {
   avatarPoints?: number[];
   banner?: string;
   bio?: string | null;
+  pronouns?: string | null;
   socketId?: string;
   dmStatus?: number;
 }
@@ -106,12 +113,13 @@ async function route(req: Request, res: Response) {
     banner: body.banner,
     newPassword: body.newPassword,
     ...addToObjectIfExists('dmStatus', body.dmStatus),
-    ...(body.bio !== undefined
+    ...(body.bio !== undefined || body.pronouns !== undefined
       ? {
-        profile: {
-          bio: body.bio,
-        },
-      }
+          profile: {
+            bio: body.bio !== undefined ? body.bio : undefined,
+            pronouns: body.pronouns !== undefined ? body.pronouns : undefined,
+          },
+        }
       : undefined),
   });
 

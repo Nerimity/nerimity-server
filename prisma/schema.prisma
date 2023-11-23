@@ -141,6 +141,7 @@ model UserProfile {
   userId    String   @id
   user      User @relation(fields: [userId], references: [id])
   bio       String?
+  pronouns  String? @default("rather not say")
 }
 
 model Follower {
