@@ -281,7 +281,11 @@ export const getUserDetails = async (
   );
 
   const mutualFriends = await prisma.friend.findMany({
-    where: { userId: requesterId, recipientId: { in: recipientFriendsIds } },
+    where: {
+      status: FriendStatus.FRIENDS,
+      userId: requesterId,
+      recipientId: { in: recipientFriendsIds },
+    },
   });
   const mutualFriendIds = mutualFriends.map((friend) => friend.recipientId);
 
