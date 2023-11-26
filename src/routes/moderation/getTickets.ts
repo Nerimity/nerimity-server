@@ -39,6 +39,7 @@ async function route(req: Request, res: Response) {
       openedAt: true,
       channelId: true,
       lastUpdatedAt: true,
+      openedBy: true,
     },
   });
 
