@@ -15,6 +15,7 @@ import { getUsersWithSameIPAddress } from './getUsersWithSameIPAddress';
 import { searchServers } from './searchServers';
 import { getAuditLogs } from './getAuditLogs';
 import { getTickets } from './getTickets';
+import { getTicket } from './getTicket';
 
 const ModerationRouter = Router();
 
@@ -34,6 +35,7 @@ serverDelete(ModerationRouter);
 getServer(ModerationRouter);
 updateServer(ModerationRouter);
 getServers(ModerationRouter);
+getTicket(ModerationRouter);
 getTickets(ModerationRouter);
 
 export { ModerationRouter };
