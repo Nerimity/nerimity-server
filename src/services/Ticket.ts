@@ -94,6 +94,7 @@ export const updateTicketStatus = async (opts: {
     return [null, 'Ticket not found'] as const;
   }
 
+  // if opts.userId is not provided, it means that the requester is a moderator.
   if (opts.userId) {
     if (ticket.openedById !== opts.userId) {
       return [null, 'Unauthorized'] as const;
