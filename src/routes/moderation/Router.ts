@@ -16,6 +16,7 @@ import { searchServers } from './searchServers';
 import { getAuditLogs } from './getAuditLogs';
 import { getTickets } from './getTickets';
 import { getTicket } from './getTicket';
+import { ticketUpdate } from './updateTicketStatus';
 
 const ModerationRouter = Router();
 
@@ -37,5 +38,6 @@ updateServer(ModerationRouter);
 getServers(ModerationRouter);
 getTicket(ModerationRouter);
 getTickets(ModerationRouter);
+ticketUpdate(ModerationRouter);
 
 export { ModerationRouter };

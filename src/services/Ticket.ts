@@ -1,4 +1,4 @@
-import { prisma } from '../common/database';
+import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { ChannelType } from '../types/Channel';
 import { MessageType } from '../types/Message';
@@ -75,6 +75,47 @@ export const getOwnTickets = async (userId: string) => {
     },
   });
   return tickets;
+};
+
+export const updateTicketStatus = async (opts: {
+  ticketId: number;
+  status: TicketStatus;
+  userId?: string;
+}) => {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: opts.ticketId },
+    select: {
+      id: true,
+      openedById: true,
+    },
+  });
+
+  if (!ticket) {
+    return [null, 'Ticket not found'] as const;
+  }
+
+  if (opts.userId) {
+    if (ticket.openedById !== opts.userId) {
+      return [null, 'Unauthorized'] as const;
+    }
+  }
+
+  const newTicket = await prisma.ticket.update({
+    where: { id: opts.ticketId },
+    data: { status: opts.status, lastUpdatedAt: dateToDateTime() },
+    select: {
+      id: true,
+      status: true,
+      category: true,
+      title: true,
+      openedAt: true,
+      channelId: true,
+      lastUpdatedAt: true,
+      openedBy: opts.userId ? false : true,
+    },
+  });
+
+  return [newTicket, null] as const;
 };
 
 export const getTicketById = async (ticketId: string, userId: string) => {
