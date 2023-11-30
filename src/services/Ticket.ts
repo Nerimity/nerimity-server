@@ -1,3 +1,4 @@
+import { updateTicketChannelStatus } from '../cache/ChannelCache';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { ChannelType } from '../types/Channel';
@@ -17,6 +18,11 @@ export enum TicketStatus {
   CLOSED_AS_DONE = 2,
   CLOSED_AS_INVALID = 3,
 }
+
+export const CloseTicketStatuses = [
+  TicketStatus.CLOSED_AS_DONE,
+  TicketStatus.CLOSED_AS_INVALID,
+] as const;
 
 interface CreateTicketOpts {
   title: string;
@@ -85,6 +91,7 @@ export const updateTicketStatus = async (opts: {
   const ticket = await prisma.ticket.findUnique({
     where: { id: opts.ticketId },
     select: {
+      status: true,
       id: true,
       openedById: true,
     },
@@ -98,6 +105,10 @@ export const updateTicketStatus = async (opts: {
   if (opts.userId) {
     if (ticket.openedById !== opts.userId) {
       return [null, 'Unauthorized'] as const;
+    }
+
+    if (CloseTicketStatuses.includes(ticket.status)) {
+      return [null, 'Ticket is closed'] as const;
     }
   }
 
@@ -115,6 +126,7 @@ export const updateTicketStatus = async (opts: {
       openedBy: opts.userId ? false : true,
     },
   });
+  await updateTicketChannelStatus(newTicket.channelId, opts.status);
 
   return [newTicket, null] as const;
 };

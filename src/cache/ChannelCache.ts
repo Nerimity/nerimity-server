@@ -1,5 +1,6 @@
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
+import { TicketStatus } from '../services/Ticket';
 import { DmStatus } from '../services/User/User';
 import { ChannelType } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
@@ -27,6 +28,9 @@ export interface DMChannelCache {
 export interface TicketChannelCache {
   name: string;
   type: ChannelType.TICKET;
+  ticket: {
+    status: TicketStatus;
+  };
 }
 
 export interface BaseChannelCache {
@@ -72,6 +76,13 @@ const addChannelToCache = async (channelId: string, userId: string) => {
   // If not in cache, fetch from database.
   const channel = await prisma.channel.findFirst({
     where: { id: channelId, deleting: null },
+    include: {
+      ticket: {
+        select: {
+          status: true,
+        },
+      },
+    },
   });
 
   if (!channel) return [null, 'Channel does not exist.'] as const;
@@ -110,6 +121,21 @@ const addChannelToCache = async (channelId: string, userId: string) => {
     return [JSON.parse(stringifiedChannel) as ChannelCache, null] as const;
   }
   return [null, 'Unknown channel type.'] as const;
+};
+
+export const updateTicketChannelStatus = async (
+  channelId: string,
+  status: TicketStatus
+) => {
+  const channel = await getTicketChannelCache(channelId);
+  if (!channel) return;
+
+  channel.ticket.status = status;
+
+  await redisClient.set(
+    TICKET_CHANNEL_KEY_STRING(channelId),
+    JSON.stringify(channel)
+  );
 };
 
 const getDMChannelCache = async (channelId: string) => {
