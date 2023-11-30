@@ -10,7 +10,9 @@ export function proxyUrlImageDimensions(
   return new Promise((resolve) => {
     fetch(
       env.NERIMITY_CDN +
-      `proxy-dimensions?url=${encodeURI(url)}&secret=${env.NERIMITY_CDN_SECRET}`,
+        `proxy-dimensions?url=${encodeURI(url)}&secret=${
+          env.NERIMITY_CDN_SECRET
+        }`,
       {
         method: 'GET',
       }
@@ -28,10 +30,17 @@ export function uploadEmoji(
 ): Promise<CustomResult<{ path: string; id: string; gif: boolean }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
-    const buffer = Buffer.from(base64.split(',')[1], 'base64');
+    let buffer: Buffer | undefined;
+    try {
+      buffer = Buffer.from(base64.split(',')[1], 'base64');
+    } catch (err) {}
+
+    if (!buffer) return resolve([null, 'Invalid base64 data.']);
 
     // const mimeType = base64MimeType(base64);
-    const type = base64.split(';')[0].split('/')[1];
+    const type = base64.split(';')[0]?.split('/')[1];
+
+    if (!type) return resolve([null, 'Invalid type.']);
 
     form.append('secret', env.NERIMITY_CDN_SECRET);
     form.append('id', serverId);
@@ -50,16 +59,21 @@ export function uploadEmoji(
 }
 
 interface UploadAvatarOpts {
-  base64: string,
-  uniqueId: string,
-  points?: number[]
+  base64: string;
+  uniqueId: string;
+  points?: number[];
 }
 export async function uploadAvatar(opts: UploadAvatarOpts) {
-
   const form = new FormData();
   const bufferString = opts.base64.split(',')[1];
   if (!bufferString) return [null, 'Invalid base64 data.'] as const;
-  const buffer = Buffer.from(bufferString, 'base64');
+  let buffer: Buffer | undefined;
+
+  try {
+    buffer = Buffer.from(bufferString, 'base64');
+  } catch (err) {}
+
+  if (!buffer) return [null, 'Invalid base64 data.'] as const;
 
   const type = opts.base64.split(';')[0]?.split('/')[1];
   if (!type) return [null, 'Invalid type.'] as const;
@@ -78,12 +92,13 @@ export async function uploadAvatar(opts: UploadAvatarOpts) {
     body: form,
   })
     .then(async (res) => {
-      if (res.status == 200) return [await res.json() as { path: string }, null] as const;
+      if (res.status == 200)
+        return [(await res.json()) as { path: string }, null] as const;
       return [null, await res.json()] as const;
     })
-    .catch(() => ([null, 'Could not connect to the CDN.'] as const));
+    .catch(() => [null, 'Could not connect to the CDN.'] as const);
 
-  return [res, err] as const
+  return [res, err] as const;
 }
 
 export function uploadBanner(
@@ -92,10 +107,17 @@ export function uploadBanner(
 ): Promise<CustomResult<{ path: string }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
-    const buffer = Buffer.from(base64.split(',')[1], 'base64');
+    let buffer: Buffer | undefined;
+    try {
+      buffer = Buffer.from(base64.split(',')[1], 'base64');
+    } catch (err) {}
+
+    if (!buffer) return resolve([null, 'Invalid base64 data.']);
 
     // const mimeType = base64MimeType(base64);
-    const type = base64.split(';')[0].split('/')[1];
+    const type = base64.split(';')[0]?.split('/')[1];
+
+    if (!type) return resolve([null, 'Invalid type.']);
 
     form.append('secret', env.NERIMITY_CDN_SECRET);
     form.append('id', uniqueId);
@@ -150,7 +172,7 @@ export async function deleteImage(path: string) {
     },
     body: JSON.stringify({ path, secret: env.NERIMITY_CDN_SECRET }),
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-  }).catch(() => { });
+  }).catch(() => {});
 }
 
 // deletes 1000 images from a channel.
