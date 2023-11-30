@@ -7,15 +7,22 @@ import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { editMessage } from '../../services/Message';
 import { rateLimit } from '../../middleware/rateLimit';
+import { ChannelType } from '../../types/Channel';
 
 export function channelMessageUpdate(Router: Router) {
-  Router.patch('/channels/:channelId/messages/:messageId', 
+  Router.patch(
+    '/channels/:channelId/messages/:messageId',
     authenticate(),
     channelVerification(),
-    channelPermissions({bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, message: 'You are not allowed to edit messages in this channel.'}),
+    channelPermissions({
+      bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
+      message: 'You are not allowed to edit messages in this channel.',
+    }),
     body('content')
-      .isString().withMessage('Content must be a string!')
-      .isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
+      .isString()
+      .withMessage('Content must be a string!')
+      .isLength({ min: 1, max: 2000 })
+      .withMessage('Content length must be between 1 and 2000 characters.'),
     rateLimit({
       name: 'update_message',
       expireMS: 20000,
@@ -25,12 +32,11 @@ export function channelMessageUpdate(Router: Router) {
   );
 }
 
-
 interface Body {
   content: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
   const messageId = req.params.messageId;
 
@@ -39,7 +45,11 @@ async function route (req: Request, res: Response) {
   if (validateError) {
     return res.status(400).json(validateError);
   }
-  
+
+  if (req.channelCache.type === ChannelType.TICKET) {
+    return res.status(400).json({ error: 'Ticket message cannot be edited.' });
+  }
+
   const [updated, error] = await editMessage({
     messageId,
     channelId: req.channelCache.id,

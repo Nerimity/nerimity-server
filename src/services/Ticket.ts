@@ -22,7 +22,7 @@ export enum TicketStatus {
 export const CloseTicketStatuses = [
   TicketStatus.CLOSED_AS_DONE,
   TicketStatus.CLOSED_AS_INVALID,
-] as const;
+];
 
 interface CreateTicketOpts {
   title: string;
