@@ -6,6 +6,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { deleteMessage } from '../../services/Message';
+import { ChannelType } from '../../types/Channel';
 
 export function channelMessageDelete(Router: Router) {
   Router.delete('/channels/:channelId/messages/:messageId',
@@ -16,15 +17,17 @@ export function channelMessageDelete(Router: Router) {
   );
 }
 
-
 async function route(req: Request, res: Response) {
   const { messageId } = req.params;
 
   // check if message exists.
   const message = await prisma.message.findFirst({ where: { id: messageId } });
 
-
   if (!message) return res.status(404).json(generateError('Message not found!'));
+
+  if (req.channelCache.type === ChannelType.TICKET) {
+    return res.status(400).json({ error: 'Ticket message cannot be edited.' });
+  }
 
   // check if message created by me
   const isCreatedByMe = message.createdById === req.accountCache.user.id;
