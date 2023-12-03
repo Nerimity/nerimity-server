@@ -25,11 +25,15 @@ import { deleteImage, uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { ChannelType, TextChannelTypes } from '../../types/Channel';
 import { Attachment } from '@prisma/client';
-import { dateToDateTime } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { ChannelCache } from '../../cache/ChannelCache';
 import { AccountCache, UserCache } from '../../cache/UserCache';
 import { ServerCache } from '../../cache/ServerCache';
-import { CloseTicketStatuses } from '../../services/Ticket';
+import {
+  CloseTicketStatuses,
+  TicketStatus,
+  updateTicketStatus,
+} from '../../services/Ticket';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -111,6 +115,19 @@ async function route(req: Request, res: Response) {
     const checkUserAdmin = isUserAdmin(req.accountCache.user.badges);
 
     if (isTicketClosed && !checkUserAdmin) {
+      return res.status(400).json(generateError('This ticket is closed'));
+    }
+
+    const messageCount = await prisma.message.count({
+      where: { channelId: req.channelCache.id },
+      take: 50,
+    });
+
+    if (messageCount >= 50) {
+      await updateTicketStatus({
+        ticketId: req.channelCache.ticket.id,
+        status: TicketStatus.CLOSED_AS_DONE,
+      });
       return res.status(400).json(generateError('This ticket is closed'));
     }
   }

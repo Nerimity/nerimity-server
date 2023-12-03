@@ -29,6 +29,7 @@ export interface TicketChannelCache {
   name: string;
   type: ChannelType.TICKET;
   ticket: {
+    id: number;
     status: TicketStatus;
   };
 }
@@ -79,6 +80,7 @@ const addChannelToCache = async (channelId: string, userId: string) => {
     include: {
       ticket: {
         select: {
+          id: true,
           status: true,
         },
       },

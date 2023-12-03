@@ -14,7 +14,7 @@ export function ticketUpdate(Router: Router) {
     '/tickets/:id',
     authenticate(),
 
-    body('status').isNumeric().withMessage('status must be a string!'),
+    body('status').isNumeric().withMessage('status must be a number!'),
 
     rateLimit({
       name: 'ticket-update',

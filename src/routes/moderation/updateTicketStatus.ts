@@ -16,7 +16,7 @@ export function ticketUpdate(Router: Router) {
     authenticate(),
     isModMiddleware,
 
-    body('status').isNumeric().withMessage('status must be a string!'),
+    body('status').isNumeric().withMessage('status must be a number!'),
 
     rateLimit({
       name: 'ticket-update-mod',
