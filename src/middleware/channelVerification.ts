@@ -2,19 +2,19 @@ import { NextFunction, Request, Response } from 'express';
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { generateError } from '../common/errorHandler';
-import { CHANNEL_PERMISSIONS } from '../common/Bitwise';
+import { CHANNEL_PERMISSIONS, USER_BADGES, hasBit } from '../common/Bitwise';
 import { channelPermissions } from './channelPermissions';
+import { ChannelType } from '../types/Channel';
 
 interface Options {
   allowBot?: boolean;
 }
 
-
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Options {}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function channelVerification (opts?: Options) {
+export function channelVerification(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const { channelId } = req.params;
 
@@ -22,14 +22,24 @@ export function channelVerification (opts?: Options) {
       return res.status(403).json(generateError('Channel ID is required.'));
     }
 
-    
-    const [channel, error] = await getChannelCache(channelId, req.accountCache.user.id);
+    const [channel, error] = await getChannelCache(
+      channelId,
+      req.accountCache.user.id
+    );
 
     if (error !== null) {
       return res.status(403).json(generateError(error));
     }
-    if (channel.server) {
-      const [memberCache, error] = await getServerMemberCache(channel.server.id, req.accountCache.user.id);
+
+    const isServerChannel =
+      channel.type === ChannelType.CATEGORY ||
+      channel.type === ChannelType.SERVER_TEXT;
+
+    if (isServerChannel) {
+      const [memberCache, error] = await getServerMemberCache(
+        channel.server.id,
+        req.accountCache.user.id
+      );
       if (error !== null) {
         return res.status(403).json(generateError(error));
       }
@@ -37,16 +47,39 @@ export function channelVerification (opts?: Options) {
       req.serverCache = channel.server;
     }
 
-    if (!channel.server && channel?.inbox?.recipientId) {
-      const isRecipient = channel.inbox.recipientId === req.accountCache.user.id;
+    const isDMChannel =
+      channel.type === ChannelType.DM_TEXT && channel?.inbox?.recipientId;
+
+    if (isDMChannel) {
+      const isRecipient =
+        channel.inbox.recipientId === req.accountCache.user.id;
       const isCreator = channel.inbox.createdById === req.accountCache.user.id;
       if (!isRecipient && !isCreator) {
-        return res.status(403).json(generateError('You are not a member of this channel.'));
+        return res
+          .status(403)
+          .json(generateError('You are not a member of this channel.'));
+      }
+    }
+
+    const isTicketChannel = channel.type === ChannelType.TICKET;
+    if (isTicketChannel) {
+      const isTicketCreator = channel.createdById === req.accountCache.user.id;
+      const isAdmin =
+        hasBit(req.accountCache.user.badges, USER_BADGES.ADMIN.bit) ||
+        hasBit(req.accountCache.user.badges, USER_BADGES.FOUNDER.bit);
+      const canAccess = isTicketCreator || isAdmin;
+      if (!canAccess) {
+        return res
+          .status(403)
+          .json(generateError('You are not a member of this channel.'));
       }
     }
 
     req.channelCache = channel;
-    channelPermissions({bit: CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit, invert: true, message: 'This channel is private.'})(req, res, next);
-
+    channelPermissions({
+      bit: CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit,
+      invert: true,
+      message: 'This channel is private.',
+    })(req, res, next);
   };
 }

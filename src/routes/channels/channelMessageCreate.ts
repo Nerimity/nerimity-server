@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import {
   customExpressValidatorResult,
@@ -9,6 +9,7 @@ import {
   ROLE_PERMISSIONS,
   USER_BADGES,
   hasBit,
+  isUserAdmin,
 } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
@@ -22,12 +23,17 @@ import {
 import { rateLimit } from '../../middleware/rateLimit';
 import { deleteImage, uploadImage } from '../../common/nerimityCDN';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
-import { TextChannelTypes } from '../../types/Channel';
+import { ChannelType, TextChannelTypes } from '../../types/Channel';
 import { Attachment } from '@prisma/client';
-import { dateToDateTime } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { ChannelCache } from '../../cache/ChannelCache';
 import { AccountCache, UserCache } from '../../cache/UserCache';
 import { ServerCache } from '../../cache/ServerCache';
+import {
+  CloseTicketStatuses,
+  TicketStatus,
+  updateTicketStatus,
+} from '../../services/Ticket';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -103,6 +109,29 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  if (req.channelCache.type === ChannelType.TICKET) {
+    const status = req.channelCache.ticket.status;
+    const isTicketClosed = CloseTicketStatuses.includes(status);
+    const checkUserAdmin = isUserAdmin(req.accountCache.user.badges);
+
+    if (isTicketClosed && !checkUserAdmin) {
+      return res.status(400).json(generateError('This ticket is closed'));
+    }
+
+    const messageCount = await prisma.message.count({
+      where: { channelId: req.channelCache.id },
+      take: 50,
+    });
+
+    if (messageCount >= 50) {
+      await updateTicketStatus({
+        ticketId: req.channelCache.ticket.id,
+        status: TicketStatus.CLOSED_AS_DONE,
+      });
+      return res.status(400).json(generateError('This ticket is closed'));
+    }
+  }
+
   const hasAttachment = body.googleDriveAttachment || req.fileInfo?.file;
 
   if (hasAttachment) {
@@ -156,13 +185,20 @@ async function route(req: Request, res: Response) {
         .json(generateError('googleDriveAttachment mime is required'));
   }
 
-  if (req.channelCache.serverId && !req.accountCache.emailConfirmed) {
+  const isServerChannel =
+    req.channelCache.type === ChannelType.SERVER_TEXT ||
+    req.channelCache.type === ChannelType.CATEGORY;
+
+  if (isServerChannel && !req.accountCache.emailConfirmed) {
     return res
       .status(400)
       .json(generateError('You must confirm your email to send messages.'));
   }
 
-  if (req.channelCache.inbox && !req.channelCache.inbox.canMessage) {
+  if (
+    req.channelCache.type === ChannelType.DM_TEXT &&
+    !req.channelCache.inbox.canMessage
+  ) {
     return res.status(400).json(generateError('You cannot message this user.'));
   }
 

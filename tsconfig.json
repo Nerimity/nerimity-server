@@ -12,7 +12,7 @@
 
     /* Strictness */
     "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
 
     "moduleResolution": "Bundler",
     "module": "ESNext",

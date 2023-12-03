@@ -20,6 +20,7 @@ import { PostsRouter } from './routes/posts/Router';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
 import { sendConfirmCodeMail } from './common/mailer';
 import { GoogleRouter } from './routes/google/Router';
+import { TicketsRouter } from './routes/tickets/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -44,9 +45,8 @@ const main = async () => {
     server.listen(env.PORT, () => {
       Log.info('listening on *:' + env.PORT);
     });
-
   });
-}
+};
 main();
 
 app.use(
@@ -77,6 +77,7 @@ app.use('/api', FriendsRouter);
 app.use('/api', ExploreRouter);
 app.use('/api', PostsRouter);
 app.use('/api', GoogleRouter);
+app.use('/api', TicketsRouter);
 
 function scheduleBumpReset() {
   // Schedule the task to run every Monday at 0:00 UTC

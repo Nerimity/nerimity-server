@@ -94,6 +94,8 @@ model User {
   notice ChatNotice?
 
   auditActions          AuditLog[]
+
+  openedTickets         Ticket[]
 }
 
 model UserConnection {
@@ -354,6 +356,23 @@ model Channel {
   systemChannelServer    Server?  @relation("systemChannel")
 
   notice ChatNotice?
+  ticket Ticket?
+}
+
+model Ticket {
+  id          Int   @id @default(autoincrement())
+  title       String
+  category    Int
+  status      Int      @default(2)
+  channelId   String   @unique
+  channel     Channel  @relation(fields: [channelId], references: [id])
+
+  lastUpdatedAt DateTime @default(now())
+
+  openedById  String
+  openedBy    User     @relation(fields: [openedById], references: [id])
+  openedAt    DateTime @default(now())
+
 }
 
 model Inbox {

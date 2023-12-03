@@ -28,7 +28,6 @@ import { removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
-import { Channel } from 'diagnostics_channel';
 import {
   sendDmPushNotification,
   sendServerPushMessageNotification,
@@ -41,7 +40,7 @@ import {
   addBit,
   hasBit,
 } from '../common/Bitwise';
-import { Log } from '../common/Log';
+import { ChannelType } from '../types/Channel';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -87,13 +86,13 @@ export const getMessagesByChannelId = async (
       channelId,
       ...(opts?.beforeMessageId
         ? {
-          id: { lt: opts.beforeMessageId },
-        }
+            id: { lt: opts.beforeMessageId },
+          }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-          id: { gt: opts.afterMessageId },
-        }
+            id: { gt: opts.afterMessageId },
+          }
         : undefined),
     },
     include: {
@@ -189,8 +188,8 @@ export const getMessagesByChannelId = async (
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-        orderBy: { createdAt: 'asc' },
-      }
+          orderBy: { createdAt: 'asc' },
+        }
       : undefined),
   });
 
@@ -373,7 +372,7 @@ interface SendMessageOptions {
   type: MessageType;
   updateLastSeen?: boolean; // by default, this is true.
   attachment?: Partial<Attachment>;
-  everyoneMentioned?: boolean
+  everyoneMentioned?: boolean;
 }
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
@@ -439,15 +438,15 @@ export const createMessage = async (opts: SendMessageOptions) => {
         createdAt: messageCreatedAt,
         ...(opts.attachment
           ? {
-            attachments: {
-              create: {
-                ...opts.attachment,
-                id: generateId(),
-                channelId: opts.channelId,
-                serverId: opts.serverId,
+              attachments: {
+                create: {
+                  ...opts.attachment,
+                  id: generateId(),
+                  channelId: opts.channelId,
+                  serverId: opts.serverId,
+                },
               },
-            },
-          }
+            }
           : undefined),
       },
       opts.userId
@@ -534,13 +533,12 @@ export const createMessage = async (opts: SendMessageOptions) => {
     data: { lastMessagedAt: messageCreatedAt },
   });
 
-  const [message] = await prisma.$transaction([
-    createMessageQuery,
-    updateLastMessageQuery,
-  ]).catch((e) => {
-    console.log(e)
-    return []
-  });
+  const [message] = await prisma
+    .$transaction([createMessageQuery, updateLastMessageQuery])
+    .catch((e) => {
+      console.log(e);
+      return [];
+    });
 
   if (!message) {
     return [null, "Couldn't create message"] as const;
@@ -553,17 +551,25 @@ export const createMessage = async (opts: SendMessageOptions) => {
   let channel = opts.channel;
   let server = opts.server;
 
-  if (opts.serverId) {
-    if (!channel) {
-      [channel] = await getChannelCache(opts.channelId, opts.userId);
-    }
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.userId);
+  }
+
+  const isServerChannel =
+    channel?.type === ChannelType.SERVER_TEXT ||
+    channel?.type === ChannelType.CATEGORY;
+
+  if (opts.serverId && isServerChannel) {
     if (!server) {
       server = await getServerCache(opts.serverId);
     }
     let mentionUserIds: string[] = [];
 
     if (opts.everyoneMentioned) {
-      const serverMembers = await prisma.serverMember.findMany({ where: { serverId: opts.serverId, NOT: { userId: opts.userId } }, select: { userId: true } });
+      const serverMembers = await prisma.serverMember.findMany({
+        where: { serverId: opts.serverId, NOT: { userId: opts.userId } },
+        select: { userId: true },
+      });
       mentionUserIds = serverMembers.map((member) => member.userId);
     } else {
       if (message.mentions.length) {
@@ -592,7 +598,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   }
 
   // emit
-  if (opts.serverId) {
+  if (opts.serverId && isServerChannel) {
     emitServerMessageCreated(message, opts.socketId);
     sendServerPushMessageNotification(
       opts.serverId,
@@ -602,11 +608,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
     );
   }
 
-  if (!opts.serverId) {
-    if (!channel) {
-      [channel] = await getChannelCache(opts.channelId, opts.userId);
-    }
-
+  if (channel?.type === ChannelType.DM_TEXT) {
     if (!channel?.inbox?.recipientId) {
       return [null, 'Channel not found!'] as const;
     }
@@ -614,7 +616,10 @@ export const createMessage = async (opts: SendMessageOptions) => {
     // For DM channels, mentions are notifications for everything.
     // For Server channels, mentions are notifications for @mentions.
     // Don't send notifications for saved notes
-    if (channel.inbox.recipientId !== channel.inbox.createdById) {
+    if (
+      channel?.type === ChannelType.DM_TEXT &&
+      channel.inbox.recipientId !== channel.inbox.createdById
+    ) {
       await prisma.messageMention.upsert({
         where: {
           mentionedById_mentionedToId_channelId: {
@@ -665,7 +670,7 @@ const addMessageEmbed = async (
       data: { embed: OGTags },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+    .catch(() => {});
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -715,7 +720,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
     [channel] = await getChannelCache(opts.channelId, message.createdById);
   }
 
-  if (!channel?.inbox?.recipientId) {
+  if (channel?.type === ChannelType.DM_TEXT && !channel?.inbox?.recipientId) {
     return [null, 'Channel not found!'] as const;
   }
   emitDMMessageDeleted(channel, {

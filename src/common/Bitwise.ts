@@ -2,56 +2,65 @@ export interface Bitwise {
   name: string;
   description?: string;
   bit: number;
-  icon?: string
+  icon?: string;
 }
-
 
 export const USER_BADGES = {
   FOUNDER: {
     name: 'Founder',
     bit: 1,
     description: 'Creator of Nerimity',
-    color: '#6fd894'
+    color: '#6fd894',
   },
   ADMIN: {
     name: 'Admin',
     bit: 2,
     description: 'Admin of Nerimity',
-    color: '#d8a66f'
+    color: '#d8a66f',
   },
   CONTRIBUTOR: {
     name: 'Contributor',
     description: 'Helped with this project in some way',
     bit: 4,
-    color: '#ffffff'
+    color: '#ffffff',
   },
   SUPPORTER: {
     name: 'Supporter',
     description: 'Supported this project by donating money',
     bit: 8,
-    color: '#d86f6f'
-  }
+    color: '#d86f6f',
+  },
+};
+
+export const isUserAdmin = (badge: number) => {
+  return (
+    hasBit(badge, USER_BADGES.ADMIN.bit) ||
+    hasBit(badge, USER_BADGES.FOUNDER.bit)
+  );
 };
 
 export const CHANNEL_PERMISSIONS = {
   PRIVATE_CHANNEL: {
     name: 'Private Channel',
-    description: 'Disable access to the channel. Server admins can still access the channel.',
+    description:
+      'Disable access to the channel. Server admins can still access the channel.',
     bit: 1,
-    icon: 'lock'
+    icon: 'lock',
   },
   SEND_MESSAGE: {
     name: 'Send Message',
-    description: 'Enable sending messages in the channel. Server admins can still send messages.',
+    description:
+      'Enable sending messages in the channel. Server admins can still send messages.',
     bit: 2,
-    icon: 'mail'
+    icon: 'mail',
   },
   JOIN_VOICE: {
     name: 'Join Voice',
-    description: 'Enable joining voice channels in the channel. Server admins can still join voice channels.',
+    description:
+      'Enable joining voice channels in the channel. Server admins can still join voice channels.',
     bit: 4,
-    icon: 'call'
-  }
+    icon: 'call',
+  },
 };
 
 export const ROLE_PERMISSIONS = {
@@ -63,9 +72,10 @@ export const ROLE_PERMISSIONS = {
   },
   SEND_MESSAGE: {
     name: 'Send Message',
-    description: 'Enable sending messages in this server. Server admins can still send messages.',
+    description:
+      'Enable sending messages in this server. Server admins can still send messages.',
     bit: 2,
-    icon: 'mail'
+    icon: 'mail',
   },
   MANAGE_ROLES: {
     name: 'Manage Roles',
@@ -96,7 +106,7 @@ export const ROLE_PERMISSIONS = {
     description: 'mentionEveryoneDescription',
     bit: 64,
     //icon: 'mention'
-  }
+  },
 };
 
 export const hasBit = (permissions: number, bit: number) => {
@@ -107,12 +117,15 @@ export const addBit = (permissions: number, bit: number) => {
   return permissions | bit;
 };
 
-export const getAllPermissions = (permissionList: Record<string, Bitwise>, permissions: number) => {
-  return Object.values(permissionList).map(permission => {
+export const getAllPermissions = (
+  permissionList: Record<string, Bitwise>,
+  permissions: number
+) => {
+  return Object.values(permissionList).map((permission) => {
     const hasPerm = hasBit(permissions, permission.bit);
     return {
       ...permission,
-      hasPerm
+      hasPerm,
     };
   });
 };

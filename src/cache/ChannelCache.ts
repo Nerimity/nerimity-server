@@ -1,6 +1,6 @@
-import { CustomResult } from '../common/CustomResult';
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
+import { TicketStatus } from '../services/Ticket';
 import { DmStatus } from '../services/User/User';
 import { ChannelType } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
@@ -8,19 +8,39 @@ import {
   DM_CHANNEL_KEY_STRING,
   INBOX_KEY_STRING,
   SERVER_CHANNEL_KEY_STRING,
+  TICKET_CHANNEL_KEY_STRING,
 } from './CacheKeys';
 import { getServerCache, ServerCache } from './ServerCache';
 
-export interface ChannelCache {
-  id: string;
-  name?: string;
-  serverId?: string;
-  server?: ServerCache;
-  inbox?: InboxCache;
+export interface ServerChannelCache {
+  name: string;
+  serverId: string;
   permissions: number;
-  createdById: string;
-  type: ChannelType;
+  type: ChannelType.SERVER_TEXT | ChannelType.CATEGORY;
+  server: ServerCache;
 }
+
+export interface DMChannelCache {
+  inbox: InboxCache;
+  type: ChannelType.DM_TEXT;
+}
+
+export interface TicketChannelCache {
+  name: string;
+  type: ChannelType.TICKET;
+  ticket: {
+    id: number;
+    status: TicketStatus;
+  };
+}
+
+export interface BaseChannelCache {
+  id: string;
+  createdById: string;
+}
+
+export type ChannelCache = BaseChannelCache &
+  (ServerChannelCache | DMChannelCache | TicketChannelCache);
 
 export interface InboxCache {
   recipientId: string;
@@ -28,31 +48,46 @@ export interface InboxCache {
   canMessage: boolean;
 }
 
-export const getChannelCache = async (
-  channelId: string,
-  userId: string
-): Promise<CustomResult<ChannelCache, string>> => {
+export const getChannelCache = async (channelId: string, userId: string) => {
   // Check server channel in cache.
   const serverChannel = await getServerChannelCache(channelId);
   if (serverChannel) {
     const server = await getServerCache(serverChannel.serverId as string);
-    return [{ ...serverChannel, server }, null];
+    return [{ ...serverChannel, server } as ChannelCache, null] as const;
   }
 
   // Check DM channel in cache.
   const dmChannel = await getDMChannelCache(channelId);
   if (dmChannel) {
     const inbox = await getInboxCache(channelId, userId);
-    if (!inbox) return [null, 'Inbox not found.'];
-    return [{ ...dmChannel, inbox }, null];
+    if (!inbox) return [null, 'Inbox not found.'] as const;
+    return [{ ...dmChannel, inbox } as ChannelCache, null] as const;
   }
 
+  // Check ticket channel in cache.
+  const ticketChannel = await getTicketChannelCache(channelId);
+  if (ticketChannel) {
+    return [ticketChannel as ChannelCache, null] as const;
+  }
+
+  return await addChannelToCache(channelId, userId);
+};
+
+const addChannelToCache = async (channelId: string, userId: string) => {
   // If not in cache, fetch from database.
   const channel = await prisma.channel.findFirst({
     where: { id: channelId, deleting: null },
+    include: {
+      ticket: {
+        select: {
+          id: true,
+          status: true,
+        },
+      },
+    },
   });
 
-  if (!channel) return [null, 'Channel does not exist.'];
+  if (!channel) return [null, 'Channel does not exist.'] as const;
 
   if (channel.serverId) {
     const stringifiedChannel = JSON.stringify(channel);
@@ -65,32 +100,61 @@ export const getChannelCache = async (
       {
         ...JSON.parse(stringifiedChannel),
         server: await getServerCache(channel.serverId),
-      },
+      } as ChannelCache,
       null,
-    ];
+    ] as const;
   }
 
-  // get inbox
-  const inbox = await getInboxCache(channelId, userId);
-
   const stringifiedChannel = JSON.stringify(channel);
-  await redisClient.set(DM_CHANNEL_KEY_STRING(channelId), stringifiedChannel);
 
-  return [{ ...JSON.parse(stringifiedChannel), inbox }, null];
+  if (channel.type === ChannelType.DM_TEXT) {
+    const inbox = await getInboxCache(channelId, userId);
+    return [
+      { ...JSON.parse(stringifiedChannel), inbox } as ChannelCache,
+      null,
+    ] as const;
+  }
+
+  if (channel.type === ChannelType.TICKET) {
+    await redisClient.set(
+      TICKET_CHANNEL_KEY_STRING(channelId),
+      stringifiedChannel
+    );
+    return [JSON.parse(stringifiedChannel) as ChannelCache, null] as const;
+  }
+  return [null, 'Unknown channel type.'] as const;
+};
+
+export const updateTicketChannelStatus = async (
+  channelId: string,
+  status: TicketStatus
+) => {
+  const channel = await getTicketChannelCache(channelId);
+  if (!channel) return;
+
+  channel.ticket.status = status;
+
+  await redisClient.set(
+    TICKET_CHANNEL_KEY_STRING(channelId),
+    JSON.stringify(channel)
+  );
 };
 
 const getDMChannelCache = async (channelId: string) => {
   const channel = await redisClient.get(DM_CHANNEL_KEY_STRING(channelId));
   if (!channel) return null;
-  return JSON.parse(channel);
+  return JSON.parse(channel) as BaseChannelCache & DMChannelCache;
+};
+const getTicketChannelCache = async (channelId: string) => {
+  const channel = await redisClient.get(TICKET_CHANNEL_KEY_STRING(channelId));
+  if (!channel) return null;
+  return JSON.parse(channel) as BaseChannelCache & TicketChannelCache;
 };
 
-const getServerChannelCache = async (
-  channelId: string
-): Promise<ChannelCache | null> => {
+const getServerChannelCache = async (channelId: string) => {
   const channel = await redisClient.get(SERVER_CHANNEL_KEY_STRING(channelId));
   if (!channel) return null;
-  return JSON.parse(channel);
+  return JSON.parse(channel) as BaseChannelCache & ServerChannelCache;
 };
 
 export const updateServerChannelCache = async (
