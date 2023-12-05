@@ -16,7 +16,9 @@ function constructInclude(
       ? { commentTo: { include: constructInclude(requesterUserId, false) } }
       : undefined),
     createdBy: true,
-    _count: { select: { likedBy: true, comments: true } },
+    _count: {
+      select: { likedBy: true, comments: { where: { deleted: null } } },
+    },
     likedBy: { select: { id: true }, where: { likedById: requesterUserId } },
     attachments: {
       select: { height: true, width: true, path: true, id: true },

@@ -3,6 +3,7 @@ import {
   emitDMMessageCreated,
   emitDMMessageDeleted,
   emitDMMessageReactionAdded,
+  emitDMMessageReactionRemoved,
   emitDMMessageUpdated,
 } from '../emits/Channel';
 import {
@@ -931,7 +932,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
   }
 
   if (channel?.inbox?.recipientId) {
-    emitDMMessageReactionAdded(channel, payload);
+    emitDMMessageReactionRemoved(channel, payload);
   }
 
   return [payload, null] as const;
