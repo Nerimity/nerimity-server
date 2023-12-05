@@ -35,6 +35,7 @@ import { makeChannelsInCategoryPrivate } from './Channel';
 import {
   deleteAllInboxCache,
   deleteAllInboxCacheInServer,
+  deleteServerChannelCaches,
 } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
 import { leaveVoiceChannel } from './Voice';
@@ -321,6 +322,8 @@ export const deleteServer = async (serverId: string) => {
     ),
   ]);
 
+
+  await deleteServerChannelCaches(server.channels.map(channel => channel.id));
   await deleteServerCache(serverId);
 
   emitServerLeft({
