@@ -42,6 +42,7 @@ import { leaveVoiceChannel } from './Voice';
 import { deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
 import { deleteServerCache } from '../cache/ServerCache';
+import { getPublicServer } from './Explore';
 
 interface CreateServerOptions {
   name: string;
@@ -322,8 +323,7 @@ export const deleteServer = async (serverId: string) => {
     ),
   ]);
 
-
-  await deleteServerChannelCaches(server.channels.map(channel => channel.id));
+  await deleteServerChannelCaches(server.channels.map((channel) => channel.id));
   await deleteServerCache(serverId);
 
   emitServerLeft({
@@ -801,3 +801,13 @@ export async function updateServerChannelOrder(
   emitServerChannelOrderUpdated(opts.serverId, payload);
   return [payload, null] as const;
 }
+
+export const getPublicServerFromEmoji = async (emojiId: string) => {
+  const emoji = await prisma.customEmoji.findFirst({
+    where: { id: emojiId },
+  });
+
+  if (!emoji) return [null, generateError('Emoji not found.')] as const;
+
+  return getPublicServer(emoji.serverId);
+};
