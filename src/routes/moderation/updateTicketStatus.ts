@@ -9,6 +9,7 @@ import {
   generateError,
 } from '../../common/errorHandler';
 import { isModMiddleware } from './isModMiddleware';
+import { prisma } from '../../common/database';
 
 export function ticketUpdate(Router: Router) {
   Router.post(
@@ -45,6 +46,13 @@ async function route(req: Request, res: Response) {
     ticketId: id,
     status: body.status,
   });
+
+  if (ticket) {
+    await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { seen: false },
+    });
+  }
 
   if (error) {
     return res.status(400).json(generateError(error));

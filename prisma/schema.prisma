@@ -372,7 +372,7 @@ model Ticket {
   openedById  String
   openedBy    User     @relation(fields: [openedById], references: [id])
   openedAt    DateTime @default(now())
-
+  seen        Boolean? @default(true)
 }
 
 model Inbox {

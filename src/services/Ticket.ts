@@ -66,10 +66,18 @@ export const createTicket = async (opts: CreateTicketOpts) => {
   return [newChannel.ticket, null] as const;
 };
 
-export const getOwnTickets = async (userId: string) => {
+export const getOwnTickets = async (
+  userId: string,
+  opts?: { status?: TicketStatus; limit?: number; seen?: boolean }
+) => {
   const tickets = await prisma.ticket.findMany({
-    where: { openedById: userId },
-    orderBy: { openedAt: 'desc' },
+    where: {
+      openedById: userId,
+      ...(opts?.status !== undefined ? { status: opts?.status } : undefined),
+      ...(opts?.seen !== undefined ? { seen: opts?.seen } : undefined),
+    },
+    orderBy: { lastUpdatedAt: 'desc' },
+    take: opts?.limit || 30,
     select: {
       id: true,
       status: true,
@@ -78,6 +86,7 @@ export const getOwnTickets = async (userId: string) => {
       openedAt: true,
       channelId: true,
       lastUpdatedAt: true,
+      seen: true,
     },
   });
   return tickets;
@@ -142,7 +151,18 @@ export const getTicketById = async (ticketId: string, userId: string) => {
       openedAt: true,
       channelId: true,
       lastUpdatedAt: true,
+      seen: true,
     },
   });
+
+  if (!ticket) {
+    return null;
+  }
+
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: { seen: true },
+  });
+
   return ticket;
 };
