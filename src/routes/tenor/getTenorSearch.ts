@@ -24,7 +24,14 @@ interface TenorResponse {
 interface TenorItem {
   id: string
   title: string
-  media_formats: Record<string, any>;
+  media_formats: {
+    gif?: {
+      url: string;
+    }
+    tinygif?: {
+      url: string;
+    }
+  };
   created: number
   content_description: string
   itemurl: string
@@ -58,7 +65,13 @@ async function route(req: Request, res: Response) {
     return;
   }
 
-  const transformedResults = json.results.map((item: TenorItem) => item.itemurl);
+  const transformedResults = json.results.filter((item: TenorItem) => {
+    return item.media_formats.gif || item.media_formats.tinygif;
+  })
+  .map((item: TenorItem) => ({
+    url: item.itemurl,
+    previewUrl: item.media_formats.tinygif?.url || item.media_formats.gif?.url,
+  }));
   
   res.json(transformedResults);
 }
