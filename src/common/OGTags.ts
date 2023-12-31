@@ -64,6 +64,19 @@ export async function getOGTags(url: string): GetOGTagsReturn {
     if (!object.imageMime) return false;
   }
 
+  object.domain = new URL(url).hostname;
+  object.origUrl = url;
+
+  if (url.startsWith('https://tenor.com/') && object.imageUrl) {
+    object.type = 'image';
+    delete object.title;
+    delete object.siteName;
+    delete object.description;
+    delete object.origUrl;
+    delete object.domain;
+    delete object.url;
+  }
+
   return object;
 }
 
