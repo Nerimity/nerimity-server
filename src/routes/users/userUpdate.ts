@@ -48,8 +48,8 @@ export function userUpdate(Router: Router) {
     body('newPassword')
       .isString()
       .withMessage('New password must be a string.')
-      .isLength({ min: 4, max: 72 })
-      .withMessage('New password must be between 4 and 72 characters long.')
+      .isLength({ min: 4, max: 64 })
+      .withMessage('New password must be between 4 and 64 characters long.')
       .optional({ nullable: true }),
     body('socketId')
       .isString()
