@@ -5,7 +5,10 @@ import {
   generateError,
 } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
-import { loginUserWithEmail, loginWithUsernameAndTag } from '../../services/UserAuthentication';
+import {
+  loginUserWithEmail,
+  loginWithUsernameAndTag,
+} from '../../services/UserAuthentication';
 
 export function login(Router: Router) {
   Router.post(
@@ -16,6 +19,8 @@ export function login(Router: Router) {
       .withMessage('Invalid email.'),
     body('email').optional(true).isEmail().withMessage('Invalid email.'),
     body('password')
+      .isLength({ min: 4, max: 72 })
+      .withMessage('Password must be between 4 and 72 characters long.')
       .not()
       .isEmpty()
       .withMessage('Password is required.')
@@ -94,5 +99,4 @@ async function route(req: Request, res: Response) {
     }
     res.json({ token: userToken });
   }
-
 }
