@@ -20,6 +20,8 @@ export function serverDelete(Router: Router) {
     isModMiddleware,
 
     body('password')
+      .isLength({ min: 4, max: 72 })
+      .withMessage('Password must be between 4 and 72 characters long.')
       .isString()
       .withMessage('Password must be a string!')
       .not()
@@ -54,7 +56,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
 
   const isPasswordValid = await checkUserPassword(
     account.password,
-    req.body.password,
+    req.body.password
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -78,8 +80,8 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
       actionById: req.accountCache.user.id,
       serverName: server.name,
       serverId: server.id,
-    }
-  })
+    },
+  });
 
   res.status(200).json({ success: true });
 }

@@ -20,6 +20,8 @@ export function userDeleteAccount(Router: Router) {
       requestCount: 20,
     }),
     body('password')
+      .isLength({ min: 4, max: 72 })
+      .withMessage('Password must be between 4 and 72 characters long.')
       .not()
       .isEmpty()
       .withMessage('Password required!')
@@ -47,7 +49,7 @@ async function route(req: Request, res: Response) {
       select: { password: true },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+    .catch(() => {});
 
   if (!account)
     return res

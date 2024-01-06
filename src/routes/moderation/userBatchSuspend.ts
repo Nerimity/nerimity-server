@@ -45,6 +45,8 @@ export function userBatchSuspend(Router: Router) {
       .isBoolean()
       .withMessage('ipBan must be a boolean.'),
     body('password')
+      .isLength({ min: 4, max: 72 })
+      .withMessage('Password must be between 4 and 72 characters long.')
       .isString()
       .withMessage('Password must be a string!')
       .not()
@@ -86,7 +88,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const isPasswordValid = await checkUserPassword(
     account.password,
-    req.body.password,
+    req.body.password
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -194,19 +196,19 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const newSuspendedUsers = await prisma.user.findMany({
     where: { id: { in: sanitizedUserIds } },
     select: { id: true, username: true },
-  })
+  });
 
   await prisma.auditLog.createMany({
-    data: newSuspendedUsers.map(user => ({
+    data: newSuspendedUsers.map((user) => ({
       id: generateId(),
       actionType: AuditLogType.userSuspend,
       actionById: req.accountCache.user.id,
       username: user.username,
       userId: user.id,
       reason: req.body.reason,
-      expireAt: expireDateTime
-    }))
-  })
+      expireAt: expireDateTime,
+    })),
+  });
 
   res.status(200).json({ success: true });
 }

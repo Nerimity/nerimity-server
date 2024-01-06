@@ -48,8 +48,8 @@ export function userUpdate(Router: Router) {
     body('newPassword')
       .isString()
       .withMessage('New password must be a string.')
-      .isLength({ min: 4, max: 255 })
-      .withMessage('New password must be between 4 and 255 characters long.')
+      .isLength({ min: 4, max: 72 })
+      .withMessage('New password must be between 4 and 72 characters long.')
       .optional({ nullable: true }),
     body('socketId')
       .isString()
@@ -108,10 +108,10 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('dmStatus', body.dmStatus),
     ...(body.bio !== undefined
       ? {
-        profile: {
-          bio: body.bio,
-        },
-      }
+          profile: {
+            bio: body.bio,
+          },
+        }
       : undefined),
   });
 

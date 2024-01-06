@@ -46,8 +46,8 @@ export function register(Router: Router) {
       .withMessage('Password is required.')
       .isString()
       .withMessage('Password must be a string.')
-      .isLength({ min: 4, max: 255 })
-      .withMessage('Password must be between 4 and 255 characters long.'),
+      .isLength({ min: 4, max: 72 })
+      .withMessage('Password must be between 4 and 72 characters long.'),
     rateLimit({
       name: 'register_limit',
       message: 'Something went wrong! Please try again in 1 minute.',
