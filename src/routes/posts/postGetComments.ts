@@ -4,6 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { fetchPosts } from '../../services/Post';
+import { isUserAdmin } from '../../common/Bitwise';
 
 
 export function postsGetComments(Router: Router) {
@@ -35,9 +36,12 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  const isAdmin = isUserAdmin(req.accountCache.user.badges);
+
   const commentPosts = await fetchPosts({
     postId: params.postId,
-    requesterUserId: req.accountCache.user.id
+    requesterUserId: req.accountCache.user.id,
+    bypassBlocked: isAdmin,
   });
 
   res.json(commentPosts);

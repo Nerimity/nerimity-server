@@ -5,7 +5,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { deleteImage } from '../common/nerimityCDN';
 import { FriendStatus } from '../types/Friend';
-import { getBlockedUserIds } from './User/User';
+import { getBlockedUserIds, isUserBlocked } from './User/User';
 
 function constructInclude(
   requesterUserId: string,
@@ -137,6 +137,7 @@ interface FetchPostsOpts {
   postId?: string; // get comments
   requesterUserId: string;
   withReplies?: boolean;
+  bypassBlocked?: boolean;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
@@ -145,6 +146,16 @@ export async function fetchPosts(opts: FetchPostsOpts) {
       ...(opts.userId ? { createdById: opts.userId } : undefined),
       ...(opts.userId && !opts.withReplies ? { commentToId: null } : undefined),
       ...(opts.postId ? { commentToId: opts.postId } : undefined),
+      ...(!opts.bypassBlocked ? {
+        createdBy: {
+          friends: {
+            none: {
+              status: FriendStatus.BLOCKED,
+              recipientId: opts.requesterUserId
+            }
+          }
+        },
+      } : undefined),
       deleted: null,
     },
     orderBy: { createdAt: 'desc' },
@@ -152,115 +163,132 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     include: constructInclude(opts.requesterUserId),
   });
 
-  return blockedCheckResult(posts.reverse(), opts.requesterUserId);
+  return posts.reverse()
 }
 
-export async function fetchLikedPosts(userId: string, requesterUserId: string) {
+interface fetchLinkedPostsOpts {
+  userId: string;
+  requesterUserId: string;
+  bypassBlocked?: boolean;
+}
+
+export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
   const likes = await prisma.postLike.findMany({
-    where: { likedById: userId },
-    include: { post: { include: constructInclude(requesterUserId) } },
+    where: { 
+      likedById: opts.userId,
+      post: {
+        ...(!opts.bypassBlocked ? {
+          createdBy: {
+            friends: {
+              none: {
+                status: FriendStatus.BLOCKED,
+                recipientId: opts.requesterUserId
+              }
+            }
+          },
+        } : undefined),
+      }
+    },
+    include: { post: { include: constructInclude(opts.requesterUserId) } },
     orderBy: { createdAt: 'desc' },
     take: 50,
   });
 
-  return blockedCheckResult(
-    likes.map((like) => like.post).reverse(),
-    requesterUserId
-  );
+  return likes.map((like) => like.post).reverse()
 }
 
-export async function fetchLatestPost(userId: string, requesterUserId: string) {
+interface fetchLatestPostOpts {
+  userId: string;
+  requesterUserId: string;
+  bypassBlocked?: boolean;
+}
+
+export async function fetchLatestPost(opts: fetchLatestPostOpts) {
   const post = await prisma.post.findFirst({
     orderBy: { createdAt: 'desc' },
-    where: { deleted: null, commentToId: null, createdBy: { id: userId } },
-    include: constructInclude(requesterUserId),
+    where: { 
+      deleted: null, 
+      commentToId: null, 
+      createdById: opts.userId,
+      ...(!opts.bypassBlocked ? {
+        createdBy: {
+          friends: {
+            none: {
+              status: FriendStatus.BLOCKED,
+              recipientId: opts.requesterUserId
+            }
+          }
+        }
+      } : undefined),
+    },
+    include: constructInclude(opts.requesterUserId),
   });
 
   if (!post) return null;
 
-  return (await blockedCheckResult([post], requesterUserId))[0];
+  return post;
 }
 
-const constructBlockedPostTemplate = (post: Post & { commentTo?: Post }) => {
+type BlockedPost = Partial<Post> & {commentTo?: Post, block: true} 
+
+interface ConstructBlockedPostOpts {
+  post: Post & { commentTo?: Partial<Post> };
+  requesterUserId: string;
+  bypassBlocked?: boolean;
+}
+
+const constructBlockedPostTemplate = async (opts: ConstructBlockedPostOpts): Promise<BlockedPost> => {
+  let commentTo = opts.post.commentTo;
+
+  if (commentTo && !opts.bypassBlocked) {
+    const commentToBlocked =  await isUserBlocked(opts.requesterUserId, commentTo.createdById!);
+
+    if (commentTo && commentToBlocked) {
+      commentTo = await constructBlockedPostTemplate({...opts, post: commentTo as Post});
+    }
+  }
+
   return {
-    id: post.id,
-    commentToId: post.commentToId,
-    createdBy: post.createdBy,
-    commentTo: post.commentTo,
-    quotedPostId: post.quotedPostId,
+    id: opts.post.id,
+    commentToId: opts.post.commentToId,
+    createdBy: opts.post.createdBy,
+    commentTo,
+    quotedPostId: opts.post.quotedPostId,
     block: true,
-  };
+  } as BlockedPost;
 };
 
 type PostWithCommentTo = Partial<Post> & {
   commentTo?: Partial<Post>;
 };
 
-export async function blockedCheckResult(
-  posts: PostWithCommentTo[],
-  requesterUserId: string
-) {
-  const blockedUserIds = await getBlockedUserIds(
-    getAllUserIdsFromPosts(posts),
-    requesterUserId
-  );
-  if (!blockedUserIds.length) return posts;
 
-  const customPosts: PostWithCommentTo[] = reconstructPostsIfBlocked(
-    blockedUserIds,
-    posts
-  );
-
-  return customPosts;
+interface FetchPostOpts {
+  postId: string;
+  requesterUserId: string;
+  bypassBlocked?: boolean;
 }
 
-const getAllUserIdsFromPosts = (posts: PostWithCommentTo[]) => {
-  const userIds: string[] = [];
-  for (let i = 0; i < posts.length; i++) {
-    const post = posts[i];
-    if (!post) continue;
-    userIds.push(post.createdById!);
-    if (post.commentTo) {
-      userIds.push(...getAllUserIdsFromPosts([post.commentTo]));
-    }
-  }
-  return userIds;
-};
-
-const reconstructPostsIfBlocked = (
-  blockedByUserIds: string[],
-  posts: PostWithCommentTo[]
-) => {
-  const customPosts: PostWithCommentTo[] = [];
-
-  for (let i = 0; i < posts.length; i++) {
-    let post: PostWithCommentTo = { ...posts[i] };
-    if (!post) continue;
-    if (post.createdById && blockedByUserIds.includes(post.createdById)) {
-      post = constructBlockedPostTemplate(post as Post);
-    }
-    if (post.commentTo) {
-      post.commentTo = reconstructPostsIfBlocked(blockedByUserIds, [
-        post.commentTo as Post,
-      ])[0];
-    }
-    customPosts.push(post);
-  }
-  return customPosts;
-};
-
-export async function fetchPost(postId: string, requesterUserId: string) {
+export async function fetchPost(opts: FetchPostOpts) {
   const post = await prisma.post.findFirst({
     where: {
-      id: postId,
+      id: opts.postId,
     },
     orderBy: { createdAt: 'desc' },
     take: 50,
-    include: constructInclude(requesterUserId),
+    include: constructInclude(opts.requesterUserId),
   });
   if (!post) return null;
 
-  return (await blockedCheckResult([post], requesterUserId))[0];
+  if (!opts.bypassBlocked) {
+    const isBlocked = await isUserBlocked(opts.requesterUserId, post.createdById);
+    if (isBlocked) {
+      return constructBlockedPostTemplate({post, requesterUserId: opts.requesterUserId, bypassBlocked: opts.bypassBlocked});
+    }
+  }
+
+
+  return post
 }
 
 export async function likePost(
@@ -292,7 +320,10 @@ export async function likePost(
       postId,
     },
   });
-  const newPost = (await fetchPost(postId, userId)) as Post;
+  const newPost = await fetchPost({
+    postId, 
+    requesterUserId: userId
+  }) as Post;
 
   createPostNotification({
     type: PostNotificationType.LIKED,
@@ -317,7 +348,10 @@ export async function unlikePost(
   await prisma.postLike.delete({
     where: { id: postLike.id },
   });
-  const newPost = (await fetchPost(postId, userId)) as Post;
+  const newPost = await fetchPost({
+    postId, 
+    requesterUserId: userId
+  }) as Post;
   return [newPost, null];
 }
 
@@ -468,7 +502,7 @@ export async function getPostNotifications(userId: string) {
   return await prisma.postNotification.findMany({
     orderBy: { createdAt: 'desc' },
     where: { toId: userId },
-    take: 10,
+    take: 20,
     include: {
       by: true,
       post: { include: constructInclude(userId) },

@@ -4,6 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { fetchLikedPosts, fetchPosts } from '../../services/Post';
+import { isUserAdmin } from '../../common/Bitwise';
 
 
 export function postsGetLiked(Router: Router) {
@@ -37,7 +38,15 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const posts = await fetchLikedPosts(params.userId || req.accountCache.user.id, req.accountCache.user.id);
+  const isAdmin = isUserAdmin(req.accountCache.user.badges);
+
+
+
+  const posts = await fetchLikedPosts({
+    userId: params.userId || req.accountCache.user.id,
+    requesterUserId: req.accountCache.user.id,
+    bypassBlocked: isAdmin
+  });
 
   res.json(posts);
 }

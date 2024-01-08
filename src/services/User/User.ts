@@ -22,6 +22,7 @@ import {
 import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
 import { removeDuplicates } from '../../common/utils';
+import { isUserAdmin } from '../../common/Bitwise';
 
 export const getBlockedUserIds = async (
   userIds: string[],
@@ -37,6 +38,17 @@ export const getBlockedUserIds = async (
   });
   return blockedUsers.map((b) => b.userId);
 };
+
+export const isUserBlocked = async (userId: string, blockedById: string) => {
+  const blockedUser = await prisma.friend.findFirst({
+    where: {
+      status: FriendStatus.BLOCKED,
+      recipientId: userId,
+      userId: blockedById,
+    },
+  });
+  return !!blockedUser;
+}
 
 export const isExpired = (expireDate: Date) => {
   const now = new Date();
@@ -296,11 +308,21 @@ export const getUserDetails = async (
   });
   const mutualServerIds = members.map((member) => member.serverId);
 
+
+  const isAdmin = isUserAdmin(user.badges);
+
   // get latest post
-  const latestPost = await fetchLatestPost(recipientId, requesterId);
+  const latestPost = await fetchLatestPost({
+    userId: recipientId,
+    requesterUserId: requesterId,
+    bypassBlocked: isAdmin,
+  });
+
+  const isBlocked = await isUserBlocked(requesterId, recipientId);
 
   return [
     {
+      block: isBlocked,
       user: { ...user, profile: undefined },
       mutualFriendIds,
       mutualServerIds,
