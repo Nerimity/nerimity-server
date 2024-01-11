@@ -1,27 +1,29 @@
 import { NextFunction, Request, Response } from 'express';
 import { checkRateLimited } from '../cache/RateLimitCache';
 import { generateError } from '../common/errorHandler';
-
+import env from '../common/env';
 
 interface Options {
-  name: string
-  expireMS: number
-  requestCount: number,
-  useIP?: boolean // By default, it uses user id.
-  globalLimit?: boolean // Rate limit globally
-  nextIfRatedLimited?: boolean // false by default
+  name: string;
+  expireMS: number;
+  requestCount: number;
+  useIP?: boolean; // By default, it uses user id.
+  globalLimit?: boolean; // Rate limit globally
+  nextIfRatedLimited?: boolean; // false by default
   message?: string;
 }
 
-export function rateLimit (opts: Options) {
+export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
-
-
+    if (env.DEV_MODE) {
+      console.log('Rate limiting is disabled in dev mode');
+      return next();
+    }
 
     const ip = req.userIP.replace(/:/g, '=');
 
     let id = '';
-    
+
     if (!opts.globalLimit) {
       id = opts.useIP ? ip : req.accountCache?.user.id;
       if (opts.name) {
@@ -36,7 +38,7 @@ export function rateLimit (opts: Options) {
     const ttl = await checkRateLimited({
       id,
       expireMS: opts.expireMS,
-      requestCount: opts.requestCount
+      requestCount: opts.requestCount,
     });
 
     if (ttl && opts.nextIfRatedLimited) {
@@ -45,9 +47,10 @@ export function rateLimit (opts: Options) {
     }
 
     if (ttl) {
-      return res.status(429).json({...generateError(opts.message || 'Slow down!'), ttl});
+      return res
+        .status(429)
+        .json({ ...generateError(opts.message || 'Slow down!'), ttl });
     }
-
 
     next();
   };

@@ -138,32 +138,41 @@ interface FetchPostsOpts {
   requesterUserId: string;
   withReplies?: boolean;
   bypassBlocked?: boolean;
+
+  limit?: number;
+  afterId?: string;
+  beforeId?: string;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
   const posts = await prisma.post.findMany({
     where: {
+      ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
+      ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
+
       ...(opts.userId ? { createdById: opts.userId } : undefined),
       ...(opts.userId && !opts.withReplies ? { commentToId: null } : undefined),
       ...(opts.postId ? { commentToId: opts.postId } : undefined),
-      ...(!opts.bypassBlocked ? {
-        createdBy: {
-          friends: {
-            none: {
-              status: FriendStatus.BLOCKED,
-              recipientId: opts.requesterUserId
-            }
+      ...(!opts.bypassBlocked
+        ? {
+            createdBy: {
+              friends: {
+                none: {
+                  status: FriendStatus.BLOCKED,
+                  recipientId: opts.requesterUserId,
+                },
+              },
+            },
           }
-        },
-      } : undefined),
+        : undefined),
       deleted: null,
     },
     orderBy: { createdAt: 'desc' },
-    take: 50,
+    take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
     include: constructInclude(opts.requesterUserId),
   });
 
-  return posts.reverse()
+  return posts.reverse();
 }
 
 interface fetchLinkedPostsOpts {
@@ -174,27 +183,29 @@ interface fetchLinkedPostsOpts {
 
 export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
   const likes = await prisma.postLike.findMany({
-    where: { 
+    where: {
       likedById: opts.userId,
       post: {
-        ...(!opts.bypassBlocked ? {
-          createdBy: {
-            friends: {
-              none: {
-                status: FriendStatus.BLOCKED,
-                recipientId: opts.requesterUserId
-              }
+        ...(!opts.bypassBlocked
+          ? {
+              createdBy: {
+                friends: {
+                  none: {
+                    status: FriendStatus.BLOCKED,
+                    recipientId: opts.requesterUserId,
+                  },
+                },
+              },
             }
-          },
-        } : undefined),
-      }
+          : undefined),
+      },
     },
     include: { post: { include: constructInclude(opts.requesterUserId) } },
     orderBy: { createdAt: 'desc' },
     take: 50,
   });
 
-  return likes.map((like) => like.post).reverse()
+  return likes.map((like) => like.post).reverse();
 }
 
 interface fetchLatestPostOpts {
@@ -206,20 +217,22 @@ interface fetchLatestPostOpts {
 export async function fetchLatestPost(opts: fetchLatestPostOpts) {
   const post = await prisma.post.findFirst({
     orderBy: { createdAt: 'desc' },
-    where: { 
-      deleted: null, 
-      commentToId: null, 
+    where: {
+      deleted: null,
+      commentToId: null,
       createdById: opts.userId,
-      ...(!opts.bypassBlocked ? {
-        createdBy: {
-          friends: {
-            none: {
-              status: FriendStatus.BLOCKED,
-              recipientId: opts.requesterUserId
-            }
+      ...(!opts.bypassBlocked
+        ? {
+            createdBy: {
+              friends: {
+                none: {
+                  status: FriendStatus.BLOCKED,
+                  recipientId: opts.requesterUserId,
+                },
+              },
+            },
           }
-        }
-      } : undefined),
+        : undefined),
     },
     include: constructInclude(opts.requesterUserId),
   });
@@ -229,7 +242,7 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
   return post;
 }
 
-type BlockedPost = Partial<Post> & {commentTo?: Post, block: true} 
+type BlockedPost = Partial<Post> & { commentTo?: Post; block: true };
 
 interface ConstructBlockedPostOpts {
   post: Post & { commentTo?: Partial<Post> };
@@ -237,14 +250,22 @@ interface ConstructBlockedPostOpts {
   bypassBlocked?: boolean;
 }
 
-const constructBlockedPostTemplate = async (opts: ConstructBlockedPostOpts): Promise<BlockedPost> => {
+const constructBlockedPostTemplate = async (
+  opts: ConstructBlockedPostOpts
+): Promise<BlockedPost> => {
   let commentTo = opts.post.commentTo;
 
   if (commentTo && !opts.bypassBlocked) {
-    const commentToBlocked =  await isUserBlocked(opts.requesterUserId, commentTo.createdById!);
+    const commentToBlocked = await isUserBlocked(
+      opts.requesterUserId,
+      commentTo.createdById!
+    );
 
     if (commentTo && commentToBlocked) {
-      commentTo = await constructBlockedPostTemplate({...opts, post: commentTo as Post});
+      commentTo = await constructBlockedPostTemplate({
+        ...opts,
+        post: commentTo as Post,
+      });
     }
   }
 
@@ -257,12 +278,6 @@ const constructBlockedPostTemplate = async (opts: ConstructBlockedPostOpts): Pro
     block: true,
   } as BlockedPost;
 };
-
-type PostWithCommentTo = Partial<Post> & {
-  commentTo?: Partial<Post>;
-};
-
-
 interface FetchPostOpts {
   postId: string;
   requesterUserId: string;
@@ -281,14 +296,20 @@ export async function fetchPost(opts: FetchPostOpts) {
   if (!post) return null;
 
   if (!opts.bypassBlocked) {
-    const isBlocked = await isUserBlocked(opts.requesterUserId, post.createdById);
+    const isBlocked = await isUserBlocked(
+      opts.requesterUserId,
+      post.createdById
+    );
     if (isBlocked) {
-      return constructBlockedPostTemplate({post, requesterUserId: opts.requesterUserId, bypassBlocked: opts.bypassBlocked});
+      return constructBlockedPostTemplate({
+        post,
+        requesterUserId: opts.requesterUserId,
+        bypassBlocked: opts.bypassBlocked,
+      });
     }
   }
 
-
-  return post
+  return post;
 }
 
 export async function likePost(
@@ -320,10 +341,10 @@ export async function likePost(
       postId,
     },
   });
-  const newPost = await fetchPost({
-    postId, 
-    requesterUserId: userId
-  }) as Post;
+  const newPost = (await fetchPost({
+    postId,
+    requesterUserId: userId,
+  })) as Post;
 
   createPostNotification({
     type: PostNotificationType.LIKED,
@@ -348,10 +369,10 @@ export async function unlikePost(
   await prisma.postLike.delete({
     where: { id: postLike.id },
   });
-  const newPost = await fetchPost({
-    postId, 
-    requesterUserId: userId
-  }) as Post;
+  const newPost = (await fetchPost({
+    postId,
+    requesterUserId: userId,
+  })) as Post;
   return [newPost, null];
 }
 
@@ -385,25 +406,35 @@ export async function deletePost(
   return [true, null];
 }
 
-export async function getFeed(userId: string) {
+interface GetFeedOpts {
+  userId: string;
+  afterId?: string;
+  beforeId?: string;
+  limit?: number;
+}
+
+export async function getFeed(opts: GetFeedOpts) {
   const feedPosts = await prisma.post.findMany({
     orderBy: { createdAt: 'desc' },
     where: {
+      ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
+      ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
+
       commentTo: null,
       deleted: null,
       OR: [
-        { createdById: userId },
+        { createdById: opts.userId },
         {
           createdBy: {
             followers: {
-              some: { followedById: userId },
+              some: { followedById: opts.userId },
             },
           },
         },
       ],
     },
-    include: constructInclude(userId),
-    take: 50,
+    include: constructInclude(opts.userId),
+    take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
   });
   return feedPosts;
 }

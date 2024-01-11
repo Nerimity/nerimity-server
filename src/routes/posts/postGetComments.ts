@@ -6,9 +6,9 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { fetchPosts } from '../../services/Post';
 import { isUserAdmin } from '../../common/Bitwise';
 
-
 export function postsGetComments(Router: Router) {
-  Router.get('/posts/:postId/comments', 
+  Router.get(
+    '/posts/:postId/comments',
     authenticate(),
     rateLimit({
       name: 'post_get_comments',
@@ -16,19 +16,28 @@ export function postsGetComments(Router: Router) {
       requestCount: 100,
     }),
     param('postId')
-      .isString().withMessage('postId must be a string!')
-      .isLength({ min: 1, max: 100 }).withMessage('postId length must be between 1 and 100 characters.'),
+      .isString()
+      .withMessage('postId must be a string!')
+      .isLength({ min: 1, max: 100 })
+      .withMessage('postId length must be between 1 and 100 characters.'),
     route
   );
 }
-
 
 interface Param {
   postId: string;
 }
 
-async function route (req: Request, res: Response) {
+interface Query {
+  limit?: string;
+  afterId?: string;
+  beforeId?: string;
+}
+
+async function route(req: Request, res: Response) {
   const params = req.params as unknown as Param;
+
+  const query = req.query as unknown as Query;
 
   const validateError = customExpressValidatorResult(req);
 
@@ -42,6 +51,9 @@ async function route (req: Request, res: Response) {
     postId: params.postId,
     requesterUserId: req.accountCache.user.id,
     bypassBlocked: isAdmin,
+    limit: query.limit ? parseInt(query.limit) : undefined,
+    afterId: query.afterId,
+    beforeId: query.beforeId,
   });
 
   res.json(commentPosts);

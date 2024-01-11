@@ -6,9 +6,9 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { fetchPosts } from '../../services/Post';
 import { isUserAdmin } from '../../common/Bitwise';
 
-
 export function postsGet(Router: Router) {
-  Router.get('/users/:userId/posts', 
+  Router.get(
+    '/users/:userId/posts',
     authenticate(),
     rateLimit({
       name: 'post_get',
@@ -16,21 +16,20 @@ export function postsGet(Router: Router) {
       requestCount: 100,
     }),
     param('userId')
-      .isString().withMessage('userId must be a string!')
-      .isLength({ min: 1, max: 100 }).withMessage('userId length must be between 1 and 100 characters.')
+      .isString()
+      .withMessage('userId must be a string!')
+      .isLength({ min: 1, max: 100 })
+      .withMessage('userId length must be between 1 and 100 characters.')
       .optional(true),
     query('withReplies')
-      .isBoolean().withMessage('withReplies must be a boolean!')
+      .isBoolean()
+      .withMessage('withReplies must be a boolean!')
       .optional(true),
     route
   );
-  
-  Router.get('/posts', 
-    authenticate(),
-    route
-  );
-}
 
+  Router.get('/posts', authenticate(), route);
+}
 
 interface Param {
   userId?: string;
@@ -38,9 +37,13 @@ interface Param {
 }
 interface Query {
   withReplies?: boolean;
+
+  limit?: string;
+  afterId?: string;
+  beforeId?: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const params = req.params as Param;
   const query = req.query as Query;
 
@@ -57,6 +60,10 @@ async function route (req: Request, res: Response) {
     requesterUserId: req.accountCache.user.id,
     withReplies: query.withReplies,
     bypassBlocked: isAdmin,
+
+    limit: query.limit ? parseInt(query.limit) : undefined,
+    afterId: query.afterId,
+    beforeId: query.beforeId,
   });
 
   res.json(posts);
