@@ -151,7 +151,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
       ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
 
       ...(opts.userId ? { createdById: opts.userId } : undefined),
-      ...(opts.userId && !opts.withReplies ? { commentToId: null } : undefined),
+      ...(!opts.withReplies ? { commentToId: null } : undefined),
       ...(opts.postId ? { commentToId: opts.postId } : undefined),
       ...(!opts.bypassBlocked
         ? {

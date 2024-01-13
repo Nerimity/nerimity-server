@@ -1,4 +1,4 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import { postsGet } from './postsGet';
 import { postCreate } from './postCreate';
 import { postLike } from './postLike';
@@ -13,15 +13,16 @@ import { postsGetLiked } from './postsGetLiked';
 import { postDelete } from './postDelete';
 import { postEdit } from './postEdit';
 import { postsGetLikes } from './postGetLikes';
+import { postsDiscover } from './postsDiscover';
 
 const PostsRouter = Router();
-
-
 
 postNotificationDismiss(PostsRouter);
 postNotificationCount(PostsRouter);
 postNotifications(PostsRouter);
 postsFeed(PostsRouter);
+postsDiscover(PostsRouter);
+
 postGetSingle(PostsRouter);
 postsGetLiked(PostsRouter);
 postDelete(PostsRouter);
@@ -33,4 +34,4 @@ postUnlike(PostsRouter);
 postsGetComments(PostsRouter);
 postsGetLikes(PostsRouter);
 
-export {PostsRouter};
+export { PostsRouter };
