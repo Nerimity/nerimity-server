@@ -17,6 +17,9 @@ const mapper = new Map(
 
 type GetOGTagsReturn = Promise<false | Record<string, string | number>>;
 
+const youtubeLinkRegex =
+  /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
+
 export async function getOGTags(url: string): GetOGTagsReturn {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
@@ -77,9 +80,24 @@ export async function getOGTags(url: string): GetOGTagsReturn {
     delete object.url;
   }
 
+  if (url.match(youtubeLinkRegex)) {
+    const uploadDate = root.querySelector('meta[itemprop=uploadDate]')
+      ?.attributes?.content;
+
+    const channelName = root.querySelector(
+      'span[itemprop=author] link[itemprop=name]'
+    )?.attributes?.content;
+
+    uploadDate && (object.uploadDate = uploadDate);
+    channelName && (object.channelName = channelName);
+  }
+
   return object;
 }
 
+getOGTags('https://www.youtube.com/watch?v=Ctww6ndcPWI').then(
+  () => console.log
+);
 const addProtocolToUrl = (unsafeUrl: string) => {
   const startsWithHttp = unsafeUrl.startsWith('http://');
   const startsWithHttps = unsafeUrl.startsWith('https://');
