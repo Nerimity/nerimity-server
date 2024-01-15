@@ -21,7 +21,12 @@ const youtubeLinkRegex =
   /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
 
 export async function getOGTags(url: string): GetOGTagsReturn {
-  const res = await fetch(url, {
+  const youtubeWatchCode = url.match(youtubeLinkRegex)?.[3];
+  const updatedUrl = youtubeWatchCode
+    ? `https://www.youtube.com/watch?v=${youtubeWatchCode}`
+    : url;
+
+  const res = await fetch(updatedUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
     // eslint-disable-next-line @typescript-eslint/no-empty-function
   }).catch(() => {});
@@ -54,7 +59,11 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   if (!entries.length) return false;
 
   const object = Object.fromEntries(entries);
+
   object.url = addProtocolToUrl(object.url || url);
+  if (youtubeWatchCode) {
+    object.url = addProtocolToUrl(updatedUrl);
+  }
 
   if (
     object.imageUrl &&
@@ -80,7 +89,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
     delete object.url;
   }
 
-  if (url.match(youtubeLinkRegex)) {
+  if (youtubeWatchCode) {
     const uploadDate = root.querySelector('meta[itemprop=uploadDate]')
       ?.attributes?.content;
 
