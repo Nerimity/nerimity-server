@@ -6,7 +6,7 @@ interface DisconnectUsersOptions {
   message?: string;
   type?: string;
   reason?: string;
-  expire?: string;
+  expire?: string | null;
   clearCache: boolean;
 }
 

@@ -150,7 +150,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     userIds: sanitizedUserIds,
     clearCache: true,
     reason: req.body.reason,
-    expire: expireDateTime,
+    expire: req.body.days ? expireDateTime : null,
   });
 
   if (req.body.ipBan) {
@@ -206,7 +206,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       username: user.username,
       userId: user.id,
       reason: req.body.reason,
-      expireAt: expireDateTime,
+      expireAt: req.body.days ? expireDateTime : null,
     })),
   });
 
