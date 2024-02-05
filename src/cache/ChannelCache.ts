@@ -215,52 +215,55 @@ const getInboxCache = async (channelId: string, userId: string) => {
   if (!inbox) return null;
 
   let canMessage = true;
-  const requesterDmStatus = inbox.createdBy.account?.dmStatus;
-  const recipientDmStatus = inbox.recipient.account?.dmStatus;
+  if (inbox.recipientId !== userId) {
+    // saved notes
+    const requesterDmStatus = inbox.createdBy.account?.dmStatus;
+    const recipientDmStatus = inbox.recipient.account?.dmStatus;
 
-  const blocked = await prisma.friend.findFirst({
-    where: {
-      status: FriendStatus.BLOCKED,
-      OR: [
-        { recipientId: inbox.recipientId, userId },
-        { recipientId: userId, userId: inbox.recipientId },
-      ],
-    },
-  });
-  if (blocked) {
-    canMessage = false;
-  }
-
-  if (!blocked && (requesterDmStatus || recipientDmStatus)) {
-    canMessage = false;
-    const areFriends = await prisma.friend.findFirst({
+    const blocked = await prisma.friend.findFirst({
       where: {
-        status: FriendStatus.FRIENDS,
-        recipientId: inbox.recipientId,
-        userId,
+        status: FriendStatus.BLOCKED,
+        OR: [
+          { recipientId: inbox.recipientId, userId },
+          { recipientId: userId, userId: inbox.recipientId },
+        ],
       },
     });
+    if (blocked) {
+      canMessage = false;
+    }
 
-    canMessage = !!areFriends;
-
-    if (
-      (!areFriends &&
-        requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
-        recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS) ||
-      (requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
-        recipientDmStatus === DmStatus.OPEN) ||
-      (recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
-        requesterDmStatus === DmStatus.OPEN)
-    ) {
-      const doesShareServers = await prisma.server.findFirst({
+    if (!blocked && (requesterDmStatus || recipientDmStatus)) {
+      canMessage = false;
+      const areFriends = await prisma.friend.findFirst({
         where: {
-          AND: [
-            { serverMembers: { some: { userId: inbox.recipientId } } },
-            { serverMembers: { some: { userId } } },
-          ],
+          status: FriendStatus.FRIENDS,
+          recipientId: inbox.recipientId,
+          userId,
         },
       });
-      canMessage = !!doesShareServers;
+
+      canMessage = !!areFriends;
+
+      if (
+        (!areFriends &&
+          requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
+          recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS) ||
+        (requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
+          recipientDmStatus === DmStatus.OPEN) ||
+        (recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS &&
+          requesterDmStatus === DmStatus.OPEN)
+      ) {
+        const doesShareServers = await prisma.server.findFirst({
+          where: {
+            AND: [
+              { serverMembers: { some: { userId: inbox.recipientId } } },
+              { serverMembers: { some: { userId } } },
+            ],
+          },
+        });
+        canMessage = !!doesShareServers;
+      }
     }
   }
 
