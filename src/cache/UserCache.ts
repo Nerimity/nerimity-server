@@ -17,6 +17,7 @@ import {
 } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
+import { Log } from '../common/Log';
 
 export interface ActivityStatus {
   socketId: string;
@@ -163,9 +164,14 @@ export async function getAccountCache(
   >
 > {
   // First, check in cache
+  const t0 = performance.now();
+
   const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
   const cacheAccount = await redisClient.get(cacheKey);
   if (cacheAccount) {
+    const t1 = performance.now();
+    if (userId === "1289157673362825217") Log.debug(`getAccountCache cached: ${t1 - t0}ms`);
+
     return [JSON.parse(cacheAccount), null];
   }
   // If not in cache, fetch from database
@@ -195,6 +201,10 @@ export async function getAccountCache(
 
   // Save to cache
   await redisClient.set(cacheKey, JSON.stringify(accountCache));
+
+  const t1 = performance.now();
+  if (userId === "1289157673362825217") Log.debug(`getAccountCache uncached: ${t1 - t0}ms`);
+
   return [accountCache, null];
 }
 export async function updateAccountCache(userId: string, update: Partial<AccountCache>) {

@@ -42,6 +42,7 @@ import {
   hasBit,
 } from '../common/Bitwise';
 import { ChannelType } from '../types/Channel';
+import { Log } from '../common/Log';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -82,6 +83,7 @@ export const getMessagesByChannelId = async (
     return result;
   }
 
+  const t0 = performance.now();
   const messages = await prisma.message.findMany({
     where: {
       channelId,
@@ -193,6 +195,9 @@ export const getMessagesByChannelId = async (
         }
       : undefined),
   });
+
+  const t1 = performance.now();
+  if (opts?.requesterId === "1289157673362825217") Log.debug(`get messages: ${t1 - t0}ms`);
 
   const modifiedMessages = messages.map((message) => {
     (message.reactions as any) = message.reactions.map((reaction) => ({
