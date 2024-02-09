@@ -30,7 +30,7 @@
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^8.10.0",
-    "prisma": "^5.8.1",
+    "prisma": "^5.9.1",
     "socket.io-client": "^4.7.4",
     "ts-node": "^10.9.2",
     "tsup": "^7.2.0",
@@ -39,7 +39,7 @@
   "dependencies": {
     "@brecert/flakeid": "^2.0.1",
     "@nerimity/flakeid": "^1.0.3",
-    "@prisma/client": "^5.8.1",
+    "@prisma/client": "^5.9.1",
     "@socket.io/redis-adapter": "^8.2.1",
     "@socket.io/redis-streams-adapter": "^0.1.0",
     "bcrypt": "^5.1.1",
