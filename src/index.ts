@@ -18,11 +18,11 @@ import { ExploreRouter } from './routes/explore/Router';
 import schedule from 'node-schedule';
 import { PostsRouter } from './routes/posts/Router';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
-import { sendConfirmCodeMail } from './common/mailer';
 import { GoogleRouter } from './routes/google/Router';
 import { TicketsRouter } from './routes/tickets/Router';
 import { EmojisRouter } from './routes/emojis/Router';
 import { TenorRouter } from './routes/tenor/Router';
+import { ApplicationsRouter } from './routes/applications/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -82,6 +82,7 @@ app.use('/api', GoogleRouter);
 app.use('/api', TicketsRouter);
 app.use('/api', EmojisRouter);
 app.use('/api', TenorRouter);
+app.use('/api', ApplicationsRouter);
 
 function scheduleBumpReset() {
   // Schedule the task to run every Monday at 0:00 UTC

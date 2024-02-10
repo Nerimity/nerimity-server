@@ -32,7 +32,10 @@ export interface Presence {
   activity?: ActivityStatus | null;
 }
 
-export async function getUserPresences(userIds: string[], includeSocketId = false): Promise<Presence[]> {
+export async function getUserPresences(
+  userIds: string[],
+  includeSocketId = false
+): Promise<Presence[]> {
   const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
     const userId = userIds[i];
@@ -170,7 +173,8 @@ export async function getAccountCache(
   const cacheAccount = await redisClient.get(cacheKey);
   if (cacheAccount) {
     const t1 = performance.now();
-    if (userId === "1289157673362825217") Log.debug(`getAccountCache cached: ${t1 - t0}ms`);
+    if (userId === '1289157673362825217')
+      Log.debug(`getAccountCache cached: ${t1 - t0}ms`);
 
     return [JSON.parse(cacheAccount), null];
   }
@@ -203,11 +207,15 @@ export async function getAccountCache(
   await redisClient.set(cacheKey, JSON.stringify(accountCache));
 
   const t1 = performance.now();
-  if (userId === "1289157673362825217") Log.debug(`getAccountCache uncached: ${t1 - t0}ms`);
+  if (userId === '1289157673362825217')
+    Log.debug(`getAccountCache uncached: ${t1 - t0}ms`);
 
   return [accountCache, null];
 }
-export async function updateAccountCache(userId: string, update: Partial<AccountCache>) {
+export async function updateAccountCache(
+  userId: string,
+  update: Partial<AccountCache>
+) {
   const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
   const [account, error] = await getAccountCache(userId);
   if (error) return [null, error] as const;
@@ -334,12 +342,15 @@ export async function isIPAllowedCache(ipAddress: string) {
   return exists;
 }
 
-export async function addGoogleAccessTokenCache(userId: string, accessToken: string) {
+export async function addGoogleAccessTokenCache(
+  userId: string,
+  accessToken: string
+) {
   const key = GOOGLE_ACCESS_TOKEN(userId);
   const multi = redisClient.multi();
   multi.set(key, accessToken);
   multi.expire(key, 3000);
-  return await multi.exec()
+  return await multi.exec();
 }
 
 export async function removeGoogleAccessTokenCache(userId: string) {
