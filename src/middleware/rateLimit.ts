@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { checkRateLimited } from '../cache/RateLimitCache';
 import { generateError } from '../common/errorHandler';
 import env from '../common/env';
+import { Log } from '../common/Log';
 
 interface Options {
   name: string;
@@ -12,11 +13,13 @@ interface Options {
   nextIfRatedLimited?: boolean; // false by default
   message?: string;
 }
+if (env.DEV_MODE) {
+  Log.warn('Rate limit is disabled in dev mode');
+}
 
 export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (env.DEV_MODE) {
-      console.log('Rate limiting is disabled in dev mode');
       return next();
     }
 
