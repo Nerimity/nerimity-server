@@ -1,34 +1,34 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { createApplication } from '../../services/Application';
+import { createBot } from '../../services/Application';
 import { generateError } from '../../common/errorHandler';
 
-export function applicationsCreate(Router: Router) {
+export function applicationsCreateBot(Router: Router) {
   Router.post(
-    '/applications',
+    '/applications/:id/bot',
     authenticate(),
     rateLimit({
-      name: 'create-app',
+      name: 'create-bot',
       expireMS: 60000,
       requestCount: 2,
+      useIP: true,
     }),
     route
   );
 }
 
 async function route(req: Request, res: Response) {
-  if (!req.accountCache.emailConfirmed) {
-    return res
-      .status(403)
-      .json(generateError('You must confirm your email first.'));
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json(generateError('Missing application id!'));
   }
 
-  const [application, error] = await createApplication(req.accountCache.id);
+  const [botUser, error] = await createBot(id, req.accountCache.id);
 
   if (error) {
     return res.status(400).json(error);
   }
 
-  res.json(application);
+  res.json(botUser);
 }
