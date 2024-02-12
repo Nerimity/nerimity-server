@@ -148,7 +148,7 @@ const checkPassword = async (hashedPassword: string, rawPassword?: string) => {
   }
 }
 
-const checkUsernameOrTagUpdated = (opts: UpdateUserProps) => {
+export const checkUsernameOrTagUpdated = (opts: UpdateUserProps) => {
   return opts.username || opts.tag;
 }
 
@@ -159,7 +159,7 @@ interface CheckUsernameOrTagOpts {
   oldUsername: string;
   oldTag: string
 }
-const checkUsernameOrTag = async (opts: CheckUsernameOrTagOpts) => {
+export const checkUsernameOrTag = async (opts: CheckUsernameOrTagOpts) => {
   const userExists = await prisma.user.findFirst({
     where: {
       username: opts.newUsername?.trim() || opts.oldUsername,
