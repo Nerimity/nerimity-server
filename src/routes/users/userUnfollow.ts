@@ -6,7 +6,8 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { followUser, unfollowUser, updateUser } from '../../services/User/User';
 
 export function userUnfollow(Router: Router) {
-  Router.delete('/users/:userId/follow',
+  Router.delete(
+    '/users/:userId/follow',
     authenticate(),
     rateLimit({
       name: 'user_unfollow',
@@ -24,12 +25,11 @@ interface Params {
 async function route(req: Request, res: Response) {
   const body = req.params as unknown as Params;
 
-  const [, error] = await unfollowUser(req.accountCache.user.id, body.userId);
+  const [, error] = await unfollowUser(req.userCache.id, body.userId);
 
   if (error) {
     return res.status(400).json(error);
   }
 
   res.json({ status: true });
-
 }

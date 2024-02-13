@@ -42,7 +42,7 @@ async function route(req: Request, res: Response) {
     limit = 30;
   }
 
-  const tickets = await getOwnTickets(req.accountCache.user.id, {
+  const tickets = await getOwnTickets(req.userCache.id, {
     status,
     limit,
     seen,

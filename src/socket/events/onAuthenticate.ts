@@ -32,17 +32,16 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     socket.handshake.address
   )?.toString();
 
-  const [accountCache, error] = await authenticateUser(payload.token, ip);
+  const [userCache, error] = await authenticateUser(payload.token, ip);
 
   if (error !== null) {
     emitError(socket, { ...error, disconnect: true });
     return;
   }
-  const cacheUser = accountCache.user;
-  socket.join(accountCache.user.id);
+  socket.join(userCache.id);
 
   const user = await prisma.user.findFirst({
-    where: { id: accountCache.user.id },
+    where: { id: userCache.id },
     include: {
       connections: { select: { id: true, provider: true, connectedAt: true } },
       friends: { include: { recipient: true } },
@@ -52,7 +51,6 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
           serverOrderIds: true,
           dmStatus: true,
           emailConfirmed: true,
-
         },
       },
     },
@@ -68,15 +66,15 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     serverMembers,
     serverRoles,
     serverSettings,
-  } = await getServers(cacheUser.id);
+  } = await getServers(userCache.id);
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(
-    cacheUser.id
+    userCache.id
   );
 
-  const messageMentions = await getAllMessageMentions(cacheUser.id);
+  const messageMentions = await getAllMessageMentions(userCache.id);
 
-  const inbox = await getInbox(cacheUser.id);
+  const inbox = await getInbox(userCache.id);
   const inboxChannels: Channel[] = [];
 
   const inboxResponse: Inbox[] = inbox.map((item) => {
@@ -105,31 +103,31 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       channel.permissions || 0,
       CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
     );
-    const isAdmin = server.createdById === cacheUser.id;
+    const isAdmin = server.createdById === userCache.id;
 
     if (isPrivateChannel && !isAdmin) continue;
     socket.join(channel.id);
   }
 
-  const isFirstConnect = await addSocketUser(cacheUser.id, socket.id, {
+  const isFirstConnect = await addSocketUser(userCache.id, socket.id, {
     status: user.status,
     custom: user.customStatus! || undefined,
-    userId: cacheUser.id,
+    userId: userCache.id,
   });
 
   const userIds = removeDuplicates([
     ...serverMembers.map((member) => member.user.id),
     ...friendUserIds,
-    cacheUser.id,
+    userCache.id,
   ]);
 
   const presences = await getUserPresences(userIds);
 
   if (isFirstConnect && user.status !== UserStatus.OFFLINE) {
-    emitUserPresenceUpdate(cacheUser.id, {
+    emitUserPresenceUpdate(userCache.id, {
       status: user.status,
       custom: user.customStatus || undefined,
-      userId: cacheUser.id,
+      userId: userCache.id,
     });
   }
 
@@ -143,15 +141,18 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   const voiceChannelUsers = await getVoiceUsersByChannelId(channelIds);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { account, ...userCacheWithoutAccount } = userCache;
+
   socket.emit(AUTHENTICATED, {
     user: {
-      ...cacheUser,
+      ...userCacheWithoutAccount,
       email: user.account?.email,
       customStatus: user.customStatus,
       orderedServerIds: user.account?.serverOrderIds,
       dmStatus: user.account?.dmStatus,
       emailConfirmed: user.account?.emailConfirmed,
-      connections: user.connections
+      connections: user.connections,
     },
     voiceChannelUsers,
     servers,

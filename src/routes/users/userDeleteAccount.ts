@@ -45,7 +45,7 @@ async function route(req: Request, res: Response) {
 
   const account = await prisma.account
     .findUnique({
-      where: { id: req.accountCache.id },
+      where: { id: req.userCache.account.id },
       select: { password: true },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -64,7 +64,7 @@ async function route(req: Request, res: Response) {
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
 
-  const [, error] = await deleteAccount(req.accountCache.user.id);
+  const [, error] = await deleteAccount(req.userCache.id);
 
   if (error) {
     return res.status(400).json(error);

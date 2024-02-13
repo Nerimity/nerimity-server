@@ -5,9 +5,9 @@ import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { createPost, editPost } from '../../services/Post';
 
-
 export function postEdit(Router: Router) {
-  Router.patch('/posts/:postId', 
+  Router.patch(
+    '/posts/:postId',
     authenticate(),
     rateLimit({
       name: 'edit_post',
@@ -15,18 +15,19 @@ export function postEdit(Router: Router) {
       requestCount: 5,
     }),
     body('content')
-      .isString().withMessage('Content must be a string!')
-      .isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.'),
+      .isString()
+      .withMessage('Content must be a string!')
+      .isLength({ min: 1, max: 500 })
+      .withMessage('Content length must be between 1 and 500 characters.'),
     route
   );
 }
-
 
 interface Body {
   content: string;
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const validateError = customExpressValidatorResult(req);
@@ -37,7 +38,7 @@ async function route (req: Request, res: Response) {
 
   const [post, error] = await editPost({
     content: body.content,
-    editById: req.accountCache.user.id,
+    editById: req.userCache.id,
     postId: req.params.postId,
   });
 

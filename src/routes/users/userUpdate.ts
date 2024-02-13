@@ -95,7 +95,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [result, error] = await updateUser({
-    userId: req.accountCache.user.id,
+    userId: req.userCache.id,
     socketId: body.socketId,
     email: body.email,
     username: body.username,

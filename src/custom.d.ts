@@ -2,14 +2,14 @@ import internal from 'stream';
 import { ChannelCache } from './cache/ChannelCache';
 import { ServerCache } from './cache/ServerCache';
 import { ServerMemberCache } from './cache/ServerMemberCache';
-import { AccountCache } from './cache/UserCache';
+import { UserCache } from './cache/UserCache';
 // import { Auth } from 'googleapis';
 
 declare global {
   namespace Express {
     export interface Request {
       // userIp: string,
-      accountCache: AccountCache;
+      userCache: UserCache;
       channelCache: ChannelCache;
       serverMemberCache: ServerMemberCache;
       serverCache: ServerCache;

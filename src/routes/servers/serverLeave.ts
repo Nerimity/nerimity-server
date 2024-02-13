@@ -14,7 +14,7 @@ export function serverLeave(Router: Router) {
 
 async function route(req: Request, res: Response) {
   const [status, error] = await leaveServer(
-    req.accountCache.user.id,
+    req.userCache.id,
     req.serverCache.id
   );
   if (error) {

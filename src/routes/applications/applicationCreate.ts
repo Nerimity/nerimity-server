@@ -18,13 +18,15 @@ export function applicationsCreate(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  if (!req.accountCache.emailConfirmed) {
+  if (!req.userCache.account.emailConfirmed) {
     return res
       .status(403)
       .json(generateError('You must confirm your email first.'));
   }
 
-  const [application, error] = await createApplication(req.accountCache.id);
+  const [application, error] = await createApplication(
+    req.userCache.account.id
+  );
 
   if (error) {
     return res.status(400).json(error);

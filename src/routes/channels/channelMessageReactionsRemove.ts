@@ -7,17 +7,24 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
 
 export function channelMessageReactionsRemove(Router: Router) {
-  Router.post('/channels/:channelId/messages/:messageId/reactions/remove',
+  Router.post(
+    '/channels/:channelId/messages/:messageId/reactions/remove',
     authenticate(),
     channelVerification(),
     body('name')
-      .not().isEmpty().withMessage('name is required!')
-      .isString().withMessage('name must be a string!')
-      .isLength({ min: 1, max: 20 }).withMessage('name length must be between 1 and 20 characters.'),
+      .not()
+      .isEmpty()
+      .withMessage('name is required!')
+      .isString()
+      .withMessage('name must be a string!')
+      .isLength({ min: 1, max: 20 })
+      .withMessage('name length must be between 1 and 20 characters.'),
     body('emojiId')
-      .optional({values: 'falsy'})
-      .isString().withMessage('emojiId must be a string!')
-      .isLength({ min: 1, max: 20 }).withMessage('emojiId length must be between 1 and 20 characters.'),
+      .optional({ values: 'falsy' })
+      .isString()
+      .withMessage('emojiId must be a string!')
+      .isLength({ min: 1, max: 20 })
+      .withMessage('emojiId length must be between 1 and 20 characters.'),
     rateLimit({
       name: 'reaction_add',
       expireMS: 20000,
@@ -31,7 +38,6 @@ interface Body {
   name: string; // emoji name or unicode
   emojiId?: string;
 }
-
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
@@ -51,9 +57,9 @@ async function route(req: Request, res: Response) {
     serverId: req.serverCache?.id,
     channel: req.channelCache,
     channelId: req.channelCache.id,
-    reactionRemovedByUserId: req.accountCache.user.id,
+    reactionRemovedByUserId: req.userCache.id,
     messageId,
-    ...body
+    ...body,
   });
 
   if (err) {

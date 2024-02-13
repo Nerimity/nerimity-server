@@ -1,7 +1,10 @@
 import { Request, Response, Router } from 'express';
 import { body, matchedData } from 'express-validator';
 import { prisma } from '../../common/database';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import {
+  customExpressValidatorResult,
+  generateError,
+} from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
@@ -10,22 +13,33 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { updateServerRole } from '../../services/ServerRole';
 
 export function serverRoleUpdate(Router: Router) {
-  Router.post('/servers/:serverId/roles/:roleId',
+  Router.post(
+    '/servers/:serverId/roles/:roleId',
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('name')
-      .isString().withMessage('Name must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({ nullable: true }),
+      .isString()
+      .withMessage('Name must be a string.')
+      .isLength({ min: 4, max: 100 })
+      .withMessage('Name must be between 4 and 100 characters long.')
+      .optional({ nullable: true }),
     body('hexColor')
-      .isString().withMessage('hexColor must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({ nullable: true }),
+      .isString()
+      .withMessage('hexColor must be a string.')
+      .isLength({ min: 4, max: 100 })
+      .withMessage('Name must be between 4 and 100 characters long.')
+      .optional({ nullable: true }),
     body('hideRole')
-      .isBoolean().withMessage('hideRole must be a boolean.')
+      .isBoolean()
+      .withMessage('hideRole must be a boolean.')
       .optional({ nullable: true }),
     body('permissions')
-      .isNumeric().withMessage('Permissions must be a number.')
-      .isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({ nullable: true }),
+      .isNumeric()
+      .withMessage('Permissions must be a number.')
+      .isLength({ min: 0, max: 100 })
+      .withMessage('Permissions must be between 0 and 100 characters long.')
+      .optional({ nullable: true }),
     rateLimit({
       name: 'server_role_update',
       expireMS: 10000,
@@ -42,10 +56,7 @@ interface Body {
   hideRoles?: boolean;
 }
 
-
-
 async function route(req: Request, res: Response) {
-
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
@@ -53,23 +64,26 @@ async function route(req: Request, res: Response) {
 
   const matchedBody: Body = matchedData(req);
 
-  const role = await prisma.serverRole.findFirst({ where: { id: req.params.roleId } });
+  const role = await prisma.serverRole.findFirst({
+    where: { id: req.params.roleId },
+  });
   if (!role) {
     return res.status(400).json(generateError('Role does not exist.'));
   }
-  const isCreator = req.serverCache.createdById === req.accountCache.user.id;
+  const isCreator = req.serverCache.createdById === req.userCache.id;
   if (!isCreator && role.order >= req.serverMemberCache.topRoleOrder) {
-    return res.status(400).json(generateError('You do not have priority to modify this role.'));
+    return res
+      .status(400)
+      .json(generateError('You do not have priority to modify this role.'));
   }
 
-
-
-
-
-  const [updated, error] = await updateServerRole(req.serverCache.id, req.params.roleId, matchedBody);
+  const [updated, error] = await updateServerRole(
+    req.serverCache.id,
+    req.params.roleId,
+    matchedBody
+  );
   if (error) {
     return res.status(400).json(error);
   }
   res.json(updated);
-
 }

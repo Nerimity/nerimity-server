@@ -5,9 +5,9 @@ import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { fetchPosts, getPostNotifications } from '../../services/Post';
 
-
 export function postNotifications(Router: Router) {
-  Router.get('/posts/notifications', 
+  Router.get(
+    '/posts/notifications',
     authenticate(),
     rateLimit({
       name: 'post_notifications',
@@ -16,13 +16,10 @@ export function postNotifications(Router: Router) {
     }),
     route
   );
-  
 }
 
-
-
-async function route (req: Request, res: Response) {
-  const notifications = await getPostNotifications(req.accountCache.user.id);
+async function route(req: Request, res: Response) {
+  const notifications = await getPostNotifications(req.userCache.id);
 
   res.json(notifications);
 }

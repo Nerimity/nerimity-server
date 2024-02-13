@@ -2,7 +2,10 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { getApplication, updateBot } from '../../services/Application';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import {
+  customExpressValidatorResult,
+  generateError,
+} from '../../common/errorHandler';
 import { body } from 'express-validator';
 
 export function applicationBotUpdate(Router: Router) {
@@ -28,7 +31,7 @@ export function applicationBotUpdate(Router: Router) {
       .isLength({ min: 4, max: 4 })
       .withMessage('Tag must be 4 characters long')
       .optional({ nullable: true }),
-  
+
     authenticate(),
     rateLimit({
       name: 'update-app-bot',
@@ -58,7 +61,10 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const [application, error] = await getApplication(req.accountCache.id, id);
+  const [application, error] = await getApplication(
+    req.userCache.account.id,
+    id
+  );
   if (error) {
     return res.status(404).json(error);
   }

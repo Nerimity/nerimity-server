@@ -3,13 +3,10 @@ import { authenticate } from '../../middleware/authenticate';
 import { getUserNotifications } from '../../services/User/User';
 
 export function userNotifications(Router: Router) {
-  Router.get('/users/notifications',
-    authenticate(),
-    route
-  );
+  Router.get('/users/notifications', authenticate(), route);
 }
 
 async function route(req: Request, res: Response) {
-  const notifications = await getUserNotifications(req.accountCache.user.id)
+  const notifications = await getUserNotifications(req.userCache.id);
   res.json(notifications);
 }

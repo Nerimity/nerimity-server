@@ -13,16 +13,16 @@ export function authenticate(opts?: Options) {
       return res.status(401).json(generateError('No token provided.'));
     }
 
-    const [cachedAccount, error] = await authenticateUser(token, req.userIP);
+    const [cachedUser, error] = await authenticateUser(token, req.userIP);
     if (error !== null) {
       return res.status(401).json(generateError(error.message));
     }
-    if (!opts?.allowBot && cachedAccount.user.bot) {
+    if (!opts?.allowBot && cachedUser.bot) {
       return res
         .status(401)
         .json(generateError('Bots are not allowed to use this route.'));
     }
-    req.accountCache = cachedAccount;
+    req.userCache = cachedUser;
     next();
   };
 }

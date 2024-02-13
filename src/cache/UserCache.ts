@@ -3,12 +3,12 @@ import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import {
-  getAccountByUserId,
   getSuspensionDetails,
+  getUserWithAccount,
   isIpBanned,
 } from '../services/User/User';
 import {
-  ACCOUNT_CACHE_KEY_STRING,
+  USER_CACHE_KEY_STRING,
   BANNED_IP_KEY_SET,
   CONNECTED_SOCKET_ID_KEY_SET,
   CONNECTED_USER_ID_KEY_STRING,
@@ -17,7 +17,6 @@ import {
 } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
-import { Log } from '../common/Log';
 
 export interface ActivityStatus {
   socketId: string;
@@ -38,7 +37,7 @@ export async function getUserPresences(
 ): Promise<Presence[]> {
   const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
-    const userId = userIds[i];
+    const userId = userIds[i]!;
     const key = USER_PRESENCE_KEY_STRING(userId);
     multi.get(key);
   }
@@ -133,13 +132,6 @@ export async function socketDisconnect(socketId: string, userId: string) {
   return count === 1;
 }
 
-export interface AccountCache {
-  id: string;
-  emailConfirmed?: boolean;
-  passwordVersion: number;
-  user: UserCache;
-}
-
 export interface UserCache {
   id: string;
   username: string;
@@ -149,6 +141,13 @@ export interface UserCache {
   banner?: string;
   badges: number;
   bot?: boolean;
+  account?: AccountCache;
+}
+
+export interface AccountCache {
+  id: string;
+  emailConfirmed?: boolean;
+  passwordVersion: number;
 }
 
 export async function getUserIdBySocketId(socketId: string) {
@@ -157,82 +156,75 @@ export async function getUserIdBySocketId(socketId: string) {
   return userId;
 }
 
-export async function getAccountCache(
+export async function getUserCache(
   userId: string,
-  beforeCache?: (account: AccountCache) => Promise<any | undefined>
+  beforeCache?: (user: UserCache) => Promise<any | undefined>
 ): Promise<
-  CustomResult<
-    AccountCache,
-    { type?: string; message: string; data?: any } | null
-  >
+  CustomResult<UserCache, { type?: string; message: string; data?: any } | null>
 > {
   // First, check in cache
-  const t0 = performance.now();
-
-  const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
-  const cacheAccount = await redisClient.get(cacheKey);
-  if (cacheAccount) {
-    const t1 = performance.now();
-    if (userId === '1289157673362825217')
-      Log.debug(`getAccountCache cached: ${t1 - t0}ms`);
-
-    return [JSON.parse(cacheAccount), null];
+  const cacheKey = USER_CACHE_KEY_STRING(userId);
+  const cacheUser = await redisClient.get(cacheKey);
+  if (cacheUser) {
+    return [JSON.parse(cacheUser), null];
   }
   // If not in cache, fetch from database
-  const account = await getAccountByUserId(userId);
-  if (!account) return [null, null];
+  const user = await getUserWithAccount(userId);
+  if (!user) return [null, null];
 
-  const accountCache: AccountCache = {
-    id: account.id,
-    passwordVersion: account.passwordVersion,
-    emailConfirmed: account.emailConfirmed,
-    user: {
-      id: account.user.id,
-      username: account.user.username,
-      badges: account.user.badges,
-      hexColor: account.user.hexColor || undefined,
-      tag: account.user.tag,
-      avatar: account.user.avatar || undefined,
-      banner: account.user.banner || undefined,
-      bot: account.user.bot || undefined,
-    },
+  if (!user.bot && !user.account) return [null, null];
+
+  const userCache: UserCache = {
+    ...(!user.bot
+      ? {
+          account: {
+            id: user.account!.id,
+            passwordVersion: user.account!.passwordVersion,
+            emailConfirmed: user.account!.emailConfirmed,
+          },
+        }
+      : {}),
+    id: user.id,
+    username: user.username,
+    badges: user.badges,
+    hexColor: user.hexColor || undefined,
+    tag: user.tag,
+    avatar: user.avatar || undefined,
+    banner: user.banner || undefined,
+    bot: user.bot || undefined,
   };
 
   if (beforeCache) {
-    const error = await beforeCache(accountCache);
+    const error = await beforeCache(userCache);
     if (error) return [null, error];
   }
 
   // Save to cache
-  await redisClient.set(cacheKey, JSON.stringify(accountCache));
+  await redisClient.set(cacheKey, JSON.stringify(userCache));
 
-  const t1 = performance.now();
-  if (userId === '1289157673362825217')
-    Log.debug(`getAccountCache uncached: ${t1 - t0}ms`);
-
-  return [accountCache, null];
+  return [userCache, null];
 }
-export async function updateAccountCache(
+export async function updateUserCache(
   userId: string,
-  update: Partial<AccountCache>
+  update: Partial<UserCache>
 ) {
-  const cacheKey = ACCOUNT_CACHE_KEY_STRING(userId);
-  const [account, error] = await getAccountCache(userId);
+  const cacheKey = USER_CACHE_KEY_STRING(userId);
+  const [user, error] = await getUserCache(userId);
   if (error) return [null, error] as const;
-  const newAccount = { ...account, ...update };
-  await redisClient.set(cacheKey, JSON.stringify(newAccount));
-  return [newAccount, null] as const;
+  const newUser = { ...user, ...update };
+  await redisClient.set(cacheKey, JSON.stringify(newUser));
+  return [newUser, null] as const;
 }
 
-export async function removeAccountCacheByUserIds(userIds: string[]) {
-  const keys = userIds.map((id) => ACCOUNT_CACHE_KEY_STRING(id));
+export async function removeUserCacheByUserIds(userIds: string[]) {
+  const keys = userIds.map((id) => USER_CACHE_KEY_STRING(id));
   await redisClient.del(keys);
 }
 
 const beforeAuthenticateCache = async (
-  account: AccountCache
+  user: UserCache
 ): Promise<{ type?: string; message: string; data?: any } | undefined> => {
-  const suspendDetails = await getSuspensionDetails(account.user.id);
+  const suspendDetails = await getSuspensionDetails(user.id);
   if (suspendDetails)
     return {
       message: 'You are suspended.',
@@ -248,15 +240,15 @@ export async function authenticateUser(
   token: string,
   ipAddress: string
 ): Promise<
-  CustomResult<AccountCache, { type?: string; message: string; data?: any }>
+  CustomResult<UserCache, { type?: string; message: string; data?: any }>
 > {
   const decryptedToken = decryptToken(token);
   if (!decryptedToken) {
     return [null, { message: 'Invalid token.' }];
   }
 
-  const [accountCache, error] = await getAccountCache(
-    decryptedToken.userId,
+  const [userCache, error] = await getUserCache(
+    decryptedToken.userId!,
     beforeAuthenticateCache
   );
 
@@ -264,11 +256,11 @@ export async function authenticateUser(
     return [null, error];
   }
 
-  if (!accountCache) {
+  if (!userCache) {
     return [null, { message: 'Invalid token.' }];
   }
   // compare password version
-  if (accountCache.passwordVersion !== decryptedToken.passwordVersion) {
+  if (userCache.account?.passwordVersion !== decryptedToken.passwordVersion) {
     return [null, { message: 'Invalid token.' }];
   }
 
@@ -291,9 +283,9 @@ export async function authenticateUser(
     await addAllowedIPCache(ipAddress);
   }
 
-  addDevice(accountCache.user.id, ipAddress);
+  addDevice(userCache.id, ipAddress);
 
-  return [accountCache, null];
+  return [userCache, null];
 }
 
 async function addDevice(userId: string, ipAddress: string) {

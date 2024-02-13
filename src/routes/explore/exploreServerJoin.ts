@@ -6,7 +6,8 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
 
 export function exploreServerJoin(Router: Router) {
-  Router.post('/explore/servers/:serverId/join',
+  Router.post(
+    '/explore/servers/:serverId/join',
     authenticate(),
     rateLimit({
       name: 'server_join',
@@ -14,9 +15,13 @@ export function exploreServerJoin(Router: Router) {
       requestCount: 3,
     }),
     param('serverId')
-      .not().isEmpty().withMessage('serverId is required.')
-      .isString().withMessage('serverId must be a string.')
-      .isLength({ min: 3, max: 320 }).withMessage('serverId must be between 3 and 320 characters long.'),
+      .not()
+      .isEmpty()
+      .withMessage('serverId is required.')
+      .isString()
+      .withMessage('serverId must be a string.')
+      .isLength({ min: 3, max: 320 })
+      .withMessage('serverId must be between 3 and 320 characters long.'),
     route
   );
 }
@@ -28,7 +33,7 @@ async function route(req: Request, res: Response) {
   }
 
   const { serverId } = req.params;
-  const [server, error] = await joinPublicServer(req.accountCache.user.id, serverId);
+  const [server, error] = await joinPublicServer(req.userCache.id, serverId);
   if (error) {
     return res.status(400).json(error);
   }

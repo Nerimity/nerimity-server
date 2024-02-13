@@ -3,11 +3,15 @@ import { param } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { fetchPosts, getPostNotificationCount, getPostNotifications } from '../../services/Post';
-
+import {
+  fetchPosts,
+  getPostNotificationCount,
+  getPostNotifications,
+} from '../../services/Post';
 
 export function postNotificationCount(Router: Router) {
-  Router.get('/posts/notifications/count', 
+  Router.get(
+    '/posts/notifications/count',
     authenticate(),
     rateLimit({
       name: 'post_notification_count',
@@ -16,12 +20,9 @@ export function postNotificationCount(Router: Router) {
     }),
     route
   );
-  
 }
 
-
-
-async function route (req: Request, res: Response) {
-  const count = await getPostNotificationCount(req.accountCache.user.id);
+async function route(req: Request, res: Response) {
+  const count = await getPostNotificationCount(req.userCache.id);
   res.json(count);
 }

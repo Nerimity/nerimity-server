@@ -56,7 +56,7 @@ async function route(req: Request, res: Response) {
     title: body.title,
     category: body.category,
     body: body.body,
-    requestedById: req.accountCache.user.id,
+    requestedById: req.userCache.id,
   });
 
   if (error) {

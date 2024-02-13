@@ -1,5 +1,5 @@
 const PREFIX = 'NERIMITY_';
-export const ACCOUNT_CACHE_KEY_STRING = (userId: string) => `${PREFIX}ACCOUNT:${userId}`;
+export const USER_CACHE_KEY_STRING = (userId: string) => `${PREFIX}USER:${userId}`;
 
 export const GOOGLE_ACCESS_TOKEN = (userId: string) => `${PREFIX}GOOGLE_ACCESS_TOKEN:${userId}`;
 

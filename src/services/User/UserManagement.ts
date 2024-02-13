@@ -1,11 +1,11 @@
-import { env } from "process";
-import { prisma } from "../../common/database";
-import { generateError } from "../../common/errorHandler";
-import { sendConfirmCodeMail } from "../../common/mailer";
-import { generateEmailConfirmCode, generateTag } from "../../common/random";
-import { removeAccountCacheByUserIds } from "../../cache/UserCache";
-import { getIO } from "../../socket/socket";
-import { AUTHENTICATE_ERROR } from "../../common/ClientEventNames";
+import { env } from 'process';
+import { prisma } from '../../common/database';
+import { generateError } from '../../common/errorHandler';
+import { sendConfirmCodeMail } from '../../common/mailer';
+import { generateEmailConfirmCode, generateTag } from '../../common/random';
+import { removeUserCacheByUserIds } from '../../cache/UserCache';
+import { getIO } from '../../socket/socket';
+import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -33,10 +33,10 @@ const updateAccountConfirmCode = async (userId: string) => {
   const code = generateEmailConfirmCode();
   await prisma.account.update({
     where: { userId },
-    data: { emailConfirmCode: code }
+    data: { emailConfirmCode: code },
   });
   return code;
-}
+};
 
 export async function verifyEmailConfirmCode(userId: string, code: string) {
   const account = await getAccountByUserId(userId);
@@ -62,7 +62,7 @@ export async function verifyEmailConfirmCode(userId: string, code: string) {
 
   await updateAccountEmailConfirmed(userId);
 
-  await removeAccountCacheByUserIds([userId]);
+  await removeUserCacheByUserIds([userId]);
   return [true, null] as const;
 }
 
@@ -76,7 +76,7 @@ const getAccountByUserId = async (userId: string) => {
       user: true,
       password: true,
       passwordVersion: true,
-    }
+    },
   });
 };
 
@@ -87,10 +87,10 @@ const updateAccountEmailConfirmed = async (userId: string) => {
     data: {
       emailConfirmed: true,
       emailConfirmCode: null,
-    }
+    },
   });
   return code;
-}
+};
 
 export async function deleteAccount(userId: string) {
   const user = await prisma.user.findUnique({
@@ -114,7 +114,7 @@ export async function deleteAccount(userId: string) {
 
   await deleteAccountFromDatabase(userId);
 
-  await removeAccountCacheByUserIds([userId]);
+  await removeUserCacheByUserIds([userId]);
 
   disconnectSockets(userId);
 
@@ -146,7 +146,7 @@ const deleteAccountFromDatabase = async (userId: string) => {
     }),
     prisma.userDevice.deleteMany({ where: { userId } }),
   ]);
-}
+};
 
 export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
   let broadcaster = getIO().in(userId);
@@ -155,4 +155,4 @@ export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
   }
   broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
   broadcaster.disconnectSockets(true);
-}
+};

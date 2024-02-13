@@ -28,7 +28,7 @@ export function rateLimit(opts: Options) {
     let id = '';
 
     if (!opts.globalLimit) {
-      id = opts.useIP ? ip : req.accountCache?.user.id;
+      id = opts.useIP ? ip : req.userCache?.id;
       if (opts.name) {
         id = `${id}-${opts.name}`;
       }

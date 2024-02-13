@@ -27,7 +27,7 @@ import { ChannelType, TextChannelTypes } from '../../types/Channel';
 import { Attachment } from '@prisma/client';
 import { dateToDateTime, prisma } from '../../common/database';
 import { ChannelCache } from '../../cache/ChannelCache';
-import { AccountCache, UserCache } from '../../cache/UserCache';
+import { UserCache } from '../../cache/UserCache';
 import { ServerCache } from '../../cache/ServerCache';
 import {
   CloseTicketStatuses,
@@ -112,7 +112,7 @@ async function route(req: Request, res: Response) {
   if (req.channelCache.type === ChannelType.TICKET) {
     const status = req.channelCache.ticket.status;
     const isTicketClosed = CloseTicketStatuses.includes(status);
-    const checkUserAdmin = isUserAdmin(req.accountCache.user.badges);
+    const checkUserAdmin = isUserAdmin(req.userCache.badges);
 
     if (isTicketClosed && !checkUserAdmin) {
       return res.status(400).json(generateError('This ticket is closed'));
@@ -135,7 +135,7 @@ async function route(req: Request, res: Response) {
   const hasAttachment = body.googleDriveAttachment || req.fileInfo?.file;
 
   if (hasAttachment) {
-    if (!isEmailConfirmed(req.accountCache)) {
+    if (!isEmailConfirmed(req.userCache.account)) {
       return res
         .status(400)
         .json(
@@ -148,7 +148,7 @@ async function route(req: Request, res: Response) {
     const isServerNotPublicAndNotSupporter =
       req.serverCache &&
       !isServerPublic(req.serverCache) &&
-      !isSupporterOrModerator(req.accountCache.user);
+      !isSupporterOrModerator(req.userCache);
 
     if (isServerNotPublicAndNotSupporter) {
       return res
@@ -161,7 +161,7 @@ async function route(req: Request, res: Response) {
     }
     const isPrivateChannelAndNotSupporter =
       isPrivateChannel(req.channelCache) &&
-      !isSupporterOrModerator(req.accountCache.user);
+      !isSupporterOrModerator(req.userCache);
 
     if (isPrivateChannelAndNotSupporter) {
       return res
@@ -189,7 +189,7 @@ async function route(req: Request, res: Response) {
     req.channelCache.type === ChannelType.SERVER_TEXT ||
     req.channelCache.type === ChannelType.CATEGORY;
 
-  if (isServerChannel && !req.accountCache.emailConfirmed) {
+  if (isServerChannel && !req.userCache.account.emailConfirmed) {
     return res
       .status(400)
       .json(generateError('You must confirm your email to send messages.'));
@@ -269,7 +269,7 @@ async function route(req: Request, res: Response) {
   const [message, error] = await createMessage({
     channelId: req.channelCache.id,
     content: body.content,
-    userId: req.accountCache.user.id,
+    userId: req.userCache.id,
     channel: req.channelCache,
     serverId: req.channelCache?.server?.id,
     server: req.serverCache,
@@ -289,8 +289,8 @@ async function route(req: Request, res: Response) {
   res.json(message);
 }
 
-const isEmailConfirmed = (user: AccountCache) => {
-  return user.emailConfirmed;
+const isEmailConfirmed = (user: UserCache) => {
+  return user.account?.emailConfirmed;
 };
 
 const isSupporterOrModerator = (user: UserCache) => {

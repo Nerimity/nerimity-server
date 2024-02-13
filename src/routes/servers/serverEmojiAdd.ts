@@ -9,17 +9,25 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { addServerEmoji } from '../../services/Server';
 
 export function serverEmojiAdd(Router: Router) {
-  Router.post('/servers/:serverId/emojis',
+  Router.post(
+    '/servers/:serverId/emojis',
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     body('name')
-      .not().isEmpty().withMessage('Name is required')
-      .isString().withMessage('Name must be a string.')
-      .isLength({ min: 2, max: 15 }).withMessage('Name must be between 2 and 15 characters long.'),
+      .not()
+      .isEmpty()
+      .withMessage('Name is required')
+      .isString()
+      .withMessage('Name must be a string.')
+      .isLength({ min: 2, max: 15 })
+      .withMessage('Name must be between 2 and 15 characters long.'),
     body('emoji')
-      .not().isEmpty().withMessage('Emoji is required')
-      .isString().withMessage('Emoji must be a string.'),
+      .not()
+      .isEmpty()
+      .withMessage('Emoji is required')
+      .isString()
+      .withMessage('Emoji must be a string.'),
     rateLimit({
       name: 'server_add_emojis',
       expireMS: 10000,
@@ -35,7 +43,6 @@ interface Body {
 }
 
 async function route(req: Request, res: Response) {
-
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
@@ -47,11 +54,10 @@ async function route(req: Request, res: Response) {
     name: body.name,
     base64: body.emoji,
     serverId: req.serverCache.id,
-    uploadedById: req.accountCache.user.id
+    uploadedById: req.userCache.id,
   });
   if (error) {
     return res.status(400).json(error);
   }
   res.json(updated);
-
 }

@@ -9,7 +9,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { createPost } from '../../services/Post';
 import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
 import { uploadImage } from '../../common/nerimityCDN';
-import { AccountCache } from '../../cache/UserCache';
+import { UserCache } from '../../cache/UserCache';
 
 export function postCreate(Router: Router) {
   Router.post(
@@ -52,7 +52,7 @@ async function route(req: Request, res: Response) {
   }
 
   if (req.fileInfo?.file) {
-    if (!isEmailConfirmed(req.accountCache)) {
+    if (!isEmailConfirmed(req.userCache.account)) {
       return res
         .status(400)
         .json(
@@ -77,7 +77,7 @@ async function route(req: Request, res: Response) {
     const [uploadedImage, err] = await uploadImage(
       req.fileInfo?.file,
       req.fileInfo.info.filename,
-      req.accountCache.user.id
+      req.userCache.id
     );
     if (err) {
       if (typeof err === 'string') {
@@ -102,7 +102,7 @@ async function route(req: Request, res: Response) {
 
   const [post, error] = await createPost({
     content: body.content,
-    userId: req.accountCache.user.id,
+    userId: req.userCache.id,
     commentToId: body.postId,
     attachment,
   });
@@ -114,6 +114,6 @@ async function route(req: Request, res: Response) {
   res.json(post);
 }
 
-const isEmailConfirmed = (user: AccountCache) => {
-  return user.emailConfirmed;
+const isEmailConfirmed = (user: UserCache) => {
+  return user.account?.emailConfirmed;
 };

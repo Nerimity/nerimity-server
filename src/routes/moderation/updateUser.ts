@@ -9,7 +9,7 @@ import {
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { USER_BADGES, hasBit } from '../../common/Bitwise';
 import bcrypt from 'bcrypt';
-import { removeAccountCacheByUserIds } from '../../cache/UserCache';
+import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 import { AuditLogType } from '../../common/AuditLog';
@@ -46,7 +46,7 @@ async function route(req: Request, res: Response) {
   }
 
   const moderatorAccount = await prisma.account.findFirst({
-    where: { id: req.accountCache.id },
+    where: { id: req.userCache.account.id },
     select: { password: true },
   });
   if (!moderatorAccount)
@@ -56,7 +56,7 @@ async function route(req: Request, res: Response) {
 
   const isPasswordValid = await checkUserPassword(
     moderatorAccount.password,
-    body.password,
+    body.password
   );
   if (!isPasswordValid)
     return res.status(403).json(generateError('Invalid password.', 'password'));
@@ -106,15 +106,15 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('email', body.email),
     ...(body.emailConfirmed !== undefined
       ? {
-        emailConfirmed: true,
-        emailConfirmCode: null,
-      }
+          emailConfirmed: true,
+          emailConfirmCode: null,
+        }
       : undefined),
     ...(body.newPassword?.trim?.()
       ? {
-        password: await bcrypt.hash(body.newPassword.trim(), 10),
-        passwordVersion: { increment: 1 },
-      }
+          password: await bcrypt.hash(body.newPassword.trim(), 10),
+          passwordVersion: { increment: 1 },
+        }
       : undefined),
     user: {
       update: {
@@ -137,7 +137,7 @@ async function route(req: Request, res: Response) {
       },
     },
   });
-  await removeAccountCacheByUserIds([userId]);
+  await removeUserCacheByUserIds([userId]);
 
   if (body.newPassword?.trim()) {
     const broadcaster = getIO().in(userId);
@@ -149,11 +149,11 @@ async function route(req: Request, res: Response) {
     data: {
       id: generateId(),
       actionType: AuditLogType.userUpdate,
-      actionById: req.accountCache.user.id,
+      actionById: req.userCache.id,
       username: user.user.username,
       userId: user.user.id,
-    }
-  })
+    },
+  });
 
   res.json(user);
 }

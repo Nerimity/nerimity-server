@@ -7,7 +7,8 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { upsertChannelNotice } from '../../services/Channel';
 
 export function userChannelNoticeUpdate(Router: Router) {
-  Router.put('/users/channel-notice',
+  Router.put(
+    '/users/channel-notice',
     authenticate(),
     body('content')
       .trim()
@@ -24,10 +25,8 @@ export function userChannelNoticeUpdate(Router: Router) {
   );
 }
 
-
-
 interface Body {
-  content: string
+  content: string;
 }
 
 async function route(req: Request<unknown, unknown, Body>, res: Response) {
@@ -37,7 +36,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   }
 
   const [notice, error] = await upsertChannelNotice(req.body.content, {
-    userId: req.accountCache.user.id,
+    userId: req.userCache.id,
   });
   if (error) {
     return res.status(400).json(error);

@@ -2,8 +2,12 @@ import { NextFunction, Request, Response } from 'express';
 import { USER_BADGES, hasBit } from '../../common/Bitwise';
 import { generateError } from '../../common/errorHandler';
 
-export function isModMiddleware(req: Request, res: Response, next: NextFunction){
-  const badges = req.accountCache.user.badges;
+export function isModMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const badges = req.userCache.badges;
   const isCreator = hasBit(badges, USER_BADGES.FOUNDER.bit);
   const isAdmin = hasBit(badges, USER_BADGES.ADMIN.bit);
   if (!isCreator && !isAdmin) {

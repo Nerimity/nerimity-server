@@ -24,7 +24,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('Missing application id!'));
   }
 
-  const [botUser, error] = await createBot(id, req.accountCache.id);
+  const [botUser, error] = await createBot(id, req.userCache.account.id);
 
   if (error) {
     return res.status(400).json(error);

@@ -78,7 +78,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   }
 
   const account = await prisma.account.findFirst({
-    where: { id: req.accountCache.id },
+    where: { id: req.userCache.account.id },
     select: { password: true },
   });
   if (!account)
@@ -129,12 +129,12 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
         create: {
           id: generateId(),
           userId,
-          suspendedById: req.accountCache.user.id,
+          suspendedById: req.userCache.id,
           reason: req.body.reason,
           expireAt: req.body.days ? expireDateTime : null,
         },
         update: {
-          suspendedById: req.accountCache.user.id,
+          suspendedById: req.userCache.id,
           reason: req.body.reason || null,
           expireAt: req.body.days ? expireDateTime : null,
         },
@@ -202,7 +202,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     data: newSuspendedUsers.map((user) => ({
       id: generateId(),
       actionType: AuditLogType.userSuspend,
-      actionById: req.accountCache.user.id,
+      actionById: req.userCache.id,
       username: user.username,
       userId: user.id,
       reason: req.body.reason,

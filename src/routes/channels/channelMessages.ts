@@ -37,7 +37,7 @@ async function route(req: Request, res: Response) {
     afterMessageId: after,
     beforeMessageId: before,
     aroundMessageId: around,
-    requesterId: req.accountCache.user.id,
+    requesterId: req.userCache.id,
   });
   res.json(messages);
 }

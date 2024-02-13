@@ -23,7 +23,10 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('Missing application id!'));
   }
 
-  const [application, error] = await getApplication(req.accountCache.id, id);
+  const [application, error] = await getApplication(
+    req.userCache.account.id,
+    id
+  );
 
   if (error) {
     return res.status(404).json(error);
