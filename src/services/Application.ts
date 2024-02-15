@@ -54,10 +54,23 @@ export async function getApplication(requesterAccountId: string, id: string) {
   return [application, null] as const;
 }
 
-export async function getApplicationBot(id: string) {
+export async function getApplicationBot(
+  id: string,
+  opts?: { includeCreator?: boolean }
+) {
   const application = await prisma.application.findUnique({
     where: { id },
-    include: { botUser: true },
+    include: {
+      botUser: {
+        include: {
+          application: {
+            select: {
+              creatorAccount: { select: { user: opts?.includeCreator } },
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!application) {

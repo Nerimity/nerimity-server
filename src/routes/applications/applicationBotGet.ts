@@ -26,7 +26,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json({ error: 'Missing application id!' });
   }
 
-  const [bot, error] = await getApplicationBot(appId);
+  const [bot, error] = await getApplicationBot(appId, { includeCreator: true });
 
   if (error) {
     return res.status(400).json(error);
