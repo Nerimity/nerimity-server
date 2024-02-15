@@ -3,7 +3,10 @@ import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { generateHexColor, generateTag } from '../common/random';
 import { UserStatus } from '../types/User';
-import { checkUsernameOrTag, checkUsernameOrTagUpdated } from './User/updateUser';
+import {
+  checkUsernameOrTag,
+  checkUsernameOrTagUpdated,
+} from './User/updateUser';
 import * as nerimityCDN from '../common/nerimityCDN';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { emitUserUpdated } from '../emits/User';
@@ -49,6 +52,22 @@ export async function getApplication(requesterAccountId: string, id: string) {
   }
 
   return [application, null] as const;
+}
+
+export async function getApplicationBot(id: string) {
+  const application = await prisma.application.findUnique({
+    where: { id },
+    include: { botUser: true },
+  });
+
+  if (!application) {
+    return [null, generateError('Application not found!')] as const;
+  }
+  if (!application.botUserId) {
+    return [null, generateError('Application does not have a bot!')] as const;
+  }
+
+  return [application.botUser, null] as const;
 }
 
 export async function createBot(
@@ -107,7 +126,7 @@ interface UpdateBotProps {
 export const updateBot = async (opts: UpdateBotProps) => {
   const user = await prisma.user.findUnique({
     where: { id: opts.userId },
-  })
+  });
 
   if (!user) {
     return [null, generateError('Bot does not exist!')] as const;
@@ -122,15 +141,16 @@ export const updateBot = async (opts: UpdateBotProps) => {
       oldTag: user.tag,
       newUsername: opts.username,
       newTag: opts.tag,
-    })
-    if (usernameOrTagCheckResults) return [null, usernameOrTagCheckResults] as const;
+    });
+    if (usernameOrTagCheckResults)
+      return [null, usernameOrTagCheckResults] as const;
   }
 
   if (opts.avatar) {
     const [data, error] = await nerimityCDN.uploadAvatar({
       base64: opts.avatar,
       uniqueId: opts.userId,
-      points: opts.avatarPoints
+      points: opts.avatarPoints,
     });
     if (error) return [null, generateError(error)] as const;
     if (data) {
@@ -159,20 +179,20 @@ export const updateBot = async (opts: UpdateBotProps) => {
   });
 
   return [updateResult, null] as const;
-}
+};
 
 const updateBotInDatabase = async (opts: UpdateBotProps) => {
   return prisma.user.update({
     where: { id: opts.userId },
     data: {
-        ...addToObjectIfExists('username', opts.username?.trim()),
-        ...addToObjectIfExists('tag', opts.tag?.trim()),
-        ...addToObjectIfExists('avatar', opts.avatar),
-        ...addToObjectIfExists('banner', opts.banner),
-        ...addToObjectIfExists('profile', opts.profile),
+      ...addToObjectIfExists('username', opts.username?.trim()),
+      ...addToObjectIfExists('tag', opts.tag?.trim()),
+      ...addToObjectIfExists('avatar', opts.avatar),
+      ...addToObjectIfExists('banner', opts.banner),
+      ...addToObjectIfExists('profile', opts.profile),
 
-        ...(opts.profile
-          ? {
+      ...(opts.profile
+        ? {
             profile: {
               upsert: {
                 create: opts.profile,
@@ -180,7 +200,7 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
               },
             },
           }
-          : undefined),
-      },
+        : undefined),
+    },
   });
-}
+};
