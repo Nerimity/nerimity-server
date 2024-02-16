@@ -36,6 +36,8 @@ model Application {
 
   botUserId   String?  @unique
   botUser     User?    @relation(fields: [botUserId], references: [id], onDelete: Cascade)
+  botTokenVersion Int  @default(1)
+
 
 
   creatorAccountId   String

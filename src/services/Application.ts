@@ -10,6 +10,9 @@ import {
 import * as nerimityCDN from '../common/nerimityCDN';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { emitUserUpdated } from '../emits/User';
+import { generateToken } from '../common/JWT';
+import { disconnectSockets } from './User/UserManagement';
+import { removeUserCacheByUserIds } from '../cache/UserCache';
 
 export async function createApplication(requesterAccountId: string) {
   const count = await prisma.application.count({
@@ -52,6 +55,26 @@ export async function getApplication(requesterAccountId: string, id: string) {
   }
 
   return [application, null] as const;
+}
+export async function getBotToken(requesterAccountId: string, appId: string) {
+  const application = await prisma.application.findUnique({
+    where: { creatorAccountId: requesterAccountId, id: appId },
+    select: { botTokenVersion: true, botUserId: true },
+  });
+
+  if (!application) {
+    return [null, generateError('Application not found!')] as const;
+  }
+  if (!application.botUserId) {
+    return [null, generateError('Application does not have a bot!')] as const;
+  }
+
+  const token = generateToken(
+    application.botUserId,
+    application.botTokenVersion
+  );
+
+  return [token, null] as const;
 }
 
 export async function getApplicationBot(
@@ -217,3 +240,30 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
     },
   });
 };
+
+export async function refreshBotToken(
+  requesterAccountId: string,
+  appId: string
+) {
+  const application = await prisma.application.findUnique({
+    where: { creatorAccountId: requesterAccountId, id: appId },
+    select: { botTokenVersion: true, botUserId: true },
+  });
+
+  if (!application) {
+    return [null, generateError('Application not found!')] as const;
+  }
+  if (!application.botUserId) {
+    return [null, generateError('Application does not have a bot!')] as const;
+  }
+
+  await prisma.application.update({
+    where: { id: appId },
+    data: { botTokenVersion: { increment: 1 } },
+  });
+
+  await removeUserCacheByUserIds([application.botUserId]);
+  disconnectSockets(application.botUserId);
+
+  return [true, null] as const;
+}

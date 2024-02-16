@@ -17,7 +17,9 @@ export function applicationsGet(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const [applications, error] = await getApplications(req.userCache.account.id);
+  const [applications, error] = await getApplications(
+    req.userCache.account!.id
+  );
 
   if (error) {
     return res.status(400).json(error);
