@@ -92,11 +92,13 @@ const updateAccountEmailConfirmed = async (userId: string) => {
   return code;
 };
 
-export async function deleteAccount(userId: string) {
+export async function deleteAccount(userId: string, bot?: boolean) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      account: { select: { id: true } },
+      account: {
+        select: { id: true, _count: { select: { applications: true } } },
+      },
       _count: { select: { servers: true } },
     },
   });
@@ -105,14 +107,26 @@ export async function deleteAccount(userId: string) {
     return [null, generateError('Invalid userId.')] as const;
   }
 
-  if (user?._count.servers) {
-    return [
-      null,
-      generateError('You must leave all servers before deleting your account.'),
-    ] as const;
+  if (!bot) {
+    if (user?._count.servers) {
+      return [
+        null,
+        generateError(
+          'You must leave all servers before deleting your account.'
+        ),
+      ] as const;
+    }
+    if (user?.account?._count.applications) {
+      return [
+        null,
+        generateError(
+          'You must delete all applications before deleting your account.'
+        ),
+      ] as const;
+    }
   }
 
-  await deleteAccountFromDatabase(userId);
+  await deleteAccountFromDatabase(userId, bot);
 
   await removeUserCacheByUserIds([userId]);
 
@@ -121,7 +135,7 @@ export async function deleteAccount(userId: string) {
   return [true, null] as const;
 }
 
-const deleteAccountFromDatabase = async (userId: string) => {
+const deleteAccountFromDatabase = async (userId: string, bot?: boolean) => {
   await prisma.$transaction([
     prisma.follower.deleteMany({
       where: {
@@ -138,13 +152,14 @@ const deleteAccountFromDatabase = async (userId: string) => {
         badges: 0,
 
         customStatus: null,
-        username: `Deleted Account ${generateTag()}`,
+        username: `Deleted ${bot ? 'Bot' : 'User'} ${generateTag()}`,
       },
     }),
-    prisma.account.delete({
+    prisma.account.deleteMany({
       where: { userId },
     }),
     prisma.userDevice.deleteMany({ where: { userId } }),
+    prisma.chatNotice.deleteMany({ where: { userId } }),
   ]);
 };
 
