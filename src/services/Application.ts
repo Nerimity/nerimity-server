@@ -44,6 +44,34 @@ export async function getApplications(requesterAccountId: string) {
 
   return [applications, null] as const;
 }
+
+export async function updateApplication(
+  requesterAccountId: string,
+  id: string,
+  update: {
+    name?: string;
+  }
+) {
+  const app = await prisma.application.findUnique({
+    where: { creatorAccountId: requesterAccountId, id },
+  });
+
+  if (!app) {
+    return [null, generateError('Application not found!')] as const;
+  }
+
+  const sanitizedUpdate = {
+    ...addToObjectIfExists('name', update.name?.trim()),
+  };
+
+  const application = await prisma.application.update({
+    where: { id },
+    data: sanitizedUpdate,
+  });
+
+  return [{ ...sanitizedUpdate, id: application.id }, null] as const;
+}
+
 export async function getApplication(requesterAccountId: string, id: string) {
   const application = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id },
