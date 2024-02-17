@@ -142,12 +142,17 @@ export interface UserCache {
   badges: number;
   bot?: boolean;
   account?: AccountCache;
+  application?: ApplicationCache;
 }
 
 export interface AccountCache {
   id: string;
   emailConfirmed?: boolean;
   passwordVersion: number;
+}
+export interface ApplicationCache {
+  id: string;
+  botTokenVersion: number;
 }
 
 export async function getUserIdBySocketId(socketId: string) {
@@ -172,10 +177,10 @@ export async function getUserCache(
   const user = await getUserWithAccount(userId);
   if (!user) return [null, null];
 
-  if (!user.bot && !user.account) return [null, null];
+  if (!user.application && !user.account) return [null, null];
 
   const userCache: UserCache = {
-    ...(!user.bot
+    ...(user.account
       ? {
           account: {
             id: user.account!.id,
@@ -183,7 +188,12 @@ export async function getUserCache(
             emailConfirmed: user.account!.emailConfirmed,
           },
         }
-      : {}),
+      : {
+          application: {
+            id: user.application!.id,
+            botTokenVersion: user.application!.botTokenVersion,
+          },
+        }),
     id: user.id,
     username: user.username,
     badges: user.badges,
@@ -260,7 +270,10 @@ export async function authenticateUser(
     return [null, { message: 'Invalid token.' }];
   }
   // compare password version
-  if (userCache.account?.passwordVersion !== decryptedToken.passwordVersion) {
+  const tokenVersion =
+    userCache.account?.passwordVersion ??
+    userCache.application?.botTokenVersion;
+  if (tokenVersion !== decryptedToken.passwordVersion) {
     return [null, { message: 'Invalid token.' }];
   }
 
