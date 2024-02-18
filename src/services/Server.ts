@@ -43,6 +43,7 @@ import { deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
 import { deleteServerCache } from '../cache/ServerCache';
 import { getPublicServer } from './Explore';
+import { createServerRole, deleteServerRole } from './ServerRole';
 
 interface CreateServerOptions {
   name: string;
@@ -207,14 +208,18 @@ export const getServerIds = async (userId: string): Promise<string[]> => {
 
 export const joinServer = async (
   userId: string,
-  serverId: string
+  serverId: string,
+  bot?: {
+    permissions: number;
+    botName: string;
+  }
 ): Promise<CustomResult<Server, CustomError>> => {
   const maxServersReached = await hasReachedMaxServers(userId);
   if (maxServersReached) {
     return [
       null,
       generateError('You have reached the maximum number of servers.'),
-    ];
+    ] as const;
   }
 
   const server = await prisma.server.findFirst({
@@ -226,7 +231,7 @@ export const joinServer = async (
     },
   });
   if (!server) {
-    return [null, generateError('Server does not exist.')];
+    return [null, generateError('Server does not exist.')] as const;
   }
 
   // check if user is already in server
@@ -234,7 +239,7 @@ export const joinServer = async (
     where: { serverId, userId },
   });
   if (isInServer) {
-    return [null, generateError('You are already in this server.')];
+    return [null, generateError('You are already in this server.')] as const;
   }
 
   const isBanned = await exists(prisma.bannedServerMember, {
@@ -242,7 +247,22 @@ export const joinServer = async (
   });
 
   if (isBanned) {
-    return [null, generateError('You are banned from this server')];
+    return [null, generateError('You are banned from this server')] as const;
+  }
+
+  let botRoleId: string | null = null;
+
+  if (bot) {
+    const [botRole, botRoleError] = await createServerRole(
+      bot.botName,
+      userId,
+      serverId,
+      { bot: true, permissions: bot.permissions }
+    );
+    if (botRoleError) {
+      return [null, botRoleError] as const;
+    }
+    botRoleId = botRole?.id || null;
   }
 
   const [_, serverRoles, serverMember, serverChannels, serverMembers] =
@@ -253,7 +273,12 @@ export const joinServer = async (
       }),
       prisma.serverRole.findMany({ where: { serverId } }),
       prisma.serverMember.create({
-        data: { id: generateId(), serverId, userId },
+        data: {
+          id: generateId(),
+          serverId,
+          userId,
+          roleIds: botRoleId ? [botRoleId] : [],
+        },
         include: { user: true },
       }),
       prisma.channel.findMany({
@@ -294,7 +319,7 @@ export const joinServer = async (
   const [userPresence] = await getUserPresences([userId]);
   userPresence && emitUserPresenceUpdateTo(serverId, userPresence);
 
-  return [server, null];
+  return [server, null] as const;
 };
 
 export const deleteServer = async (serverId: string) => {
@@ -357,15 +382,16 @@ export const leaveServer = async (
   }
 
   // check if user is in the server
-  const isInServer = await exists(prisma.serverMember, {
-    where: { serverId, userId },
+  const member = await prisma.serverMember.findUnique({
+    where: { userId_serverId: { serverId, userId } },
+    include: { user: { select: { bot: true } } },
   });
-  if (!isInServer && !ban) {
+  if (!member && !ban) {
     return [null, generateError('You are not in this server.')];
   }
 
   await deleteServerMemberCache(serverId, userId);
-  if (!isInServer && ban) {
+  if (!member && ban) {
     const isBanned = await prisma.bannedServerMember.findFirst({
       where: { serverId, userId },
     });
@@ -433,6 +459,15 @@ export const leaveServer = async (
     serverId,
     channelIds: server.channels.map((c) => c.id),
   });
+
+  if (member?.user.bot) {
+    const botRole = await prisma.serverRole.findFirst({
+      where: { serverId, createdById: userId, botRole: true },
+    });
+    if (botRole) {
+      await deleteServerRole(serverId, botRole.id, {forceDeleteBotRole: true});
+    }
+  }
 
   return [false, null];
 };

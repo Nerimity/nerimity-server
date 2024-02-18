@@ -106,28 +106,30 @@ export async function getBotToken(requesterAccountId: string, appId: string) {
 }
 
 export async function getApplicationBot(
-  id: string,
+  appId: string,
   opts?: { includeCreator?: boolean }
 ) {
   const application = await prisma.application.findUnique({
-    where: { id },
+    where: { id: appId },
     include: {
-      botUser: {
-        include: {
-          application: {
-            select: {
-              creatorAccount: { select: { user: opts?.includeCreator } },
+      botUser: !opts?.includeCreator
+        ? true
+        : {
+            include: {
+              application: {
+                select: {
+                  creatorAccount: { select: { user: true } },
+                },
+              },
             },
           },
-        },
-      },
     },
   });
 
   if (!application) {
     return [null, generateError('Application not found!')] as const;
   }
-  if (!application.botUserId) {
+  if (!application.botUser) {
     return [null, generateError('Application does not have a bot!')] as const;
   }
 
