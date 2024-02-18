@@ -6,7 +6,7 @@ import {
   getUserPresences,
 } from '../../cache/UserCache';
 import { AUTHENTICATED } from '../../common/ClientEventNames';
-import { prisma } from '../../common/database';
+import { prisma, publicUserExcludeFields } from '../../common/database';
 import { CHANNEL_PERMISSIONS, hasBit } from '../../common/Bitwise';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
@@ -40,11 +40,11 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   }
   socket.join(userCache.id);
 
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { id: userCache.id },
     include: {
       connections: { select: { id: true, provider: true, connectedAt: true } },
-      friends: { include: { recipient: true } },
+      friends: { include: { recipient: { select: publicUserExcludeFields } } },
       account: {
         select: {
           email: true,
@@ -86,12 +86,12 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   // join room
   for (let i = 0; i < servers.length; i++) {
-    const server = servers[i];
+    const server = servers[i]!;
     socket.join(server.id);
   }
 
   for (let i = 0; i < serverChannels.length; i++) {
-    const channel = serverChannels[i];
+    const channel = serverChannels[i]!;
 
     const server = servers.find((server) => server.id === channel.serverId);
     if (!server)

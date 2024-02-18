@@ -2,8 +2,10 @@ import { Channel, Server } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import {
+  excludeFields,
   exists,
   prisma,
+  publicUserExcludeFields,
   removeServerIdFromAccountOrder,
 } from '../common/database';
 import env from '../common/env';
@@ -149,7 +151,7 @@ export const createServer = async (
 };
 
 export const getServers = async (userId: string) => {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       servers: {
@@ -176,7 +178,7 @@ export const getServers = async (userId: string) => {
       }),
       prisma.serverMember.findMany({
         where: { serverId: { in: serverIds } },
-        include: { user: true },
+        include: { user: { select: publicUserExcludeFields } },
       }),
       prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
       prisma.serverMemberSettings.findMany({
@@ -279,7 +281,7 @@ export const joinServer = async (
           userId,
           roleIds: botRoleId ? [botRoleId] : [],
         },
-        include: { user: true },
+        include: { user: { select: publicUserExcludeFields } },
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
@@ -287,7 +289,7 @@ export const joinServer = async (
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },
-        include: { user: true },
+        include: { user: { select: publicUserExcludeFields } },
       }),
     ]);
 
@@ -465,7 +467,9 @@ export const leaveServer = async (
       where: { serverId, createdById: userId, botRole: true },
     });
     if (botRole) {
-      await deleteServerRole(serverId, botRole.id, {forceDeleteBotRole: true});
+      await deleteServerRole(serverId, botRole.id, {
+        forceDeleteBotRole: true,
+      });
     }
   }
 

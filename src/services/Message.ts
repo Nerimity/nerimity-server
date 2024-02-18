@@ -20,6 +20,7 @@ import {
   exists,
   getMessageReactedUserIds,
   prisma,
+  publicUserExcludeFields,
 } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
@@ -976,7 +977,10 @@ export const getMessageReactedUsers = async (
 
   if (!userIds.length) return [[], null] as const;
 
-  const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: publicUserExcludeFields,
+  });
 
   // sort users.id by userIds
   users.sort((a, b) => {

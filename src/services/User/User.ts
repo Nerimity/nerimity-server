@@ -10,7 +10,11 @@ import {
 import { ChannelType } from '../../types/Channel';
 import { Presence, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
-import { excludeFields, prisma } from '../../common/database';
+import {
+  excludeFields,
+  prisma,
+  publicUserExcludeFields,
+} from '../../common/database';
 import { generateId } from '../../common/flakeId';
 
 import {
@@ -146,7 +150,10 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   if (inbox?.channelId) {
     const myInbox = await prisma.inbox.findFirst({
       where: { channelId: inbox.channelId, createdById: userId },
-      include: { channel: true, recipient: true },
+      include: {
+        channel: true,
+        recipient: { select: publicUserExcludeFields },
+      },
     });
     if (myInbox) {
       if (myInbox.closed) {
@@ -183,7 +190,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       },
       include: {
         channel: { include: { _count: { select: { attachments: true } } } },
-        recipient: true,
+        recipient: { select: publicUserExcludeFields },
       },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -268,7 +275,8 @@ export const getUserDetails = async (
 ) => {
   const user = await prisma.user.findFirst({
     where: { id: recipientId },
-    include: {
+    select: {
+      ...publicUserExcludeFields,
       followers: {
         where: { followedById: requesterId },
         select: { followedToId: true },
@@ -415,7 +423,11 @@ export async function unfollowUser(
 export async function followingUsers(userId: string) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
-    select: { following: { select: { followedTo: true } } },
+    select: {
+      following: {
+        select: { followedTo: { select: publicUserExcludeFields } },
+      },
+    },
   });
   if (!user) return [null, generateError('invalid User')];
   return [user?.following.map((follower) => follower.followedTo), null];
@@ -424,7 +436,11 @@ export async function followingUsers(userId: string) {
 export async function followerUsers(userId: string) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
-    select: { followers: { select: { followedBy: true } } },
+    select: {
+      followers: {
+        select: { followedBy: { select: publicUserExcludeFields } },
+      },
+    },
   });
   if (!user) return [null, generateError('invalid User')];
   return [user?.followers.map((follower) => follower.followedBy), null];

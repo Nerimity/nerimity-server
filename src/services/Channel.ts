@@ -11,7 +11,11 @@ import {
 } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
-import { dateToDateTime, prisma } from '../common/database';
+import {
+  dateToDateTime,
+  prisma,
+  publicUserExcludeFields,
+} from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
@@ -84,7 +88,7 @@ export const dismissChannelNotification = async (
   }
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  await prisma.$transaction(transactions).catch(() => { });
+  await prisma.$transaction(transactions).catch(() => {});
 
   emit && emitNotificationDismissed(userId, channelId);
 };
@@ -97,7 +101,7 @@ export const getAllMessageMentions = async (userId: string) => {
     },
     select: {
       mentionedById: true,
-      mentionedBy: true,
+      mentionedBy: { select: publicUserExcludeFields },
       createdAt: true,
       channelId: true,
       serverId: true,
@@ -153,7 +157,10 @@ export const createServerChannel = async (
       name: opts.channelName,
       serverId: opts.serverId,
       type: opts.channelType ?? ChannelType.SERVER_TEXT,
-      permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+      permissions: addBit(
+        CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
+        CHANNEL_PERMISSIONS.JOIN_VOICE.bit
+      ),
       createdById: opts.creatorId,
       order: channelCount + 1,
     },
@@ -342,11 +349,11 @@ export const deleteServerChannel = async (
     }),
     ...(server.systemChannelId === channel.id
       ? [
-        prisma.server.update({
-          where: { id: server.id },
-          data: { systemChannelId: null },
-        }),
-      ]
+          prisma.server.update({
+            where: { id: server.id },
+            data: { systemChannelId: null },
+          }),
+        ]
       : []),
   ]);
   deleteServerChannelCaches([channelId]);
@@ -358,60 +365,103 @@ export const deleteServerChannel = async (
   return [channelId, null];
 };
 
-export const upsertChannelNotice = async (content: string, where: { channelId?: string, userId?: string }) => {
-
+export const upsertChannelNotice = async (
+  content: string,
+  where: { channelId?: string; userId?: string }
+) => {
   if (where.channelId && where.userId) {
-    return [null, generateError('Only one of channelId and userId can be provided.' as const)] as const;
-  };
-
-  if (!where.channelId && !where.userId) {
-    return [null, generateError('Either channelId or userId must be provided.' as const)] as const;
+    return [
+      null,
+      generateError(
+        'Only one of channelId and userId can be provided.' as const
+      ),
+    ] as const;
   }
 
-
+  if (!where.channelId && !where.userId) {
+    return [
+      null,
+      generateError('Either channelId or userId must be provided.' as const),
+    ] as const;
+  }
 
   const notice = await prisma.chatNotice.upsert({
     where: where as { userId: string } | { channelId: string },
-    create: { id: generateId(), ...where as { userId: string } | { channelId: string }, content },
+    create: {
+      id: generateId(),
+      ...(where as { userId: string } | { channelId: string }),
+      content,
+    },
     update: { content },
   });
 
   return [notice, null] as const;
-}
+};
 
-export const deleteChannelNotice = async (where: { channelId?: string, userId?: string }) => {
+export const deleteChannelNotice = async (where: {
+  channelId?: string;
+  userId?: string;
+}) => {
   if (where.channelId && where.userId) {
-    return [null, generateError('Only one of channelId and userId can be provided.' as const)] as const;
-  };
-
-  if (!where.channelId && !where.userId) {
-    return [null, generateError('Either channelId or userId must be provided.' as const)] as const;
+    return [
+      null,
+      generateError(
+        'Only one of channelId and userId can be provided.' as const
+      ),
+    ] as const;
   }
 
+  if (!where.channelId && !where.userId) {
+    return [
+      null,
+      generateError('Either channelId or userId must be provided.' as const),
+    ] as const;
+  }
 
-
-  const res = await prisma.chatNotice.delete({
-    where: where as { userId: string } | { channelId: string },
-    select: { id: true }
-  }).catch(() => { });
-  if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
+  const res = await prisma.chatNotice
+    .delete({
+      where: where as { userId: string } | { channelId: string },
+      select: { id: true },
+    })
+    .catch(() => {});
+  if (!res)
+    return [
+      null,
+      generateError('Channel notice does not exist.' as const),
+    ] as const;
   return [true, null] as const;
-}
+};
 
-export const getChannelNotice = async (where: { channelId?: string, userId?: string }) => {
+export const getChannelNotice = async (where: {
+  channelId?: string;
+  userId?: string;
+}) => {
   if (where.channelId && where.userId) {
-    return [null, generateError('Only one of channelId and userId can be provided.' as const)] as const;
-  };
-
-  if (!where.channelId && !where.userId) {
-    return [null, generateError('Either channelId or userId must be provided.' as const)] as const;
+    return [
+      null,
+      generateError(
+        'Only one of channelId and userId can be provided.' as const
+      ),
+    ] as const;
   }
 
+  if (!where.channelId && !where.userId) {
+    return [
+      null,
+      generateError('Either channelId or userId must be provided.' as const),
+    ] as const;
+  }
 
-  const res = await prisma.chatNotice.findUnique({
-    where: where as { userId: string } | { channelId: string },
-    select: { content: true, updatedAt: true, channelId: true, userId: true }
-  }).catch(() => { });
-  if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
+  const res = await prisma.chatNotice
+    .findUnique({
+      where: where as { userId: string } | { channelId: string },
+      select: { content: true, updatedAt: true, channelId: true, userId: true },
+    })
+    .catch(() => {});
+  if (!res)
+    return [
+      null,
+      generateError('Channel notice does not exist.' as const),
+    ] as const;
   return [res, null] as const;
-}
+};

@@ -1,4 +1,4 @@
-import { prisma } from '../common/database';
+import { prisma, publicUserExcludeFields } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { generateHexColor, generateTag } from '../common/random';
@@ -111,18 +111,24 @@ export async function getApplicationBot(
 ) {
   const application = await prisma.application.findUnique({
     where: { id: appId },
+
     include: {
-      botUser: !opts?.includeCreator
-        ? true
-        : {
-            include: {
-              application: {
-                select: {
-                  creatorAccount: { select: { user: true } },
+      botUser: {
+        select: {
+          ...publicUserExcludeFields,
+          ...(opts?.includeCreator
+            ? {
+                application: {
+                  select: {
+                    creatorAccount: {
+                      select: { user: { select: publicUserExcludeFields } },
+                    },
+                  },
                 },
-              },
-            },
-          },
+              }
+            : {}),
+        },
+      },
     },
   });
 

@@ -1,6 +1,10 @@
 import { Post, Prisma } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
-import { dateToDateTime, prisma } from '../common/database';
+import {
+  dateToDateTime,
+  prisma,
+  publicUserExcludeFields,
+} from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { deleteImage } from '../common/nerimityCDN';
@@ -15,7 +19,7 @@ function constructInclude(
     ...(continueIter
       ? { commentTo: { include: constructInclude(requesterUserId, false) } }
       : undefined),
-    createdBy: true,
+    createdBy: { select: publicUserExcludeFields },
     _count: {
       select: { likedBy: true, comments: { where: { deleted: null } } },
     },

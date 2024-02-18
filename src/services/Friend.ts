@@ -1,7 +1,7 @@
 import { Friend } from '@prisma/client';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { getUserPresences } from '../cache/UserCache';
-import { exists, prisma } from '../common/database';
+import { exists, prisma, publicUserExcludeFields } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import {
@@ -63,8 +63,14 @@ export const addFriend = async (userId: string, friendId: string) => {
   };
 
   const docs = await prisma.$transaction([
-    prisma.friend.create({ data: requesterObj, include: { recipient: true } }),
-    prisma.friend.create({ data: recipientObj, include: { recipient: true } }),
+    prisma.friend.create({
+      data: requesterObj,
+      include: { recipient: { select: publicUserExcludeFields } },
+    }),
+    prisma.friend.create({
+      data: recipientObj,
+      include: { recipient: { select: publicUserExcludeFields } },
+    }),
   ]);
 
   const requester = docs[0];
@@ -175,6 +181,7 @@ export const removeFriend = async (userId: string, friendId: string) => {
 export async function blockUser(requesterId: string, userToBlockId: string) {
   const userToBlock = await prisma.user.findFirst({
     where: { id: userToBlockId },
+    select: publicUserExcludeFields,
   });
   if (!userToBlock) {
     return [null, generateError('User does not exist.')] as const;

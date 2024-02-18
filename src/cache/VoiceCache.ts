@@ -72,7 +72,7 @@ export async function getVoiceUsersByChannelId(
   if (!channelIds.length) return [];
   const multi = redisClient.multi();
   for (let i = 0; i < channelIds.length; i++) {
-    const channelId = channelIds[i];
+    const channelId = channelIds[i]!;
     multi.hGetAll(VOICE_USERS_KEY_HASH(channelId));
   }
   const array = await multi.exec();
