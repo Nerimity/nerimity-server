@@ -107,6 +107,7 @@ export const getMessagesByChannelId = async (
           hexColor: true,
           avatar: true,
           badges: true,
+          bot: true,
         },
       },
       mentions: {
@@ -154,6 +155,7 @@ export const getMessagesByChannelId = async (
               hexColor: true,
               avatar: true,
               badges: true,
+              bot: true,
             },
           },
         },
@@ -197,7 +199,8 @@ export const getMessagesByChannelId = async (
   });
 
   const t1 = performance.now();
-  if (opts?.requesterId === "1289157673362825217") Log.debug(`get messages: ${t1 - t0}ms`);
+  if (opts?.requesterId === '1289157673362825217')
+    Log.debug(`get messages: ${t1 - t0}ms`);
 
   const modifiedMessages = messages.map((message) => {
     (message.reactions as any) = message.reactions.map((reaction) => ({
@@ -252,6 +255,7 @@ export const MessageInclude = {
       hexColor: true,
       avatar: true,
       badges: true,
+      bot: true,
     },
   },
   mentions: {
@@ -299,6 +303,7 @@ export const MessageInclude = {
           hexColor: true,
           avatar: true,
           badges: true,
+          bot: true,
         },
       },
     },
@@ -466,6 +471,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
           hexColor: true,
           avatar: true,
           badges: true,
+          bot: true,
         },
       },
       mentions: {
@@ -513,6 +519,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
               hexColor: true,
               avatar: true,
               badges: true,
+              bot: true,
             },
           },
         },
