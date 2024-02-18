@@ -26,7 +26,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).end();
   }
 
-  await registerFCMToken(req.accountCache.id, req.body.token);
+  await registerFCMToken(req.userCache.account.id, req.body.token);
 
   res.status(200).end();
 }

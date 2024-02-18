@@ -46,7 +46,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
   }
 
   const account = await prisma.account.findFirst({
-    where: { id: req.accountCache.id },
+    where: { id: req.userCache.account.id },
     select: { password: true },
   });
   if (!account)
@@ -77,7 +77,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
     data: {
       id: generateId(),
       actionType: AuditLogType.serverDelete,
-      actionById: req.accountCache.user.id,
+      actionById: req.userCache.id,
       serverName: server.name,
       serverId: server.id,
     },

@@ -9,7 +9,7 @@ import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { removeAccountCacheByUserIds } from '../../cache/UserCache';
+import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { AuditLogType } from '../../common/AuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 
@@ -48,7 +48,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   }
 
   const account = await prisma.account.findFirst({
-    where: { id: req.accountCache.id },
+    where: { id: req.userCache.account.id },
     select: { password: true },
   });
   if (!account)
@@ -80,13 +80,13 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     }),
   ]);
 
-  await removeAccountCacheByUserIds(sanitizedUserIds);
+  await removeUserCacheByUserIds(sanitizedUserIds);
 
   await prisma.auditLog.createMany({
     data: unsuspendUsers.map((user) => ({
       id: generateId(),
       actionType: AuditLogType.userUnsuspend,
-      actionById: req.accountCache.user.id,
+      actionById: req.userCache.id,
       username: user.username,
       userId: user.id,
     })),

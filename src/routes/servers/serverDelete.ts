@@ -14,7 +14,7 @@ export function serverDelete(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  if (req.serverCache.createdById !== req.accountCache.user.id) {
+  if (req.serverCache.createdById !== req.userCache.id) {
     return res.status(403).json({
       error: 'Only the owner of the server can delete this server.',
     });

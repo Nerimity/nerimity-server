@@ -1,15 +1,15 @@
-import { DmStatus } from "./User";
-import { checkUserPassword } from "../UserAuthentication";
+import { DmStatus } from './User';
+import { checkUserPassword } from '../UserAuthentication';
 import * as nerimityCDN from '../../common/nerimityCDN';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import bcrypt from 'bcrypt';
-import { deleteAllInboxCache } from "../../cache/ChannelCache";
-import { emitUserUpdated } from "../../emits/User";
-import { generateToken } from "../../common/JWT";
-import { prisma } from "../../common/database";
-import { removeAccountCacheByUserIds } from "../../cache/UserCache";
-import { generateError } from "../../common/errorHandler";
-import { disconnectSockets } from "./UserManagement";
+import { deleteAllInboxCache } from '../../cache/ChannelCache';
+import { emitUserUpdated } from '../../emits/User';
+import { generateToken } from '../../common/JWT';
+import { prisma } from '../../common/database';
+import { removeUserCacheByUserIds } from '../../cache/UserCache';
+import { generateError } from '../../common/errorHandler';
+import { disconnectSockets } from './UserManagement';
 
 interface UpdateUserProps {
   userId: string;
@@ -39,7 +39,10 @@ export const updateUser = async (opts: UpdateUserProps) => {
   const isPasswordRequired = checkPasswordRequired(opts);
 
   if (isPasswordRequired) {
-    const passwordCheckResult = await checkPassword(account.password, opts.password);
+    const passwordCheckResult = await checkPassword(
+      account.password,
+      opts.password
+    );
     if (passwordCheckResult) return [null, passwordCheckResult] as const;
   }
 
@@ -52,8 +55,9 @@ export const updateUser = async (opts: UpdateUserProps) => {
       oldTag: account.user.tag,
       newUsername: opts.username,
       newTag: opts.tag,
-    })
-    if (usernameOrTagCheckResults) return [null, usernameOrTagCheckResults] as const;
+    });
+    if (usernameOrTagCheckResults)
+      return [null, usernameOrTagCheckResults] as const;
   }
 
   if (opts.email) {
@@ -72,7 +76,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
     const [data, error] = await nerimityCDN.uploadAvatar({
       base64: opts.avatar,
       uniqueId: opts.userId,
-      points: opts.avatarPoints
+      points: opts.avatarPoints,
     });
     if (error) return [null, generateError(error)] as const;
     if (data) {
@@ -97,7 +101,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
     deleteAllInboxCache(opts.userId);
   }
 
-  await removeAccountCacheByUserIds([opts.userId]);
+  await removeUserCacheByUserIds([opts.userId]);
 
   emitUserUpdated(opts.userId, {
     email: updateResult.email!,
@@ -129,13 +133,13 @@ const getAccountByUserId = async (userId: string) => {
       user: true,
       password: true,
       passwordVersion: true,
-    }
+    },
   });
 };
 
 const checkPasswordRequired = (opts: UpdateUserProps) => {
   return opts.tag || opts.email || opts.username || opts.newPassword?.trim();
-}
+};
 
 const checkPassword = async (hashedPassword: string, rawPassword?: string) => {
   const isPasswordValid = await checkUserPassword(hashedPassword, rawPassword);
@@ -146,20 +150,20 @@ const checkPassword = async (hashedPassword: string, rawPassword?: string) => {
   if (!isPasswordValid) {
     return generateError('Invalid Password', 'password');
   }
-}
+};
 
-const checkUsernameOrTagUpdated = (opts: UpdateUserProps) => {
+export const checkUsernameOrTagUpdated = (opts: UpdateUserProps) => {
   return opts.username || opts.tag;
-}
+};
 
 interface CheckUsernameOrTagOpts {
   excludeUserId: string;
   newUsername?: string;
   newTag?: string;
   oldUsername: string;
-  oldTag: string
+  oldTag: string;
 }
-const checkUsernameOrTag = async (opts: CheckUsernameOrTagOpts) => {
+export const checkUsernameOrTag = async (opts: CheckUsernameOrTagOpts) => {
   const userExists = await prisma.user.findFirst({
     where: {
       username: opts.newUsername?.trim() || opts.oldUsername,
@@ -169,12 +173,16 @@ const checkUsernameOrTag = async (opts: CheckUsernameOrTagOpts) => {
   });
 
   if (userExists) {
-    return generateError('Someone already has this combination of tag and username.')
+    return generateError(
+      'Someone already has this combination of tag and username.'
+    );
   }
-}
+};
 
-const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => {
-
+const updateAccountInDatabase = async (
+  email: string,
+  opts: UpdateUserProps
+) => {
   return prisma.account.update({
     where: { userId: opts.userId },
     data: {
@@ -182,9 +190,9 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
       ...(opts.newPassword?.trim()
         ? {
-          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-          passwordVersion: { increment: 1 },
-        }
+            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+            passwordVersion: { increment: 1 },
+          }
         : undefined),
 
       ...(opts.email && opts.email !== email
@@ -201,17 +209,17 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
 
           ...(opts.profile
             ? {
-              profile: {
-                upsert: {
-                  create: opts.profile,
-                  update: opts.profile,
+                profile: {
+                  upsert: {
+                    create: opts.profile,
+                    update: opts.profile,
+                  },
                 },
-              },
-            }
+              }
             : undefined),
         },
       },
     },
     include: { user: true },
   });
-}
+};

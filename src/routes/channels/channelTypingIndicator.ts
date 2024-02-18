@@ -29,7 +29,7 @@ export function channelTypingIndicator(Router: Router) {
 async function route(req: Request, res: Response) {
   const server = req.serverCache;
   const channel = req.channelCache;
-  const typingUser = req.accountCache.user;
+  const typingUser = req.userCache;
 
   if (server) {
     emitServerTyping(channel.id, typingUser.id);

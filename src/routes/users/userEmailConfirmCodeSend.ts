@@ -17,7 +17,7 @@ export function userEmailConfirmCodeSend(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const [result, error] = await sendEmailConfirmCode(req.accountCache.user.id);
+  const [result, error] = await sendEmailConfirmCode(req.userCache.id);
 
   if (error) {
     return res.status(400).json(error);

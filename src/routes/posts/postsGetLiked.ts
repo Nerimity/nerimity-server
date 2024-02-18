@@ -6,9 +6,9 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { fetchLikedPosts, fetchPosts } from '../../services/Post';
 import { isUserAdmin } from '../../common/Bitwise';
 
-
 export function postsGetLiked(Router: Router) {
-  Router.get('/users/:userId/posts/liked', 
+  Router.get(
+    '/users/:userId/posts/liked',
     authenticate(),
     rateLimit({
       name: 'post_get_liked',
@@ -16,20 +16,19 @@ export function postsGetLiked(Router: Router) {
       requestCount: 100,
     }),
     param('userId')
-      .isString().withMessage('userId must be a string!')
-      .isLength({ min: 1, max: 100 }).withMessage('userId length must be between 1 and 100 characters.'),
+      .isString()
+      .withMessage('userId must be a string!')
+      .isLength({ min: 1, max: 100 })
+      .withMessage('userId length must be between 1 and 100 characters.'),
     route
   );
-  
 }
-
 
 interface Param {
   userId?: string;
 }
 
-
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const params = req.params as Param;
 
   const validateError = customExpressValidatorResult(req);
@@ -38,14 +37,12 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const isAdmin = isUserAdmin(req.accountCache.user.badges);
-
-
+  const isAdmin = isUserAdmin(req.userCache.badges);
 
   const posts = await fetchLikedPosts({
-    userId: params.userId || req.accountCache.user.id,
-    requesterUserId: req.accountCache.user.id,
-    bypassBlocked: isAdmin
+    userId: params.userId || req.userCache.id,
+    requesterUserId: req.userCache.id,
+    bypassBlocked: isAdmin,
   });
 
   res.json(posts);

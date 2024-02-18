@@ -5,7 +5,8 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { deleteServerInvite } from '../../services/ServerInvite';
 
 export function serverInviteDelete(Router: Router) {
-  Router.delete('/servers/:serverId/invites/:code', 
+  Router.delete(
+    '/servers/:serverId/invites/:code',
     authenticate(),
     serverMemberVerification(),
     rateLimit({
@@ -17,15 +18,16 @@ export function serverInviteDelete(Router: Router) {
   );
 }
 
-
-
-async function route (req: Request, res: Response) {
-
-  const [_, error] = await deleteServerInvite(req.serverCache.id, req.params.code, req.accountCache.user.id)
+async function route(req: Request, res: Response) {
+  const [_, error] = await deleteServerInvite(
+    req.serverCache.id,
+    req.params.code,
+    req.userCache.id
+  );
 
   if (error) {
     return res.status(403).json(error);
   }
 
-  res.json({status: true});
+  res.json({ status: true });
 }

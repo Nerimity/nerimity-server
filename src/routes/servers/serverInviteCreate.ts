@@ -5,7 +5,8 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { createServerInvite } from '../../services/ServerInvite';
 
 export function serverInviteCreate(Router: Router) {
-  Router.post('/servers/:serverId/invites', 
+  Router.post(
+    '/servers/:serverId/invites',
     authenticate(),
     serverMemberVerification(),
     rateLimit({
@@ -17,16 +18,15 @@ export function serverInviteCreate(Router: Router) {
   );
 }
 
-
-
-async function route (req: Request, res: Response) {
-
-  const [invite, error] = await createServerInvite(req.serverCache.id, req.accountCache.user.id);
+async function route(req: Request, res: Response) {
+  const [invite, error] = await createServerInvite(
+    req.serverCache.id,
+    req.userCache.id
+  );
 
   if (error) {
     return res.status(403).json(error);
   }
 
   res.json(invite);
-
 }

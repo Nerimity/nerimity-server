@@ -53,11 +53,11 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const isAdmin = isUserAdmin(req.accountCache.user.badges);
+  const isAdmin = isUserAdmin(req.userCache.badges);
 
   const posts = await fetchPosts({
-    userId: params.userId || req.accountCache.user.id,
-    requesterUserId: req.accountCache.user.id,
+    userId: params.userId || req.userCache.id,
+    requesterUserId: req.userCache.id,
     withReplies: query.withReplies,
     bypassBlocked: isAdmin,
 

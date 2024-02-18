@@ -24,7 +24,11 @@ function route(req: Request, res: Response) {
     access_type: 'offline',
     scope: ['https://www.googleapis.com/auth/drive.file'],
     prompt: 'consent',
-    state: jwt.sign({ uId: req.accountCache.user.id, c: 'google' }, env.JWT_CONNECTIONS_SECRET, { expiresIn: 300, header: { alg: "HS256", typ: undefined } }), // 5 minutes
+    state: jwt.sign(
+      { uId: req.userCache.id, c: 'google' },
+      env.JWT_CONNECTIONS_SECRET,
+      { expiresIn: 300, header: { alg: 'HS256', typ: undefined } }
+    ), // 5 minutes
   });
 
   res.send(url);

@@ -22,10 +22,7 @@ export function channelVerification(opts?: Options) {
       return res.status(403).json(generateError('Channel ID is required.'));
     }
 
-    const [channel, error] = await getChannelCache(
-      channelId,
-      req.accountCache.user.id
-    );
+    const [channel, error] = await getChannelCache(channelId, req.userCache.id);
 
     if (error !== null) {
       return res.status(403).json(generateError(error));
@@ -38,7 +35,7 @@ export function channelVerification(opts?: Options) {
     if (isServerChannel) {
       const [memberCache, error] = await getServerMemberCache(
         channel.server.id,
-        req.accountCache.user.id
+        req.userCache.id
       );
       if (error !== null) {
         return res.status(403).json(generateError(error));
@@ -51,9 +48,8 @@ export function channelVerification(opts?: Options) {
       channel.type === ChannelType.DM_TEXT && channel?.inbox?.recipientId;
 
     if (isDMChannel) {
-      const isRecipient =
-        channel.inbox.recipientId === req.accountCache.user.id;
-      const isCreator = channel.inbox.createdById === req.accountCache.user.id;
+      const isRecipient = channel.inbox.recipientId === req.userCache.id;
+      const isCreator = channel.inbox.createdById === req.userCache.id;
       if (!isRecipient && !isCreator) {
         return res
           .status(403)
@@ -63,10 +59,10 @@ export function channelVerification(opts?: Options) {
 
     const isTicketChannel = channel.type === ChannelType.TICKET;
     if (isTicketChannel) {
-      const isTicketCreator = channel.createdById === req.accountCache.user.id;
+      const isTicketCreator = channel.createdById === req.userCache.id;
       const isAdmin =
-        hasBit(req.accountCache.user.badges, USER_BADGES.ADMIN.bit) ||
-        hasBit(req.accountCache.user.badges, USER_BADGES.FOUNDER.bit);
+        hasBit(req.userCache.badges, USER_BADGES.ADMIN.bit) ||
+        hasBit(req.userCache.badges, USER_BADGES.FOUNDER.bit);
       const canAccess = isTicketCreator || isAdmin;
       if (!canAccess) {
         return res

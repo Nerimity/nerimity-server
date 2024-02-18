@@ -24,6 +24,27 @@ model Account {
 
   emailConfirmed  Boolean @default(false)
   emailConfirmCode String?
+
+  applications Application[]
+}
+
+model Application {
+  id          String   @id
+  name        String
+  description String?
+  avatar      String?
+
+  botUserId   String?  @unique
+  botUser     User?    @relation(fields: [botUserId], references: [id], onDelete: Cascade)
+  botTokenVersion Int  @default(1)
+
+
+
+  creatorAccountId   String
+  creatorAccount     Account  @relation(fields: [creatorAccountId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+
 }
 
 
@@ -96,6 +117,8 @@ model User {
   auditActions          AuditLog[]
 
   openedTickets         Ticket[]
+
+  application           Application? // Bot users will have this
 }
 
 model UserConnection {

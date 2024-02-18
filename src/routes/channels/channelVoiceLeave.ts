@@ -19,7 +19,7 @@ export function channelVoiceLeave(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const [result, error] = await leaveVoiceChannel(req.accountCache.user.id);
+  const [result, error] = await leaveVoiceChannel(req.userCache.id);
 
   if (error) {
     return res.status(403).json(error);

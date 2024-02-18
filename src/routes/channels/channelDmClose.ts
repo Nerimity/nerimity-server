@@ -19,10 +19,7 @@ export function channelDMClose(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const [, error] = await closeDMChannel(
-    req.accountCache.user.id,
-    req.channelCache.id
-  );
+  const [, error] = await closeDMChannel(req.userCache.id, req.channelCache.id);
   if (error) {
     return res.status(400).json(error);
   }

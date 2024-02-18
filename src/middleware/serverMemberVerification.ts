@@ -7,16 +7,18 @@ interface Options {
   allowBot?: boolean;
 }
 
-
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Options {}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function serverMemberVerification (opts?: Options) {
+export function serverMemberVerification(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const { serverId } = req.params;
 
-    const [memberCache, error] = await getServerMemberCache(serverId, req.accountCache.user.id);
+    const [memberCache, error] = await getServerMemberCache(
+      serverId,
+      req.userCache.id
+    );
     if (error !== null) {
       return res.status(403).json(generateError(error));
     }
@@ -30,6 +32,5 @@ export function serverMemberVerification (opts?: Options) {
     req.serverCache = server;
 
     next();
-
   };
 }

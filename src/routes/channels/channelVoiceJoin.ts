@@ -43,7 +43,7 @@ async function route(req: Request, res: Response) {
   const socketId = req.body.socketId as string;
 
   const [result, error] = await joinVoiceChannel(
-    req.accountCache.user.id,
+    req.userCache.id,
     socketId,
     req.channelCache.id,
     req.channelCache.serverId

@@ -4,21 +4,21 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { getServerInvitesByServerId } from '../../services/ServerInvite';
 
 export function serverInvites(Router: Router) {
-  Router.get('/servers/:serverId/invites', 
+  Router.get(
+    '/servers/:serverId/invites',
     authenticate(),
     serverMemberVerification(),
     route
   );
 }
 
+async function route(req: Request, res: Response) {
+  const isServerCreator = req.serverCache.createdById === req.userCache.id;
 
-
-async function route (req: Request, res: Response) {
-
-  const isServerCreator = req.serverCache.createdById === req.accountCache.user.id;
-
-  const invites = await getServerInvitesByServerId(req.serverCache.id, !isServerCreator ? req.accountCache.user.id : undefined);
+  const invites = await getServerInvitesByServerId(
+    req.serverCache.id,
+    !isServerCreator ? req.userCache.id : undefined
+  );
 
   res.json(invites);
-
 }

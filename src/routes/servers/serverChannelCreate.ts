@@ -54,11 +54,11 @@ async function route(req: Request, res: Response) {
 
   const [newChannel, error] = await createServerChannel({
     channelName: body.name?.trim() || channelName,
-    creatorId: req.accountCache.user.id,
+    creatorId: req.userCache.id,
     serverId: req.serverCache.id,
     channelType: body.type,
   });
-  // const [newChannel, error] = await createServerChannel(req.serverCache.id, 'New Channel', req.accountCache.user.id);
+  // const [newChannel, error] = await createServerChannel(req.serverCache.id, 'New Channel', req.userCache.id);
 
   if (error) {
     return res.status(400).json(error);

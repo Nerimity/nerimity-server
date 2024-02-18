@@ -34,7 +34,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [inbox, error] = await openDMChannel(
-    req.accountCache.user.id,
+    req.userCache.id,
     req.params.userId
   );
   if (error) {

@@ -6,10 +6,10 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { updateServerOrder } from '../../services/Server';
 
 export function serverUpdateOrder(Router: Router) {
-  Router.post('/servers/order', 
+  Router.post(
+    '/servers/order',
     authenticate(),
-    body('serverIds')
-      .isArray().withMessage('serverIds must be an array.'),
+    body('serverIds').isArray().withMessage('serverIds must be an array.'),
     rateLimit({
       name: 'server_update_order',
       expireMS: 10000,
@@ -20,10 +20,10 @@ export function serverUpdateOrder(Router: Router) {
 }
 
 interface Body {
-  serverIds: string[]
+  serverIds: string[];
 }
 
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
   const bodyErrors = customExpressValidatorResult(req);
@@ -31,7 +31,10 @@ async function route (req: Request, res: Response) {
     return res.status(400).json(bodyErrors);
   }
 
-  const [updated, error] = await updateServerOrder(req.accountCache.user.id, body.serverIds);
+  const [updated, error] = await updateServerOrder(
+    req.userCache.id,
+    body.serverIds
+  );
   if (error) {
     return res.status(400).json(error);
   }

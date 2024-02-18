@@ -6,7 +6,8 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { followUser, updateUser } from '../../services/User/User';
 
 export function userFollow(Router: Router) {
-  Router.post('/users/:userId/follow',
+  Router.post(
+    '/users/:userId/follow',
     authenticate(),
     rateLimit({
       name: 'user_follow',
@@ -24,12 +25,11 @@ interface Params {
 async function route(req: Request, res: Response) {
   const body = req.params as unknown as Params;
 
-  const [, error] = await followUser(req.accountCache.user.id, body.userId);
+  const [, error] = await followUser(req.userCache.id, body.userId);
 
   if (error) {
     return res.status(400).json(error);
   }
 
   res.json({ status: true });
-
 }

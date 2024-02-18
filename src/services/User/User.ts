@@ -48,7 +48,7 @@ export const isUserBlocked = async (userId: string, blockedById: string) => {
     },
   });
   return !!blockedUser;
-}
+};
 
 export const isExpired = (expireDate: Date) => {
   const now = new Date();
@@ -84,6 +84,20 @@ export const getAccountByUserId = (userId: string) => {
   return prisma.account.findFirst({
     where: { userId },
     select: { ...excludeFields('Account', ['password']), user: true },
+  });
+};
+
+export const getUserWithAccount = async (userId: string) => {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      account: {
+        select: excludeFields('Account', ['password']),
+      },
+      application: {
+        select: { id: true, botTokenVersion: true },
+      },
+    },
   });
 };
 
@@ -307,7 +321,6 @@ export const getUserDetails = async (
     where: { userId: requesterId, serverId: { in: recipientServerIds } },
   });
   const mutualServerIds = members.map((member) => member.serverId);
-
 
   const isAdmin = isUserAdmin(user.badges);
 

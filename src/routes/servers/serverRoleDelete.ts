@@ -8,7 +8,8 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { deleteServerRole } from '../../services/ServerRole';
 
 export function serverRoleDelete(Router: Router) {
-  Router.delete('/servers/:serverId/roles/:roleId',
+  Router.delete(
+    '/servers/:serverId/roles/:roleId',
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
@@ -16,23 +17,24 @@ export function serverRoleDelete(Router: Router) {
   );
 }
 
-
-
-
 async function route(req: Request, res: Response) {
-
-  const role = await prisma.serverRole.findFirst({ where: { id: req.params.roleId } });
+  const role = await prisma.serverRole.findFirst({
+    where: { id: req.params.roleId },
+  });
   if (!role) {
     return res.status(400).json(generateError('Role does not exist.'));
   }
-  const isCreator = req.serverCache.createdById === req.accountCache.user.id;
+  const isCreator = req.serverCache.createdById === req.userCache.id;
   if (!isCreator && role.order >= req.serverMemberCache.topRoleOrder) {
-    return res.status(400).json(generateError('You do not have priority to modify this role.'));
+    return res
+      .status(400)
+      .json(generateError('You do not have priority to modify this role.'));
   }
 
-
-
-  const [, error] = await deleteServerRole(req.serverCache.id, req.params.roleId);
+  const [, error] = await deleteServerRole(
+    req.serverCache.id,
+    req.params.roleId
+  );
 
   if (error) {
     return res.status(400).json(error);

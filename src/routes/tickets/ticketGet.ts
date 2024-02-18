@@ -20,7 +20,7 @@ export function ticketGet(Router: Router) {
 
 async function route(req: Request, res: Response) {
   const ticketId = req.params.id as string;
-  const userId = req.accountCache.user.id;
+  const userId = req.userCache.id;
   const ticket = await getTicketById(ticketId, userId);
 
   if (!ticket) {

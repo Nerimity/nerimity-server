@@ -18,10 +18,8 @@ export function googleUnlink(Router: Router) {
   );
 }
 
-
 async function route(req: Request, res: Response) {
-
-  const [status, error] = await removeGoogleConnection(req.accountCache.user.id);
+  const [status, error] = await removeGoogleConnection(req.userCache.id);
 
   if (error) {
     return res.status(400).json(error);

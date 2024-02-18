@@ -46,7 +46,7 @@ async function route(req: Request, res: Response) {
   const [ticket, error] = await updateTicketStatus({
     ticketId: id,
     status: body.status,
-    userId: req.accountCache.user.id,
+    userId: req.userCache.id,
   });
 
   if (error) {

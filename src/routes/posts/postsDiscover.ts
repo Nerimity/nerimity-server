@@ -26,7 +26,7 @@ async function route(req: Request, res: Response) {
   const query = req.query as Query;
   const posts = await fetchPosts({
     withReplies: false,
-    requesterUserId: req.accountCache.user.id,
+    requesterUserId: req.userCache.id,
     limit: query.limit ? parseInt(query.limit) : undefined,
     afterId: query.afterId,
     beforeId: query.beforeId,

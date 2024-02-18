@@ -20,10 +20,7 @@ export function userEmailConfirmCode(Router: Router) {
 async function route(req: Request, res: Response) {
   const code = req.query.code as string;
 
-  const [status, error] = await verifyEmailConfirmCode(
-    req.accountCache.user.id,
-    code
-  );
+  const [status, error] = await verifyEmailConfirmCode(req.userCache.id, code);
 
   if (error) {
     return res.status(400).json(error);

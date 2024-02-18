@@ -7,20 +7,28 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
 
 export function channelMessageReactionsAdd(Router: Router) {
-  Router.post('/channels/:channelId/messages/:messageId/reactions',
+  Router.post(
+    '/channels/:channelId/messages/:messageId/reactions',
     authenticate(),
     channelVerification(),
     body('name')
-      .not().isEmpty().withMessage('name is required!')
-      .isString().withMessage('name must be a string!')
-      .isLength({ min: 1, max: 20 }).withMessage('name length must be between 1 and 20 characters.'),
+      .not()
+      .isEmpty()
+      .withMessage('name is required!')
+      .isString()
+      .withMessage('name must be a string!')
+      .isLength({ min: 1, max: 20 })
+      .withMessage('name length must be between 1 and 20 characters.'),
     body('emojiId')
-      .optional({values: 'falsy'})
-      .isString().withMessage('emojiId must be a string!')
-      .isLength({ min: 1, max: 20 }).withMessage('emojiId length must be between 1 and 20 characters.'),
+      .optional({ values: 'falsy' })
+      .isString()
+      .withMessage('emojiId must be a string!')
+      .isLength({ min: 1, max: 20 })
+      .withMessage('emojiId length must be between 1 and 20 characters.'),
     body('gif')
-      .optional({values: 'falsy'})
-      .isBoolean().withMessage('gif must be a boolean!'),
+      .optional({ values: 'falsy' })
+      .isBoolean()
+      .withMessage('gif must be a boolean!'),
     rateLimit({
       name: 'reaction_add',
       expireMS: 20000,
@@ -33,9 +41,8 @@ export function channelMessageReactionsAdd(Router: Router) {
 interface Body {
   name: string; // emoji name or unicode
   emojiId?: string;
-  gif?: boolean
+  gif?: boolean;
 }
-
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
@@ -55,9 +62,9 @@ async function route(req: Request, res: Response) {
     serverId: req.serverCache?.id,
     channel: req.channelCache,
     channelId: req.channelCache.id,
-    reactedByUserId: req.accountCache.user.id,
+    reactedByUserId: req.userCache.id,
     messageId,
-    ...body
+    ...body,
   });
 
   if (err) {

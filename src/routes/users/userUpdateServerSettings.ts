@@ -48,7 +48,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  await UpdateServerSettings(req.accountCache.user.id, req.serverCache.id, {
+  await UpdateServerSettings(req.userCache.id, req.serverCache.id, {
     ...addToObjectIfExists('notificationSoundMode', body.notificationSoundMode),
     ...addToObjectIfExists('notificationPingMode', body.notificationPingMode),
   });

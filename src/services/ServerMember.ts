@@ -116,6 +116,13 @@ export const updateServerMember = async (
         ),
       ];
     }
+
+    if (removedRoles.find((role) => role.botRole)) {
+      return [null, generateError('Cannot remove bot role.', 'roleIds')];
+    }
+    if (addedRoles.find((role) => role.botRole)) {
+      return [null, generateError('Cannot add bot role.', 'roleIds')];
+    }
   }
 
   await prisma.serverMember.update({

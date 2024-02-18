@@ -54,13 +54,10 @@ async function route(req: Request, res: Response) {
     body.custom = body.custom.trim();
   }
 
-  const [successMessage, error] = await updateUserPresence(
-    req.accountCache.user.id,
-    {
-      ...addToObjectIfExists('custom', body.custom),
-      ...addToObjectIfExists('status', body.status),
-    }
-  );
+  const [successMessage, error] = await updateUserPresence(req.userCache.id, {
+    ...addToObjectIfExists('custom', body.custom),
+    ...addToObjectIfExists('status', body.status),
+  });
   if (error) {
     return res.status(400).json(error);
   }

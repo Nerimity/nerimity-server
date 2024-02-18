@@ -1,11 +1,11 @@
-import { env } from "process";
-import { prisma } from "../../common/database";
-import { generateError } from "../../common/errorHandler";
-import { sendConfirmCodeMail } from "../../common/mailer";
-import { generateEmailConfirmCode, generateTag } from "../../common/random";
-import { removeAccountCacheByUserIds } from "../../cache/UserCache";
-import { getIO } from "../../socket/socket";
-import { AUTHENTICATE_ERROR } from "../../common/ClientEventNames";
+import { env } from 'process';
+import { prisma } from '../../common/database';
+import { generateError } from '../../common/errorHandler';
+import { sendConfirmCodeMail } from '../../common/mailer';
+import { generateEmailConfirmCode, generateTag } from '../../common/random';
+import { removeUserCacheByUserIds } from '../../cache/UserCache';
+import { getIO } from '../../socket/socket';
+import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -33,10 +33,10 @@ const updateAccountConfirmCode = async (userId: string) => {
   const code = generateEmailConfirmCode();
   await prisma.account.update({
     where: { userId },
-    data: { emailConfirmCode: code }
+    data: { emailConfirmCode: code },
   });
   return code;
-}
+};
 
 export async function verifyEmailConfirmCode(userId: string, code: string) {
   const account = await getAccountByUserId(userId);
@@ -62,7 +62,7 @@ export async function verifyEmailConfirmCode(userId: string, code: string) {
 
   await updateAccountEmailConfirmed(userId);
 
-  await removeAccountCacheByUserIds([userId]);
+  await removeUserCacheByUserIds([userId]);
   return [true, null] as const;
 }
 
@@ -76,7 +76,7 @@ const getAccountByUserId = async (userId: string) => {
       user: true,
       password: true,
       passwordVersion: true,
-    }
+    },
   });
 };
 
@@ -87,16 +87,18 @@ const updateAccountEmailConfirmed = async (userId: string) => {
     data: {
       emailConfirmed: true,
       emailConfirmCode: null,
-    }
+    },
   });
   return code;
-}
+};
 
-export async function deleteAccount(userId: string) {
+export async function deleteAccount(userId: string, bot?: boolean) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      account: { select: { id: true } },
+      account: {
+        select: { id: true, _count: { select: { applications: true } } },
+      },
       _count: { select: { servers: true } },
     },
   });
@@ -105,23 +107,35 @@ export async function deleteAccount(userId: string) {
     return [null, generateError('Invalid userId.')] as const;
   }
 
-  if (user?._count.servers) {
-    return [
-      null,
-      generateError('You must leave all servers before deleting your account.'),
-    ] as const;
+  if (!bot) {
+    if (user?._count.servers) {
+      return [
+        null,
+        generateError(
+          'You must leave all servers before deleting your account.'
+        ),
+      ] as const;
+    }
+    if (user?.account?._count.applications) {
+      return [
+        null,
+        generateError(
+          'You must delete all applications before deleting your account.'
+        ),
+      ] as const;
+    }
   }
 
-  await deleteAccountFromDatabase(userId);
+  await deleteAccountFromDatabase(userId, bot);
 
-  await removeAccountCacheByUserIds([userId]);
+  await removeUserCacheByUserIds([userId]);
 
   disconnectSockets(userId);
 
   return [true, null] as const;
 }
 
-const deleteAccountFromDatabase = async (userId: string) => {
+const deleteAccountFromDatabase = async (userId: string, bot?: boolean) => {
   await prisma.$transaction([
     prisma.follower.deleteMany({
       where: {
@@ -138,15 +152,16 @@ const deleteAccountFromDatabase = async (userId: string) => {
         badges: 0,
 
         customStatus: null,
-        username: `Deleted Account ${generateTag()}`,
+        username: `Deleted ${bot ? 'Bot' : 'User'} ${generateTag()}`,
       },
     }),
-    prisma.account.delete({
+    prisma.account.deleteMany({
       where: { userId },
     }),
     prisma.userDevice.deleteMany({ where: { userId } }),
+    prisma.chatNotice.deleteMany({ where: { userId } }),
   ]);
-}
+};
 
 export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
   let broadcaster = getIO().in(userId);
@@ -155,4 +170,4 @@ export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
   }
   broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
   broadcaster.disconnectSockets(true);
-}
+};

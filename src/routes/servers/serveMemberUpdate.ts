@@ -9,13 +9,18 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { updateServerMember } from '../../services/ServerMember';
 
 export function serverMemberUpdate(Router: Router) {
-  Router.post('/servers/:serverId/members/:userId',
+  Router.post(
+    '/servers/:serverId/members/:userId',
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
-    body('roleIds').isArray().withMessage('roleIds must be an array of strings.').optional({ nullable: true }),
+    body('roleIds')
+      .isArray()
+      .withMessage('roleIds must be an array of strings.')
+      .optional({ nullable: true }),
     body('roleIds.*')
-      .isString().withMessage('roleIds must be a string.')
+      .isString()
+      .withMessage('roleIds must be a string.')
       .optional({}),
     rateLimit({
       name: 'server_member_role_update',
@@ -30,10 +35,7 @@ interface Body {
   roleIds?: string[];
 }
 
-
-
 async function route(req: Request, res: Response) {
-
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
@@ -41,12 +43,14 @@ async function route(req: Request, res: Response) {
 
   const matchedBody: Body = matchedData(req);
 
-
-
-  const [updated, error] = await updateServerMember(req.serverCache.id, req.params.userId, req.accountCache.user.id, matchedBody);
+  const [updated, error] = await updateServerMember(
+    req.serverCache.id,
+    req.params.userId,
+    req.userCache.id,
+    matchedBody
+  );
   if (error) {
     return res.status(400).json(error);
   }
   res.json(updated);
-
 }

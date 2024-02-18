@@ -1,4 +1,4 @@
-import { removeAccountCacheByUserIds } from '../cache/UserCache';
+import { removeUserCacheByUserIds } from '../cache/UserCache';
 import { emitErrorTo } from '../emits/Connection';
 
 interface DisconnectUsersOptions {
@@ -12,7 +12,7 @@ interface DisconnectUsersOptions {
 
 export async function disconnectUsers(opts: DisconnectUsersOptions) {
   if (opts.clearCache) {
-    await removeAccountCacheByUserIds(opts.userIds);
+    await removeUserCacheByUserIds(opts.userIds);
   }
 
   emitErrorTo({

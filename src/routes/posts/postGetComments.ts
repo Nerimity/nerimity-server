@@ -45,11 +45,11 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const isAdmin = isUserAdmin(req.accountCache.user.badges);
+  const isAdmin = isUserAdmin(req.userCache.badges);
 
   const commentPosts = await fetchPosts({
     postId: params.postId,
-    requesterUserId: req.accountCache.user.id,
+    requesterUserId: req.userCache.id,
     bypassBlocked: isAdmin,
     limit: query.limit ? parseInt(query.limit) : undefined,
     afterId: query.afterId,
