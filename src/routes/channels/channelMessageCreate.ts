@@ -38,7 +38,7 @@ import {
 export function channelMessageCreate(Router: Router) {
   Router.post(
     '/channels/:channelId/messages',
-    authenticate(),
+    authenticate({ allowBot: true }),
     channelVerification(),
     channelPermissions({
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
@@ -189,7 +189,11 @@ async function route(req: Request, res: Response) {
     req.channelCache.type === ChannelType.SERVER_TEXT ||
     req.channelCache.type === ChannelType.CATEGORY;
 
-  if (isServerChannel && !req.userCache.account.emailConfirmed) {
+  if (
+    !req.userCache.application &&
+    isServerChannel &&
+    !req.userCache.account.emailConfirmed
+  ) {
     return res
       .status(400)
       .json(generateError('You must confirm your email to send messages.'));
