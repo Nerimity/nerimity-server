@@ -135,7 +135,7 @@ async function route(req: Request, res: Response) {
   const hasAttachment = body.googleDriveAttachment || req.fileInfo?.file;
 
   if (hasAttachment) {
-    if (!isEmailConfirmed(req.userCache.account)) {
+    if (!isEmailConfirmed(req.userCache)) {
       return res
         .status(400)
         .json(

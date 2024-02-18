@@ -52,7 +52,7 @@ async function route(req: Request, res: Response) {
   }
 
   if (req.fileInfo?.file) {
-    if (!isEmailConfirmed(req.userCache.account)) {
+    if (!isEmailConfirmed(req.userCache)) {
       return res
         .status(400)
         .json(
