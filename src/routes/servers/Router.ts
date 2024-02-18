@@ -29,11 +29,9 @@ import { serverLeave } from './serverLeave';
 import { serverDelete } from './serverDelete';
 import { serverChannelNoticeDelete } from './ServerChannelNoticeDelete';
 import { serverChannelNoticeUpdate } from './ServerChannelNoticeUpdate';
-
+import { serverInviteBotJoin } from './serverInviteBot';
 
 const ServersRouter = Router();
-
-
 
 serverChannelNoticeDelete(ServersRouter);
 serverChannelNoticeUpdate(ServersRouter);
@@ -51,6 +49,7 @@ serverInviteCreate(ServersRouter);
 serverInviteDelete(ServersRouter);
 serverInviteCustomCreate(ServersRouter);
 serverInvites(ServersRouter);
+serverInviteBotJoin(ServersRouter);
 
 serverChannelCreate(ServersRouter);
 serverRoleUpdateOrder(ServersRouter);
