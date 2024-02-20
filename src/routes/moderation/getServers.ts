@@ -29,6 +29,7 @@ async function route(req: Request, res: Response) {
       id: true,
       createdAt: true,
       createdBy: { select: { id: true, username: true, tag: true } },
+      verified: true,
       avatar: true,
     },
   });

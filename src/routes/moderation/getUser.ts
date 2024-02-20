@@ -22,7 +22,17 @@ async function route(req: Request, res: Response) {
       suspension: true,
       profile: true,
       devices: { orderBy: { createdAt: 'desc' } },
-      servers: { select: { name: true, hexColor: true, id: true, createdAt: true, createdBy: { select: { id: true, username: true, tag: true } }, avatar: true } },
+      servers: {
+        select: {
+          verified: true,
+          name: true,
+          hexColor: true,
+          id: true,
+          createdAt: true,
+          createdBy: { select: { id: true, username: true, tag: true } },
+          avatar: true,
+        },
+      },
       account: {
         select: {
           suspendCount: true,
