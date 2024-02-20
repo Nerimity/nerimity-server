@@ -50,6 +50,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
           email: true,
           serverOrderIds: true,
           dmStatus: true,
+          friendRequestStatus: true,
           emailConfirmed: true,
         },
       },

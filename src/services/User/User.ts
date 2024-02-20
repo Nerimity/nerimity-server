@@ -359,6 +359,11 @@ export enum DmStatus {
   FRIENDS_AND_SERVERS = 1,
   FRIENDS = 2,
 }
+export enum FriendRequestStatus {
+  OPEN = 0,
+  SERVERS = 1,
+  CLOSED = 2,
+}
 
 export async function followUser(
   requesterId: string,

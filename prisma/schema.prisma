@@ -19,6 +19,8 @@ model Account {
   postNotificationCount  Int                     @default(0)
   serverOrderIds   String[]
   dmStatus               Int                     @default(0)
+  friendRequestStatus    Int                     @default(0)
+
 
   FCMTokens        FirebaseMessagingToken[]
 

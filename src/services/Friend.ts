@@ -13,6 +13,7 @@ import {
 } from '../emits/Friend';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import { FriendStatus } from '../types/Friend';
+import { FriendRequestStatus } from './User/User';
 
 export const getFriendIds = async (userId: string) => {
   const friends = await prisma.friend.findMany({
@@ -31,6 +32,35 @@ export const addFriend = async (userId: string, friendId: string) => {
   });
   if (alreadyFriends) {
     return [null, generateError('Already in friends list.')];
+  }
+
+  const friendAccount = await prisma.account.findUnique({
+    where: {
+      userId: friendId,
+    },
+    select: {
+      friendRequestStatus: true,
+    },
+  });
+  const friendRequestStatus =
+    friendAccount?.friendRequestStatus || FriendRequestStatus.OPEN;
+
+  if (friendRequestStatus === FriendRequestStatus.CLOSED) {
+    return [null, generateError('This user has disabled friend requests.')];
+  }
+
+  if (friendRequestStatus === FriendRequestStatus.SERVERS) {
+    const doesShareServers = await prisma.server.findFirst({
+      where: {
+        AND: [
+          { serverMembers: { some: { userId: friendId } } },
+          { serverMembers: { some: { userId } } },
+        ],
+      },
+    });
+    if (!doesShareServers) {
+      return [null, generateError('This user has disabled friend requests.')];
+    }
   }
 
   // check if blocked

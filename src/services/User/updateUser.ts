@@ -1,4 +1,4 @@
-import { DmStatus } from './User';
+import { DmStatus, FriendRequestStatus } from './User';
 import { checkUserPassword } from '../UserAuthentication';
 import * as nerimityCDN from '../../common/nerimityCDN';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
@@ -23,6 +23,7 @@ interface UpdateUserProps {
   avatarPoints?: number[];
   banner?: string;
   dmStatus?: DmStatus;
+  friendRequestStatus?: FriendRequestStatus;
 
   profile?: {
     bio?: string | null;
@@ -188,6 +189,7 @@ const updateAccountInDatabase = async (
     data: {
       ...addToObjectIfExists('email', opts.email?.trim()),
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
+      ...addToObjectIfExists('friendRequestStatus', opts.friendRequestStatus),
       ...(opts.newPassword?.trim()
         ? {
             password: await bcrypt.hash(opts.newPassword!.trim(), 10),

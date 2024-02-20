@@ -67,6 +67,10 @@ export function userUpdate(Router: Router) {
       .isInt({ min: 0, max: 2 })
       .withMessage('dmStatus must be a number.')
       .optional({ nullable: true }),
+    body('friendRequestStatus')
+      .isInt({ min: 0, max: 2 })
+      .withMessage('friendRequestStatus must be a number.')
+      .optional({ nullable: true }),
     route
   );
 }
@@ -83,6 +87,7 @@ interface Body {
   bio?: string | null;
   socketId?: string;
   dmStatus?: number;
+  friendRequestStatus?: number;
 }
 
 async function route(req: Request, res: Response) {
@@ -106,6 +111,7 @@ async function route(req: Request, res: Response) {
     banner: body.banner,
     newPassword: body.newPassword,
     ...addToObjectIfExists('dmStatus', body.dmStatus),
+    ...addToObjectIfExists('friendRequestStatus', body.friendRequestStatus),
     ...(body.bio !== undefined
       ? {
           profile: {
