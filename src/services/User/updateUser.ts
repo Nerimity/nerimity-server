@@ -111,6 +111,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
     ...addToObjectIfExists('avatar', opts.avatar),
     ...addToObjectIfExists('banner', opts.banner),
     ...addToObjectIfExists('dmStatus', opts.dmStatus),
+    ...addToObjectIfExists('friendRequestStatus', opts.friendRequestStatus),
   });
 
   const newToken = opts.newPassword?.trim()
