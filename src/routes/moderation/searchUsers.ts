@@ -45,6 +45,7 @@ async function route(req: Request, res: Response) {
       tag: true,
       hexColor: true,
       avatar: true,
+      badges: true,
       suspension: true,
     },
   });

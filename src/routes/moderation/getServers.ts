@@ -4,15 +4,10 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
 export function getServers(Router: Router) {
-  Router.get('/moderation/servers', 
-    authenticate(),
-    isModMiddleware,
-    route
-  );
+  Router.get('/moderation/servers', authenticate(), isModMiddleware, route);
 }
 
-
-async function route (req: Request, res: Response) {
+async function route(req: Request, res: Response) {
   const after = req.query.after as string | undefined;
 
   let limit = parseInt((req.query.limit || '30') as string);
@@ -21,19 +16,22 @@ async function route (req: Request, res: Response) {
     limit = 30;
   }
 
-
   const users = await prisma.server.findMany({
     orderBy: {
-      createdAt: 'desc'
+      createdAt: 'desc',
     },
-    ...(after ? {skip: 1} : undefined),
+    ...(after ? { skip: 1 } : undefined),
     take: limit,
-    ...(after ? {cursor: { id: after }} : undefined),
-    select: {name: true, hexColor: true, id: true, createdAt: true, createdBy: {select: {id: true, username: true, tag: true}}, avatar: true}
+    ...(after ? { cursor: { id: after } } : undefined),
+    select: {
+      name: true,
+      hexColor: true,
+      id: true,
+      createdAt: true,
+      createdBy: { select: { id: true, username: true, tag: true } },
+      avatar: true,
+    },
   });
 
-
   res.json(users);
-
-
 }

@@ -28,6 +28,7 @@ async function route(req: Request, res: Response) {
       username: true,
       joinedAt: true,
       tag: true,
+      badges: true,
       hexColor: true,
       avatar: true,
       suspension: true,
