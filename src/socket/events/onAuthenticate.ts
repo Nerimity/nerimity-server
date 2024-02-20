@@ -152,6 +152,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       customStatus: user.customStatus,
       orderedServerIds: user.account?.serverOrderIds,
       dmStatus: user.account?.dmStatus,
+      friendRequestStatus: user.account?.friendRequestStatus,
       emailConfirmed: user.account?.emailConfirmed,
       connections: user.connections,
     },
