@@ -416,8 +416,11 @@ export const leaveServer = async (
     prisma.serverChannelLastSeen.deleteMany({
       where: { serverId: serverId, userId: userId },
     }),
-    prisma.userNotification.deleteMany({
-      where: { serverId: serverId, userId: userId },
+    prisma.userNotificationSettings.deleteMany({
+      where: {
+        OR: [{ serverId }, { channel: { serverId } }],
+        userId: userId,
+      },
     }),
   ];
   if (ban) {
