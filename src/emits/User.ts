@@ -1,4 +1,4 @@
-import { Inbox, ServerMemberSettings, User } from '@prisma/client';
+import { Inbox, UserNotificationSettings, User } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
 import {
   INBOX_CLOSED,
@@ -6,7 +6,7 @@ import {
   USER_CONNECTION_ADDED,
   USER_CONNECTION_REMOVED,
   USER_PRESENCE_UPDATE,
-  USER_SERVER_SETTINGS_UPDATE,
+  USER_NOTIFICATION_SETTINGS_UPDATE,
   USER_UPDATED,
 } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
@@ -58,22 +58,27 @@ export const emitUserUpdated = (
   getIO().to(userId).emit(USER_UPDATED, updated);
 };
 
-export const emitUserServerSettingsUpdate = (
+export const emitUserNotificationSettingsUpdate = (
   userId: string,
-  serverId: string,
-  updated: Partial<ServerMemberSettings>
+  updated: Partial<UserNotificationSettings>,
+  serverId?: string,
+  channelId?: string
 ) => {
-  getIO().to(userId).emit(USER_SERVER_SETTINGS_UPDATE, { serverId, updated });
+  getIO()
+    .to(userId)
+    .emit(USER_NOTIFICATION_SETTINGS_UPDATE, { serverId, channelId, updated });
 };
-
 
 export const emitUserConnectionRemoved = (
   userId: string,
   connectionId: string
 ) => {
   getIO().to(userId).emit(USER_CONNECTION_REMOVED, { connectionId });
-}
+};
 
-export const emitUserConnectionAdded = (userId: string, connection: { provider: string, id: string, connectedAt: Date; }) => {
+export const emitUserConnectionAdded = (
+  userId: string,
+  connection: { provider: string; id: string; connectedAt: Date }
+) => {
   getIO().to(userId).emit(USER_CONNECTION_ADDED, { connection });
-}
+};

@@ -5,8 +5,8 @@ export const USER_UPDATED = 'user:updated';
 export const USER_CONNECTION_ADDED = 'user:connection_added';
 export const USER_CONNECTION_REMOVED = 'user:connection_removed';
 
-
-export const USER_SERVER_SETTINGS_UPDATE = 'user:server_settings_update';
+export const USER_NOTIFICATION_SETTINGS_UPDATE =
+  'user:notification_settings_update';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 export const USER_BLOCKED = 'user:blocked';
@@ -20,7 +20,6 @@ export const FRIEND_REQUEST_SENT = 'friend:request_sent';
 export const FRIEND_REQUEST_PENDING = 'friend:request_pending';
 export const FRIEND_REQUEST_ACCEPTED = 'friend:request_accepted';
 export const FRIEND_REMOVED = 'friend:removed';
-
 
 export const SERVER_JOINED = 'server:joined';
 export const SERVER_LEFT = 'server:left';

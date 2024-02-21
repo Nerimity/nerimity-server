@@ -4,8 +4,7 @@ import {
   emitInboxClosed,
   emitInboxOpened,
   emitUserPresenceUpdate,
-  emitUserServerSettingsUpdate,
-  emitUserUpdated,
+  emitUserNotificationSettingsUpdate,
 } from '../../emits/User';
 import { ChannelType } from '../../types/Channel';
 import { Presence, updateCachePresence } from '../../cache/UserCache';
@@ -27,6 +26,7 @@ import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
 import { removeDuplicates } from '../../common/utils';
 import { isUserAdmin } from '../../common/Bitwise';
+import { Prisma } from '@prisma/client';
 
 export const getBlockedUserIds = async (
   userIds: string[],
@@ -451,39 +451,60 @@ export async function followerUsers(userId: string) {
   return [user?.followers.map((follower) => follower.followedBy), null];
 }
 
-export enum ServerNotificationSoundMode {
-  ALL = 0,
-  MENTIONS_ONLY = 1,
-  MUTE = 2,
-}
-export enum ServerNotificationPingMode {
-  ALL = 0,
-  MENTIONS_ONLY = 1,
-  MUTE = 2,
+export const NotificationSoundMode = {
+  INITIAL: null,
+  ALL: 0,
+  MENTIONS_ONLY: 1,
+  MUTE: 2,
+} as const;
+export const NotificationPingMode = {
+  INITIAL: null,
+  ALL: 0,
+  MENTIONS_ONLY: 1,
+  MUTE: 2,
+} as const;
+
+type NonNullable<T> = Exclude<T, null | undefined>; // Remove null and undefined from T
+
+interface UpdateUserNotificationSettings {
+  notificationSoundMode?: NonNullable<
+    (typeof NotificationSoundMode)[keyof typeof NotificationSoundMode]
+  >;
+  notificationPingMode?: NonNullable<
+    (typeof NotificationPingMode)[keyof typeof NotificationPingMode]
+  >;
 }
 
-interface UpdateServerSettings {
-  notificationSoundMode?: ServerNotificationSoundMode;
-  notificationPingMode?: ServerNotificationPingMode;
-}
-
-export async function UpdateServerSettings(
+export async function updateUserNotificationSettings(
   userId: string,
-  serverId: string,
-  update: UpdateServerSettings
+  update: UpdateUserNotificationSettings,
+  serverId?: string,
+  channelId?: string
 ) {
-  await prisma.serverMemberSettings.upsert({
-    where: { userId_serverId: { userId, serverId } },
+  if (serverId && channelId)
+    return [
+      null,
+      generateError('You must provide one of serverId or channelId.'),
+    ] as const;
+
+  if (!serverId && !channelId)
+    return [null, generateError('ServerId or channelId is required.')] as const;
+
+  const where: Prisma.UserNotificationSettingsWhereUniqueInput = channelId
+    ? { userId_channelId: { userId, channelId } }
+    : { userId_serverId: { userId, serverId: serverId! } };
+
+  await prisma.userNotificationSettings.upsert({
+    where,
     create: {
       id: generateId(),
-      serverId,
-      userId,
+      ...(channelId ? { userId, channelId } : { userId, serverId: serverId! }),
       ...update,
     },
     update,
   });
 
-  emitUserServerSettingsUpdate(userId, serverId, update);
+  emitUserNotificationSettingsUpdate(userId, update, serverId, channelId);
 }
 
 export async function registerFCMToken(accountId: string, token: string) {

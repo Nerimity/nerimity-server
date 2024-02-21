@@ -35,7 +35,7 @@ import {
   sendServerPushMessageNotification,
 } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
-import { ServerNotificationPingMode } from './User/User';
+import { NotificationPingMode } from './User/User';
 import {
   CHANNEL_PERMISSIONS,
   ROLE_PERMISSIONS,
@@ -1061,16 +1061,16 @@ async function addMention(
       servers: { some: { id: serverId } },
       OR: [
         {
-          joinedServerSettings: {
+          notificationSettings: {
             none: { serverId: serverId },
           },
         },
         {
-          joinedServerSettings: {
+          notificationSettings: {
             some: {
               serverId: serverId,
               NOT: {
-                notificationPingMode: ServerNotificationPingMode.MUTE,
+                notificationPingMode: NotificationPingMode.MUTE,
               },
             },
           },

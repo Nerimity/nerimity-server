@@ -43,6 +43,14 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   const user = await prisma.user.findUnique({
     where: { id: userCache.id },
     include: {
+      notificationSettings: {
+        select: {
+          notificationPingMode: true,
+          notificationSoundMode: true,
+          serverId: true,
+          userId: true,
+        },
+      },
       connections: { select: { id: true, provider: true, connectedAt: true } },
       friends: { include: { recipient: { select: publicUserExcludeFields } } },
       account: {
@@ -61,13 +69,8 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const {
-    servers,
-    serverChannels,
-    serverMembers,
-    serverRoles,
-    serverSettings,
-  } = await getServers(userCache.id);
+  const { servers, serverChannels, serverMembers, serverRoles } =
+    await getServers(userCache.id);
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(
     userCache.id
@@ -156,9 +159,10 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       emailConfirmed: user.account?.emailConfirmed,
       connections: user.connections,
     },
+    notificationSettings: user.notificationSettings,
     voiceChannelUsers,
     servers,
-    serverSettings,
+    serverSettings: [], // Safe to remove. Only here for backwards compatibility.
     serverMembers,
     serverRoles,
     lastSeenServerChannelIds,

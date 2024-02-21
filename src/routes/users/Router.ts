@@ -9,7 +9,7 @@ import { userOpenDMChannel } from './userOpenDMChannel';
 import { userUnfollow } from './userUnfollow';
 import { userUpdate } from './userUpdate';
 import { userUpdatePresence } from './userUpdatePresence';
-import { userUpdateServerSettings } from './userUpdateServerSettings';
+import { userUpdateNotificationSettings } from './userUpdateNotificationSettings';
 import { userRegisterFCM } from './userRegisterFCM';
 import { userDeleteAccount } from './userDeleteAccount';
 import { userBlock } from './userBlock';
@@ -49,6 +49,6 @@ userFollow(UsersRouter);
 userUnfollow(UsersRouter);
 userFollowers(UsersRouter);
 userFollowing(UsersRouter);
-userUpdateServerSettings(UsersRouter);
+userUpdateNotificationSettings(UsersRouter);
 
 export { UsersRouter };

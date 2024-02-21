@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { cert } from 'firebase-admin/app';
 import { prisma } from '../common/database';
-import { ServerNotificationPingMode, removeFCMTokens } from '../services/User/User';
+import { NotificationPingMode, removeFCMTokens } from '../services/User/User';
 import { Message, User } from '@prisma/client';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { ChannelCache } from '../cache/ChannelCache';
@@ -13,7 +13,9 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   credentials = require('../fcm-credentials.json');
 } catch {
-  Log.warn("fcm-credentials.json was not provided. Mobile push notifications will not work.")
+  Log.warn(
+    'fcm-credentials.json was not provided. Mobile push notifications will not work.'
+  );
 }
 
 if (credentials) {
@@ -56,25 +58,24 @@ export async function sendServerPushMessageNotification(
             },
             OR: [
               {
-                joinedServerSettings: {
+                notificationSettings: {
                   none: { serverId: serverId },
                 },
               },
               {
-                joinedServerSettings: {
+                notificationSettings: {
                   some: {
                     serverId: serverId,
                     userId: { in: mentionedUserIds },
-                    notificationPingMode:
-                      ServerNotificationPingMode.MENTIONS_ONLY,
+                    notificationPingMode: NotificationPingMode.MENTIONS_ONLY,
                   },
                 },
               },
               {
-                joinedServerSettings: {
+                notificationSettings: {
                   some: {
                     serverId: serverId,
-                    notificationPingMode: ServerNotificationPingMode.ALL,
+                    notificationPingMode: NotificationPingMode.ALL,
                   },
                 },
               },

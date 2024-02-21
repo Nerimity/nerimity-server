@@ -170,7 +170,7 @@ export const getServers = async (userId: string) => {
 
   const serverIds = user?.servers.map((server) => server.id);
 
-  const [serverChannels, serverMembers, serverRoles, serverSettings] =
+  const [serverChannels, serverMembers, serverRoles] =
     await prisma.$transaction([
       prisma.channel.findMany({
         where: { serverId: { in: serverIds }, deleting: null },
@@ -181,14 +181,6 @@ export const getServers = async (userId: string) => {
         include: { user: { select: publicUserExcludeFields } },
       }),
       prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
-      prisma.serverMemberSettings.findMany({
-        where: { userId },
-        select: {
-          serverId: true,
-          notificationSoundMode: true,
-          notificationPingMode: true,
-        },
-      }),
     ]);
 
   return {
@@ -196,7 +188,6 @@ export const getServers = async (userId: string) => {
     serverChannels,
     serverMembers,
     serverRoles,
-    serverSettings,
   };
 };
 
@@ -425,7 +416,7 @@ export const leaveServer = async (
     prisma.serverChannelLastSeen.deleteMany({
       where: { serverId: serverId, userId: userId },
     }),
-    prisma.serverMemberSettings.deleteMany({
+    prisma.userNotification.deleteMany({
       where: { serverId: serverId, userId: userId },
     }),
   ];

@@ -4,24 +4,38 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import {
-  ServerNotificationPingMode,
-  ServerNotificationSoundMode,
-  UpdateServerSettings,
+  NotificationPingMode,
+  NotificationSoundMode,
+  updateUserNotificationSettings,
 } from '../../services/User/User';
 
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 
-export function userUpdateServerSettings(Router: Router) {
+export function userUpdateNotificationSettings(Router: Router) {
   Router.post(
-    '/users/servers/:serverId',
+    '/users/notifications',
     authenticate(),
     serverMemberVerification(),
     rateLimit({
-      name: 'user_server_update_limit',
+      name: 'update_notification',
       expireMS: 10000,
       requestCount: 20,
     }),
+
+    body('channelId')
+      .optional({ nullable: true })
+      .isString()
+      .withMessage('Invalid channelId.')
+      .isLength({ min: 3, max: 320 })
+      .withMessage('Invalid channelId.'),
+    body('serverId')
+      .optional({ nullable: true })
+      .isString()
+      .withMessage('Invalid serverId.')
+      .isLength({ min: 3, max: 320 })
+      .withMessage('Invalid serverId.'),
+
     body('notificationSoundMode')
       .optional({ nullable: true })
       .isInt({ min: 0, max: 2 })
@@ -35,8 +49,10 @@ export function userUpdateServerSettings(Router: Router) {
 }
 
 interface Body {
-  notificationSoundMode: ServerNotificationSoundMode;
-  notificationPingMode: ServerNotificationPingMode;
+  notificationSoundMode: (typeof NotificationSoundMode)[keyof typeof NotificationSoundMode];
+  notificationPingMode: (typeof NotificationPingMode)[keyof typeof NotificationPingMode];
+  channelId?: string;
+  serverId?: string;
 }
 
 async function route(req: Request, res: Response) {
@@ -48,10 +64,18 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  await UpdateServerSettings(req.userCache.id, req.serverCache.id, {
-    ...addToObjectIfExists('notificationSoundMode', body.notificationSoundMode),
-    ...addToObjectIfExists('notificationPingMode', body.notificationPingMode),
-  });
+  await updateUserNotificationSettings(
+    req.userCache.id,
+    {
+      ...addToObjectIfExists(
+        'notificationSoundMode',
+        body.notificationSoundMode
+      ),
+      ...addToObjectIfExists('notificationPingMode', body.notificationPingMode),
+    },
+    body.serverId,
+    body.channelId
+  );
 
   res.json({ status: 'done' });
 }
