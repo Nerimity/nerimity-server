@@ -41,7 +41,7 @@
     "@nerimity/flakeid": "^1.0.3",
     "@prisma/client": "^5.9.1",
     "@socket.io/redis-adapter": "^8.2.1",
-    "@socket.io/redis-streams-adapter": "^0.1.0",
+    "@socket.io/redis-streams-adapter": "^0.2.0",
     "bcrypt": "^5.1.1",
     "connect-busboy": "^1.0.0",
     "cors": "^2.8.5",

@@ -16,10 +16,10 @@ dependencies:
     version: 5.9.1(prisma@5.9.1)
   '@socket.io/redis-adapter':
     specifier: ^8.2.1
-    version: 8.2.1(socket.io-adapter@2.5.2)
+    version: 8.2.1(socket.io-adapter@2.5.4)
   '@socket.io/redis-streams-adapter':
-    specifier: ^0.1.0
-    version: 0.1.0(socket.io-adapter@2.5.2)
+    specifier: ^0.2.0
+    version: 0.2.0(socket.io-adapter@2.5.4)
   bcrypt:
     specifier: ^5.1.1
     version: 5.1.1
@@ -864,7 +864,7 @@ packages:
   /@socket.io/component-emitter@3.1.0:
     resolution: {integrity: sha512-+9jVqKhRSpsc591z5vX+X5Yyw+he/HCB4iQ/RYxw35CEPaY1gnsNE43nf9n9AaYjAQrTiI/mOwKUKdUs9vf7Xg==}
 
-  /@socket.io/redis-adapter@8.2.1(socket.io-adapter@2.5.2):
+  /@socket.io/redis-adapter@8.2.1(socket.io-adapter@2.5.4):
     resolution: {integrity: sha512-6Dt7EZgGSBP0qvXeOKGx7NnSr2tPMbVDfDyL97zerZo+v69hMfL99skMCL3RKZlWVqLyRme2T0wcy3udHhtOsg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
@@ -872,21 +872,21 @@ packages:
     dependencies:
       debug: 4.3.4
       notepack.io: 3.0.1
-      socket.io-adapter: 2.5.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      socket.io-adapter: 2.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       uid2: 1.0.0
     transitivePeerDependencies:
       - supports-color
     dev: false
 
-  /@socket.io/redis-streams-adapter@0.1.0(socket.io-adapter@2.5.2):
-    resolution: {integrity: sha512-8LVPOvXh4+Ibm3UGDmfr5NFj9xOKIZShx0J+cXuAZU5oWBLpOV1H5+XZu2TYX/6BGHtys/Uy/pOrrvRG4uaBRQ==}
+  /@socket.io/redis-streams-adapter@0.2.0(socket.io-adapter@2.5.4):
+    resolution: {integrity: sha512-XNYjInwv1munAt/VBuS3sxGTPo8nsNUadxQ8KN2Z+SPjZMDQ2xdg344BHtFya6kbPPjEgnjL+22XyUSOA0IuGw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
-      socket.io-adapter: ^2.5.2
+      socket.io-adapter: ^2.5.3
     dependencies:
       '@msgpack/msgpack': 2.8.0
       debug: 4.3.4
-      socket.io-adapter: 2.5.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      socket.io-adapter: 2.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -3852,6 +3852,17 @@ packages:
       ws: 8.11.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
+      - utf-8-validate
+    dev: false
+
+  /socket.io-adapter@2.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+    resolution: {integrity: sha512-wDNHGXGewWAjQPt3pyeYBtpWSq9cLE5UW1ZUPL/2eGK9jtse/FpXib7epSTsz0Q0m+6sg6Y4KtcFTlah1bdOVg==}
+    dependencies:
+      debug: 4.3.4
+      ws: 8.11.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
       - utf-8-validate
     dev: false
 
