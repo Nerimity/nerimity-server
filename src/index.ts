@@ -158,7 +158,8 @@ async function vacuumSchedule() {
   rule.minute = 0;
 
   schedule.scheduleJob(rule, async () => {
-    await prisma.$queryRaw`VACUUM VERBOSE ANALYZE "Message"`;
+    const res = await prisma.$queryRaw`VACUUM VERBOSE ANALYZE "Message"`;
+    console.log('VACUUM RESULT', res);
   });
 }
 
