@@ -1,27 +1,9 @@
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
-import {
-  emitDMMessageCreated,
-  emitDMMessageDeleted,
-  emitDMMessageReactionAdded,
-  emitDMMessageReactionRemoved,
-  emitDMMessageUpdated,
-} from '../emits/Channel';
-import {
-  emitServerMessageCreated,
-  emitServerMessageDeleted,
-  emitServerMessageReactionAdded,
-  emitServerMessageReactionRemoved,
-  emitServerMessageUpdated,
-} from '../emits/Server';
+import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated } from '../emits/Channel';
+import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
-import {
-  dateToDateTime,
-  exists,
-  getMessageReactedUserIds,
-  prisma,
-  publicUserExcludeFields,
-} from '../common/database';
+import { dateToDateTime, exists, getMessageReactedUserIds, prisma, publicUserExcludeFields } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -30,18 +12,10 @@ import { removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
-import {
-  sendDmPushNotification,
-  sendServerPushMessageNotification,
-} from '../fcm/pushNotification';
+import { sendDmPushNotification, sendServerPushMessageNotification } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
 import { NotificationPingMode } from './User/User';
-import {
-  CHANNEL_PERMISSIONS,
-  ROLE_PERMISSIONS,
-  addBit,
-  hasBit,
-} from '../common/Bitwise';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
 import { ChannelType } from '../types/Channel';
 import { Log } from '../common/Log';
 
@@ -58,10 +32,7 @@ export const AttachmentProviders = {
   GoogleDrive: 'google_drive',
 } as const;
 
-export const getMessagesByChannelId = async (
-  channelId: string,
-  opts?: GetMessageByChannelIdOpts
-) => {
+export const getMessagesByChannelId = async (channelId: string, opts?: GetMessageByChannelIdOpts) => {
   const limit = opts?.limit || 50;
   if (limit > 100) return [];
 
@@ -163,9 +134,7 @@ export const getMessagesByChannelId = async (
       },
       reactions: {
         select: {
-          ...(opts?.requesterId
-            ? { reactedUsers: { where: { id: opts.requesterId } } }
-            : undefined),
+          ...(opts?.requesterId ? { reactedUsers: { where: { id: opts.requesterId } } } : undefined),
           emojiId: true,
           gif: true,
           name: true,
@@ -200,8 +169,7 @@ export const getMessagesByChannelId = async (
   });
 
   const t1 = performance.now();
-  if (opts?.requesterId === '1289157673362825217')
-    Log.debug(`get messages: ${t1 - t0}ms`);
+  if (opts?.requesterId === '1289157673362825217') Log.debug(`get messages: ${t1 - t0}ms`);
 
   const modifiedMessages = messages.map((message) => {
     (message.reactions as any) = message.reactions.map((reaction) => ({
@@ -220,10 +188,7 @@ export const getMessagesByChannelId = async (
 };
 
 // delete messages sent in the last 7 hours
-export const deleteRecentMessages = async (
-  userId: string,
-  serverId: string
-) => {
+export const deleteRecentMessages = async (userId: string, serverId: string) => {
   const date = new Date();
   date.setHours(date.getHours() + 7);
 
@@ -322,18 +287,13 @@ export const MessageInclude = {
     },
   },
 };
-export const editMessage = async (
-  opts: EditMessageOptions
-): Promise<CustomResult<Partial<Message>, CustomError>> => {
+export const editMessage = async (opts: EditMessageOptions): Promise<CustomResult<Partial<Message>, CustomError>> => {
   const messageExists = await exists(prisma.message, {
     where: { id: opts.messageId, createdById: opts.userId },
   });
 
   if (!messageExists) {
-    return [
-      null,
-      generateError('Message does not exist or is not created by you.'),
-    ];
+    return [null, generateError('Message does not exist or is not created by you.')];
   }
 
   const content = opts.content.trim();
@@ -393,26 +353,12 @@ type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
 const userMentionRegex = /\[@:([\d]+)]/g;
 const quoteMessageRegex = /\[q:([\d]+)]/g;
 
-function constructData(
-  messageData: MessageDataUpdate,
-  creatorId: string,
-  update: true
-): Promise<any>;
-function constructData(
-  messageData: MessageDataCreate,
-  creatorId: string,
-  update?: false | undefined
-): Promise<any>;
+function constructData(messageData: MessageDataUpdate, creatorId: string, update: true): Promise<any>;
+function constructData(messageData: MessageDataCreate, creatorId: string, update?: false | undefined): Promise<any>;
 
-async function constructData(
-  messageData: MessageDataCreate | MessageDataUpdate,
-  creatorId: string,
-  update?: boolean
-) {
+async function constructData(messageData: MessageDataCreate | MessageDataUpdate, creatorId: string, update?: boolean) {
   if (typeof messageData.content === 'string') {
-    const mentionUserIds = removeDuplicates(
-      [...messageData.content.matchAll(userMentionRegex)].map((m) => m[1])
-    );
+    const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1]));
 
     if (mentionUserIds.length) {
       const users = await prisma.user.findMany({
@@ -424,9 +370,7 @@ async function constructData(
       };
     }
 
-    const quotedMessageIds = removeDuplicates(
-      [...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])
-    ).slice(0, 5);
+    const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])).slice(0, 5);
     if (quotedMessageIds.length) {
       const messages = await quotableMessages(quotedMessageIds, creatorId);
       messageData.quotedMessages = {
@@ -547,20 +491,17 @@ export const createMessage = async (opts: SendMessageOptions) => {
     data: { lastMessagedAt: messageCreatedAt },
   });
 
-  const [message] = await prisma
-    .$transaction([createMessageQuery, updateLastMessageQuery])
-    .catch((e) => {
-      console.log(e);
-      return [];
-    });
+  const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]).catch((e) => {
+    console.log(e);
+    return [];
+  });
 
   if (!message) {
     return [null, "Couldn't create message"] as const;
   }
 
   // update sender last seen
-  opts.updateLastSeen !== false &&
-    (await dismissChannelNotification(opts.userId, opts.channelId, false));
+  opts.updateLastSeen !== false && (await dismissChannelNotification(opts.userId, opts.channelId, false));
 
   let channel = opts.channel;
   let server = opts.server;
@@ -569,9 +510,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
     [channel] = await getChannelCache(opts.channelId, opts.userId);
   }
 
-  const isServerChannel =
-    channel?.type === ChannelType.SERVER_TEXT ||
-    channel?.type === ChannelType.CATEGORY;
+  const isServerChannel = channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
 
   if (opts.serverId && isServerChannel) {
     if (!server) {
@@ -591,35 +530,20 @@ export const createMessage = async (opts: SendMessageOptions) => {
       }
 
       if (message.quotedMessages.length) {
-        const userIds = message.quotedMessages.map(
-          (message) => message.createdBy.id
-        );
+        const userIds = message.quotedMessages.map((message) => message.createdBy.id);
         mentionUserIds = [...mentionUserIds, ...userIds];
       }
     }
 
     if (mentionUserIds.length) {
-      await addMention(
-        removeDuplicates(mentionUserIds),
-        opts.serverId,
-        opts.channelId,
-        opts.userId,
-        message,
-        channel!,
-        server!
-      );
+      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message, channel!, server!);
     }
   }
 
   // emit
   if (opts.serverId && isServerChannel) {
     emitServerMessageCreated(message, opts.socketId);
-    sendServerPushMessageNotification(
-      opts.serverId,
-      message,
-      channel!,
-      server!
-    );
+    sendServerPushMessageNotification(opts.serverId, message, channel!, server!);
   }
 
   if (channel?.type === ChannelType.DM_TEXT) {
@@ -630,10 +554,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
     // For DM channels, mentions are notifications for everything.
     // For Server channels, mentions are notifications for @mentions.
     // Don't send notifications for saved notes
-    if (
-      channel?.type === ChannelType.DM_TEXT &&
-      channel.inbox.recipientId !== channel.inbox.createdById
-    ) {
+    if (channel?.type === ChannelType.DM_TEXT && channel.inbox.recipientId !== channel.inbox.createdById) {
       await prisma.messageMention.upsert({
         where: {
           mentionedById_mentionedToId_channelId: {
@@ -666,14 +587,9 @@ export const createMessage = async (opts: SendMessageOptions) => {
   }
   return [message, null] as const;
 };
-const urlRegex = new RegExp(
-  '(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))'
-);
+const urlRegex = new RegExp('(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))');
 
-const addMessageEmbed = async (
-  message: Message,
-  opts: { serverId?: string; channel?: ChannelCache | null }
-) => {
+const addMessageEmbed = async (message: Message, opts: { serverId?: string; channel?: ChannelCache | null }) => {
   const url = message.content?.match(urlRegex)?.[0].trim();
   if (!url) return;
   const OGTags = await getOGTags(url);
@@ -713,10 +629,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
 
   await prisma.message.delete({ where: { id: opts.messageId } });
 
-  if (
-    message.attachments?.[0]?.path &&
-    message.attachments[0].provider === AttachmentProviders.Local
-  ) {
+  if (message.attachments?.[0]?.path && message.attachments[0].provider === AttachmentProviders.Local) {
     deleteImage(message.attachments[0].path);
   }
 
@@ -782,9 +695,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
   if (!message) return [null, generateError('Invalid messageId')] as const;
 
   // check if already reacted
-  const existingReaction = message.reactions[0] as
-    | (typeof message.reactions)[0]
-    | undefined;
+  const existingReaction = message.reactions[0] as (typeof message.reactions)[0] | undefined;
 
   if (existingReaction?._count.reactedUsers) {
     return [null, generateError('You have already reacted.')] as const;
@@ -890,9 +801,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
   if (!message) return [null, generateError('Invalid messageId')] as const;
 
   // check if already reacted
-  const existingReaction = message.reactions[0] as
-    | (typeof message.reactions)[0]
-    | undefined;
+  const existingReaction = message.reactions[0] as (typeof message.reactions)[0] | undefined;
 
   if (!existingReaction?._count?.reactedUsers) {
     return [null, generateError('You have already not reacted')] as const;
@@ -938,10 +847,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelCache(
-      opts.channelId,
-      opts.reactionRemovedByUserId
-    );
+    [channel] = await getChannelCache(opts.channelId, opts.reactionRemovedByUserId);
   }
 
   if (channel?.inbox?.recipientId) {
@@ -957,9 +863,7 @@ interface GetMessageReactedUsersOpts {
   emojiId?: string;
 }
 
-export const getMessageReactedUsers = async (
-  opts: GetMessageReactedUsersOpts
-) => {
+export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) => {
   const reaction = await prisma.messageReaction.findFirst({
     where: {
       messageId: opts.messageId,
@@ -969,8 +873,7 @@ export const getMessageReactedUsers = async (
     select: { id: true },
   });
 
-  if (!reaction)
-    return [null, generateError('Reaction does not exist.')] as const;
+  if (!reaction) return [null, generateError('Reaction does not exist.')] as const;
 
   // this is done this way to get the oldest reacted users first.
   const userIds = await getMessageReactedUserIds(reaction.id);
@@ -1016,15 +919,7 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string) {
   return messages;
 }
 
-async function addMention(
-  userIds: string[],
-  serverId: string,
-  channelId: string,
-  requesterId: string,
-  message: Message,
-  channel: ChannelCache,
-  server: ServerCache
-) {
+async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
   let filteredUserIds = [...userIds];
   // is private channel
   if (hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit)) {
@@ -1042,10 +937,7 @@ async function addMention(
     filteredUserIds = mentionedMembers
       .filter((member) => {
         if (member.userId === server.createdById) return true;
-        const memberRoles = [
-          defaultRole,
-          ...member.roleIds.map((roleId) => roles.find((r) => r.id === roleId)),
-        ];
+        const memberRoles = [defaultRole, ...member.roleIds.map((roleId) => roles.find((r) => r.id === roleId))];
         const permissions = memberRoles.reduce((val, role) => {
           if (!role) return val;
           return addBit(val, role?.permissions);
@@ -1059,37 +951,38 @@ async function addMention(
     where: {
       id: { in: filteredUserIds, not: requesterId },
       servers: { some: { id: serverId } },
-      OR: [
-        {
-          notificationSettings: {
-            none: { serverId: serverId },
-          },
-        },
-        {
-          notificationSettings: {
-            some: {
-              serverId: serverId,
-              NOT: {
-                notificationPingMode: NotificationPingMode.MUTE,
-              },
-            },
-          },
-        },
-      ],
     },
-    select: { id: true },
+    select: {
+      id: true,
+      notificationSettings: {
+        where: {
+          OR: [{ channelId }, { serverId }],
+        },
+        select: { channelId: true, serverId: true, notificationPingMode: true },
+      },
+    },
+  });
+
+  const filteredMentionedUsers = mentionedUsers.filter((user) => {
+    if (!user.notificationSettings.length) return true;
+    const channelNotificationMode = user.notificationSettings.find((n) => n.channelId)?.notificationPingMode;
+    const serverNotificationMode = user.notificationSettings.find((n) => n.serverId)?.notificationPingMode;
+
+    const combined = channelNotificationMode ?? serverNotificationMode;
+    if (combined === null || combined === undefined) return true;
+    return combined !== NotificationPingMode.MUTE;
   });
 
   await prisma.$transaction([
     prisma.userNotification.createMany({
-      data: mentionedUsers.map((user) => ({
+      data: filteredMentionedUsers.map((user) => ({
         id: generateId(),
         userId: user.id,
         messageId: message.id,
         serverId,
       })),
     }),
-    ...mentionedUsers.map((user) =>
+    ...filteredMentionedUsers.map((user) =>
       prisma.messageMention.upsert({
         where: {
           mentionedById_mentionedToId_channelId: {

@@ -48,6 +48,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
           notificationPingMode: true,
           notificationSoundMode: true,
           serverId: true,
+          channelId: true,
           userId: true,
         },
       },

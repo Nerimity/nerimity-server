@@ -498,13 +498,21 @@ export async function updateUserNotificationSettings(
     where,
     create: {
       id: generateId(),
-      ...(channelId ? { userId, channelId } : { userId, serverId: serverId! }),
+      ...(channelId
+        ? { userId, channelId }
+        : {
+            userId,
+            serverId: serverId!,
+            notificationPingMode: NotificationPingMode.ALL,
+            notificationSoundMode: NotificationSoundMode.ALL,
+          }),
       ...update,
     },
     update,
   });
 
   emitUserNotificationSettingsUpdate(userId, update, serverId, channelId);
+  return [true, null] as const;
 }
 
 export async function registerFCMToken(accountId: string, token: string) {

@@ -246,8 +246,8 @@ model UserNotificationSettings {
   channelId String?
   channel Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
-  notificationSoundMode Int @default(0)
-  notificationPingMode Int @default(0) // The red pill alert thing.
+  notificationSoundMode Int?
+  notificationPingMode Int? // The red pill alert thing.
 
 
   @@unique([userId, serverId])

@@ -13,9 +13,7 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   credentials = require('../fcm-credentials.json');
 } catch {
-  Log.warn(
-    'fcm-credentials.json was not provided. Mobile push notifications will not work.'
-  );
+  Log.warn('fcm-credentials.json was not provided. Mobile push notifications will not work.');
 }
 
 if (credentials) {
@@ -46,46 +44,57 @@ export async function sendServerPushMessageNotification(
 ) {
   if (!credentials) return;
   const mentionedUserIds = message.mentions.map((user) => user.id);
-  const tokens = (
-    await prisma.firebaseMessagingToken.findMany({
-      where: {
-        account: {
-          user: {
-            servers: {
-              some: {
-                id: serverId,
-              },
+
+  const users = await prisma.firebaseMessagingToken.findMany({
+    where: {
+      account: {
+        user: {
+          servers: {
+            some: {
+              id: serverId,
             },
-            OR: [
-              {
-                notificationSettings: {
-                  none: { serverId: serverId },
-                },
-              },
-              {
-                notificationSettings: {
-                  some: {
-                    serverId: serverId,
-                    userId: { in: mentionedUserIds },
-                    notificationPingMode: NotificationPingMode.MENTIONS_ONLY,
-                  },
-                },
-              },
-              {
-                notificationSettings: {
-                  some: {
-                    serverId: serverId,
-                    notificationPingMode: NotificationPingMode.ALL,
-                  },
-                },
-              },
-            ],
           },
         },
       },
-      select: { token: true },
-    })
-  ).map((fcm) => fcm.token);
+    },
+    select: {
+      token: true,
+      account: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              notificationSettings: {
+                where: {
+                  OR: [{ channelId: channel.id }, { serverId }],
+                },
+                select: { channelId: true, serverId: true, notificationPingMode: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const filteredUsers = users.filter((fmt) => {
+    const user = fmt.account.user;
+    if (!user.notificationSettings.length) return true;
+    const channelNotificationMode = user.notificationSettings.find((n) => n.channelId)?.notificationPingMode;
+    const serverNotificationMode = user.notificationSettings.find((n) => n.serverId)?.notificationPingMode;
+
+    const combined = channelNotificationMode ?? serverNotificationMode;
+    if (combined === null || combined === undefined) return true;
+
+    if (combined === NotificationPingMode.MENTIONS_ONLY) {
+      return mentionedUserIds.includes(user.id);
+    }
+
+    return combined === NotificationPingMode.ALL;
+  });
+
+  const tokens = filteredUsers.map((fcm) => fcm.token);
+
   if (!tokens.length) return;
 
   const content = message?.content?.substring(0, 100);
@@ -107,9 +116,7 @@ export async function sendServerPushMessageNotification(
     },
   });
 
-  const failedTokens = batchResponse.responses
-    .map((sendResponse, index) => sendResponse.error && tokens[index])
-    .filter((token) => token) as string[];
+  const failedTokens = batchResponse.responses.map((sendResponse, index) => sendResponse.error && tokens[index]).filter((token) => token) as string[];
 
   if (!failedTokens.length) return;
   removeFCMTokens(failedTokens);
@@ -147,18 +154,12 @@ export async function sendDmPushNotification(
       channelId: message.channelId,
       cUserId: message.createdBy.id,
       cName: message.createdBy.username,
-      ...(message.createdBy.avatar
-        ? { uAvatar: message.createdBy.avatar }
-        : undefined),
-      ...(message.createdBy.hexColor
-        ? { uHexColor: message.createdBy.hexColor }
-        : undefined),
+      ...(message.createdBy.avatar ? { uAvatar: message.createdBy.avatar } : undefined),
+      ...(message.createdBy.hexColor ? { uHexColor: message.createdBy.hexColor } : undefined),
     },
   });
 
-  const failedTokens = batchResponse.responses
-    .map((sendResponse, index) => sendResponse.error && tokens[index])
-    .filter((token) => token) as string[];
+  const failedTokens = batchResponse.responses.map((sendResponse, index) => sendResponse.error && tokens[index]).filter((token) => token) as string[];
 
   if (!failedTokens.length) return;
   removeFCMTokens(failedTokens);

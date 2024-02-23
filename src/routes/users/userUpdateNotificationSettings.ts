@@ -64,7 +64,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  await updateUserNotificationSettings(
+  const [result, error] = await updateUserNotificationSettings(
     req.userCache.id,
     {
       ...addToObjectIfExists(
@@ -73,9 +73,13 @@ async function route(req: Request, res: Response) {
       ),
       ...addToObjectIfExists('notificationPingMode', body.notificationPingMode),
     },
-    body.serverId,
+    body.channelId ? undefined : body.serverId,
     body.channelId
   );
+
+  if (error) {
+    return res.status(400).json(error);
+  }
 
   res.json({ status: 'done' });
 }
