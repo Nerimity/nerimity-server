@@ -199,6 +199,10 @@ async function route(req: Request, res: Response) {
       .json(generateError('You must confirm your email to send messages.'));
   }
 
+  if (req.channelCache.type === ChannelType.DM_TEXT && !req.channelCache?.inbox) {
+    return res.status(400).json(generateError('You must open the DM channel first.'));
+  }
+
   if (
     req.channelCache.type === ChannelType.DM_TEXT &&
     !req.channelCache.inbox.canMessage
