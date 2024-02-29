@@ -230,6 +230,8 @@ model Server {
   notificationSettings UserNotificationSettings[]
   memberNotifications         UserNotification[]
 
+  welcomeQuestions ServerWelcomeQuestion[]
+
 
 }
 
@@ -305,6 +307,46 @@ model ServerRole {
 
 }
 
+
+model ServerWelcomeQuestion {
+  id          String   @id
+  createdAt   DateTime @default(now())
+
+  title       String
+  multiselect Boolean
+
+  answers     ServerWelcomeAnswer[]
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+}
+
+model ServerWelcomeAnswer {
+  id          String   @id
+  createdAt   DateTime @default(now())
+
+  title       String
+  questionId  String
+  question    ServerWelcomeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  roleIds     String[]
+
+  answeredUsers AnsweredServerWelcomeQuestion[]
+}
+
+model AnsweredServerWelcomeQuestion {
+  id          String   @id
+  answeredAt  DateTime @default(now())
+
+  answerId    String
+  answer      ServerWelcomeAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+
+  memberId      String
+  member        ServerMember     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+
+
+
+
 model ServerInvite {
   id          String   @id
   code        String
@@ -328,6 +370,10 @@ model ServerMember {
   roleIds  String[]
 
   notifications         UserNotification[]
+
+
+  answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
+
   @@unique([userId, serverId])
 
 }
@@ -625,3 +671,5 @@ model AuditLog {
   reason       String?
   expireAt     DateTime?
 }
+
+

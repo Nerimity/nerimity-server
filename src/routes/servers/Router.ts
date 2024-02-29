@@ -30,6 +30,9 @@ import { serverDelete } from './serverDelete';
 import { serverChannelNoticeDelete } from './ServerChannelNoticeDelete';
 import { serverChannelNoticeUpdate } from './ServerChannelNoticeUpdate';
 import { serverInviteBotJoin } from './serverInviteBot';
+import { serverWelcomeQuestionCreate } from './serverWelcomeQuestionCreate';
+import { serverWelcomeQuestionGet } from './serverWelcomeQuestionsGet';
+import { serverWelcomeQuestionUpdate } from './serverWelcomeQuestionUpdate';
 
 const ServersRouter = Router();
 
@@ -70,5 +73,9 @@ serverEmojiAdd(ServersRouter);
 serverEmojisGet(ServersRouter);
 serverEmojiUpdate(ServersRouter);
 serverEmojiDelete(ServersRouter);
+
+serverWelcomeQuestionCreate(ServersRouter);
+serverWelcomeQuestionGet(ServersRouter);
+serverWelcomeQuestionUpdate(ServersRouter);
 
 export { ServersRouter };
