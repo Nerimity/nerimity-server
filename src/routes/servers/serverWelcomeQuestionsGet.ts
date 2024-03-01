@@ -1,5 +1,4 @@
 import { Request, Response, Router } from 'express';
-import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
@@ -20,11 +19,6 @@ export function serverWelcomeQuestionGet(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const bodyErrors = customExpressValidatorResult(req);
-  if (bodyErrors) {
-    return res.status(400).json(bodyErrors);
-  }
-
   const [questions, error] = await getServerWelcomeQuestions(req.serverCache.id);
 
   if (error) {

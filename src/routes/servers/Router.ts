@@ -33,6 +33,7 @@ import { serverInviteBotJoin } from './serverInviteBot';
 import { serverWelcomeQuestionCreate } from './serverWelcomeQuestionCreate';
 import { serverWelcomeQuestionGet } from './serverWelcomeQuestionsGet';
 import { serverWelcomeQuestionUpdate } from './serverWelcomeQuestionUpdate';
+import { serverWelcomeQuestionDelete } from './serverWelcomeQuestionDelete';
 
 const ServersRouter = Router();
 
@@ -77,5 +78,6 @@ serverEmojiDelete(ServersRouter);
 serverWelcomeQuestionCreate(ServersRouter);
 serverWelcomeQuestionGet(ServersRouter);
 serverWelcomeQuestionUpdate(ServersRouter);
+serverWelcomeQuestionDelete(ServersRouter);
 
 export { ServersRouter };

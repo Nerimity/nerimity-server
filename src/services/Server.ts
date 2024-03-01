@@ -929,3 +929,13 @@ export const getServerWelcomeQuestions = async (serverId: string) => {
   });
   return [questions, null] as const;
 };
+
+export const deleteQuestion = async (serverId: string, questionId: string) => {
+  const question = await prisma.serverWelcomeQuestion.deleteMany({
+    where: { serverId, id: questionId },
+  });
+  if (!question.count) {
+    return [null, generateError('Question not found.')] as const;
+  }
+  return [true, null] as const;
+};
