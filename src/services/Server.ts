@@ -122,6 +122,7 @@ export const getServers = async (userId: string) => {
     include: {
       servers: {
         include: {
+          _count: { select: { welcomeQuestions: true } },
           customEmojis: {
             select: {
               id: true,
@@ -180,6 +181,7 @@ export const joinServer = async (
   const server = await prisma.server.findFirst({
     where: { id: serverId },
     include: {
+      _count: { select: { welcomeQuestions: true } },
       customEmojis: {
         select: { gif: true, id: true, name: true },
       },
