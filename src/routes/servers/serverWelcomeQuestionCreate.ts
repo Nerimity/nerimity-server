@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
@@ -54,6 +54,13 @@ async function route(req: Request, res: Response) {
   }
 
   const body: Body = req.body;
+
+  for (let i = 0; i < body.answers.length; i++) {
+    const answer = body.answers[i];
+    if (!answer?.roleIds) continue;
+    if (answer.roleIds.length <= 5) continue;
+    return res.status(400).json(generateError('Maximum number of roles reached for ' + answer.title));
+  }
 
   const [question, error] = await addServerWelcomeQuestion({
     title: body.title,
