@@ -921,6 +921,7 @@ export const getServerWelcomeQuestions = async (serverId: string) => {
       answers: {
         orderBy: { createdAt: 'asc' },
         select: {
+          _count: { select: { answeredUsers: true } },
           id: true,
           title: true,
           roleIds: true,
