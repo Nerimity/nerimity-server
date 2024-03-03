@@ -950,6 +950,7 @@ export const getServerWelcomeQuestions = async (serverId: string, memberId?: str
       answers: {
         orderBy: { createdAt: 'asc' },
         select: {
+          order: true,
           _count: { select: { answeredUsers: true } },
           ...(memberId ? { answeredUsers: { take: 1, where: { memberId }, select: { id: true } } } : {}),
           id: true,
