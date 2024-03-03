@@ -34,6 +34,8 @@ import { serverWelcomeQuestionCreate } from './serverWelcomeQuestionCreate';
 import { serverWelcomeQuestionGet } from './serverWelcomeQuestionsGet';
 import { serverWelcomeQuestionUpdate } from './serverWelcomeQuestionUpdate';
 import { serverWelcomeQuestionDelete } from './serverWelcomeQuestionDelete';
+import { serverWelcomeAnswer } from './serverWelcomeAnswer';
+import { serverWelcomeAnswerRemove } from './serverWelcomeAnswerRemove';
 
 const ServersRouter = Router();
 
@@ -79,5 +81,8 @@ serverWelcomeQuestionCreate(ServersRouter);
 serverWelcomeQuestionGet(ServersRouter);
 serverWelcomeQuestionUpdate(ServersRouter);
 serverWelcomeQuestionDelete(ServersRouter);
+
+serverWelcomeAnswer(ServersRouter);
+serverWelcomeAnswerRemove(ServersRouter);
 
 export { ServersRouter };

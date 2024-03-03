@@ -18,11 +18,13 @@ export function serverWelcomeQuestionUpdate(Router: Router) {
 
     body('title').not().isEmpty().withMessage('Title is required').isString().withMessage('Title must be a string.').isLength({ min: 1, max: 200 }).withMessage('Title must be between 2 and 200 characters long.').optional({ nullable: true }),
 
+    body('order').isNumeric().withMessage('Order must be a number.').optional({ nullable: true }),
     body('multiselect').isBoolean().withMessage('Multiselect must be a boolean.').optional({ nullable: true }),
 
     body('answers').isArray().withMessage('Answers must be an array.'),
 
     body('answers.*.title').not().isEmpty().withMessage('Title is required').isString().withMessage('Title must be a string.').isLength({ min: 1, max: 200 }).withMessage('Title must be between 2 and 200 characters long.'),
+    body('answers.*.order').not().isEmpty().withMessage('Order is required').isNumeric().withMessage('Order must be a number.'),
 
     body('answers.*.roleIds').isArray().withMessage('RoleIds must be an array.'),
 
@@ -40,12 +42,14 @@ export function serverWelcomeQuestionUpdate(Router: Router) {
 interface Answer {
   title: string;
   roleIds: string[];
+  order: number;
 }
 
 interface Body {
   title: string;
   multiselect: boolean;
   answers: Answer[];
+  order: number;
 }
 
 async function route(req: Request, res: Response) {
@@ -68,6 +72,7 @@ async function route(req: Request, res: Response) {
 
   const [question, error] = await updateServerWelcomeQuestion({
     id: questionId,
+    order: body.order,
     serverId: req.serverCache.id,
     ...addToObjectIfExists('title', body.title),
     ...addToObjectIfExists('multiselect', body.multiselect),

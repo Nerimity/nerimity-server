@@ -318,6 +318,9 @@ model ServerWelcomeQuestion {
   answers     ServerWelcomeAnswer[]
   serverId    String
   server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  order       Int
+
+  answeredUsers AnsweredServerWelcomeQuestion[]
 }
 
 model ServerWelcomeAnswer {
@@ -330,17 +333,23 @@ model ServerWelcomeAnswer {
   roleIds     String[]
 
   answeredUsers AnsweredServerWelcomeQuestion[]
+  order       Int
 }
 
 model AnsweredServerWelcomeQuestion {
   id          String   @id
   answeredAt  DateTime @default(now())
 
+  questionId  String
+  question    ServerWelcomeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
   answerId    String
   answer      ServerWelcomeAnswer @relation(fields: [answerId], references: [id], onDelete: Cascade)
 
   memberId      String
   member        ServerMember     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, answerId])
 }
 
 

@@ -1,4 +1,4 @@
-import { Channel, Prisma, Server } from '@prisma/client';
+import { Channel, Server } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { excludeFields, exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
@@ -23,6 +23,7 @@ import { deleteServerCache } from '../cache/ServerCache';
 import { getPublicServer } from './Explore';
 import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
+import { removeDuplicates } from '../common/utils';
 
 interface CreateServerOptions {
   name: string;
@@ -767,6 +768,7 @@ export const getPublicServerFromEmoji = async (emojiId: string) => {
 interface Answer {
   title: string;
   roleIds: string[];
+  order: number;
 }
 
 interface AddServerWelcomeQuestionOpts {
@@ -777,6 +779,11 @@ interface AddServerWelcomeQuestionOpts {
 }
 
 export const addServerWelcomeQuestion = async (opts: AddServerWelcomeQuestionOpts) => {
+  for (let i = 0; i < opts.answers.length; i++) {
+    const answer = opts.answers[i]!;
+    if (answer.order && (answer.order < 0 || answer.order > 20)) return [null, generateError('Invalid order.')] as const;
+  }
+
   const server = await prisma.server.findUnique({
     where: { id: opts.serverId },
   });
@@ -809,12 +816,14 @@ export const addServerWelcomeQuestion = async (opts: AddServerWelcomeQuestionOpt
       serverId: opts.serverId,
       title: opts.title,
       multiselect: opts.multiselect,
+      order: count + 1,
       answers: {
         createMany: {
           data: opts.answers.map((answer) => ({
             id: generateId(),
             title: answer.title,
-            roleIds: answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || [],
+            roleIds: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
+            order: answer.order,
           })),
         },
       },
@@ -831,11 +840,21 @@ type UpdateServerWelcomeQuestionOpts = {
   id: string;
   serverId: string;
   title?: string;
+  order?: number;
   multiselect?: boolean;
   answers: Partial<Answer & { id: string }>[];
 };
 
 export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuestionOpts) => {
+  if (opts.order && (opts.order < 0 || opts.order > 20)) return [null, generateError('Invalid order.')] as const;
+
+  if (opts.answers) {
+    for (let i = 0; i < opts.answers.length; i++) {
+      const answer = opts.answers[i]!;
+      if (answer.order && (answer.order < 0 || answer.order > 20)) return [null, generateError('Invalid order.')] as const;
+    }
+  }
+
   const server = await prisma.serverWelcomeQuestion.findUnique({
     where: { id: opts.id, serverId: opts.serverId },
   });
@@ -873,6 +892,7 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
       data: {
         ...addToObjectIfExists('title', opts.title),
         ...addToObjectIfExists('multiselect', opts.multiselect),
+        ...addToObjectIfExists('order', opts.order),
       },
     }),
     ...opts.answers.map((answer) =>
@@ -882,14 +902,16 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
           id: generateId(),
           questionId: opts.id,
           title: answer.title || 'Untitled Answer',
-          roleIds: answer.roleIds?.filter((roleId) => validRoleIds.includes(roleId)) || [],
+          order: answer.order!,
+          roleIds: removeDuplicates(answer.roleIds?.filter((roleId) => validRoleIds.includes(roleId)) || []),
         },
         update: {
           ...addToObjectIfExists('title', answer.title),
+          ...addToObjectIfExists('order', answer.order),
           ...(answer.roleIds
             ? {
                 roleIds: {
-                  set: answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || [],
+                  set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
                 },
               }
             : {}),
@@ -913,7 +935,7 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
   return [question, null] as const;
 };
 
-export const getServerWelcomeQuestions = async (serverId: string) => {
+export const getServerWelcomeQuestions = async (serverId: string, memberId?: string) => {
   const questions = await prisma.serverWelcomeQuestion.findMany({
     where: { serverId },
     orderBy: { createdAt: 'asc' },
@@ -922,6 +944,7 @@ export const getServerWelcomeQuestions = async (serverId: string) => {
         orderBy: { createdAt: 'asc' },
         select: {
           _count: { select: { answeredUsers: true } },
+          ...(memberId ? { answeredUsers: { take: 1, where: { memberId }, select: { id: true } } } : {}),
           id: true,
           title: true,
           roleIds: true,
@@ -930,7 +953,17 @@ export const getServerWelcomeQuestions = async (serverId: string) => {
       },
     },
   });
-  return [questions, null] as const;
+  const formattedQuestions = questions.map((question) => {
+    return {
+      ...question,
+      answers: question.answers.map((answer) => ({
+        ...answer,
+        answeredUsers: undefined,
+        ...(memberId ? { answered: answer.answeredUsers.length > 0 } : {}),
+      })),
+    };
+  });
+  return [formattedQuestions, null] as const;
 };
 
 export const deleteQuestion = async (serverId: string, questionId: string) => {

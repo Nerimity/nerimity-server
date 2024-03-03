@@ -5,15 +5,13 @@ import { redisClient } from '../common/redis';
 import { SERVER_MEMBERS_KEY_HASH } from './CacheKeys';
 
 export interface ServerMemberCache {
+  id: string;
   userId: string;
   permissions: number;
   topRoleOrder: number;
 }
 
-export const getServerMemberCache = async (
-  serverId: string,
-  userId: string
-): Promise<CustomResult<ServerMemberCache, string>> => {
+export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
   const key = SERVER_MEMBERS_KEY_HASH(serverId);
 
   let stringifiedMember = await redisClient.hGet(key, userId);
@@ -45,6 +43,7 @@ export const getServerMemberCache = async (
   }
 
   stringifiedMember = JSON.stringify({
+    id: serverMember.id,
     userId: serverMember.userId,
     permissions,
     topRoleOrder: roles[0].order,
@@ -63,9 +62,7 @@ export const deleteAllServerMemberCache = (serverId: string) => {
   return redisClient.del(key);
 };
 
-export const getServerMembersCache = async (
-  serverId: string
-): Promise<ServerMemberCache[]> => {
+export const getServerMembersCache = async (serverId: string): Promise<ServerMemberCache[]> => {
   const key = SERVER_MEMBERS_KEY_HASH(serverId);
 
   const members = await redisClient.hGetAll(key);

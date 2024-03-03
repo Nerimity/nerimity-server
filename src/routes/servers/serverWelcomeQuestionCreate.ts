@@ -25,6 +25,7 @@ export function serverWelcomeQuestionCreate(Router: Router) {
 
     body('answers.*.roleIds').isArray().withMessage('RoleIds must be an array.').optional({ nullable: true }),
 
+    body('answers.*.order').not().isEmpty().withMessage('Order is required').isNumeric().withMessage('Order must be a number.'),
     body('answers.*.roleIds.*').isString().withMessage('RoleIds must be a string.'),
 
     rateLimit({
@@ -39,12 +40,14 @@ export function serverWelcomeQuestionCreate(Router: Router) {
 interface Answer {
   title: string;
   roleIds: string[];
+  order: number;
 }
 
 interface Body {
   title: string;
   multiselect: boolean;
   answers: Answer[];
+  order: number;
 }
 
 async function route(req: Request, res: Response) {
