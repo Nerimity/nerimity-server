@@ -804,6 +804,7 @@ export const addServerWelcomeQuestion = async (opts: AddServerWelcomeQuestionOpt
       serverId: opts.serverId,
       id: {
         in: opts.answers.flatMap((answer) => answer.roleIds || []),
+        not: server.defaultRoleId,
       },
     },
     select: { id: true },
@@ -855,8 +856,13 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
     }
   }
 
-  const server = await prisma.serverWelcomeQuestion.findUnique({
+  const questionExists = await prisma.serverWelcomeQuestion.findUnique({
     where: { id: opts.id, serverId: opts.serverId },
+  });
+  if (!questionExists) return [null, generateError('Question not found.')] as const;
+
+  const server = await prisma.server.findUnique({
+    where: { id: opts.serverId },
   });
   if (!server) return [null, generateError('Server not found.')] as const;
 
@@ -867,6 +873,7 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
       serverId: opts.serverId,
       id: {
         in: opts.answers.flatMap((answer) => answer.roleIds || []).filter((roleId) => roleId),
+        not: server.defaultRoleId,
       },
     },
     select: { id: true },
@@ -948,6 +955,7 @@ export const getServerWelcomeQuestions = async (serverId: string, memberId?: str
           id: true,
           title: true,
           roleIds: true,
+          questionId: true,
           createdAt: true,
         },
       },

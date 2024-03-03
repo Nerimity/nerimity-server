@@ -206,7 +206,7 @@ export const removeWelcomeAnswerRolesFromUser = async (opts: RemoveWelcomeAnswer
     for (let i = 0; i < answers.length; i++) {
       const questionAnswer = answers[i]!;
       if (questionAnswer.id === answer.id) continue;
-      newRoles = newRoles.filter((roleId) => roleId !== questionAnswer.roleIds![i]!);
+      newRoles = newRoles.filter((roleId) => !questionAnswer.roleIds.includes(roleId));
     }
   }
   const transaction = [];
