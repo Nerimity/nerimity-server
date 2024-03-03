@@ -5,19 +5,9 @@ import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { ROLE_PERMISSIONS } from '../common/Bitwise';
-import {
-  emitServerRoleCreated,
-  emitServerRoleDeleted,
-  emitServerRoleOrderUpdated,
-  emitServerRoleUpdated,
-} from '../emits/Server';
+import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleOrderUpdated, emitServerRoleUpdated } from '../emits/Server';
 
-export const createServerRole = async (
-  name: string,
-  creatorId: string,
-  serverId: string,
-  opts?: { permissions?: number; bot?: boolean }
-) => {
+export const createServerRole = async (name: string, creatorId: string, serverId: string, opts?: { permissions?: number; bot?: boolean }) => {
   const server = await prisma.server.findFirst({
     where: { id: serverId },
     select: { defaultRoleId: true },
@@ -25,15 +15,13 @@ export const createServerRole = async (
 
   if (!opts?.bot) {
     const roleCount = await prisma.serverRole.count({
-      where: { serverId, botRole: { not: true } },
+      where: {
+        serverId,
+        OR: [{ botRole: false }, { botRole: null }],
+      },
     });
     if (roleCount >= env.MAX_ROLES_PER_SERVER) {
-      return [
-        null,
-        generateError(
-          'You already created the maximum amount of roles for this server.'
-        ),
-      ] as const;
+      return [null, generateError('You already created the maximum amount of roles for this server.')] as const;
     }
   }
 
@@ -82,11 +70,7 @@ export interface UpdateServerRoleOptions {
   hideRole?: boolean;
 }
 
-export const updateServerRole = async (
-  serverId: string,
-  roleId: string,
-  update: UpdateServerRoleOptions
-): Promise<CustomResult<UpdateServerRoleOptions, CustomError>> => {
+export const updateServerRole = async (serverId: string, roleId: string, update: UpdateServerRoleOptions): Promise<CustomResult<UpdateServerRoleOptions, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -114,11 +98,7 @@ export const updateServerRole = async (
   return [update, null];
 };
 
-export const deleteServerRole = async (
-  serverId: string,
-  roleId: string,
-  opts?: { forceDeleteBotRole: boolean }
-) => {
+export const deleteServerRole = async (serverId: string, roleId: string, opts?: { forceDeleteBotRole: boolean }) => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -144,10 +124,7 @@ export const deleteServerRole = async (
   });
   serverRoles = serverRoles.filter((role) => role.id !== roleId);
 
-  const transactions = [
-    removeRoleIdFromServerMembers(roleId),
-    prisma.serverRole.delete({ where: { id: roleId } }),
-  ];
+  const transactions = [removeRoleIdFromServerMembers(roleId), prisma.serverRole.delete({ where: { id: roleId } })];
 
   for (let i = 0; i < serverRoles.length; i++) {
     const role = serverRoles[i];
@@ -166,11 +143,7 @@ export const deleteServerRole = async (
   return [role, null];
 };
 
-export const updateServerRoleOrder = async (
-  requesterTopRole: number,
-  serverId: string,
-  roleIds: string[]
-) => {
+export const updateServerRoleOrder = async (requesterTopRole: number, serverId: string, roleIds: string[]) => {
   const server = await prisma.server.findFirst({
     where: { id: serverId },
     include: {
@@ -195,19 +168,12 @@ export const updateServerRoleOrder = async (
     return [null, generateError('Role count does not match.')];
   }
 
-  if (
-    server.roles.filter((role) => roleIds.includes(role.id)).length !==
-    roleIds.length
-  ) {
+  if (server.roles.filter((role) => roleIds.includes(role.id)).length !== roleIds.length) {
     return [null, generateError('Provide all role Ids to update the order.')];
   }
 
-  const defaultRoleOrderIndex = server.roles.findIndex(
-    (role) => role.id === server.defaultRoleId
-  );
-  const defaultRoleNewOrderIndex = roleIds.findIndex(
-    (roleId) => roleId === server.defaultRoleId
-  );
+  const defaultRoleOrderIndex = server.roles.findIndex((role) => role.id === server.defaultRoleId);
+  const defaultRoleNewOrderIndex = roleIds.findIndex((roleId) => roleId === server.defaultRoleId);
 
   if (defaultRoleOrderIndex !== defaultRoleNewOrderIndex) {
     return [null, generateError('Cannot change default role order.')];

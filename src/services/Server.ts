@@ -801,8 +801,8 @@ export const addServerWelcomeQuestion = async (opts: AddServerWelcomeQuestionOpt
 
   const validRoles = await prisma.serverRole.findMany({
     where: {
+      OR: [{ botRole: false }, { botRole: null }],
       serverId: opts.serverId,
-      botRole: { not: true },
       id: {
         in: opts.answers.flatMap((answer) => answer.roleIds || []),
         not: server.defaultRoleId,
@@ -872,13 +872,13 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
   const validRoles = await prisma.serverRole.findMany({
     where: {
       serverId: opts.serverId,
-      botRole: { not: true },
+      OR: [{ botRole: false }, { botRole: null }],
       id: {
         in: opts.answers.flatMap((answer) => answer.roleIds || []).filter((roleId) => roleId),
         not: server.defaultRoleId,
       },
     },
-    select: { id: true },
+    select: { id: true, botRole: true },
   });
   const validRoleIds = validRoles.map((validRole) => validRole.id);
 
