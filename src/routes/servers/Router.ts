@@ -31,7 +31,8 @@ import { serverChannelNoticeDelete } from './ServerChannelNoticeDelete';
 import { serverChannelNoticeUpdate } from './ServerChannelNoticeUpdate';
 import { serverInviteBotJoin } from './serverInviteBot';
 import { serverWelcomeQuestionCreate } from './serverWelcomeQuestionCreate';
-import { serverWelcomeQuestionGet } from './serverWelcomeQuestionsGet';
+import { serverWelcomeQuestionsGet } from './serverWelcomeQuestionsGet';
+import { serverWelcomeQuestionGet } from './serverWelcomeQuestionGet';
 import { serverWelcomeQuestionUpdate } from './serverWelcomeQuestionUpdate';
 import { serverWelcomeQuestionDelete } from './serverWelcomeQuestionDelete';
 import { serverWelcomeAnswer } from './serverWelcomeAnswer';
@@ -78,6 +79,7 @@ serverEmojiUpdate(ServersRouter);
 serverEmojiDelete(ServersRouter);
 
 serverWelcomeQuestionCreate(ServersRouter);
+serverWelcomeQuestionsGet(ServersRouter);
 serverWelcomeQuestionGet(ServersRouter);
 serverWelcomeQuestionUpdate(ServersRouter);
 serverWelcomeQuestionDelete(ServersRouter);

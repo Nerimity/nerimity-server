@@ -937,6 +937,7 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
           id: true,
           title: true,
           roleIds: true,
+          order: true,
         },
       },
     },
@@ -985,4 +986,28 @@ export const deleteQuestion = async (serverId: string, questionId: string) => {
     return [null, generateError('Question not found.')] as const;
   }
   return [true, null] as const;
+};
+
+export const getServerWelcomeQuestion = async (serverId: string, questionId: string) => {
+  const question = await prisma.serverWelcomeQuestion.findFirst({
+    where: { serverId: serverId, id: questionId },
+    include: {
+      answers: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          order: true,
+          _count: { select: { answeredUsers: true } },
+          id: true,
+          title: true,
+          roleIds: true,
+          questionId: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  if (!question) return [null, generateError('Question not found.')] as const;
+
+  return [question, null] as const;
 };
