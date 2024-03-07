@@ -9,6 +9,7 @@ import { applicationBotTokenGet } from './applicationBotTokenGet';
 import { applicationBotTokenRefresh } from './applicationBotTokenRefresh';
 import { applicationDelete } from './applicationDelete';
 import { applicationUpdate } from './applicationUpdate';
+import { applicationExistsCheck } from './applicationExistsCheck';
 
 const ApplicationsRouter = Router();
 
@@ -18,6 +19,7 @@ applicationGet(ApplicationsRouter);
 applicationsCreateBot(ApplicationsRouter);
 applicationDelete(ApplicationsRouter);
 applicationUpdate(ApplicationsRouter);
+applicationExistsCheck(ApplicationsRouter);
 
 applicationBotUpdate(ApplicationsRouter);
 applicationBotGet(ApplicationsRouter);

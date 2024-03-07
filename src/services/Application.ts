@@ -3,10 +3,7 @@ import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { generateHexColor, generateTag } from '../common/random';
 import { UserStatus } from '../types/User';
-import {
-  checkUsernameOrTag,
-  checkUsernameOrTagUpdated,
-} from './User/updateUser';
+import { checkUsernameOrTag, checkUsernameOrTagUpdated } from './User/updateUser';
 import * as nerimityCDN from '../common/nerimityCDN';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { emitUserUpdated } from '../emits/User';
@@ -20,10 +17,7 @@ export async function createApplication(requesterAccountId: string) {
   });
 
   if (count >= 10) {
-    return [
-      null,
-      generateError('You already created the maximum amount of applications!'),
-    ] as const;
+    return [null, generateError('You already created the maximum amount of applications!')] as const;
   }
 
   const application = await prisma.application.create({
@@ -72,6 +66,19 @@ export async function updateApplication(
   return [{ ...sanitizedUpdate, id: application.id }, null] as const;
 }
 
+export async function applicationExists(appId: string) {
+  const application = await prisma.application.findUnique({
+    where: { id: appId },
+    select: { id: true },
+  });
+
+  if (!application) {
+    return [null, generateError('Application not found!')] as const;
+  }
+
+  return [true, null] as const;
+}
+
 export async function getApplication(requesterAccountId: string, id: string) {
   const application = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id },
@@ -97,18 +104,12 @@ export async function getBotToken(requesterAccountId: string, appId: string) {
     return [null, generateError('Application does not have a bot!')] as const;
   }
 
-  const token = generateToken(
-    application.botUserId,
-    application.botTokenVersion
-  );
+  const token = generateToken(application.botUserId, application.botTokenVersion);
 
   return [token, null] as const;
 }
 
-export async function getApplicationBot(
-  appId: string,
-  opts?: { includeCreator?: boolean }
-) {
+export async function getApplicationBot(appId: string, opts?: { includeCreator?: boolean }) {
   const application = await prisma.application.findUnique({
     where: { id: appId },
 
@@ -142,10 +143,7 @@ export async function getApplicationBot(
   return [application.botUser, null] as const;
 }
 
-export async function createBot(
-  applicationId: string,
-  requesterAccountId: string
-) {
+export async function createBot(applicationId: string, requesterAccountId: string) {
   const application = await prisma.application.findUnique({
     where: { id: applicationId, creatorAccountId: requesterAccountId },
     include: {
@@ -158,10 +156,7 @@ export async function createBot(
   }
 
   if (application.botUserId) {
-    return [
-      null,
-      generateError('This application already has a bot!'),
-    ] as const;
+    return [null, generateError('This application already has a bot!')] as const;
   }
 
   const botUser = await prisma.user.create({
@@ -214,8 +209,7 @@ export const updateBot = async (opts: UpdateBotProps) => {
       newUsername: opts.username,
       newTag: opts.tag,
     });
-    if (usernameOrTagCheckResults)
-      return [null, usernameOrTagCheckResults] as const;
+    if (usernameOrTagCheckResults) return [null, usernameOrTagCheckResults] as const;
   }
 
   if (opts.avatar) {
@@ -231,10 +225,7 @@ export const updateBot = async (opts: UpdateBotProps) => {
   }
 
   if (opts.banner) {
-    const [data, error] = await nerimityCDN.uploadBanner(
-      opts.banner,
-      opts.userId
-    );
+    const [data, error] = await nerimityCDN.uploadBanner(opts.banner, opts.userId);
     if (error) return [null, generateError(error)] as const;
     if (data) {
       opts.banner = data.path;
@@ -277,10 +268,7 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
   });
 };
 
-export async function refreshBotToken(
-  requesterAccountId: string,
-  appId: string
-) {
+export async function refreshBotToken(requesterAccountId: string, appId: string) {
   const application = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id: appId },
     select: { botTokenVersion: true, botUserId: true },
