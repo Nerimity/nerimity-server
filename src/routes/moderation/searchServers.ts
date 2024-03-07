@@ -4,12 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
 export function searchServers(Router: Router) {
-  Router.get(
-    '/moderation/servers/search',
-    authenticate(),
-    isModMiddleware,
-    route
-  );
+  Router.get('/moderation/servers/search', authenticate(), isModMiddleware, route);
 }
 
 async function route(req: Request, res: Response) {
@@ -23,7 +18,7 @@ async function route(req: Request, res: Response) {
 
   const servers = await prisma.server.findMany({
     where: {
-      OR: [{ name: { contains: search, mode: 'insensitive' } }, { id: search }],
+      OR: [{ name: { contains: search, mode: 'insensitive' } }, { id: search }, { channels: { some: { id: search } } }],
     },
     orderBy: {
       createdAt: 'desc',
