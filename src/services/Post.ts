@@ -1,24 +1,16 @@
 import { Post, Prisma } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
-import {
-  dateToDateTime,
-  prisma,
-  publicUserExcludeFields,
-} from '../common/database';
+import { dateToDateTime, prisma, publicUserExcludeFields } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { deleteImage } from '../common/nerimityCDN';
 import { FriendStatus } from '../types/Friend';
 import { getBlockedUserIds, isUserBlocked } from './User/User';
+import { replaceBadWords } from '../common/badWords';
 
-function constructInclude(
-  requesterUserId: string,
-  continueIter = true
-): Prisma.PostInclude | null | undefined {
+function constructInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
-    ...(continueIter
-      ? { commentTo: { include: constructInclude(requesterUserId, false) } }
-      : undefined),
+    ...(continueIter ? { commentTo: { include: constructInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
       select: { likedBy: true, comments: { where: { deleted: null } } },
@@ -44,22 +36,16 @@ export async function createPost(opts: CreatePostOpts) {
     if (!comment) {
       return [null, generateError('Comment not found')] as const;
     }
-    const blockedUserIds = await getBlockedUserIds(
-      [comment.createdById],
-      opts.userId
-    );
+    const blockedUserIds = await getBlockedUserIds([comment.createdById], opts.userId);
     if (blockedUserIds.length) {
-      return [
-        null,
-        generateError('You have been blocked by this user!'),
-      ] as const;
+      return [null, generateError('You have been blocked by this user!')] as const;
     }
   }
 
   const post = await prisma.post.create({
     data: {
       id: generateId(),
-      content: opts.content?.trim(),
+      content: opts.content ? replaceBadWords(opts.content?.trim()) : undefined,
       createdById: opts.userId,
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
@@ -89,11 +75,7 @@ export async function createPost(opts: CreatePostOpts) {
   return [post, null] as const;
 }
 
-export async function editPost(opts: {
-  editById: string;
-  postId: string;
-  content: string;
-}) {
+export async function editPost(opts: { editById: string; postId: string; content: string }) {
   const post = await prisma.post.findFirst({
     where: { createdById: opts.editById, deleted: null, id: opts.postId },
     select: { id: true },
@@ -104,18 +86,15 @@ export async function editPost(opts: {
     .update({
       where: { id: opts.postId },
       data: {
-        content: opts.content.trim(),
+        content: replaceBadWords(opts.content?.trim()),
+
         editedAt: dateToDateTime(),
       },
       include: constructInclude(opts.editById),
     })
     .catch(() => {});
 
-  if (!newPost)
-    return [
-      null,
-      generateError('Something went wrong. Try again later.'),
-    ] as const;
+  if (!newPost) return [null, generateError('Something went wrong. Try again later.')] as const;
 
   return [newPost, null] as const;
 }
@@ -254,16 +233,11 @@ interface ConstructBlockedPostOpts {
   bypassBlocked?: boolean;
 }
 
-const constructBlockedPostTemplate = async (
-  opts: ConstructBlockedPostOpts
-): Promise<BlockedPost> => {
+const constructBlockedPostTemplate = async (opts: ConstructBlockedPostOpts): Promise<BlockedPost> => {
   let commentTo = opts.post.commentTo;
 
   if (commentTo && !opts.bypassBlocked) {
-    const commentToBlocked = await isUserBlocked(
-      opts.requesterUserId,
-      commentTo.createdById!
-    );
+    const commentToBlocked = await isUserBlocked(opts.requesterUserId, commentTo.createdById!);
 
     if (commentTo && commentToBlocked) {
       commentTo = await constructBlockedPostTemplate({
@@ -300,10 +274,7 @@ export async function fetchPost(opts: FetchPostOpts) {
   if (!post) return null;
 
   if (!opts.bypassBlocked) {
-    const isBlocked = await isUserBlocked(
-      opts.requesterUserId,
-      post.createdById
-    );
+    const isBlocked = await isUserBlocked(opts.requesterUserId, post.createdById);
     if (isBlocked) {
       return constructBlockedPostTemplate({
         post,
@@ -316,10 +287,7 @@ export async function fetchPost(opts: FetchPostOpts) {
   return post;
 }
 
-export async function likePost(
-  userId: string,
-  postId: string
-): Promise<CustomResult<Post, CustomError>> {
+export async function likePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
   const post = await prisma.post.findFirst({
     where: { deleted: null, id: postId },
   });
@@ -359,10 +327,7 @@ export async function likePost(
   return [newPost, null];
 }
 
-export async function unlikePost(
-  userId: string,
-  postId: string
-): Promise<CustomResult<Post, CustomError>> {
+export async function unlikePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
   const postLike = await prisma.postLike.findFirst({
     where: { likedById: userId, postId },
   });
@@ -380,10 +345,7 @@ export async function unlikePost(
   return [newPost, null];
 }
 
-export async function deletePost(
-  postId: string,
-  userId: string
-): Promise<CustomResult<boolean, CustomError>> {
+export async function deletePost(postId: string, userId: string): Promise<CustomResult<boolean, CustomError>> {
   const post = await prisma.post.findFirst({
     where: { id: postId, createdById: userId },
     include: { attachments: true },
@@ -456,15 +418,10 @@ interface CreatePostNotificationProps {
   type: PostNotificationType;
 }
 
-export async function createPostNotification(
-  opts: CreatePostNotificationProps
-) {
+export async function createPostNotification(opts: CreatePostNotificationProps) {
   let toId = opts.toId;
 
-  if (
-    opts.type === PostNotificationType.LIKED ||
-    opts.type === PostNotificationType.REPLIED
-  ) {
+  if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED) {
     const post = await prisma.post.findFirst({
       where: { id: opts.postId },
       select: { createdById: true },

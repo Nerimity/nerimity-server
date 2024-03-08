@@ -18,6 +18,7 @@ import { NotificationPingMode } from './User/User';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
 import { ChannelType } from '../types/Channel';
 import { Log } from '../common/Log';
+import { replaceBadWords } from '../common/badWords';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -302,11 +303,18 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
     return [null, generateError('Content is required', 'content')];
   }
 
+  let channel = opts.channel;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.userId);
+  }
+  const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
+
   const message = await prisma.message.update({
     where: { id: opts.messageId },
     data: await constructData(
       {
-        content,
+        content: isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
         editedAt: dateToDateTime(),
       },
       opts.userId,
@@ -319,12 +327,6 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
   if (opts.serverId) {
     emitServerMessageUpdated(opts.channelId, opts.messageId, message);
     return [message, null];
-  }
-
-  let channel = opts.channel;
-
-  if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, opts.userId);
   }
 
   if (channel?.inbox?.recipientId) {
@@ -383,11 +385,21 @@ async function constructData(messageData: MessageDataCreate | MessageDataUpdate,
 
 export const createMessage = async (opts: SendMessageOptions) => {
   const messageCreatedAt = dateToDateTime();
+
+  let channel = opts.channel;
+  let server = opts.server;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.userId);
+  }
+
+  const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
+
   const createMessageQuery = prisma.message.create({
     data: await constructData(
       {
         id: generateId(),
-        content: opts.content || '',
+        content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
         createdById: opts.userId,
         channelId: opts.channelId,
         type: opts.type,
@@ -502,13 +514,6 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   // update sender last seen
   opts.updateLastSeen !== false && (await dismissChannelNotification(opts.userId, opts.channelId, false));
-
-  let channel = opts.channel;
-  let server = opts.server;
-
-  if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, opts.userId);
-  }
 
   const isServerChannel = channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
 
