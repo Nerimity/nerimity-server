@@ -12,7 +12,7 @@ export const replaceBadWords = (message: string) => {
     .split(' ')
     .map((word) => {
       if (BadWords.includes(word.toLowerCase())) {
-        return '*'.repeat(word.length);
+        return '#'.repeat(word.length);
       }
       return word;
     })
