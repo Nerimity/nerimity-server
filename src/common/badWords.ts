@@ -4,7 +4,7 @@ const goodWords = ['I love myself', 'I love you', "I'm a good person!", 'uwu <3'
 
 export const replaceBadWords = (message: string) => {
   if (BadWords.includes(message.toLowerCase().trim())) {
-    const randomGoodWord = goodWords[Math.floor(Math.random() * goodWords.length)];
+    const randomGoodWord = goodWords[Math.floor(Math.random() * goodWords.length)]!;
     return randomGoodWord;
   }
 
@@ -14,8 +14,6 @@ export const replaceBadWords = (message: string) => {
     const badWord = BadWords[i]!;
     const hashes = createHashes(badWord);
     cleanMessage = cleanMessage.replaceAll(` ${badWord} `, ` ${hashes} `);
-    cleanMessage = cleanMessage.replaceAll(`${badWord} `, `${hashes} `);
-    cleanMessage = cleanMessage.replaceAll(` ${badWord}`, ` ${hashes}`);
   }
   return cleanMessage.trim();
 };
