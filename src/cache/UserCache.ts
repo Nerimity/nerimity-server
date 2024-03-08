@@ -2,19 +2,8 @@ import { CustomResult } from '../common/CustomResult';
 import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
-import {
-  getSuspensionDetails,
-  getUserWithAccount,
-  isIpBanned,
-} from '../services/User/User';
-import {
-  USER_CACHE_KEY_STRING,
-  BANNED_IP_KEY_SET,
-  CONNECTED_SOCKET_ID_KEY_SET,
-  CONNECTED_USER_ID_KEY_STRING,
-  GOOGLE_ACCESS_TOKEN,
-  USER_PRESENCE_KEY_STRING,
-} from './CacheKeys';
+import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
+import { USER_CACHE_KEY_STRING, BANNED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 
@@ -23,6 +12,11 @@ export interface ActivityStatus {
   name: string;
   action: string;
   startedAt?: number;
+  endsAt?: number;
+
+  imgSrc?: string;
+  title?: string;
+  subtitle?: string;
 }
 export interface Presence {
   userId: string;
@@ -31,10 +25,7 @@ export interface Presence {
   activity?: ActivityStatus | null;
 }
 
-export async function getUserPresences(
-  userIds: string[],
-  includeSocketId = false
-): Promise<Presence[]> {
+export async function getUserPresences(userIds: string[], includeSocketId = false): Promise<Presence[]> {
   const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
     const userId = userIds[i]!;
@@ -82,19 +73,12 @@ export async function updateCachePresence(
   if (presence.custom === null) presence.custom = undefined;
   if (presence.activity === null) presence.activity = undefined;
 
-  await redisClient.set(
-    key,
-    JSON.stringify({ ...currentStatus[0], ...presence })
-  );
+  await redisClient.set(key, JSON.stringify({ ...currentStatus[0], ...presence }));
   return true;
 }
 
 // returns true if the first user is connected.
-export async function addSocketUser(
-  userId: string,
-  socketId: string,
-  presence: Presence
-) {
+export async function addSocketUser(userId: string, socketId: string, presence: Presence) {
   const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
   const userIdKey = CONNECTED_USER_ID_KEY_STRING(socketId);
   const presenceKey = USER_PRESENCE_KEY_STRING(userId);
@@ -161,12 +145,7 @@ export async function getUserIdBySocketId(socketId: string) {
   return userId;
 }
 
-export async function getUserCache(
-  userId: string,
-  beforeCache?: (user: UserCache) => Promise<any | undefined>
-): Promise<
-  CustomResult<UserCache, { type?: string; message: string; data?: any } | null>
-> {
+export async function getUserCache(userId: string, beforeCache?: (user: UserCache) => Promise<any | undefined>): Promise<CustomResult<UserCache, { type?: string; message: string; data?: any } | null>> {
   // First, check in cache
   const cacheKey = USER_CACHE_KEY_STRING(userId);
   const cacheUser = await redisClient.get(cacheKey);
@@ -214,10 +193,7 @@ export async function getUserCache(
 
   return [userCache, null];
 }
-export async function updateUserCache(
-  userId: string,
-  update: Partial<UserCache>
-) {
+export async function updateUserCache(userId: string, update: Partial<UserCache>) {
   const cacheKey = USER_CACHE_KEY_STRING(userId);
   const [user, error] = await getUserCache(userId);
   if (error) return [null, error] as const;
@@ -231,9 +207,7 @@ export async function removeUserCacheByUserIds(userIds: string[]) {
   await redisClient.del(keys);
 }
 
-const beforeAuthenticateCache = async (
-  user: UserCache
-): Promise<{ type?: string; message: string; data?: any } | undefined> => {
+const beforeAuthenticateCache = async (user: UserCache): Promise<{ type?: string; message: string; data?: any } | undefined> => {
   const suspendDetails = await getSuspensionDetails(user.id);
   if (suspendDetails)
     return {
@@ -246,21 +220,13 @@ const beforeAuthenticateCache = async (
     };
 };
 
-export async function authenticateUser(
-  token: string,
-  ipAddress: string
-): Promise<
-  CustomResult<UserCache, { type?: string; message: string; data?: any }>
-> {
+export async function authenticateUser(token: string, ipAddress: string): Promise<CustomResult<UserCache, { type?: string; message: string; data?: any }>> {
   const decryptedToken = decryptToken(token);
   if (!decryptedToken) {
     return [null, { message: 'Invalid token.' }];
   }
 
-  const [userCache, error] = await getUserCache(
-    decryptedToken.userId!,
-    beforeAuthenticateCache
-  );
+  const [userCache, error] = await getUserCache(decryptedToken.userId!, beforeAuthenticateCache);
 
   if (error) {
     return [null, error];
@@ -270,9 +236,7 @@ export async function authenticateUser(
     return [null, { message: 'Invalid token.' }];
   }
   // compare password version
-  const tokenVersion =
-    userCache.account?.passwordVersion ??
-    userCache.application?.botTokenVersion;
+  const tokenVersion = userCache.account?.passwordVersion ?? userCache.application?.botTokenVersion;
   if (tokenVersion !== decryptedToken.passwordVersion) {
     return [null, { message: 'Invalid token.' }];
   }
@@ -347,10 +311,7 @@ export async function isIPAllowedCache(ipAddress: string) {
   return exists;
 }
 
-export async function addGoogleAccessTokenCache(
-  userId: string,
-  accessToken: string
-) {
+export async function addGoogleAccessTokenCache(userId: string, accessToken: string) {
   const key = GOOGLE_ACCESS_TOKEN(userId);
   const multi = redisClient.multi();
   multi.set(key, accessToken);

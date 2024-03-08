@@ -6,19 +6,29 @@ interface Payload {
   name: string;
   action: string;
   startedAt?: number;
+  endsAt?: number;
+
+  imgSrc?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export async function onChangeActivity(socket: Socket, payload: Payload | null) {
   const userId = await getUserIdBySocketId(socket.id);
   if (!userId) return;
 
-
-  const activity = !payload ? null : {
-    socketId: socket.id,
-    action: payload.action,
-    name: payload.name,
-    startedAt: payload.startedAt,
-  } as Partial<ActivityStatus> | null
+  const activity = !payload
+    ? null
+    : ({
+        socketId: socket.id,
+        action: payload.action,
+        name: payload.name,
+        startedAt: payload.startedAt,
+        endsAt: payload.endsAt,
+        imgSrc: payload.imgSrc,
+        title: payload.title,
+        subtitle: payload.subtitle,
+      } as Partial<ActivityStatus> | null);
 
   if (payload) {
     // check if startedAt is a number or undefined
@@ -33,12 +43,10 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
     if (typeof payload.name !== 'string' || payload.name.length > 30) {
       return;
     }
-
   }
 
-  const shouldEmit = await updateCachePresence(userId, { activity: activity as ActivityStatus, userId })
-  delete activity?.socketId
+  const shouldEmit = await updateCachePresence(userId, { activity: activity as ActivityStatus, userId });
+  delete activity?.socketId;
 
   emitUserPresenceUpdate(userId, { activity: activity as ActivityStatus, userId }, !shouldEmit);
 }
-
