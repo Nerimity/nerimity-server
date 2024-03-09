@@ -1,6 +1,12 @@
-const BadWords = ['kys', 'kill yourself', 'kill urself', 'kill myself', 'kms', 'i hope you die', 'i hope u die', 'nigger', 'n!gger', 'n1gger', 'nigg3r', 'faggot', 'fag', 'f@g', 'tranny', 'killing myself'];
+const BadWords = ['kys', 'kill yourself', 'kill youself', 'kill urself', 'kill myself', 'kms', 'i hope you die', 'i hope u die', 'nigger', 'n!gger', 'n1gger', 'nigg3r', 'faggot', 'fag', 'f@g', 'tranny', 'killing myself'];
 
 const goodWords = ['I love myself', 'I love you', "I'm a good person!", 'uwu <3', "You're nice :)", 'Nerimity is Awesome!', 'I love Positivity!', '🥰'];
+
+BadWords.forEach((word) => {
+  if (word.includes('l')) {
+    BadWords.push(word.replaceAll('l', 'i'));
+  }
+});
 
 export const replaceBadWords = (message: string) => {
   if (BadWords.includes(message.toLowerCase().trim())) {
