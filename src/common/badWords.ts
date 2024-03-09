@@ -9,7 +9,7 @@ const badWordsRegex = new RegExp(BadWords.map((w) => ` ${w} `).join('|'), 'gi');
 
 const badWordsWholeRegex = new RegExp(BadWords.map((w) => `^${w}$`).join('|'), 'i');
 
-const goodWords = ['I love myself', 'I love you', "I'm a good person!", 'uwu <3', "You're nice :)", 'Nerimity is Awesome!', 'I love Positivity!', '🥰'];
+const goodWords = ['I love myself', 'I love you', "I'm a good person!", 'uwu <3', "You're nice :)", 'Nerimity is Awesome!', 'I love Positivity!', 'Keep yourself safe 💖', '🥰'];
 
 export const replaceBadWords = (message: string) => {
   if (badWordsWholeRegex.test(message)) {
