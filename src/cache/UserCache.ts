@@ -17,6 +17,7 @@ export interface ActivityStatus {
   imgSrc?: string;
   title?: string;
   subtitle?: string;
+  link?: string;
 }
 export interface Presence {
   userId: string;
