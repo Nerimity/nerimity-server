@@ -50,19 +50,19 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
       return;
     }
     // check if link is a string and is less than 200 characters
-    if (typeof payload.link !== 'string' || payload.link.length > 200) {
+    if (payload.link && (typeof payload.link !== 'string' || payload.link.length > 200)) {
       return;
     }
     // check if imgSrc is a string and is less than 200 characters
-    if (typeof payload.imgSrc !== 'string' || payload.imgSrc.length > 250) {
+    if (payload.imgSrc && (typeof payload.imgSrc !== 'string' || payload.imgSrc.length > 250)) {
       return;
     }
     // check if title is a string and is less than 100 characters
-    if (typeof payload.title !== 'string' || payload.title.length > 30) {
+    if (payload.title && (typeof payload.title !== 'string' || payload.title.length > 30)) {
       return;
     }
     // check if subtitle is a string and is less than 100 characters
-    if (typeof payload.subtitle !== 'string' || payload.subtitle.length > 30) {
+    if (payload.subtitle && (typeof payload.subtitle !== 'string' || payload.subtitle.length > 30)) {
       return;
     }
   }
