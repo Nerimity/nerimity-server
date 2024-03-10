@@ -1,4 +1,4 @@
-const BadWords = ['kys', 'kill yourself', 'kill youself', 'kill urself', 'kill myself', 'kms', 'i hope you die', 'i hope u die', 'nigger', 'n!gger', 'n1gger', 'nigg3r', 'faggot', 'fag', 'f@g', 'tranny', 'killing myself'];
+const BadWords = ['kys', 'kill yourself', 'kill youself', 'kill urself', 'kill myself', 'kms', 'i hope you die', 'i hope u die', 'nigger', 'n!gger', 'n1gger', 'nigg3r', 'niggers', 'niggerz', 'faggot', 'fag', 'f@g', 'tranny', 'killing myself'];
 
 for (let i = 0; i < BadWords.length; i++) {
   const word = BadWords[i]!;
