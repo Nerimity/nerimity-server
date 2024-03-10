@@ -31,8 +31,8 @@ interface CreateServerOptions {
 }
 
 export const hasReachedMaxServers = async (userId: string): Promise<boolean> => {
-  const serverCount = await prisma.server.count({
-    where: { createdById: userId },
+  const serverCount = await prisma.serverMember.count({
+    where: { userId },
   });
   return serverCount > 100;
 };
