@@ -25,6 +25,7 @@ interface Query {
 async function route(req: Request, res: Response) {
   const query = req.query as Query;
   const posts = await fetchPosts({
+    hideIfBlockedByMe: true,
     withReplies: false,
     requesterUserId: req.userCache.id,
     limit: query.limit ? parseInt(query.limit) : undefined,
