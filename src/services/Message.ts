@@ -956,6 +956,7 @@ async function addMention(userIds: string[], serverId: string, channelId: string
     where: {
       id: { in: filteredUserIds, not: requesterId },
       servers: { some: { id: serverId } },
+      friends: { none: { recipientId: requesterId } },
     },
     select: {
       id: true,

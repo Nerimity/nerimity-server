@@ -122,6 +122,8 @@ interface FetchPostsOpts {
   withReplies?: boolean;
   bypassBlocked?: boolean;
 
+  hideIfBlockedByMe?: boolean;
+
   limit?: number;
   afterId?: string;
   beforeId?: string;
@@ -139,6 +141,16 @@ export async function fetchPosts(opts: FetchPostsOpts) {
       ...(!opts.bypassBlocked
         ? {
             createdBy: {
+              ...(opts.hideIfBlockedByMe
+                ? {
+                    recipientFriends: {
+                      none: {
+                        status: FriendStatus.BLOCKED,
+                        userId: opts.requesterUserId,
+                      },
+                    },
+                  }
+                : {}),
               friends: {
                 none: {
                   status: FriendStatus.BLOCKED,
