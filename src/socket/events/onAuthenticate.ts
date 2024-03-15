@@ -1,36 +1,26 @@
 import { Channel, Inbox } from '@prisma/client';
 import { Socket } from 'socket.io';
-import {
-  addSocketUser,
-  authenticateUser,
-  getUserPresences,
-} from '../../cache/UserCache';
+import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/UserCache';
 import { AUTHENTICATED } from '../../common/ClientEventNames';
 import { prisma, publicUserExcludeFields } from '../../common/database';
-import { CHANNEL_PERMISSIONS, hasBit } from '../../common/Bitwise';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../../common/Bitwise';
 import { removeDuplicates } from '../../common/utils';
 import { emitError } from '../../emits/Connection';
 import { emitUserPresenceUpdate } from '../../emits/User';
 import { UserStatus } from '../../types/User';
-import {
-  getAllMessageMentions,
-  getLastSeenServerChannelIdsByUserId,
-} from '../../services/Channel';
+import { getAllMessageMentions, getLastSeenServerChannelIdsByUserId } from '../../services/Channel';
 import { getInbox } from '../../services/Inbox';
 import { getServers } from '../../services/Server';
 import { onDisconnect } from './onDisconnect';
 import { getVoiceUsersByChannelId } from '../../cache/VoiceCache';
+import { serverMemberHasPermission } from '../../common/serverMembeHasPermission';
 
 interface Payload {
   token: string;
 }
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
-  const ip = (
-    socket.handshake.headers['cf-connecting-ip'] ||
-    socket.handshake.headers['x-forwarded-for'] ||
-    socket.handshake.address
-  )?.toString();
+  const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
 
   const [userCache, error] = await authenticateUser(payload.token, ip);
 
@@ -70,12 +60,9 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const { servers, serverChannels, serverMembers, serverRoles } =
-    await getServers(userCache.id);
+  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id);
 
-  const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(
-    userCache.id
-  );
+  const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(userCache.id);
 
   const messageMentions = await getAllMessageMentions(userCache.id);
 
@@ -99,18 +86,29 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     const channel = serverChannels[i]!;
 
     const server = servers.find((server) => server.id === channel.serverId);
-    if (!server)
-      throw new Error(
-        `Server not found (channelId: ${channel.id} serverId: ${channel.serverId})`
-      );
+    if (!server) throw new Error(`Server not found (channelId: ${channel.id} serverId: ${channel.serverId})`);
 
-    const isPrivateChannel = hasBit(
-      channel.permissions || 0,
-      CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-    );
-    const isAdmin = server.createdById === userCache.id;
+    const isCreator = server.createdById === userCache.id;
+    if (isCreator) {
+      socket.join(channel.id);
+      continue;
+    }
 
-    if (isPrivateChannel && !isAdmin) continue;
+    const isPrivateChannel = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+
+    if (!isPrivateChannel) {
+      socket.join(channel.id);
+      continue;
+    }
+
+    const hasPermission = serverMemberHasPermission({
+      permission: ROLE_PERMISSIONS.ADMIN,
+      member: serverMembers.find((member) => member.user.id === userCache.id && member.serverId === server.id)!,
+      serverRoles: serverRoles,
+      defaultRoleId: server.defaultRoleId,
+    });
+    if (!hasPermission) continue;
+
     socket.join(channel.id);
   }
 
@@ -120,11 +118,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     userId: userCache.id,
   });
 
-  const userIds = removeDuplicates([
-    ...serverMembers.map((member) => member.user.id),
-    ...friendUserIds,
-    userCache.id,
-  ]);
+  const userIds = removeDuplicates([...serverMembers.map((member) => member.user.id), ...friendUserIds, userCache.id]);
 
   const presences = await getUserPresences(userIds);
 

@@ -6,6 +6,8 @@ import { arrayDiff, removeDuplicates } from '../common/utils';
 import { deleteAllServerMemberCache } from '../cache/ServerMemberCache';
 import { ServerRole } from '@prisma/client';
 import { generateId } from '../common/flakeId';
+import { updateSingleMemberPrivateChannelSocketRooms } from './Channel';
+import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 
 export const getTopRole = async (serverId: string, userId: string): Promise<CustomResult<ServerRole, CustomError>> => {
   const server = await prisma.server.findFirst({
@@ -81,8 +83,8 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     const removedRoles = arrayDiff<ServerRole[]>(oldRoles, newRoles, 'order');
     const addedRoles = arrayDiff<ServerRole[]>(newRoles, oldRoles, 'order');
 
-    const removedRolePermission = removedRoles.length ? removedRoles[0].order >= topRoleOrder : false;
-    const addedRolePermission = addedRoles.length ? addedRoles[0].order >= topRoleOrder : false;
+    const removedRolePermission = removedRoles.length ? removedRoles[0]!.order >= topRoleOrder : false;
+    const addedRolePermission = addedRoles.length ? addedRoles[0]!.order >= topRoleOrder : false;
 
     // check if updater has higher role order to add the role.
     if (server.createdById !== updatedByUserId && (removedRolePermission || addedRolePermission)) {
@@ -100,6 +102,19 @@ export const updateServerMember = async (serverId: string, userId: string, updat
   await prisma.serverMember.update({
     where: { userId_serverId: { serverId, userId } },
     data: update,
+  });
+
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId },
+    select: { id: true, permissions: true },
+  });
+  const privateChannels = serverChannels.filter((c) => hasBit(c.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit));
+
+  await updateSingleMemberPrivateChannelSocketRooms({
+    channelIds: privateChannels.map((c) => c.id),
+    isPrivate: true,
+    serverId,
+    userId,
   });
 
   deleteAllServerMemberCache(serverId);

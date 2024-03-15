@@ -6,6 +6,7 @@ import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../service
 import { USER_CACHE_KEY_STRING, BANNED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
+import { removeDuplicates } from '../common/utils';
 
 export interface ActivityStatus {
   socketId: string;
@@ -144,6 +145,11 @@ export async function getUserIdBySocketId(socketId: string) {
   const userId = await redisClient.get(CONNECTED_USER_ID_KEY_STRING(socketId));
   if (!userId) return null;
   return userId;
+}
+
+export async function getUserIdsBySocketIds(socketIds: string[]): Promise<string[]> {
+  const userIds = await redisClient.mGet(socketIds.map((socketId) => CONNECTED_USER_ID_KEY_STRING(socketId)));
+  return removeDuplicates(userIds.filter((id) => id) as string[]);
 }
 
 export async function getUserCache(userId: string, beforeCache?: (user: UserCache) => Promise<any | undefined>): Promise<CustomResult<UserCache, { type?: string; message: string; data?: any } | null>> {
