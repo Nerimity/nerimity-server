@@ -19,7 +19,11 @@ async function route(req: Request, res: Response) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     include: {
-      suspension: true,
+      suspension: {
+        include: {
+          suspendBy: true
+        }
+      },
       profile: true,
       devices: { orderBy: { createdAt: 'desc' } },
       servers: {

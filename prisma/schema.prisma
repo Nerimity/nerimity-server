@@ -121,6 +121,9 @@ model User {
   openedTickets         Ticket[]
 
   application           Application? // Bot users will have this
+
+  usersSuspended      Suspension[]               @relation(name: "suspended_by") // Only admins
+
 }
 
 model UserConnection {
@@ -190,6 +193,9 @@ model Suspension {
   suspendedById String
   userId        String       @unique
   user          User         @relation(fields: [userId], references: [id])
+
+  suspendBy     User         @relation(fields: [suspendedById], references: [id], name: "suspended_by")
+
 }
 
 model Server {
