@@ -741,7 +741,7 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
   );
 
   if (opts.categoryId) {
-    const category = channels[opts.categoryId];
+    const category = channels[opts.categoryId]!;
     const isPrivateCategory = hasBit(category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     isPrivateCategory && (await makeChannelsInCategoryPrivate(opts.categoryId, opts.serverId));
   }

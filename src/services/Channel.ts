@@ -1,39 +1,21 @@
 import { Channel, Server } from '@prisma/client';
-import {
-  deleteServerChannelCaches,
-  getChannelCache,
-  updateServerChannelCache,
-} from '../cache/ChannelCache';
-import {
-  ServerMemberCache,
-  getServerMemberCache,
-  getServerMembersCache,
-} from '../cache/ServerMemberCache';
+import { deleteServerChannelCaches, getChannelCache, updateServerChannelCache } from '../cache/ChannelCache';
+import { ServerMemberCache, getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
-import {
-  dateToDateTime,
-  prisma,
-  publicUserExcludeFields,
-} from '../common/database';
+import { dateToDateTime, prisma, publicUserExcludeFields } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { CHANNEL_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
-import {
-  emitServerChannelCreated,
-  emitServerChannelDeleted,
-  emitServerChannelUpdated,
-} from '../emits/Channel';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
+import { emitServerChannelCreated, emitServerChannelDeleted, emitServerChannelUpdated } from '../emits/Channel';
 import { emitNotificationDismissed } from '../emits/User';
 import { ChannelType } from '../types/Channel';
 import { getIO } from '../socket/socket';
 import env from '../common/env';
+import { getUserIdsBySocketIds } from '../cache/UserCache';
+import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
 
-export const dismissChannelNotification = async (
-  userId: string,
-  channelId: string,
-  emit = true
-) => {
+export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
   if (!channel) return;
 
@@ -44,10 +26,7 @@ export const dismissChannelNotification = async (
   ];
 
   if (channel.server) {
-    const [serverMember] = await getServerMemberCache(
-      channel.server.id,
-      userId
-    );
+    const [serverMember] = await getServerMemberCache(channel.server.id, userId);
     if (!serverMember) return;
     const serverId = channel.server.id;
 
@@ -136,19 +115,12 @@ interface CreateServerChannelOpts {
   channelType?: ChannelType;
 }
 
-export const createServerChannel = async (
-  opts: CreateServerChannelOpts
-): Promise<CustomResult<Channel, CustomError>> => {
+export const createServerChannel = async (opts: CreateServerChannelOpts): Promise<CustomResult<Channel, CustomError>> => {
   const channelCount = await prisma.channel.count({
     where: { serverId: opts.serverId },
   });
   if (channelCount >= env.MAX_CHANNELS_PER_SERVER) {
-    return [
-      null,
-      generateError(
-        'You already created the maximum amount of channels for this server.'
-      ),
-    ];
+    return [null, generateError('You already created the maximum amount of channels for this server.')];
   }
 
   const channel = await prisma.channel.create({
@@ -157,10 +129,7 @@ export const createServerChannel = async (
       name: opts.channelName,
       serverId: opts.serverId,
       type: opts.channelType ?? ChannelType.SERVER_TEXT,
-      permissions: addBit(
-        CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
-        CHANNEL_PERMISSIONS.JOIN_VOICE.bit
-      ),
+      permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
       createdById: opts.creatorId,
       order: channelCount + 1,
     },
@@ -179,11 +148,7 @@ export interface UpdateServerChannelOptions {
   icon?: string | null;
 }
 
-export const updateServerChannel = async (
-  serverId: string,
-  channelId: string,
-  update: UpdateServerChannelOptions
-): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
+export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -198,26 +163,11 @@ export const updateServerChannel = async (
   }
 
   if (update.permissions && channel.category) {
-    const wasPrivate = hasBit(
-      channel.permissions || 0,
-      CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-    );
-    const isPrivate = hasBit(
-      update.permissions || 0,
-      CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-    );
+    const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     if (isPrivate !== wasPrivate && !isPrivate) {
-      const isCategoryPrivate = hasBit(
-        channel.category.permissions || 0,
-        CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-      );
-      if (isCategoryPrivate)
-        return [
-          null,
-          generateError(
-            'The category this channel is in is private. Un-private the category to update this permission.'
-          ),
-        ];
+      const isCategoryPrivate = hasBit(channel.category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+      if (isCategoryPrivate) return [null, generateError('The category this channel is in is private. Un-private the category to update this permission.')];
     }
   }
 
@@ -229,33 +179,16 @@ export const updateServerChannel = async (
   });
 
   if (update.permissions !== undefined) {
-    const wasPrivate = hasBit(
-      channel.permissions || 0,
-      CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-    );
-    const isPrivate = hasBit(
-      update.permissions || 0,
-      CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-    );
+    const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     if (wasPrivate !== isPrivate) {
-      const serverMembers = await getServerMembersCache(serverId);
+      if (channel.type === ChannelType.CATEGORY && isPrivate) await makeChannelsInCategoryPrivate(channel.id, server.id);
 
-      if (channel.type === ChannelType.CATEGORY && isPrivate)
-        await makeChannelsInCategoryPrivate(
-          channel.id,
-          server.id,
-          server,
-          serverMembers
-        );
-
-      getIO().in(serverId).socketsLeave(channelId);
-
-      for (let i = 0; i < serverMembers.length; i++) {
-        const member = serverMembers[i];
-        const isAdmin = server.createdById === member.userId;
-        if (isPrivate && !isAdmin) continue;
-        getIO().in(member.userId).socketsJoin(channelId);
-      }
+      await updatePrivateChannelSocketRooms({
+        channelIds: [channelId],
+        isPrivate,
+        serverId,
+      });
     }
   }
 
@@ -264,12 +197,97 @@ export const updateServerChannel = async (
   return [update, null];
 };
 
-export const makeChannelsInCategoryPrivate = async (
-  categoryId: string,
-  serverId: string,
-  server?: Server,
-  serverMembers?: ServerMemberCache[]
-) => {
+interface UpdatePrivateChannelSocketRoomsOpts {
+  channelIds: string[];
+  serverId: string;
+  isPrivate: boolean;
+}
+
+export async function updateSingleMemberPrivateChannelSocketRooms(opts: UpdatePrivateChannelSocketRoomsOpts & { userId: string }) {
+  if (!opts.isPrivate) {
+    getIO().in(opts.userId).socketsJoin(opts.channelIds);
+    return;
+  }
+
+  const roles = await prisma.serverRole.findMany({
+    where: { serverId: opts.serverId },
+  });
+
+  const server = await prisma.server.findUnique({ where: { id: opts.serverId }, select: { createdById: true, defaultRoleId: true } });
+  if (!server) return;
+
+  const member = await prisma.serverMember.findUnique({
+    where: { userId_serverId: { serverId: opts.serverId, userId: opts.userId } },
+    select: { roleIds: true, userId: true },
+  });
+  if (!member) return;
+
+  const isCreator = server.createdById === member.userId;
+
+  if (isCreator) {
+    getIO().in(member.userId).socketsJoin(opts.channelIds);
+    return;
+  }
+  const hasPermission = serverMemberHasPermission({
+    permission: ROLE_PERMISSIONS.ADMIN,
+    member: member,
+    serverRoles: roles,
+    defaultRoleId: server.defaultRoleId,
+  });
+  if (!hasPermission) {
+    getIO().in(member.userId).socketsLeave(opts.channelIds);
+    return;
+  }
+  getIO().in(member.userId).socketsJoin(opts.channelIds);
+}
+
+export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannelSocketRoomsOpts) {
+  if (!opts.isPrivate) {
+    getIO().in(opts.serverId).socketsJoin(opts.channelIds);
+    return;
+  }
+  const onlineMemberSockets = await getIO().in(opts.serverId).fetchSockets();
+  const onlineMemberSocketIds = onlineMemberSockets.map((s) => s.id);
+
+  const onlineUserIds = await getUserIdsBySocketIds(onlineMemberSocketIds);
+
+  const roles = await prisma.serverRole.findMany({
+    where: { serverId: opts.serverId },
+  });
+
+  const server = await prisma.server.findUnique({ where: { id: opts.serverId }, select: { createdById: true, defaultRoleId: true } });
+  if (!server) return;
+
+  const members = await prisma.serverMember.findMany({
+    where: { serverId: opts.serverId, userId: { in: onlineUserIds.filter((id) => id) as string[] } },
+    select: { roleIds: true, userId: true },
+  });
+
+  for (let i = 0; i < members.length; i++) {
+    const member = members[i]!;
+    if (!member) continue;
+
+    const isCreator = server.createdById === member.userId;
+
+    if (isCreator) {
+      getIO().in(member.userId).socketsJoin(opts.channelIds);
+      continue;
+    }
+    const hasPermission = serverMemberHasPermission({
+      permission: ROLE_PERMISSIONS.ADMIN,
+      member: member,
+      serverRoles: roles,
+      defaultRoleId: server.defaultRoleId,
+    });
+    if (!hasPermission) {
+      getIO().in(member.userId).socketsLeave(opts.channelIds);
+      continue;
+    }
+    getIO().in(member.userId).socketsJoin(opts.channelIds);
+  }
+}
+
+export const makeChannelsInCategoryPrivate = async (categoryId: string, serverId: string) => {
   const category = await prisma.channel.findFirst({
     where: { id: categoryId, deleting: null },
     select: { categories: { select: { id: true, permissions: true } } },
@@ -283,10 +301,7 @@ export const makeChannelsInCategoryPrivate = async (
       prisma.channel.update({
         where: { id: channel.id },
         data: {
-          permissions: addBit(
-            channel.permissions || 0,
-            CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit
-          ),
+          permissions: addBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit),
         },
       })
     )
@@ -295,30 +310,14 @@ export const makeChannelsInCategoryPrivate = async (
   const categoryChannelIds = categoryChannels.map((c) => c.id);
   await deleteServerChannelCaches(categoryChannelIds);
 
-  let broadcastOperator = getIO().in(serverId);
-
-  if (!serverMembers) {
-    serverMembers = await getServerMembersCache(serverId);
-  }
-  if (!server) {
-    server = (await prisma.server.findFirst({
-      where: { id: serverId },
-    })) as Server;
-  }
-
-  for (let i = 0; i < serverMembers.length; i++) {
-    const member = serverMembers[i];
-    const isAdmin = server.createdById === member.userId;
-    if (isAdmin) broadcastOperator = broadcastOperator.except(member.userId);
-  }
-
-  broadcastOperator.socketsLeave(categoryChannelIds);
+  await updatePrivateChannelSocketRooms({
+    channelIds: categoryChannelIds,
+    serverId,
+    isPrivate: true,
+  });
 };
 
-export const deleteServerChannel = async (
-  serverId: string,
-  channelId: string
-): Promise<CustomResult<string, CustomError>> => {
+export const deleteServerChannel = async (serverId: string, channelId: string): Promise<CustomResult<string, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -365,24 +364,13 @@ export const deleteServerChannel = async (
   return [channelId, null];
 };
 
-export const upsertChannelNotice = async (
-  content: string,
-  where: { channelId?: string; userId?: string }
-) => {
+export const upsertChannelNotice = async (content: string, where: { channelId?: string; userId?: string }) => {
   if (where.channelId && where.userId) {
-    return [
-      null,
-      generateError(
-        'Only one of channelId and userId can be provided.' as const
-      ),
-    ] as const;
+    return [null, generateError('Only one of channelId and userId can be provided.' as const)] as const;
   }
 
   if (!where.channelId && !where.userId) {
-    return [
-      null,
-      generateError('Either channelId or userId must be provided.' as const),
-    ] as const;
+    return [null, generateError('Either channelId or userId must be provided.' as const)] as const;
   }
 
   const notice = await prisma.chatNotice.upsert({
@@ -398,24 +386,13 @@ export const upsertChannelNotice = async (
   return [notice, null] as const;
 };
 
-export const deleteChannelNotice = async (where: {
-  channelId?: string;
-  userId?: string;
-}) => {
+export const deleteChannelNotice = async (where: { channelId?: string; userId?: string }) => {
   if (where.channelId && where.userId) {
-    return [
-      null,
-      generateError(
-        'Only one of channelId and userId can be provided.' as const
-      ),
-    ] as const;
+    return [null, generateError('Only one of channelId and userId can be provided.' as const)] as const;
   }
 
   if (!where.channelId && !where.userId) {
-    return [
-      null,
-      generateError('Either channelId or userId must be provided.' as const),
-    ] as const;
+    return [null, generateError('Either channelId or userId must be provided.' as const)] as const;
   }
 
   const res = await prisma.chatNotice
@@ -424,32 +401,17 @@ export const deleteChannelNotice = async (where: {
       select: { id: true },
     })
     .catch(() => {});
-  if (!res)
-    return [
-      null,
-      generateError('Channel notice does not exist.' as const),
-    ] as const;
+  if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
   return [true, null] as const;
 };
 
-export const getChannelNotice = async (where: {
-  channelId?: string;
-  userId?: string;
-}) => {
+export const getChannelNotice = async (where: { channelId?: string; userId?: string }) => {
   if (where.channelId && where.userId) {
-    return [
-      null,
-      generateError(
-        'Only one of channelId and userId can be provided.' as const
-      ),
-    ] as const;
+    return [null, generateError('Only one of channelId and userId can be provided.' as const)] as const;
   }
 
   if (!where.channelId && !where.userId) {
-    return [
-      null,
-      generateError('Either channelId or userId must be provided.' as const),
-    ] as const;
+    return [null, generateError('Either channelId or userId must be provided.' as const)] as const;
   }
 
   const res = await prisma.chatNotice
@@ -458,10 +420,6 @@ export const getChannelNotice = async (where: {
       select: { content: true, updatedAt: true, channelId: true, userId: true },
     })
     .catch(() => {});
-  if (!res)
-    return [
-      null,
-      generateError('Channel notice does not exist.' as const),
-    ] as const;
+  if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
   return [res, null] as const;
 };
