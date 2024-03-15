@@ -101,7 +101,12 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       continue;
     }
 
-    const hasPermission = serverMemberHasPermission(ROLE_PERMISSIONS.ADMIN, serverMembers.find((member) => member.user.id === userCache.id && member.serverId === server.id)!, serverRoles);
+    const hasPermission = serverMemberHasPermission({
+      permission: ROLE_PERMISSIONS.ADMIN,
+      member: serverMembers.find((member) => member.user.id === userCache.id && member.serverId === server.id)!,
+      serverRoles: serverRoles,
+      defaultRoleId: server.defaultRoleId,
+    });
     if (!hasPermission) continue;
 
     socket.join(channel.id);
