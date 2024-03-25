@@ -4,4 +4,5 @@ export const AuditLogType = {
   userUpdate: 2,
   serverDelete: 3,
   serverUpdate: 4,
+  postDelete: 5,
 } as const

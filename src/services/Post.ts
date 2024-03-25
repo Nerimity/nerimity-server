@@ -127,11 +127,14 @@ interface FetchPostsOpts {
   limit?: number;
   afterId?: string;
   beforeId?: string;
+
+  where?: Prisma.PostWhereInput
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
   const posts = await prisma.post.findMany({
     where: {
+      ...opts.where,
       ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
       ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
 
@@ -379,6 +382,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
       },
     }),
     prisma.postLike.deleteMany({ where: { postId } }),
+    prisma.attachment.deleteMany({ where: { postId } }),
   ]);
 
   return [true, null];

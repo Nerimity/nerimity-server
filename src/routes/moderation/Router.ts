@@ -17,6 +17,9 @@ import { getAuditLogs } from './getAuditLogs';
 import { getTickets } from './getTickets';
 import { getTicket } from './getTicket';
 import { ticketUpdate } from './updateTicketStatus';
+import { searchPosts } from './searchPosts';
+import { getPosts } from './getPosts';
+import { postBatchSuspend } from './postBatchDelete';
 
 const ModerationRouter = Router();
 
@@ -39,5 +42,9 @@ getServers(ModerationRouter);
 getTicket(ModerationRouter);
 getTickets(ModerationRouter);
 ticketUpdate(ModerationRouter);
+
+searchPosts(ModerationRouter);
+getPosts(ModerationRouter);
+postBatchSuspend(ModerationRouter);
 
 export { ModerationRouter };
