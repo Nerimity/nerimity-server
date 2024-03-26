@@ -72,12 +72,12 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const sanitizedPostIds = removeDuplicates(req.body.postIds) as string[];
 
   const posts = await prisma.post.findMany({
-    where: { id: { in: sanitizedPostIds } },
+    where: { id: { in: sanitizedPostIds }, deleted: null },
     select: {id: true, createdBy: {select: {id: true, username: true}}, attachments: {select: {path: true}}},
   });
   const validPostIds = posts.map((post) => post.id);
   if (!validPostIds.length) {
-    res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
   }
 
   await prisma.$transaction([
