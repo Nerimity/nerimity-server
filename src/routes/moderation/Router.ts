@@ -20,6 +20,7 @@ import { ticketUpdate } from './updateTicketStatus';
 import { searchPosts } from './searchPosts';
 import { getPosts } from './getPosts';
 import { postBatchSuspend } from './postBatchDelete';
+import { useEditSuspension } from './userEditSuspension';
 
 const ModerationRouter = Router();
 
@@ -27,6 +28,8 @@ getAuditLogs(ModerationRouter);
 getStats(ModerationRouter);
 userBatchUnsuspend(ModerationRouter);
 userBatchSuspend(ModerationRouter);
+useEditSuspension(ModerationRouter);
+
 getUsersWithSameIPAddress(ModerationRouter);
 searchUsers(ModerationRouter);
 searchServers(ModerationRouter);

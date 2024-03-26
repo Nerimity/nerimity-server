@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { prisma } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import {
   customExpressValidatorResult,
   generateError,
@@ -8,13 +8,15 @@ import {
 import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
+import { disconnectUsers } from '../../services/Moderation';
 import { isModMiddleware } from './isModMiddleware';
-import { removeUserCacheByUserIds } from '../../cache/UserCache';
+import { removeAllowedIPsCache } from '../../cache/UserCache';
 import { AuditLogType } from '../../common/AuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
+import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 
-export function userBatchUnsuspend(Router: Router) {
-  Router.delete(
+export function useEditSuspension(Router: Router) {
+  Router.patch(
     '/moderation/users/suspend',
     authenticate(),
     isModMiddleware,
@@ -24,6 +26,17 @@ export function userBatchUnsuspend(Router: Router) {
       .withMessage('userIds is required')
       .isArray()
       .withMessage('userIds must be an array.'),
+    body('days')
+      .optional()
+      .isNumeric()
+      .withMessage('Days must be a number.')
+      .isLength({ min: 0, max: 5 })
+      .withMessage('Days must be less than 99999'),
+    body('reason')
+      .optional()
+      .isString()
+      .withMessage('Reason must be a string.')
+      .isLength({ min: 0, max: 500 }),
     body('password')
       .isLength({ min: 4, max: 72 })
       .withMessage('Password must be between 4 and 72 characters long.')
@@ -38,8 +51,17 @@ export function userBatchUnsuspend(Router: Router) {
 
 interface Body {
   userIds: string[];
+  days: number;
+  reason?: string;
   password: string;
 }
+
+const DAY_IN_MS = 86400000;
+const expireAfter = (days: number) => {
+  const now = Date.now();
+  const expireDate = new Date(now + DAY_IN_MS * days);
+  return expireDate;
+};
 
 async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const validateError = customExpressValidatorResult(req);
@@ -70,37 +92,39 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
 
-  const suspensions = await prisma.suspension.findMany({
+  const expireDateTime = req.body.days !== undefined ? dateToDateTime(expireAfter(req.body.days)) : "";
+
+  const suspendedUsers = await prisma.suspension.findMany({
     where: { userId: { in: sanitizedUserIds } },
-    select: {userId: true}
-  })
-  const suspensionsUserId = suspensions.map((suspension) => suspension.userId);
-  await prisma.account.updateMany({
-    where: { userId: { in: suspensionsUserId } },
-    data: { suspendCount: {
-      decrement: 1,
-    } }
-  })
+    select: { userId: true, user: { select: { id: true, username: true } } },
+  });
+  const suspendedUserIds = suspendedUsers.map((suspend) => suspend.userId);
 
-  const [, unsuspendUsers] = await prisma.$transaction([
-    prisma.suspension.deleteMany({
-      where: { userId: { in: sanitizedUserIds } },
-    }),
-    prisma.user.findMany({
-      where: { id: { in: sanitizedUserIds } },
-      select: { id: true, username: true },
-    }),
-  ]);
+  await prisma.$transaction(
+    suspendedUserIds.map((userId) =>
+      prisma.suspension.update({
+        where: { userId },
+        data: { 
+          ...addToObjectIfExists("reason", req.body.reason),
+          ...(req.body.days !== undefined ? {
+            expireAt: req.body.days ? expireDateTime : null
+          } : {})
+        },
+      })
+    )
+  );
 
-  await removeUserCacheByUserIds(sanitizedUserIds);
+  await prisma.firebaseMessagingToken.deleteMany({
+    where: { account: { userId: { in: sanitizedUserIds } } },
+  });
 
   await prisma.auditLog.createMany({
-    data: unsuspendUsers.map((user) => ({
+    data: suspendedUsers.map((suspend) => ({
       id: generateId(),
-      actionType: AuditLogType.userUnsuspend,
+      actionType: AuditLogType.userSuspendUpdate,
       actionById: req.userCache.id,
-      username: user.username,
-      userId: user.id,
+      username: suspend.user.username,
+      userId: suspend.user.id,
     })),
   });
 
