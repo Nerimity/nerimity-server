@@ -151,6 +151,9 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     clearCache: true,
     reason: req.body.reason,
     expire: req.body.days ? expireDateTime : null,
+    by: {
+      username: req.userCache.username,
+    }
   });
 
   if (req.body.ipBan) {

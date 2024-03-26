@@ -7,6 +7,7 @@ interface DisconnectUsersOptions {
   type?: string;
   reason?: string;
   expire?: string | null;
+  by?: {username: string}
   clearCache: boolean;
 }
 
@@ -23,6 +24,7 @@ export async function disconnectUsers(opts: DisconnectUsersOptions) {
       type: opts.type || 'suspend',
       reason: opts.reason,
       expire: opts.expire,
+      ...(opts.by ? { by: opts.by } : {}),
     },
   });
 }

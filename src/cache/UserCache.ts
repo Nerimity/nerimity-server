@@ -223,6 +223,7 @@ const beforeAuthenticateCache = async (user: UserCache): Promise<{ type?: string
         type: 'suspend',
         reason: suspendDetails.reason,
         expire: suspendDetails.expireAt,
+        by: {username: suspendDetails.suspendBy?.username},
       },
     };
 };

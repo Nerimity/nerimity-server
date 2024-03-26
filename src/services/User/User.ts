@@ -72,7 +72,7 @@ export const isIpBanned = async (ipAddress: string) => {
 };
 
 export const getSuspensionDetails = async (userId: string) => {
-  const suspend = await prisma.suspension.findFirst({ where: { userId } });
+  const suspend = await prisma.suspension.findFirst({ where: { userId }, include: {suspendBy: {select: {username: true,}}} });
   if (!suspend) return false;
   if (!suspend.expireAt) return suspend;
 
