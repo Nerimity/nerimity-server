@@ -9,7 +9,7 @@ import { ChannelType } from '../../types/Channel';
 export function channelMessages(Router: Router) {
   Router.get(
     '/channels/:channelId/messages',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     rateLimit({
       name: 'messages',

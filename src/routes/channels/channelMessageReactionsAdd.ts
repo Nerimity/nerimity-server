@@ -9,7 +9,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelMessageReactionsAdd(Router: Router) {
   Router.post(
     '/channels/:channelId/messages/:messageId/reactions',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     body('name')
       .not()

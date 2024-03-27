@@ -27,7 +27,7 @@ export function serverChannelCreate(Router: Router) {
       .isInt({ gt: 0, lt: 3 })
       .withMessage('type must be ')
       .optional(),
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     route

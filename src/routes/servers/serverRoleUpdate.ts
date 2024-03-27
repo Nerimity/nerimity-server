@@ -15,7 +15,7 @@ import { updateServerRole } from '../../services/ServerRole';
 export function serverRoleUpdate(Router: Router) {
   Router.post(
     '/servers/:serverId/roles/:roleId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('name')

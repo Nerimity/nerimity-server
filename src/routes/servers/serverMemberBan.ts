@@ -10,7 +10,7 @@ import { deleteRecentMessages } from '../../services/Message';
 export function serverMemberBan(Router: Router) {
   // Router.delete('/servers/:serverId/members/:userId/ban', 
   Router.post('/servers/:serverId/bans/:userId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.BAN),
     rateLimit({
@@ -21,7 +21,6 @@ export function serverMemberBan(Router: Router) {
     route
   );
 }
-
 
 async function route(req: Request, res: Response) {
 

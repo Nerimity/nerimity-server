@@ -9,7 +9,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelMessageReactedUsers(Router: Router) {
   Router.get(
     '/channels/:channelId/messages/:messageId/reactions/users',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     query('name')
       .not()
@@ -52,8 +52,6 @@ async function route(req: Request, res: Response) {
   if (!query.name) {
     return res.status(403).json('Name is required!');
   }
-
-
 
   if (query.emojiId === 'null') delete query.emojiId;
   const [response, err] = await getMessageReactedUsers({

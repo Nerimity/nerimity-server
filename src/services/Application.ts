@@ -195,6 +195,10 @@ export const updateBot = async (opts: UpdateBotProps) => {
     where: { id: opts.userId },
   });
 
+  if (!user?.bot) {
+    return [null, generateError('User is not a bot!')] as const;
+  }
+
   if (!user) {
     return [null, generateError('Bot does not exist!')] as const;
   }

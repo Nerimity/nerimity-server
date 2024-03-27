@@ -10,7 +10,7 @@ import { kickServerMember } from '../../services/Server';
 
 export function serverMemberKick(Router: Router) {
   Router.delete('/servers/:serverId/members/:userId/kick',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.KICK),
     rateLimit({
@@ -21,7 +21,6 @@ export function serverMemberKick(Router: Router) {
     route
   );
 }
-
 
 async function route(req: Request, res: Response) {
 

@@ -18,7 +18,7 @@ import {
 export function serverRoleUpdateOrder(Router: Router) {
   Router.post(
     '/servers/:serverId/roles/order',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('roleIds').isArray().withMessage('roleIds must be an array.'),

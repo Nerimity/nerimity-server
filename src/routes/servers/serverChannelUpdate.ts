@@ -14,7 +14,7 @@ import { updateServerChannel } from '../../services/Channel';
 export function serverChannelUpdate(Router: Router) {
   Router.post(
     '/servers/:serverId/channels/:channelId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     body('name')

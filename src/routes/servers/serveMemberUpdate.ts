@@ -11,7 +11,7 @@ import { updateServerMember } from '../../services/ServerMember';
 export function serverMemberUpdate(Router: Router) {
   Router.post(
     '/servers/:serverId/members/:userId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('roleIds')

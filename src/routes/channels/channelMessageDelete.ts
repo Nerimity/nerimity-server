@@ -11,7 +11,7 @@ import { ChannelType } from '../../types/Channel';
 export function channelMessageDelete(Router: Router) {
   Router.delete(
     '/channels/:channelId/messages/:messageId',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS, {
       continueOnError: true,

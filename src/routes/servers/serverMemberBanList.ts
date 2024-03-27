@@ -8,7 +8,7 @@ import { serverMemberBans } from '../../services/Server';
 
 export function serverMemberBanList(Router: Router) {
   Router.get('/servers/:serverId/bans',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.BAN),
     rateLimit({
@@ -19,7 +19,6 @@ export function serverMemberBanList(Router: Router) {
     route
   );
 }
-
 
 async function route(req: Request, res: Response) {
   const list = await serverMemberBans(req.serverCache.id);

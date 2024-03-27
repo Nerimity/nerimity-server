@@ -8,7 +8,7 @@ import { serverMemberRemoveBan } from '../../services/Server';
 
 export function serverMemberBanRemove(Router: Router) {
   Router.delete('/servers/:serverId/bans/:userId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.BAN),
     rateLimit({

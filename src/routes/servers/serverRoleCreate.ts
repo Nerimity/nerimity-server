@@ -8,7 +8,7 @@ import { createServerRole } from '../../services/ServerRole';
 export function serverRoleCreate(Router: Router) {
   Router.post(
     '/servers/:serverId/roles',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     route

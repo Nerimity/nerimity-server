@@ -10,7 +10,7 @@ import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 export function userUpdatePresence(Router: Router) {
   Router.post(
     '/users/presence',
-    authenticate(),
+    authenticate({allowBot: true}),
     body('status')
       .optional(true)
       .isNumeric()

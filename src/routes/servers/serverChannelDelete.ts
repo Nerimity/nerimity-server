@@ -8,17 +8,14 @@ import { deleteServerChannel } from '../../services/Channel';
 
 export function serverChannelDelete(Router: Router) {
   Router.delete('/servers/:serverId/channels/:channelId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     route
   );
 }
 
-
-
 async function route(req: Request, res: Response) {
-
 
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {

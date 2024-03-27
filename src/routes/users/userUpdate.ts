@@ -5,6 +5,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { updateUser } from '../../services/User/updateUser';
+import { updateBot } from '../../services/Application';
 
 export function userUpdate(Router: Router) {
   Router.post(
@@ -97,6 +98,21 @@ async function route(req: Request, res: Response) {
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  if (req.userCache.bot) {
+
+    const [result, error] = await updateBot({
+      ...body,
+      userId: req.userCache.id,
+    })
+
+    if (error) {
+      return res.status(400).json(error);
+    }
+  
+    return res.json(result);
+
   }
 
   const [result, error] = await updateUser({

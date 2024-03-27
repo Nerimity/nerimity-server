@@ -10,7 +10,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelTypingIndicator(Router: Router) {
   Router.post(
     '/channels/:channelId/typing',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     channelPermissions({
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,

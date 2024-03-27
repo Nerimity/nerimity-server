@@ -10,7 +10,7 @@ import { updateServerChannelOrder } from '../../services/Server';
 
 export function serverChannelUpdateOrder(Router: Router) {
   Router.post('/servers/:serverId/channels/order',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     body('channelIds')

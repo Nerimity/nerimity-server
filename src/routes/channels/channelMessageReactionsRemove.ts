@@ -9,7 +9,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelMessageReactionsRemove(Router: Router) {
   Router.post(
     '/channels/:channelId/messages/:messageId/reactions/remove',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     body('name')
       .not()

@@ -12,7 +12,7 @@ import { ChannelType } from '../../types/Channel';
 export function channelMessageUpdate(Router: Router) {
   Router.patch(
     '/channels/:channelId/messages/:messageId',
-    authenticate(),
+    authenticate({allowBot: true}),
     channelVerification(),
     channelPermissions({
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,

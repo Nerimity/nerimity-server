@@ -10,7 +10,7 @@ import { deleteServerRole } from '../../services/ServerRole';
 export function serverRoleDelete(Router: Router) {
   Router.delete(
     '/servers/:serverId/roles/:roleId',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     route
