@@ -538,7 +538,7 @@ export async function removeFCMTokens(tokens: string[]) {
 }
 
 export async function getUserNotifications(userId: string) {
-  const notifications = await prisma.userNotification.findMany({
+  const notifications = await prisma.messageNotification.findMany({
     where: {
       userId,
     },
@@ -556,7 +556,7 @@ export async function getUserNotifications(userId: string) {
     const ids = notifications.map((n) => n.id);
 
     // delete older notifications.
-    prisma.userNotification
+    prisma.messageNotification
       .deleteMany({
         where: {
           NOT: { id: { in: ids } },

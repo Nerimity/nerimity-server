@@ -980,7 +980,7 @@ async function addMention(userIds: string[], serverId: string, channelId: string
   });
 
   await prisma.$transaction([
-    prisma.userNotification.createMany({
+    prisma.messageNotification.createMany({
       data: filteredMentionedUsers.map((user) => ({
         id: generateId(),
         userId: user.id,

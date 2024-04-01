@@ -108,7 +108,7 @@ model User {
 
   profile                UserProfile?
 
-  notifications         UserNotification[]
+  messageNotifications         MessageNotification[]
   suspension            Suspension?
 
   devices               UserDevice[]
@@ -152,7 +152,7 @@ model UserDevice {
 }
 
 
-model UserNotification {
+model MessageNotification {
   id             String @id
   userId         String
 
@@ -234,7 +234,7 @@ model Server {
   customEmojis CustomEmoji[]
 
   notificationSettings UserNotificationSettings[]
-  memberNotifications         UserNotification[]
+  memberMessageNotifications         MessageNotification[]
 
   welcomeQuestions ServerWelcomeQuestion[]
 
@@ -384,7 +384,7 @@ model ServerMember {
 
   roleIds  String[]
 
-  notifications         UserNotification[]
+  messageNotifications         MessageNotification[]
 
 
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
@@ -501,7 +501,7 @@ model Message {
 
   embed Json?
 
-  notifications         UserNotification[]
+  messageNotifications         MessageNotification[]
 
   @@index([channelId])
 }
