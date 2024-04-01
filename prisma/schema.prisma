@@ -124,6 +124,12 @@ model User {
 
   usersSuspended      Suspension[]               @relation(name: "suspended_by") // Only admins
 
+
+  notices UserNotices[]
+
+  createdNotices UserNotices[] @relation(name: "created_notices")
+
+
 }
 
 model UserConnection {
@@ -163,6 +169,29 @@ model MessageNotification {
   message        Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
   server         Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
   serverMember   ServerMember? @relation(fields: [userId, serverId], references: [userId, serverId], onDelete: Cascade)
+
+  createdAt               DateTime                @default(now())
+}
+
+
+model UserNotices {
+  id             String @id
+
+  type           Int
+
+  title          String?
+
+  content        String
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+
+
+  createdById      String?
+
+  createdBy        User? @relation(fields: [createdById], references: [id], name: "created_notices")
+
 
   createdAt               DateTime                @default(now())
 }
