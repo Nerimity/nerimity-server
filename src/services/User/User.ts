@@ -569,3 +569,22 @@ export async function getUserNotifications(userId: string) {
 
   return notifications;
 }
+
+export async function dismissUserNotice(noticeId: string, userId: string) {
+  const notice = await prisma.userNotice.findFirst({
+    where: {
+      id: noticeId,
+      userId
+    }
+  })
+
+  if (!notice) {
+    return [null, generateError('Notice not found')];
+  }
+  await prisma.userNotice.delete({
+    where: {
+      id: noticeId
+    }
+  })
+  return [true, null];
+}

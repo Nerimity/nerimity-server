@@ -40,6 +40,8 @@ async function route(req: Request, res: Response) {
       account: {
         select: {
           suspendCount: true,
+          warnExpiresAt: true,
+          warnCount: true,
           email: true,
           emailConfirmCode: true,
           emailConfirmed: true,

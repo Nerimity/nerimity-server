@@ -44,6 +44,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       },
       connections: { select: { id: true, provider: true, connectedAt: true } },
       friends: { include: { recipient: { select: publicUserExcludeFields } } },
+      notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
       account: {
         select: {
           email: true,
@@ -153,6 +154,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       friendRequestStatus: user.account?.friendRequestStatus,
       emailConfirmed: user.account?.emailConfirmed,
       connections: user.connections,
+      notices: user.notices,
     },
     notificationSettings: user.notificationSettings,
     voiceChannelUsers,

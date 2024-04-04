@@ -21,8 +21,11 @@ import { searchPosts } from './searchPosts';
 import { getPosts } from './getPosts';
 import { postBatchSuspend } from './postBatchDelete';
 import { useEditSuspension } from './userEditSuspension';
+import { userBatchWarn } from './userBatchWarn';
 
 const ModerationRouter = Router();
+
+userBatchWarn(ModerationRouter);
 
 getAuditLogs(ModerationRouter);
 getStats(ModerationRouter);

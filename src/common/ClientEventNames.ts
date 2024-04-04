@@ -1,6 +1,7 @@
 export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
 export const USER_UPDATED = 'user:updated';
+export const USER_NOTICE_CREATED = 'user:notice_created';
 
 export const USER_CONNECTION_ADDED = 'user:connection_added';
 export const USER_CONNECTION_REMOVED = 'user:connection_removed';

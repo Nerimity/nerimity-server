@@ -159,7 +159,9 @@ const deleteAccountFromDatabase = async (userId: string, bot?: boolean) => {
       where: { userId },
     }),
     prisma.userDevice.deleteMany({ where: { userId } }),
+    prisma.userConnection.deleteMany({ where: { userId } }),
     prisma.chatNotice.deleteMany({ where: { userId } }),
+    prisma.userNotice.deleteMany({ where: { userId } }),
   ]);
 };
 

@@ -20,8 +20,11 @@ import { userEmailConfirmCode } from './userEmailConfirmCode';
 import { userChannelNoticeDelete } from './userChannelNoticeDelete';
 import { userChannelNoticeGet } from './userChannelNoticeGet';
 import { userChannelNoticeUpdate } from './userChannelNoticeUpdate';
+import { userDismissNotice } from './userDismissNotice';
 
 const UsersRouter = Router();
+
+userDismissNotice(UsersRouter);
 
 userChannelNoticeGet(UsersRouter);
 userChannelNoticeDelete(UsersRouter);

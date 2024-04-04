@@ -1,4 +1,4 @@
-import { Inbox, UserNotificationSettings, User } from '@prisma/client';
+import { Inbox, UserNotificationSettings, User, Prisma } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
 import {
   INBOX_CLOSED,
@@ -8,6 +8,7 @@ import {
   USER_PRESENCE_UPDATE,
   USER_NOTIFICATION_SETTINGS_UPDATE,
   USER_UPDATED,
+  USER_NOTICE_CREATED,
 } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
 import { emitToAll, getIO } from '../socket/socket';
@@ -81,4 +82,17 @@ export const emitUserConnectionAdded = (
   connection: { provider: string; id: string; connectedAt: Date }
 ) => {
   getIO().to(userId).emit(USER_CONNECTION_ADDED, { connection });
+};
+
+const userNotice = Prisma.validator<Prisma.UserNoticeDefaultArgs>()({
+  select: { userId: true, id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } }
+});
+
+type UserNotice = Prisma.UserNoticeGetPayload<typeof userNotice>;
+
+export const emitUserNoticeCreates = ( notices: UserNotice[]) => {
+  for (let i = 0; i < notices.length; i++) {
+    const notice = notices[i]!;
+    getIO().to(notice.userId).emit(USER_NOTICE_CREATED, {...notice, userId: undefined});
+  }
 };

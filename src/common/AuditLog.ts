@@ -6,4 +6,5 @@ export const AuditLogType = {
   serverUpdate: 4,
   postDelete: 5,
   userSuspendUpdate: 6,
+  userWarned: 7
 } as const

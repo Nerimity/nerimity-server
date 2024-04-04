@@ -17,7 +17,7 @@ model Account {
   user            User    @relation(fields: [userId], references: [id])
   suspendCount    Int     @default(0) // How many times the user has been suspended.
   warnCount       Int     @default(0) // How many times the user has been warned.
-  lastWarnedAt    DateTime? // Reset when the user is warned after 6 months.
+  warnExpiresAt   DateTime? // Reset when the user is warned after 6 months.
   postNotificationCount  Int                     @default(0)
   serverOrderIds   String[]
   dmStatus               Int                     @default(0)
@@ -127,9 +127,9 @@ model User {
   usersSuspended      Suspension[]               @relation(name: "suspended_by") // Only admins
 
 
-  notices UserNotices[]
+  notices UserNotice[]
 
-  createdNotices UserNotices[] @relation(name: "created_notices")
+  createdNotices UserNotice[] @relation(name: "created_notices")
 
 
 }
@@ -176,7 +176,7 @@ model MessageNotification {
 }
 
 
-model UserNotices {
+model UserNotice {
   id             String @id
 
   type           Int
