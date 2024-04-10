@@ -33,6 +33,17 @@ export function postCreate(Router: Router) {
       .isLength({ min: 1, max: 500 })
       .withMessage('Content length must be between 1 and 500 characters.')
       .optional(true),
+
+      body('poll.choices')
+      .isArray({min: 0, max: 6})
+      .withMessage("Poll must be an array with minimum 6 choices")
+      .optional(true),
+
+      body('poll.choices.*')
+      .isString()
+      .withMessage("Poll choices must be an array of strings")
+      .isLength({min: 0, max: 56}).withMessage("Poll choices length must be between 1 and 50 characters")
+      .optional(true),
     route
   );
 }
@@ -40,10 +51,27 @@ export function postCreate(Router: Router) {
 interface Body {
   content: string;
   postId?: string; // Used if you want to reply to a post
+  poll?: {
+    choices: string[];
+  }
 }
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
+  if (body.poll) {
+    // used for formdata
+    if (typeof body.poll === "string") {
+      try {
+        body.poll = JSON.parse(body.poll);
+      } catch (e) {
+        return res.status(400).json(generateError("Invalid poll format"));
+      }
+    }
+
+    body.poll!.choices = body.poll!.choices.map(choice => choice.trim()).filter(choice => choice);
+
+  }
+  console.log(body.poll)
 
   const validateError = customExpressValidatorResult(req);
 
@@ -105,6 +133,7 @@ async function route(req: Request, res: Response) {
     userId: req.userCache.id,
     commentToId: body.postId,
     attachment,
+    poll: body.poll,
   });
 
   if (error) {

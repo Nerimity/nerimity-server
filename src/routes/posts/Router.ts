@@ -14,9 +14,11 @@ import { postDelete } from './postDelete';
 import { postEdit } from './postEdit';
 import { postsGetLikes } from './postGetLikes';
 import { postsDiscover } from './postsDiscover';
+import { postPollVote } from './postPollVote';
 
 const PostsRouter = Router();
 
+postPollVote(PostsRouter);
 postNotificationDismiss(PostsRouter);
 postNotificationCount(PostsRouter);
 postNotifications(PostsRouter);

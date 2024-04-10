@@ -10,6 +10,23 @@ import { replaceBadWords } from '../common/badWords';
 
 function constructInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
+    poll: {
+      select: {
+        id: true,
+        _count: {select: {votedUsers: true}},
+        votedUsers: {
+          where: {userId: requesterUserId},
+          select: {pollChoiceId: true},
+        },
+        choices: {
+          select: {
+            id: true,
+            content: true,
+            _count: {select: {votedUsers: true}},
+          }
+        }
+      }
+    },
     ...(continueIter ? { commentTo: { include: constructInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
@@ -27,6 +44,7 @@ interface CreatePostOpts {
   content?: string;
   commentToId?: string;
   attachment?: { width?: number; height?: number; path: string };
+  poll?: {choices: string[]};
 }
 export async function createPost(opts: CreatePostOpts) {
   if (opts.commentToId) {
@@ -60,6 +78,17 @@ export async function createPost(opts: CreatePostOpts) {
             },
           }
         : undefined),
+
+        ...(opts.poll?.choices.length ? {
+          poll: {
+            create: {
+              id: generateId(),
+              choices: {
+                createMany: {data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice }))}
+              }
+            }
+          }
+        } : {})
     },
     include: constructInclude(opts.userId),
   });
@@ -382,6 +411,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
       },
     }),
     prisma.postLike.deleteMany({ where: { postId } }),
+    prisma.postPoll.deleteMany({where: {postId}}),
     prisma.attachment.deleteMany({ where: { postId } }),
   ]);
 
@@ -530,4 +560,56 @@ export async function dismissPostNotification(userId: string) {
     where: { userId },
     data: { postNotificationCount: 0 },
   });
+}
+
+export async function votePostPoll(requesterId: string, postId: string, pollId: string, choiceId: string ) {
+
+  const poll = await prisma.postPoll.findUnique({
+    where: {postId, id: pollId},
+    select: {post: {
+      select: {
+        createdBy: {
+          select: {
+            id: true
+          }
+        }
+      }
+    }}
+  })
+
+  if (!poll) {
+    return [null, generateError('Poll not found.')] as const
+  }
+
+  const blockedUserIds = await getBlockedUserIds([poll?.post.createdBy.id], requesterId);
+  if (blockedUserIds.length) {
+    return [null, generateError('You have been blocked by this user!')] as const;
+  }
+
+  const choice = await prisma.postPollChoice.findUnique({
+    where: {pollId, id: choiceId}
+  })
+  if (!choice) {
+    return [null, generateError('Poll not found.')] as const
+  }
+
+  const alreadyVoted = await prisma.postPollVotedUser.findFirst({
+    where: {userId: requesterId, pollId},
+    select: {id: true}
+  })
+
+  if (alreadyVoted) {
+    return [null, generateError('Already voted.')] as const
+  }
+
+  await prisma.postPollVotedUser.create({
+    data: {
+      id: generateId(),
+      userId: requesterId,
+      pollId,
+      pollChoiceId: choiceId,
+    },
+    select: {id: true}
+  })
+  return [true, null] as const
 }
