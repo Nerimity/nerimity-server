@@ -19,6 +19,7 @@ function constructInclude(requesterUserId: string, continueIter = true): Prisma.
           select: {pollChoiceId: true},
         },
         choices: {
+          orderBy: {id: 'asc'},
           select: {
             id: true,
             content: true,
