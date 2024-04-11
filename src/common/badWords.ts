@@ -5,7 +5,7 @@ for (let i = 0; i < BadWords.length; i++) {
   BadWords[i] = word.replaceAll('l', '(l|i)');
 }
 
-const badWordsRegex = new RegExp(BadWords.map((w) => ` ${w} `).join('|'), 'gi');
+const badWordsRegex = new RegExp(BadWords.map((w) => `\\b${w}\\b`).join('|'), 'gi');
 
 const badWordsWholeRegex = new RegExp(BadWords.map((w) => `^${w}$`).join('|'), 'i');
 
@@ -17,10 +17,8 @@ export const replaceBadWords = (message: string) => {
     return randomGoodWord;
   }
 
-  let cleanMessage = ' ' + message + ' ';
-
-  cleanMessage = cleanMessage.replaceAll(badWordsRegex, createHashes);
-  return cleanMessage.trim();
+  const cleanMessage = message.replaceAll(badWordsRegex, createHashes);
+  return cleanMessage;
 };
 
 const createHashes = (badWord: string) => {
