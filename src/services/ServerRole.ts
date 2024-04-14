@@ -7,6 +7,7 @@ import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleOrderUpdated, emitServerRoleUpdated } from '../emits/Server';
 import { updatePrivateChannelSocketRooms } from './Channel';
+import { isValidHex } from '../common/utils';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string, opts?: { permissions?: number; bot?: boolean }) => {
   const server = await prisma.server.findFirst({
@@ -88,6 +89,9 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
     if (update.hideRole !== undefined) {
       return [null, generateError('Cannot hide default role.')];
     }
+  }
+  if (role.hexColor && !isValidHex(role.hexColor)) {
+    return [null, generateError('Invalid hex color.')]
   }
 
   await prisma.serverRole.update({ where: { id: role.id }, data: update });

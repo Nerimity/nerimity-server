@@ -27,6 +27,9 @@ interface UpdateUserProps {
 
   profile?: {
     bio?: string | null;
+    bgColorOne?: string | null // used for gradient background color
+    bgColorTwo?: string | null // used for gradient background color
+    primaryColor?: string | null
   };
 }
 
@@ -223,6 +226,6 @@ const updateAccountInDatabase = async (
         },
       },
     },
-    include: { user: true },
+    include: { user: {include: {profile: {select: {bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true}}}} },
   });
 };

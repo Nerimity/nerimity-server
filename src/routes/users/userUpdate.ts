@@ -58,12 +58,29 @@ export function userUpdate(Router: Router) {
       .isLength({ min: 4, max: 164 })
       .withMessage('socketId must be between 4 and 255 characters long.')
       .optional({ nullable: true }),
+
     body('bio')
       .isString()
       .withMessage('Bio must be a string.')
       .isLength({ min: 1, max: 1000 })
       .withMessage('Bio must be between 1 and 1000 characters long.')
       .optional({ nullable: true }),
+      body('bgColorOne')
+      .isString()
+      .withMessage('bgColorOne must be a string.')
+      .isLength({ min: 4, max: 100 })
+      .optional({ nullable: true }),
+      body('bgColorTwo')
+      .isString()
+      .withMessage('bgColorTwo must be a string.')
+      .isLength({ min: 4, max: 100 })
+      .optional({ nullable: true }),
+      body('primaryColor')
+      .isString()
+      .withMessage('primaryColor must be a string.')
+      .isLength({ min: 4, max: 100 })
+      .optional({ nullable: true }),
+
     body('dmStatus')
       .isInt({ min: 0, max: 2 })
       .withMessage('dmStatus must be a number.')
@@ -85,10 +102,14 @@ interface Body {
   avatar?: string;
   avatarPoints?: number[];
   banner?: string;
-  bio?: string | null;
   socketId?: string;
   dmStatus?: number;
   friendRequestStatus?: number;
+
+  bio?: string | null;
+  bgColorOne?: string | null
+  bgColorTwo?: string | null
+  primaryColor?: string | null
 }
 
 async function route(req: Request, res: Response) {
@@ -115,6 +136,13 @@ async function route(req: Request, res: Response) {
 
   }
 
+  const profile = {
+    ...(body.bio !== undefined ? { bio: body.bio } : {}),
+    ...(body.bgColorOne !== undefined ? { bgColorOne: body.bgColorOne } : {}),
+    ...(body.bgColorTwo !== undefined ? { bgColorTwo: body.bgColorTwo } : {}),
+    ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {})
+  }
+
   const [result, error] = await updateUser({
     userId: req.userCache.id,
     socketId: body.socketId,
@@ -128,13 +156,11 @@ async function route(req: Request, res: Response) {
     newPassword: body.newPassword,
     ...addToObjectIfExists('dmStatus', body.dmStatus),
     ...addToObjectIfExists('friendRequestStatus', body.friendRequestStatus),
-    ...(body.bio !== undefined
+    ...(Object.keys(profile).length
       ? {
-          profile: {
-            bio: body.bio,
-          },
+          profile
         }
-      : undefined),
+      : {}),
   });
 
   if (error) {

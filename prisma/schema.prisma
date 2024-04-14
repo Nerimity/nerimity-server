@@ -205,6 +205,11 @@ model UserProfile {
   userId    String   @id
   user      User @relation(fields: [userId], references: [id])
   bio       String?
+
+  bgColorOne String? // used for gradient background color
+  bgColorTwo String? // used for gradient background color
+  primaryColor String?
+
 }
 
 model Follower {

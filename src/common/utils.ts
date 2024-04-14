@@ -12,7 +12,6 @@ export function arrayDiff<T>(arr1: any[], arr2: any[], key?: string) {
   }) as unknown as T;
 }
 
-
 export function omitFromObject<T extends object, K extends keyof T>(object: T, keys: K[]): Omit<T, K> {
   const result = { ...object };
   for (const key of keys) {
@@ -20,3 +19,6 @@ export function omitFromObject<T extends object, K extends keyof T>(object: T, k
   }
   return result;
 }
+
+const hexRegex = /^#(([0-9A-Fa-f]{2}){3,4}|[0-9A-Fa-f]{3})$/;
+export const isValidHex = (hex: string) => hexRegex.test(hex);
