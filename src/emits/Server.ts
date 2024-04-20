@@ -1,4 +1,4 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_DELETED_BATCH, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
@@ -137,6 +137,17 @@ export const emitServerMessageDeleted = (data: { channelId: string; messageId: s
 
   io.in(data.channelId).emit(MESSAGE_DELETED, data);
 };
+
+export const emitServerMessageDeletedBatch = (data: { userId: string, serverId: string; fromTime: Date, toTime: Date }) => {
+  const io = getIO();
+
+  io.in(data.serverId).emit(MESSAGE_DELETED_BATCH, {
+    userId: data.userId,
+    fromTime: data.fromTime.getTime(),
+    serverId: data.serverId,
+    toTime: data.toTime.getTime(),
+  });
+}
 
 export const emitServerUpdated = (serverId: string, updated: UpdateServerOptions) => {
   const io = getIO();

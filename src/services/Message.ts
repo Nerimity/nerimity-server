@@ -1,6 +1,6 @@
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
 import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated } from '../emits/Channel';
-import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
+import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
 import { dateToDateTime, exists, getMessageReactedUserIds, prisma, publicUserExcludeFields } from '../common/database';
@@ -190,18 +190,26 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
 
 // delete messages sent in the last 7 hours
 export const deleteRecentMessages = async (userId: string, serverId: string) => {
-  const date = new Date();
-  date.setHours(date.getHours() + 7);
+  const fromTime = new Date();
+  const toTime = new Date();
+  toTime.setHours(toTime.getHours() + 7);
 
   await prisma.message.deleteMany({
     where: {
       createdById: userId,
       channel: { serverId },
       createdAt: {
-        lt: dateToDateTime(date),
+        lt: dateToDateTime(toTime),
       },
     },
   });
+
+  emitServerMessageDeletedBatch({
+    userId,
+    serverId,
+    fromTime,
+    toTime,
+  })
 };
 
 interface EditMessageOptions {

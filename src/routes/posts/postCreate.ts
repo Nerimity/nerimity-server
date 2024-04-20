@@ -71,7 +71,6 @@ async function route(req: Request, res: Response) {
     body.poll!.choices = body.poll!.choices.map(choice => choice.trim()).filter(choice => choice);
 
   }
-  console.log(body.poll)
 
   const validateError = customExpressValidatorResult(req);
 
