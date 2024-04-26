@@ -3,7 +3,7 @@ import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
-import { USER_CACHE_KEY_STRING, BANNED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
+import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
@@ -266,9 +266,8 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
       ];
     }
     await addAllowedIPCache(ipAddress);
+    addDevice(userCache.id, ipAddress);
   }
-
-  addDevice(userCache.id, ipAddress);
 
   return [userCache, null];
 }
@@ -299,7 +298,7 @@ export async function getAllConnectedUserIds() {
 }
 
 export async function addAllowedIPCache(ipAddress: string) {
-  const key = BANNED_IP_KEY_SET();
+  const key = ALLOWED_IP_KEY_SET();
   const multi = redisClient.multi();
 
   multi.sAdd(key, ipAddress);
@@ -309,12 +308,12 @@ export async function addAllowedIPCache(ipAddress: string) {
 }
 
 export async function removeAllowedIPsCache(ipAddresses: string[]) {
-  const key = BANNED_IP_KEY_SET();
+  const key = ALLOWED_IP_KEY_SET();
   await redisClient.sRem(key, ipAddresses);
 }
 
 export async function isIPAllowedCache(ipAddress: string) {
-  const key = BANNED_IP_KEY_SET();
+  const key = ALLOWED_IP_KEY_SET();
   const exists = await redisClient.sIsMember(key, ipAddress);
   return exists;
 }

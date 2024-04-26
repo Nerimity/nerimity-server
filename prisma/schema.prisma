@@ -543,6 +543,7 @@ model Message {
   messageNotifications         MessageNotification[]
 
   @@index([channelId])
+  @@index([channelId, createdAt])
 }
 
 // When deleting a channel or a server, we will delete 1000 messages every 1 minute
@@ -656,6 +657,8 @@ model Post {
   deleted Boolean?
 
   poll PostPoll?
+
+  @@index([createdById, createdAt])
 
 
 }

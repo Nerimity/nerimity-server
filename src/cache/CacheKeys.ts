@@ -22,4 +22,4 @@ export const USER_PRESENCE_KEY_STRING = (userId: string) => `${PREFIX}USER_PRESE
 
 export const RATE_LIMIT_KEY_STRING = (id: string) => `${PREFIX}RATE_LIMIT:${id}` as const;
 
-export const BANNED_IP_KEY_SET = () => `${PREFIX}ALLOWED_IP` as const;
+export const ALLOWED_IP_KEY_SET = () => `${PREFIX}ALLOWED_IP` as const;
