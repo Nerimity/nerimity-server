@@ -19,8 +19,8 @@ export function channelTypingIndicator(Router: Router) {
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.SEND_MESSAGE),
     rateLimit({
       name: 'channel_typing',
-      expireMS: 10000,
-      requestCount: 25,
+      restrictMS: 10000,
+      requests: 25,
     }),
     route
   );

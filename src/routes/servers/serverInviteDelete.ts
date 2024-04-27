@@ -11,8 +11,8 @@ export function serverInviteDelete(Router: Router) {
     serverMemberVerification(),
     rateLimit({
       name: 'delete_server_invite',
-      expireMS: 20000,
-      requestCount: 20,
+      restrictMS: 20000,
+      requests: 20,
     }),
     route
   );

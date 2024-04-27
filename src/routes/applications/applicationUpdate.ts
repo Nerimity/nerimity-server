@@ -21,8 +21,8 @@ export function applicationUpdate(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'update-app',
-      expireMS: 60000,
-      requestCount: 5,
+      restrictMS: 60000,
+      requests: 5,
     }),
     route
   );

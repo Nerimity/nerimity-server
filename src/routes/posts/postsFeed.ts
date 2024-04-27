@@ -9,8 +9,8 @@ export function postsFeed(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_feed',
-      expireMS: 20000,
-      requestCount: 20,
+      restrictMS: 20000,
+      requests: 20,
     }),
     route
   );

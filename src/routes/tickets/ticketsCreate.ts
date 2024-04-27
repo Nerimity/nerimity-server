@@ -30,8 +30,8 @@ export function ticketsCreate(Router: Router) {
 
     rateLimit({
       name: 'tickets-create',
-      expireMS: 60000,
-      requestCount: 3,
+      restrictMS: 60000,
+      requests: 3,
     }),
     route
   );

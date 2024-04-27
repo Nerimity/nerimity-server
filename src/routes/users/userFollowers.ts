@@ -10,8 +10,8 @@ export function userFollowers(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'user_followers',
-      expireMS: 60000,
-      requestCount: 20,
+      restrictMS: 60000,
+      requests: 20,
     }),
     route
   );

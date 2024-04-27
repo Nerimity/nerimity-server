@@ -66,8 +66,8 @@ app.use(
   rateLimit({
     name: 'global_limit',
     useIP: true,
-    expireMS: 30000,
-    requestCount: 100,
+    restrictMS: 30000,
+    requests: 100,
   })
 );
 

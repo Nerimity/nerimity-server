@@ -83,9 +83,9 @@ export function channelMessageCreate(Router: Router) {
       ),
 
     rateLimit({
-      name: 'create_message',
-      expireMS: 20000,
-      requestCount: 20,
+      name: 'create_message', 
+      restrictMS: 20000,
+      requests: 20,
     }),
     route
   );

@@ -16,8 +16,8 @@ export function exploreServerUpdate(Router: Router) {
     serverMemberVerification(),
     rateLimit({
       name: 'explore_update_server',
-      expireMS: 10000,
-      requestCount: 15,
+      restrictMS: 10000,
+      requests: 15,
     }),
     param('serverId')
       .not()

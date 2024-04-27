@@ -25,8 +25,8 @@ export function channelMessageUpdate(Router: Router) {
       .withMessage('Content length must be between 1 and 2000 characters.'),
     rateLimit({
       name: 'update_message',
-      expireMS: 20000,
-      requestCount: 20,
+      restrictMS: 20000,
+      requests: 20,
     }),
     route
   );

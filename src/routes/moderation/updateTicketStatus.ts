@@ -21,8 +21,8 @@ export function ticketUpdate(Router: Router) {
 
     rateLimit({
       name: 'ticket-update-mod',
-      expireMS: 60000,
-      requestCount: 60,
+      restrictMS: 60000,
+      requests: 60,
     }),
     route
   );

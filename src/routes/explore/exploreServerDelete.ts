@@ -16,8 +16,8 @@ export function exploreServerDelete(Router: Router) {
     serverMemberVerification(),
     rateLimit({
       name: 'explore_delete_server',
-      expireMS: 10000,
-      requestCount: 15,
+      restrictMS: 10000,
+      requests: 15,
     }),
     param('serverId')
       .not()

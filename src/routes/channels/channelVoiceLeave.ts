@@ -11,8 +11,8 @@ export function channelVoiceLeave(Router: Router) {
     channelVerification(),
     rateLimit({
       name: 'channel_voice_leave',
-      expireMS: 20000,
-      requestCount: 10,
+      restrictMS: 20000,
+      requests: 10,
     }),
     route
   );

@@ -11,8 +11,8 @@ export function serverWelcomeQuestionGet(Router: Router) {
     serverMemberVerification(),
     rateLimit({
       name: 'server_welcome_question_get',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

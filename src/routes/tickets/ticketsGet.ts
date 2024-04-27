@@ -11,8 +11,8 @@ export function ticketsGet(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'tickets-get',
-      expireMS: 60000,
-      requestCount: 30,
+      restrictMS: 60000,
+      requests: 30,
     }),
     route
   );

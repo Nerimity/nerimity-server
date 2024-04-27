@@ -25,8 +25,8 @@ export function googleLink(Router: Router) {
       .withMessage('code must be a string!'),
     rateLimit({
       name: 'google-link-account',
-      expireMS: 60000,
-      requestCount: 10,
+      restrictMS: 60000,
+      requests: 10,
       useIP: true,
     }),
     route

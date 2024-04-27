@@ -52,8 +52,8 @@ export function register(Router: Router) {
       name: 'register_limit',
       message: 'Something went wrong! Please try again in 1 minute.',
       globalLimit: true,
-      expireMS: 30000,
-      requestCount: 5,
+      restrictMS: 30000,
+      requests: 5,
     }),
     route
   );

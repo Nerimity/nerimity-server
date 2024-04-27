@@ -19,8 +19,8 @@ export function userUpdateNotificationSettings(Router: Router) {
     serverMemberVerification(),
     rateLimit({
       name: 'update_notification',
-      expireMS: 10000,
-      requestCount: 20,
+      restrictMS: 10000,
+      requests: 20,
     }),
 
     body('channelId')

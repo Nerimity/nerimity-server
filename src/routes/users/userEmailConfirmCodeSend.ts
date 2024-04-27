@@ -9,8 +9,8 @@ export function userEmailConfirmCodeSend(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'verify_email_send_code',
-      expireMS: 60_000, // 1 minutes
-      requestCount: 1,
+      restrictMS: 60_000, // 1 minutes
+      requests: 1,
     }),
     route
   );

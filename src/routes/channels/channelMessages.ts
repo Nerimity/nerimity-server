@@ -13,8 +13,8 @@ export function channelMessages(Router: Router) {
     channelVerification(),
     rateLimit({
       name: 'messages',
-      expireMS: 30000,
-      requestCount: 50,
+      restrictMS: 30000,
+      requests: 50,
     }),
     route
   );

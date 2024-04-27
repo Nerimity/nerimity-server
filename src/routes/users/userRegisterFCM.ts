@@ -11,8 +11,8 @@ export function userRegisterFCM(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'register_fcm',
-      expireMS: 60000,
-      requestCount: 5,
+      restrictMS: 60000,
+      requests: 5,
     }),
     body('token').isString().withMessage('Invalid token'),
     route

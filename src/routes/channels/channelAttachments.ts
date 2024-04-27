@@ -10,15 +10,12 @@ export function channelAttachments(Router: Router) {
     channelVerification(),
     rateLimit({
       name: 'channel_attachments',
-      expireMS: 30000,
-      requestCount: 50,
+      restrictMS: 30000,
+      requests: 50,
     }),
     route
   );
 }
-
-
-
 
 async function route (req: Request, res: Response) {
   const limit = parseInt(req.query.limit as string || '50') || undefined;

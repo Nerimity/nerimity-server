@@ -9,8 +9,8 @@ export function getTenorSearch(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'tenor-search',
-      expireMS: 60000,
-      requestCount: 20,
+      restrictMS: 60000,
+      requests: 20,
     }),
     route
   );

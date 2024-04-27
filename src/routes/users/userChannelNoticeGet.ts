@@ -10,8 +10,8 @@ export function userChannelNoticeGet(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'user_channel_notice_get',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

@@ -18,8 +18,8 @@ export function serverInviteBotJoin(Router: Router) {
 
     rateLimit({
       name: 'server_invite_bot',
-      expireMS: 60000,
-      requestCount: 3,
+      restrictMS: 60000,
+      requests: 3,
     }),
     route
   );

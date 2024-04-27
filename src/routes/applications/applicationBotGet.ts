@@ -11,8 +11,8 @@ export function applicationBotGet(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'get-bot',
-      expireMS: 60000,
-      requestCount: 15,
+      restrictMS: 60000,
+      requests: 15,
     }),
     route
   );

@@ -10,8 +10,8 @@ export function applicationsCreateBot(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'create-bot',
-      expireMS: 60000,
-      requestCount: 2,
+      restrictMS: 60000,
+      requests: 2,
       useIP: true,
     }),
     route

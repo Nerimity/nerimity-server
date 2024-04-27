@@ -18,8 +18,8 @@ export function userChannelNoticeUpdate(Router: Router) {
       .withMessage('Content must be between 4 and 300 characters long.'),
     rateLimit({
       name: 'user_channel_notice_update',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

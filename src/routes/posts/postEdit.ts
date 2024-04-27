@@ -11,8 +11,8 @@ export function postEdit(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'edit_post',
-      expireMS: 20000,
-      requestCount: 5,
+      restrictMS: 20000,
+      requests: 5,
     }),
     body('content')
       .isString()

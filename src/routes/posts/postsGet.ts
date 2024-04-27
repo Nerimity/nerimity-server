@@ -12,8 +12,8 @@ export function postsGet(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_get',
-      expireMS: 20000,
-      requestCount: 100,
+      restrictMS: 20000,
+      requests: 100,
     }),
     param('userId')
       .isString()

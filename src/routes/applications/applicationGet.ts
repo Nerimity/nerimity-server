@@ -10,8 +10,8 @@ export function applicationGet(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'get-app',
-      expireMS: 60000,
-      requestCount: 15,
+      restrictMS: 60000,
+      requests: 15,
     }),
     route
   );

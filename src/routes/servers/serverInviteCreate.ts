@@ -11,8 +11,8 @@ export function serverInviteCreate(Router: Router) {
     serverMemberVerification(),
     rateLimit({
       name: 'create_server_invite',
-      expireMS: 20000,
-      requestCount: 5,
+      restrictMS: 20000,
+      requests: 5,
     }),
     route
   );

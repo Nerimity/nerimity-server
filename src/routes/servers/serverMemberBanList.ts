@@ -13,8 +13,8 @@ export function serverMemberBanList(Router: Router) {
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.BAN),
     rateLimit({
       name: 'server_ban_member_list',
-      expireMS: 10000,
-      requestCount: 30,
+      restrictMS: 10000,
+      requests: 30,
     }),
     route
   );

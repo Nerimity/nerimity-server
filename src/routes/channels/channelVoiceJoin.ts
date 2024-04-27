@@ -19,8 +19,8 @@ export function channelVoiceJoin(Router: Router) {
     }),
     rateLimit({
       name: 'channel_voice_join',
-      expireMS: 20000,
-      requestCount: 10,
+      restrictMS: 20000,
+      requests: 10,
     }),
     body('socketId')
       .not()

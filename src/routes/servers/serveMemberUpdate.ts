@@ -24,8 +24,8 @@ export function serverMemberUpdate(Router: Router) {
       .optional({}),
     rateLimit({
       name: 'server_member_role_update',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

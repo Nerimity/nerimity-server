@@ -11,8 +11,8 @@ export function postNotifications(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_notifications',
-      expireMS: 20000,
-      requestCount: 50,
+      restrictMS: 20000,
+      requests: 50,
     }),
     route
   );

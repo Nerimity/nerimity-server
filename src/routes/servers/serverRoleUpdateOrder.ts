@@ -24,8 +24,8 @@ export function serverRoleUpdateOrder(Router: Router) {
     body('roleIds').isArray().withMessage('roleIds must be an array.'),
     rateLimit({
       name: 'server_role_update_order',
-      expireMS: 10000,
-      requestCount: 50,
+      restrictMS: 10000,
+      requests: 50,
     }),
     route
   );

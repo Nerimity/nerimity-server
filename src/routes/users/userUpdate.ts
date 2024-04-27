@@ -13,8 +13,8 @@ export function userUpdate(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'user_update_limit',
-      expireMS: 60000,
-      requestCount: 10,
+      restrictMS: 60000,
+      requests: 10,
     }),
     body('email')
       .isEmail()

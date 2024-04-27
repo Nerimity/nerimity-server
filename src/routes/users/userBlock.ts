@@ -17,8 +17,8 @@ export function userBlock(Router: Router) {
       .optional(),
     rateLimit({
       name: 'user_block',
-      expireMS: 60000,
-      requestCount: 20,
+      restrictMS: 60000,
+      requests: 20,
     }),
     route
   );

@@ -9,8 +9,8 @@ export function postPollVote(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_poll_vote',
-      expireMS: 20000,
-      requestCount: 5,
+      restrictMS: 20000,
+      requests: 5,
     }),
 
     route

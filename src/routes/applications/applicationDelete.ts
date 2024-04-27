@@ -11,8 +11,8 @@ export function applicationDelete(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'delete-bot',
-      expireMS: 60000,
-      requestCount: 15,
+      restrictMS: 60000,
+      requests: 15,
     }),
     route
   );

@@ -9,8 +9,8 @@ export function serverInviteJoin(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'server_join',
-      expireMS: 60000,
-      requestCount: 3,
+      restrictMS: 60000,
+      requests: 3,
     }),
     route
   );

@@ -11,8 +11,8 @@ export function channelDMClose(Router: Router) {
     channelVerification(),
     rateLimit({
       name: 'channel_dm_close',
-      expireMS: 10000,
-      requestCount: 50,
+      restrictMS: 10000,
+      requests: 50,
     }),
     route
   );

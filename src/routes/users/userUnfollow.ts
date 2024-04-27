@@ -11,8 +11,8 @@ export function userUnfollow(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'user_unfollow',
-      expireMS: 60000,
-      requestCount: 20,
+      restrictMS: 60000,
+      requests: 20,
     }),
     route
   );

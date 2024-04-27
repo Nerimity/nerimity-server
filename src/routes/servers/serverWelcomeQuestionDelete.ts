@@ -15,8 +15,8 @@ export function serverWelcomeQuestionDelete(Router: Router) {
 
     rateLimit({
       name: 'server_welcome_question_delete',
-      expireMS: 5000,
-      requestCount: 10,
+      restrictMS: 5000,
+      requests: 10,
     }),
     route
   );

@@ -15,8 +15,8 @@ export function serverEmojiDelete(Router: Router) {
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     rateLimit({
       name: 'server_delete_emojis',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

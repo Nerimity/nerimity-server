@@ -24,8 +24,8 @@ export function serverInviteCustomCreate(Router: Router) {
       .withMessage('Code must be between 3 and 32 characters long.'),
     rateLimit({
       name: 'create_server_invite',
-      expireMS: 20000,
-      requestCount: 5,
+      restrictMS: 20000,
+      requests: 5,
     }),
     route
   );

@@ -29,8 +29,8 @@ export function login(Router: Router) {
     rateLimit({
       name: 'login',
       useIP: true,
-      expireMS: 30000,
-      requestCount: 10,
+      restrictMS: 30000,
+      requests: 10,
     }),
     route
   );

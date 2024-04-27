@@ -19,8 +19,8 @@ export function userOpenDMChannel(Router: Router) {
       .withMessage('userId must be between 1 and 320 characters long.'),
     rateLimit({
       name: 'open_dm_channel',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

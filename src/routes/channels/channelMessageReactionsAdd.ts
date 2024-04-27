@@ -31,8 +31,8 @@ export function channelMessageReactionsAdd(Router: Router) {
       .withMessage('gif must be a boolean!'),
     rateLimit({
       name: 'reaction_add',
-      expireMS: 20000,
-      requestCount: 20,
+      restrictMS: 20000,
+      requests: 20,
     }),
     route
   );

@@ -10,8 +10,8 @@ export function googleCreateLink(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'google-create-link',
-      expireMS: 60000,
-      requestCount: 3,
+      restrictMS: 60000,
+      requests: 3,
     }),
     route
   );

@@ -20,8 +20,8 @@ export function googleGetAccessToken(Router: Router) {
 
     rateLimit({
       name: 'google-get-access-token',
-      expireMS: 60000,
-      requestCount: 10,
+      restrictMS: 60000,
+      requests: 10,
     }),
     route
   );

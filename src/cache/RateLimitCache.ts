@@ -1,52 +1,61 @@
 import { redisClient } from '../common/redis';
 import { RATE_LIMIT_KEY_STRING } from './CacheKeys';
 
-interface CheckRateLimitedOptions {
+interface CheckAndUpdateRateLimitOptions {
   id: string,
-  expireMS: number,
-  requestCount: number
+  requests: number;
+  perMS: number;
+  restrictMS: number;
 }
 
+enum RateLimitStatus {
+  REACHED = "1"
+}
 
-// Will return a number if rate limited. Will return false if not rate limited.
+interface RateLimitCache {
+  requests: string;
+  status?: RateLimitStatus;
 
-export async function checkRateLimited(opts: CheckRateLimitedOptions) {
+}
 
+export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptions) {
+  const key = RATE_LIMIT_KEY_STRING(opts.id);
 
-  const [count, ttl] = await incrementRateLimit(opts.id);
+  const mainMulti = redisClient.multi();
+  mainMulti.hGetAll(key);
+  mainMulti.pTTL(key);
 
-  // Reset if expire time changes (slow down mode)
-  if (ttl > opts.expireMS) {
-    await setExpireRateLimit({id: opts.id, expireMS: opts.expireMS, currentTTL: -1});
-    return false;
+  const [res, ttl] = await mainMulti.exec() as [RateLimitCache, number];
+
+  if (!res || Object.keys(res).length === 0) {
+    const multi = redisClient.multi();
+    multi.hSet(key, {
+      requests: 1
+    });
+    multi.pExpire(key, opts.perMS);
+    await multi.exec();
+    return false as const;
   }
 
-  if (count > opts.requestCount) return ttl;
-  await setExpireRateLimit({currentTTL: ttl, expireMS: opts.expireMS, id: opts.id});
-  return false;
+  const requests = parseInt(res.requests);
+  const status = res.status;
+
+  if (status === RateLimitStatus.REACHED) {
+    return ttl;
+  }
+
+  if (requests >= opts.requests) {
+    const multi = redisClient.multi();
+    multi.hSet(key, {
+      status: RateLimitStatus.REACHED
+    });
+    multi.pExpire(key, opts.restrictMS);
+    await multi.exec();
+    return ttl;
+  }
+
+  await redisClient.HINCRBY(key, "requests", 1);
+  return false as const;
 
 }
 
-
-
-async function incrementRateLimit (id: string) {
-  const multi = redisClient.multi();
-  const key = RATE_LIMIT_KEY_STRING(id);
-  multi.incr(key);
-  multi.pTTL(key); // Returns the remaining time in ms.
-  const response = await multi.exec();
- 
-  return response as [number, number]; // -> [count, ttl]
-}
-
-interface SetExpireOptions {
-  id: string
-  expireMS: number
-  currentTTL: number
-}
-
-async function setExpireRateLimit(opts: SetExpireOptions) {
-  if (opts.currentTTL !== 1 && opts.currentTTL !== -1) return;
-  const key = RATE_LIMIT_KEY_STRING(opts.id);
-  redisClient.pExpire(key, opts.expireMS);
-}

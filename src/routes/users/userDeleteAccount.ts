@@ -16,8 +16,8 @@ export function userDeleteAccount(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'delete_account',
-      expireMS: 60000,
-      requestCount: 20,
+      restrictMS: 60000,
+      requests: 20,
     }),
     body('password')
       .isLength({ min: 4, max: 72 })

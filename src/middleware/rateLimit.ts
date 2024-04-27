@@ -1,27 +1,31 @@
 import { NextFunction, Request, Response } from 'express';
-import { checkRateLimited } from '../cache/RateLimitCache';
+import { checkAndUpdateRateLimit } from '../cache/RateLimitCache';
 import { generateError } from '../common/errorHandler';
 import env from '../common/env';
 import { Log } from '../common/Log';
 
 interface Options {
   name: string;
-  expireMS: number;
-  requestCount: number;
-  useIP?: boolean; // By default, it uses user id.
-  globalLimit?: boolean; // Rate limit globally
+
+  requests: number;
+  perMS?: number;
+  restrictMS: number;
+
+  useIP?: boolean; // By default, use user id.
+  globalLimit?: boolean;
   nextIfRatedLimited?: boolean; // false by default
   message?: string;
 }
-if (env.DEV_MODE) {
-  Log.warn('Rate limit is disabled in dev mode');
-}
+
+// if (env.DEV_MODE) {
+//   Log.warn('Rate limit is disabled in dev mode');
+// }
 
 export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (env.DEV_MODE) {
-      return next();
-    }
+    // if (env.DEV_MODE) {
+    //   return next();
+    // }
 
     const ip = req.userIP.replace(/:/g, '=');
 
@@ -38,10 +42,11 @@ export function rateLimit(opts: Options) {
       id = opts.name;
     }
 
-    const ttl = await checkRateLimited({
+    const ttl = await checkAndUpdateRateLimit({
       id,
-      expireMS: opts.expireMS,
-      requestCount: opts.requestCount,
+      requests: opts.requests,
+      perMS: opts.perMS ?? opts.restrictMS,
+      restrictMS: opts.restrictMS,
     });
 
     if (ttl && opts.nextIfRatedLimited) {

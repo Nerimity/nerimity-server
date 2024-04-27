@@ -11,8 +11,8 @@ export function postLike(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_like',
-      expireMS: 20000,
-      requestCount: 30,
+      restrictMS: 20000,
+      requests: 30,
     }),
     param('postId')
       .isString()

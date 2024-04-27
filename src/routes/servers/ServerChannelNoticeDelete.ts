@@ -17,8 +17,8 @@ export function serverChannelNoticeDelete(Router: Router) {
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
     rateLimit({
       name: 'server_channel_notice_delete',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

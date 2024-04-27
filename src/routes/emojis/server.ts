@@ -9,8 +9,8 @@ export function emojisGetServer(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'get-emoji',
-      expireMS: 60000,
-      requestCount: 20,
+      restrictMS: 60000,
+      requests: 20,
     }),
     route
   );

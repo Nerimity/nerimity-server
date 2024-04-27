@@ -27,8 +27,8 @@ export function channelMessageReactedUsers(Router: Router) {
       .withMessage('emojiId length must be between 1 and 20 characters.'),
     rateLimit({
       name: 'reaction_get',
-      expireMS: 20000,
-      requestCount: 30,
+      restrictMS: 20000,
+      requests: 30,
     }),
     route
   );

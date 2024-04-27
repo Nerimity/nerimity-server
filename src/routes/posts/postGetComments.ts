@@ -12,8 +12,8 @@ export function postsGetComments(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_get_comments',
-      expireMS: 20000,
-      requestCount: 100,
+      restrictMS: 20000,
+      requests: 100,
     }),
     param('postId')
       .isString()

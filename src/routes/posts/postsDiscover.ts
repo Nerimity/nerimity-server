@@ -10,8 +10,8 @@ export function postsDiscover(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'posts_discover',
-      expireMS: 20000,
-      requestCount: 20,
+      restrictMS: 20000,
+      requests: 20,
     }),
     route
   );

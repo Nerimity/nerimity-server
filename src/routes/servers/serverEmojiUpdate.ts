@@ -19,8 +19,8 @@ export function serverEmojiUpdate(Router: Router) {
       .isLength({ min: 2, max: 15 }).withMessage('Name must be between 2 and 15 characters long.'),
     rateLimit({
       name: 'server_update_emojis',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

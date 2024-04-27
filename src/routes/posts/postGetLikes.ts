@@ -11,8 +11,8 @@ export function postsGetLikes(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'post_get_likes',
-      expireMS: 20000,
-      requestCount: 100,
+      restrictMS: 20000,
+      requests: 100,
     }),
     param('postId')
       .isString().withMessage('postId must be a string!')

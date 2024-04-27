@@ -18,8 +18,8 @@ export function ticketUpdate(Router: Router) {
 
     rateLimit({
       name: 'ticket-update',
-      expireMS: 60000,
-      requestCount: 30,
+      restrictMS: 60000,
+      requests: 30,
     }),
     route
   );

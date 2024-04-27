@@ -12,8 +12,8 @@ export function serverWelcomeAnswer(Router: Router) {
 
     rateLimit({
       name: 'server_welcome_answer',
-      expireMS: 5000,
-      requestCount: 10,
+      restrictMS: 5000,
+      requests: 10,
     }),
     route
   );

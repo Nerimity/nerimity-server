@@ -17,8 +17,8 @@ export function postCreate(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'create_post',
-      expireMS: 20000,
-      requestCount: 5,
+      restrictMS: 20000,
+      requests: 5,
     }),
     connectBusboyWrapper,
     body('content')

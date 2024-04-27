@@ -30,8 +30,8 @@ export function serverEmojiAdd(Router: Router) {
       .withMessage('Emoji must be a string.'),
     rateLimit({
       name: 'server_add_emojis',
-      expireMS: 10000,
-      requestCount: 10,
+      restrictMS: 10000,
+      requests: 10,
     }),
     route
   );

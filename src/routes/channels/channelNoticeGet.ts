@@ -12,8 +12,8 @@ export function channelNoticeGet(Router: Router) {
     channelVerification(),
     rateLimit({
       name: 'channel_notice_get',
-      expireMS: 10000,
-      requestCount: 20,
+      restrictMS: 10000,
+      requests: 20,
     }),
     route
   );

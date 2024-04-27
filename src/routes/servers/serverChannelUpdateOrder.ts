@@ -20,8 +20,8 @@ export function serverChannelUpdateOrder(Router: Router) {
       .optional(),
     rateLimit({
       name: 'server_channel_update_order',
-      expireMS: 10000,
-      requestCount: 50,
+      restrictMS: 10000,
+      requests: 50,
     }),
     route
   );

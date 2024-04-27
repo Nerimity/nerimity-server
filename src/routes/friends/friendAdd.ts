@@ -31,8 +31,8 @@ export function friendAdd(Router: Router) {
       .withMessage('tag must be 4 characters long.'),
     rateLimit({
       name: 'add_friend',
-      expireMS: 30000,
-      requestCount: 5,
+      restrictMS: 30000,
+      requests: 5,
     }),
     route
   );

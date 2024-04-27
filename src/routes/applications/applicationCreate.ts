@@ -10,8 +10,8 @@ export function applicationsCreate(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'create-app',
-      expireMS: 60000,
-      requestCount: 2,
+      restrictMS: 60000,
+      requests: 2,
     }),
     route
   );
