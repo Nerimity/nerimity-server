@@ -488,7 +488,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
 
   if (!toId) return;
 
-  if (opts.toId === opts.byId) return;
+  if (toId === opts.byId) return;
 
   const alreadyExists = await prisma.postNotification.findFirst({
     where: {
