@@ -40,6 +40,14 @@ export function serverRoleUpdate(Router: Router) {
       .isLength({ min: 0, max: 100 })
       .withMessage('Permissions must be between 0 and 100 characters long.')
       .optional({ nullable: true }),
+
+    body('icon')
+      .isString()
+      .withMessage('Icon must be a string.')
+      .isLength({ min: 0, max: 100 })
+      .withMessage('Icon must be between 0 and 100 characters long.')
+      .optional({ nullable: true }),
+
     rateLimit({
       name: 'server_role_update',
       restrictMS: 10000,
@@ -54,6 +62,8 @@ interface Body {
   permissions?: number;
   hexColor?: string;
   hideRoles?: boolean;
+  icon?: string | null;
+
 }
 
 async function route(req: Request, res: Response) {
@@ -75,6 +85,10 @@ async function route(req: Request, res: Response) {
     return res
       .status(400)
       .json(generateError('You do not have priority to modify this role.'));
+  }
+
+  if (req.body.icon === null) {
+    matchedBody.icon = null;
   }
 
   const [updated, error] = await updateServerRole(

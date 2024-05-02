@@ -17,15 +17,15 @@ interface Options {
   message?: string;
 }
 
-// if (env.DEV_MODE) {
-//   Log.warn('Rate limit is disabled in dev mode');
-// }
+if (env.DEV_MODE) {
+  Log.warn('Rate limit is disabled in dev mode');
+}
 
 export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    // if (env.DEV_MODE) {
-    //   return next();
-    // }
+    if (env.DEV_MODE) {
+      return next();
+    }
 
     const ip = req.userIP.replace(/:/g, '=');
 

@@ -333,6 +333,8 @@ model PublicServer {
 model ServerRole {
   id                     String                  @id
   name                   String
+  icon                   String?
+
   hexColor               String
 
   createdById            String
