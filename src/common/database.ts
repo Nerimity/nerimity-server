@@ -65,11 +65,3 @@ export function dateToDateTime(date?: Date | number) {
   }
   return date.toISOString();
 }
-
-export function getMessageReactedUserIds(messageReactionId: string) {
-  return prisma.$queryRaw<{ B: string }[]>`
-    SELECT "B" FROM public."_MessageReactionToUser"
-      WHERE "A" = ${messageReactionId}
-      LIMIT 5
-  `.then((res) => res.map((q) => q.B));
-}

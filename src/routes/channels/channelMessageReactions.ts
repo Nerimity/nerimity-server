@@ -37,11 +37,15 @@ export function channelMessageReactedUsers(Router: Router) {
 interface Query {
   name: string; // emoji name or unicode
   emojiId?: string;
+  limit?: number;
 }
 
 async function route(req: Request, res: Response) {
-  const query = req.query as unknown as Query;
   const { messageId } = req.params;
+  const query = req.query as unknown as Query;
+  let limit = parseInt(query.limit?.toString() || '5');
+  if (!limit ||  limit < 0) limit = 5;
+  if (limit > 50) limit = 50;
 
   const validateError = customExpressValidatorResult(req);
 
@@ -57,6 +61,7 @@ async function route(req: Request, res: Response) {
   const [response, err] = await getMessageReactedUsers({
     messageId,
     ...query,
+    limit,
   });
 
   if (err) {

@@ -3,7 +3,7 @@ import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded,
 import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
-import { dateToDateTime, exists, getMessageReactedUserIds, prisma, publicUserExcludeFields } from '../common/database';
+import { dateToDateTime, exists, prisma, publicUserExcludeFields } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
@@ -135,7 +135,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       },
       reactions: {
         select: {
-          ...(opts?.requesterId ? { reactedUsers: { where: { id: opts.requesterId } } } : undefined),
+          ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
           emojiId: true,
           gif: true,
           name: true,
@@ -698,7 +698,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
 
         include: {
           _count: {
-            select: { reactedUsers: { where: { id: opts.reactedByUserId } } },
+            select: { reactedUsers: { where: { userId: opts.reactedByUserId } } },
           },
         },
       },
@@ -719,7 +719,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
   if (existingReaction?.id) {
     const reaction = await prisma.messageReaction.update({
       where: { id: existingReaction.id },
-      data: { reactedUsers: { connect: { id: opts.reactedByUserId } } },
+      data: { reactedUsers: { create: { userId: opts.reactedByUserId } } },
       select: { _count: { select: { reactedUsers: true } } },
     });
     newCount = reaction._count.reactedUsers;
@@ -739,7 +739,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
         emojiId: opts.emojiId,
         gif: opts.gif,
         messageId: opts.messageId,
-        reactedUsers: { connect: { id: opts.reactedByUserId } },
+        reactedUsers: { create: { userId: opts.reactedByUserId } },
       },
       select: { _count: { select: { reactedUsers: true } } },
     });
@@ -803,7 +803,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
         include: {
           _count: {
             select: {
-              reactedUsers: { where: { id: opts.reactionRemovedByUserId } },
+              reactedUsers: { where: { userId: opts.reactionRemovedByUserId } },
             },
           },
         },
@@ -820,24 +820,18 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
     return [null, generateError('You have already not reacted')] as const;
   }
 
-  const reactionCount = await prisma.messageReaction.findFirst({
-    where: { id: existingReaction.id },
-    select: { _count: { select: { reactedUsers: true } } },
+  const reactionCount = await prisma.reactedMessageUser.count({
+    where: { reactionId: existingReaction.id },
   });
   if (!reactionCount) return [null, generateError('Invalid Reaction')] as const;
 
-  if (reactionCount?._count.reactedUsers === 1) {
+  if (reactionCount === 1) {
     await prisma.messageReaction.delete({ where: { id: existingReaction.id } });
   }
 
-  if (reactionCount?._count.reactedUsers > 1) {
-    await prisma.messageReaction.update({
-      where: { id: existingReaction.id },
-      data: {
-        reactedUsers: {
-          disconnect: { id: opts.reactionRemovedByUserId },
-        },
-      },
+  if (reactionCount > 1) {
+    await prisma.reactedMessageUser.delete({
+      where: { reactionId_userId: { reactionId: existingReaction.id, userId: opts.reactionRemovedByUserId } },
     });
   }
 
@@ -847,7 +841,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
     channelId: opts.channelId,
     emojiId: opts.emojiId,
     name: opts.name,
-    count: reactionCount._count.reactedUsers - 1,
+    count: reactionCount - 1,
     gif: existingReaction.gif,
   };
 
@@ -874,6 +868,7 @@ interface GetMessageReactedUsersOpts {
   messageId: string;
   name: string;
   emojiId?: string;
+  limit: number
 }
 
 export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) => {
@@ -888,22 +883,14 @@ export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) =
 
   if (!reaction) return [null, generateError('Reaction does not exist.')] as const;
 
-  // this is done this way to get the oldest reacted users first.
-  const userIds = await getMessageReactedUserIds(reaction.id);
-
-  if (!userIds.length) return [[], null] as const;
-
-  const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
-    select: publicUserExcludeFields,
-  });
-
-  // sort users.id by userIds
-  users.sort((a, b) => {
-    return userIds.indexOf(a.id) - userIds.indexOf(b.id);
-  });
-
-  return [users, null] as const;
+  const reactedUsers = await prisma.reactedMessageUser.findMany({
+    where: { reactionId: reaction.id },
+    take: opts.limit,
+    select: { user: { select: publicUserExcludeFields }, reactedAt: true },
+    orderBy: { reactedAt: 'asc' },
+  })
+  
+  return [reactedUsers, null] as const;
 };
 
 async function quotableMessages(quotedMessageIds: string[], creatorId: string) {

@@ -95,7 +95,7 @@ model User {
   bannedServers          BannedServerMember[]
   customEmojis           CustomEmoji[]
 
-  reactedMessageEmojis   MessageReaction[]
+  reactedMessageEmojis   ReactedMessageUser[]
 
   notificationSettings UserNotificationSettings[] 
 
@@ -563,12 +563,23 @@ model MessageReaction {
   emojiId String?
   gif     Boolean?
 
-  reactedUsers User[]
+  reactedUsers ReactedMessageUser[]
 
   messageId    String
   message      Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 
+model ReactedMessageUser {
+  reactionId String
+  userId String
+
+  reaction MessageReaction @relation(fields: [reactionId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reactedAt DateTime @default(now())
+
+  @@unique([reactionId, userId])
+}
 
 
 model MessageMention {
