@@ -887,7 +887,7 @@ export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) =
     where: { reactionId: reaction.id },
     take: opts.limit,
     select: { user: { select: publicUserExcludeFields }, reactedAt: true },
-    orderBy: { reactedAt: 'desc' },
+    orderBy: { reactedAt: 'asc' },
   })
   
   return [reactedUsers, null] as const;
