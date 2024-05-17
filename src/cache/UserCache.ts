@@ -308,6 +308,7 @@ export async function addAllowedIPCache(ipAddress: string) {
 }
 
 export async function removeAllowedIPsCache(ipAddresses: string[]) {
+  if (!ipAddresses.length) return;
   const key = ALLOWED_IP_KEY_SET();
   await redisClient.sRem(key, ipAddresses);
 }
