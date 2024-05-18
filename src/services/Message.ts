@@ -189,7 +189,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
 };
 
 // delete messages sent in the last 7 hours
-export const deleteRecentMessages = async (userId: string, serverId: string) => {
+export const deleteRecentUserServerMessages = async (userId: string, serverId: string) => {
   const fromTime = new Date();
   const toTime = new Date();
   toTime.setHours(toTime.getHours() + 7);
@@ -210,6 +210,20 @@ export const deleteRecentMessages = async (userId: string, serverId: string) => 
     fromTime,
     toTime,
   })
+};
+export const deleteRecentUserMessages = async (userId: string) => {
+  const toTime = new Date();
+  toTime.setHours(toTime.getHours() + 7);
+
+  await prisma.message.deleteMany({
+    where: {
+      createdById: userId,
+
+      createdAt: {
+        lt: dateToDateTime(toTime),
+      },
+    },
+  });
 };
 
 interface EditMessageOptions {

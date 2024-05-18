@@ -1,7 +1,7 @@
 import { Channel, Server } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
-import { excludeFields, exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
+import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
@@ -9,7 +9,7 @@ import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common
 import { generateHexColor } from '../common/random';
 import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
-import { createMessage, deleteRecentMessages } from './Message';
+import { createMessage, deleteRecentUserServerMessages } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import * as nerimityCDN from '../common/nerimityCDN';
@@ -486,7 +486,7 @@ export const banServerMember = async (userId: string, serverId: string, shouldDe
   if (error) return [null, error];
 
   if (shouldDeleteRecentMessages) {
-    await deleteRecentMessages(userId, serverId);
+    await deleteRecentUserServerMessages(userId, serverId);
   }
 
   if (server.systemChannelId) {

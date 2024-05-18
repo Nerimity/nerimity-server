@@ -62,6 +62,7 @@ interface Body {
   reason?: string;
   password: string;
   ipBan?: boolean;
+  deleteRecentMessages?: boolean;
 }
 
 const DAY_IN_MS = 86400000;
@@ -212,6 +213,20 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       expireAt: req.body.days ? expireDateTime : null,
     })),
   });
+  
+  if (req.body.deleteRecentMessages) {
+    const lastSevenHours = new Date();
+    lastSevenHours.setHours(lastSevenHours.getHours() + 7);
+
+    await prisma.message.deleteMany({
+      where: {
+        createdById: { in: sanitizedUserIds },
+        createdAt: {
+          lt: dateToDateTime(lastSevenHours),
+        },
+      },
+    });
+  }
 
   res.status(200).json({ success: true });
 }
