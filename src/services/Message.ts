@@ -7,7 +7,7 @@ import { dateToDateTime, exists, prisma, publicUserExcludeFields } from '../comm
 import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
-import { Attachment, Message } from '@prisma/client';
+import { Attachment, Message, Prisma } from '@prisma/client';
 import { removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
@@ -324,6 +324,7 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
       {
         content: isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
         editedAt: dateToDateTime(),
+        embed: Prisma.JsonNull
       },
       opts.userId,
       true
@@ -334,11 +335,14 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
   // emit
   if (opts.serverId) {
     emitServerMessageUpdated(opts.channelId, opts.messageId, message);
-    return [message, null];
   }
 
-  if (channel?.inbox?.recipientId) {
+  if (channel?.type === ChannelType.DM_TEXT && channel?.inbox?.recipientId) {
     emitDMMessageUpdated(channel, opts.messageId, message);
+  }
+
+  if (message.type === MessageType.CONTENT) {
+    addMessageEmbed(message, { channel, serverId: opts.serverId });
   }
 
   return [message, null];
@@ -380,7 +384,7 @@ async function constructData(messageData: MessageDataCreate | MessageDataUpdate,
       };
     }
 
-    const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])).slice(0, 5);
+    const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])).slice(0, 8);
     if (quotedMessageIds.length) {
       const messages = await quotableMessages(quotedMessageIds, creatorId);
       messageData.quotedMessages = {
