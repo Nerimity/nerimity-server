@@ -320,15 +320,15 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
 
   const message = await prisma.message.update({
     where: { id: opts.messageId },
-    data: await constructData(
-      {
+    data: await constructData({
+      messageData: {
         content: isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
         editedAt: dateToDateTime(),
         embed: Prisma.JsonNull
       },
-      opts.userId,
-      true
-    ),
+      creatorId: opts.userId,
+      update: true
+  }),
     include: MessageInclude,
   });
 
@@ -367,10 +367,13 @@ type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
 const userMentionRegex = /\[@:([\d]+)]/g;
 const quoteMessageRegex = /\[q:([\d]+)]/g;
 
-function constructData(messageData: MessageDataUpdate, creatorId: string, update: true): Promise<any>;
-function constructData(messageData: MessageDataCreate, creatorId: string, update?: false | undefined): Promise<any>;
-
-async function constructData(messageData: MessageDataCreate | MessageDataUpdate, creatorId: string, update?: boolean) {
+interface ConstructDataOpts {
+  messageData: MessageDataCreate | MessageDataUpdate;
+  creatorId: string;
+  update?: boolean;
+  bypassQuotesCheck?: boolean;
+}
+async function constructData({ messageData, creatorId, update, bypassQuotesCheck}: ConstructDataOpts) {
   if (typeof messageData.content === 'string') {
     const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1]));
 
@@ -386,7 +389,7 @@ async function constructData(messageData: MessageDataCreate | MessageDataUpdate,
 
     const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])).slice(0, 8);
     if (quotedMessageIds.length) {
-      const messages = await quotableMessages(quotedMessageIds, creatorId);
+      const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
       messageData.quotedMessages = {
         ...(update ? { set: messages } : { connect: messages }),
       };
@@ -408,8 +411,8 @@ export const createMessage = async (opts: SendMessageOptions) => {
   const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
 
   const createMessageQuery = prisma.message.create({
-    data: await constructData(
-      {
+    data: await constructData({
+      messageData: {
         id: generateId(),
         content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
         createdById: opts.userId,
@@ -429,8 +432,9 @@ export const createMessage = async (opts: SendMessageOptions) => {
             }
           : undefined),
       },
-      opts.userId
-    ),
+      creatorId: opts.userId, 
+      bypassQuotesCheck: channel?.type === ChannelType.TICKET
+  }),
     include: {
       createdBy: {
         select: {
@@ -897,24 +901,26 @@ export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) =
   return [reactedUsers, null] as const;
 };
 
-async function quotableMessages(quotedMessageIds: string[], creatorId: string) {
+async function quotableMessages(quotedMessageIds: string[], creatorId: string, bypassQuotesCheck?: boolean) {
   const messages = await prisma.message.findMany({
     where: {
       id: { in: quotedMessageIds },
       type: MessageType.CONTENT,
-      channel: {
-        OR: [
-          { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
-          {
-            inbox: {
-              // is inbox channel
-              some: {
-                OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+      ...(!bypassQuotesCheck ? {
+        channel: {
+          OR: [
+            { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
+            {
+              inbox: {
+                // is inbox channel
+                some: {
+                  OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+                },
               },
             },
-          },
-        ],
-      },
+          ],
+        }
+      } : {}),
     },
     select: {
       id: true,
