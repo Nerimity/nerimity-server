@@ -27,5 +27,10 @@
     "source.fixAll.eslint": "explicit"
   },
   "rpc.enabled": true,
-  "cSpell.words": ["NERIMITY", "tsup", "unfollow"]
+  "cSpell.words": [
+    "ITTER",
+    "NERIMITY",
+    "tsup",
+    "unfollow"
+  ]
 }
