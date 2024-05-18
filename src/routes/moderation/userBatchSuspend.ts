@@ -44,6 +44,10 @@ export function userBatchSuspend(Router: Router) {
       .optional(true)
       .isBoolean()
       .withMessage('ipBan must be a boolean.'),
+    body('deleteRecentMessages')
+      .optional(true)
+      .isBoolean()
+      .withMessage('deleteRecentMessages must be a boolean.'),
     body('password')
       .isLength({ min: 4, max: 72 })
       .withMessage('Password must be between 4 and 72 characters long.')
