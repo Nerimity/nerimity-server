@@ -211,20 +211,6 @@ export const deleteRecentUserServerMessages = async (userId: string, serverId: s
     toTime,
   })
 };
-export const deleteRecentUserMessages = async (userId: string) => {
-  const toTime = new Date();
-  toTime.setHours(toTime.getHours() + 7);
-
-  await prisma.message.deleteMany({
-    where: {
-      createdById: userId,
-
-      createdAt: {
-        lt: dateToDateTime(toTime),
-      },
-    },
-  });
-};
 
 interface EditMessageOptions {
   userId: string;
