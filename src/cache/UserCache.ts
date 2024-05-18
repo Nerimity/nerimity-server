@@ -210,6 +210,7 @@ export async function updateUserCache(userId: string, update: Partial<UserCache>
 }
 
 export async function removeUserCacheByUserIds(userIds: string[]) {
+  if (!userIds.length) return;
   const keys = userIds.map((id) => USER_CACHE_KEY_STRING(id));
   await redisClient.del(keys);
 }
