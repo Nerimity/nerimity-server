@@ -85,8 +85,8 @@ export function channelMessageCreate(Router: Router) {
 
     rateLimit({
       name: 'create_message', 
-      restrictMS: 2000,
-      requests: 5,
+      restrictMS: 20000,
+      requests: 20,
       itterId: (req: Request) => req.channelCache.id, 
       onThreeIterations: async (req) => {
         
