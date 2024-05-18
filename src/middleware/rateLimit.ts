@@ -16,7 +16,7 @@ interface Options {
   nextIfRatedLimited?: boolean; // false by default
   message?: string;
   onThreeIterations?: (req: Request, res: Response) => void; // Event triggered when user has been rate limited 3 times in the last 3 minutes.
-  itterId?: () => string;
+  itterId?: (req: Request) => string;
 }
 
 // if (env.DEV_MODE) {
