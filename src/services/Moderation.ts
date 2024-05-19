@@ -12,6 +12,10 @@ interface DisconnectUsersOptions {
 }
 
 export async function disconnectUsers(opts: DisconnectUsersOptions) {
+  if (!opts.userIds.length) {
+    return;
+  }
+  
   if (opts.clearCache) {
     await removeUserCacheByUserIds(opts.userIds);
   }
