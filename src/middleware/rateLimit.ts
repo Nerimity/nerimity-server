@@ -15,17 +15,19 @@ interface Options {
   globalLimit?: boolean;
   nextIfRatedLimited?: boolean; // false by default
   message?: string;
+  onThreeIterations?: (req: Request, res: Response) => void; // Event triggered when user has been rate limited 3 times in the last 3 minutes.
+  itterId?: (req: Request) => string;
 }
 
-if (env.DEV_MODE) {
-  Log.warn('Rate limit is disabled in dev mode');
-}
+// if (env.DEV_MODE) {
+//   Log.warn('Rate limit is disabled in dev mode');
+// }
 
 export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (env.DEV_MODE) {
-      return next();
-    }
+    // if (env.DEV_MODE) {
+    //   return next();
+    // }
 
     const ip = req.userIP.replace(/:/g, '=');
 
@@ -47,6 +49,8 @@ export function rateLimit(opts: Options) {
       requests: opts.requests,
       perMS: opts.perMS ?? opts.restrictMS,
       restrictMS: opts.restrictMS,
+      onThreeIterations: opts.onThreeIterations ? () => opts.onThreeIterations?.(req, res) : undefined,
+      itterId: () => opts.itterId?.(req)!,
     });
 
     if (ttl && opts.nextIfRatedLimited) {

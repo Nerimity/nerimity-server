@@ -22,4 +22,7 @@ export const USER_PRESENCE_KEY_STRING = (userId: string) => `${PREFIX}USER_PRESE
 
 export const RATE_LIMIT_KEY_STRING = (id: string) => `${PREFIX}RATE_LIMIT:${id}` as const;
 
+// tracks how many times the user has been rate limited in 3 minutes.
+export const RATE_LIMIT_ITTER_KEY_STRING = (id: string) => `${PREFIX}RATE_LIMIT_ITTER:${id}` as const;
+
 export const ALLOWED_IP_KEY_SET = () => `${PREFIX}ALLOWED_IP` as const;

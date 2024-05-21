@@ -34,6 +34,7 @@ import {
   TicketStatus,
   updateTicketStatus,
 } from '../../services/Ticket';
+import { banServerMember } from '../../services/Server';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -86,6 +87,21 @@ export function channelMessageCreate(Router: Router) {
       name: 'create_message', 
       restrictMS: 20000,
       requests: 20,
+      itterId: (req: Request) => req.channelCache.id, 
+      onThreeIterations: async (req) => {
+        
+        const isServerChannel = req.channelCache.type === ChannelType.SERVER_TEXT;
+        if (!isServerChannel) return;
+
+        const isServerOwner = req.userCache.id === req.serverCache.createdById;
+        if (isServerOwner) return;
+
+        await banServerMember(
+          req.userCache.id,
+          req.serverCache.id,
+          true,
+        );
+      }
     }),
     route
   );

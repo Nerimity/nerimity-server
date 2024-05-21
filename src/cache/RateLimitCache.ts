@@ -1,11 +1,14 @@
 import { redisClient } from '../common/redis';
-import { RATE_LIMIT_KEY_STRING } from './CacheKeys';
+import { RATE_LIMIT_ITTER_KEY_STRING, RATE_LIMIT_KEY_STRING } from './CacheKeys';
 
 interface CheckAndUpdateRateLimitOptions {
   id: string,
   requests: number;
   perMS: number;
   restrictMS: number;
+
+  onThreeIterations?: () => void; // Event triggered when user has been rate limited 3 times in the last 3 minutes.
+  itterId?: () => string;
 }
 
 enum RateLimitStatus {
@@ -45,6 +48,21 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
   }
 
   if (requests >= opts.requests) {
+    
+    if (opts.onThreeIterations) {
+      const itterKey = RATE_LIMIT_ITTER_KEY_STRING(opts.id + opts.itterId?.());
+      const itterMulti = redisClient.multi();
+
+      itterMulti.incr(itterKey);
+      const threeMinutesToMilliseconds = 3 * 60 * 1000;
+      itterMulti.pExpire(itterKey, threeMinutesToMilliseconds, "NX")
+      const [itterRes] = await itterMulti.exec();
+      if (itterRes as number >= 3) {
+        opts.onThreeIterations();
+        await redisClient.del(itterKey);
+      }
+    }
+
     const multi = redisClient.multi();
     multi.hSet(key, {
       status: RateLimitStatus.REACHED
