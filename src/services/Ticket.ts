@@ -10,6 +10,7 @@ export enum TicketCategory {
   ACCOUNT = 1,
   ABUSE = 2,
   OTHER = 3,
+  SERVER_VERIFICATION = 4,
 }
 
 export enum TicketStatus {
