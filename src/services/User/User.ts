@@ -341,6 +341,16 @@ export const getUserDetails = async (
 
   const isBlocked = await isUserBlocked(requesterId, recipientId);
 
+  const suspension = await prisma.suspension.findFirst({
+    where: {
+      userId: recipientId,
+    },
+    select: {
+      expireAt: true,
+    }
+  })
+  const isSuspensionExpired = suspension?.expireAt && isExpired(suspension.expireAt)
+
   return [
     {
       block: isBlocked,
@@ -349,6 +359,7 @@ export const getUserDetails = async (
       mutualServerIds,
       latestPost,
       profile: user.profile,
+      ...(!isSuspensionExpired ? {suspensionExpiresAt: suspension?.expireAt} : {})
     },
     null,
   ];
