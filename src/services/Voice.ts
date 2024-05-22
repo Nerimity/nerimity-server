@@ -7,11 +7,14 @@ import {
   isUserInVoice,
   removeVoiceUserByUserId,
 } from '../cache/VoiceCache';
+import { prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { emitServerVoiceUserLeft, emitServerVoiceUserJoined, emitDMVoiceUserLeft, emitDMVoiceUserJoined } from '../emits/Voice';
 import { ChannelType, TextChannelTypes } from '../types/Channel';
+import { FriendStatus } from '../types/Friend';
 import { MessageType } from '../types/Message';
 import { createMessage } from './Message';
+import { isUserBlocked } from './User/User';
 
 export const joinVoiceChannel = async (
   userId: string,
@@ -35,7 +38,6 @@ export const joinVoiceChannel = async (
 
   const [channelCache] = await getChannelCache(channelId, userId);
 
-
   if (!channelCache) {
     return [
       null,
@@ -50,6 +52,21 @@ export const joinVoiceChannel = async (
     ]
   }
 
+  if (channelCache.type === ChannelType.DM_TEXT) {
+    const isBlocked = await prisma.friend.findFirst({
+      where: {
+        status: FriendStatus.BLOCKED,
+        OR: [
+          {userId: userId, recipientId: channelCache.inbox.recipientId},
+          {userId: channelCache.inbox.recipientId, recipientId: userId},
+        ]
+      }
+    })
+
+    if (isBlocked) {
+      return [null, generateError('Cannot join voice channel.')]
+    }
+  }
 
   const count = await countVoiceUsersInChannel(channelId);
 
@@ -67,16 +84,11 @@ export const joinVoiceChannel = async (
     serverId,
   });
 
-
-
-
-
   if (channelCache.serverId) {
     emitServerVoiceUserJoined(channelId, voice);
   } else {
     emitDMVoiceUserJoined(channelCache, voice);
   }
-
 
   return [true, null] as const;
 };
