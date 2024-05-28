@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 function generateRandom(length: number) {
   const chars =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -44,4 +45,8 @@ function hslToHex(h: number, s: number, l: number) {
       .padStart(2, '0'); // convert to Hex and prefix "0" if needed
   };
   return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+export function generateSecureCode() {
+  return crypto.randomBytes(20).toString('hex');
 }

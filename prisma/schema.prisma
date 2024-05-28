@@ -29,6 +29,11 @@ model Account {
   emailConfirmed  Boolean @default(false)
   emailConfirmCode String?
 
+
+  // forgot password
+  resetPasswordCode String?
+  resetPasswordCodeExpiresAt DateTime?
+
   applications Application[]
 }
 

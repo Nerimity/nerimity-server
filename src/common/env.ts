@@ -25,6 +25,7 @@ export default {
   REDIS_PORT: parseInt(process.env.REDIS_PORT as string),
   REDIS_PASS: process.env.REDIS_PASS as string,
   ORIGIN: origin(),
+  CLIENT_URL: process.env.CLIENT_URL as string,
   NERIMITY_CDN: process.env.NERIMITY_CDN as string,
   NERIMITY_CDN_SECRET: process.env.NERIMITY_CDN_SECRET as string,
 

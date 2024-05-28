@@ -1,11 +1,13 @@
-import { env } from 'process';
-import { prisma } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { generateError } from '../../common/errorHandler';
-import { sendConfirmCodeMail } from '../../common/mailer';
-import { generateEmailConfirmCode, generateTag } from '../../common/random';
+import { sendConfirmCodeMail, sendResetPasswordMail } from '../../common/mailer';
+import { generateEmailConfirmCode, generateSecureCode, generateTag } from '../../common/random';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
+import bcrypt from 'bcrypt';
+import { generateToken } from '../../common/JWT';
+import env from '../../common/env';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -34,6 +36,40 @@ const updateAccountConfirmCode = async (userId: string) => {
   await prisma.account.update({
     where: { userId },
     data: { emailConfirmCode: code },
+  });
+  return code;
+};
+
+export async function sendResetPasswordCode(email: string) {
+  const account = await prisma.account.findFirst({
+    where: { email },
+  });
+
+  if (!account) {
+    return [null, generateError('Invalid email.')] as const;
+  }
+
+  const code = await updateForgotPasswordCode(account.userId);
+  const url = `${env.CLIENT_URL}/reset-password?code=${code}&userId=${account.userId}`
+
+  if (env.DEV_MODE) {
+    return [{ message: `DEV MODE: Password reset link: ${url}` }, null] as const;
+  }
+
+  sendResetPasswordMail(url, account.email);
+
+  return [{ message: 'Password reset link sent to your email.' }, null] as const;
+}
+
+const updateForgotPasswordCode = async (userId: string) => {
+  const code = generateSecureCode();
+
+  await prisma.account.update({
+    where: { userId },
+    data: { 
+      resetPasswordCode: code,
+      resetPasswordCodeExpiresAt: dateToDateTime(new Date(Date.now() + 60 * 60 * 1000)) // expires in 1 hour
+     },
   });
   return code;
 };
@@ -173,3 +209,47 @@ export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
   broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
   broadcaster.disconnectSockets(true);
 };
+
+export const resetPassword = async (opts: {userId: string, code: string, newPassword: string}) => {
+  if (!opts.code) {
+    return [null, generateError('Invalid code.')] as const
+  }
+  if (!opts.newPassword) {
+    return [null, generateError('Invalid password.')] as const
+  }
+  if (!opts.userId) {
+    return [null, generateError('Invalid userId.')] as const
+  }
+
+  const account = await prisma.account.findFirst({
+    where: { 
+      userId: opts.userId,
+      resetPasswordCode: opts.code,
+      resetPasswordCodeExpiresAt: { gte: new Date() }
+    },
+  })
+
+  if (!account) {
+    return [null, generateError('Invalid or expired code.')] as const
+  }
+
+  const updateResult = await prisma.account.update({
+    where: { userId: opts.userId },
+    data: {
+      password: await bcrypt.hash(opts.newPassword.trim(), 10),
+      passwordVersion: { increment: 1 },
+      resetPasswordCode: null,
+      resetPasswordCodeExpiresAt: null
+    }
+  })
+  await removeUserCacheByUserIds([opts.userId]);
+
+  const newToken = generateToken(account.userId, updateResult.passwordVersion)
+
+  if (newToken) {
+    disconnectSockets(opts.userId);
+  }
+
+  return [newToken, null] as const
+
+}

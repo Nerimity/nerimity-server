@@ -21,6 +21,8 @@ import { userChannelNoticeDelete } from './userChannelNoticeDelete';
 import { userChannelNoticeGet } from './userChannelNoticeGet';
 import { userChannelNoticeUpdate } from './userChannelNoticeUpdate';
 import { userDismissNotice } from './userDismissNotice';
+import { userPasswordResetCodeSent } from './userPasswordResetCodeSend';
+import { userPasswordReset } from './userPasswordReset';
 
 const UsersRouter = Router();
 
@@ -29,6 +31,9 @@ userDismissNotice(UsersRouter);
 userChannelNoticeGet(UsersRouter);
 userChannelNoticeDelete(UsersRouter);
 userChannelNoticeUpdate(UsersRouter);
+
+userPasswordResetCodeSent(UsersRouter);
+userPasswordReset(UsersRouter);
 
 userEmailConfirmCode(UsersRouter);
 userEmailConfirmCodeSend(UsersRouter);
