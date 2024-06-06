@@ -131,6 +131,8 @@ model User {
 
   usersSuspended      Suspension[]               @relation(name: "suspended_by") // Only admins
 
+  serverFolders ServerFolder[]
+
 
   notices UserNotice[]
 
@@ -139,6 +141,19 @@ model User {
 
   votedPostPolls PostPollVotedUser[]
 
+
+}
+
+model ServerFolder {
+  id String @id
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id]) 
+
+  name String?
+  icon String?
+
+  serverIds String[]
 
 }
 
