@@ -7,7 +7,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
-import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
+import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerFolderCreated, emitServerFolderUpdated, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentUserServerMessages } from './Message';
 import { MessageType } from '../types/Message';
@@ -615,10 +615,83 @@ export const getServerEmojis = async (serverId: string) => {
   return [server.customEmojis, null] as const;
 };
 
+export const updateServerFolder = async (userId: string, folderId: string, serverIds: string[]) => {
+  const folder = await prisma.serverFolder.findUnique({ where: { id: folderId } });
+  if (!folder) {
+    return [null, generateError('Folder not found.')] as const;
+  }
+  const isAlreadyInFolder = await prisma.serverFolder.findFirst({ where: { id: { not: folderId }, createdById: userId, serverIds: { hasSome: serverIds } } });
+
+  if (isAlreadyInFolder) {
+    return [null, generateError('Server is already in a folder.')] as const;
+  }
+
+  const isInServers = await prisma.serverMember.count({ where: { userId, serverId: { in: serverIds } } });
+
+  if (isInServers !== serverIds.length) {
+    return [null, generateError('Some servers are not joined.')] as const;
+  }
+
+  await prisma.serverFolder.update({
+    where: { id: folderId },
+    data: {
+      serverIds,
+    },
+  });
+
+  emitServerFolderUpdated(userId, { id: folderId, serverIds });
+
+  return [true, null] as const;
+};
+export const createServerFolder = async (userId: string, serverIds: string[]) => {
+  if (serverIds.length !== 2) {
+    return [null, generateError('serverIds must be an array of length 2.')] as const;
+  }
+  const isAlreadyInFolder = await prisma.serverFolder.findFirst({ where: { createdById: userId, serverIds: { hasSome: serverIds } } });
+
+  if (isAlreadyInFolder) {
+    return [null, generateError('Server is already in a folder.')] as const;
+  }
+
+  const isInServers = await prisma.serverMember.count({ where: { userId, serverId: { in: serverIds } } });
+
+  if (isInServers !== serverIds.length) {
+    return [null, generateError('Some servers are not joined.')] as const;
+  }
+
+  const newFolderId = generateId();
+
+  const account = await prisma.account.findUnique({ where: { userId }, select: { serverOrderIds: true } });
+  const serverOrderIds = account?.serverOrderIds ?? [];
+
+  const serverIndex = serverOrderIds.findIndex((serverId) => serverIds[0] === serverId);
+  if (serverIndex === -1) {
+    return [null, generateError('Server not found. Try re-ordering the servers.')] as const;
+  }
+
+  // insert folder Id at index serverIndex
+  serverOrderIds.splice(serverIndex, 0, newFolderId);
+
+  await prisma.$transaction([
+    prisma.account.update({ where: { userId }, data: { serverOrderIds } }),
+    prisma.serverFolder.create({
+      data: {
+        id: newFolderId,
+        serverIds,
+        createdById: userId,
+      },
+    }),
+  ]);
+  emitServerOrderUpdated(userId, serverOrderIds);
+  emitServerFolderCreated(userId, { id: newFolderId, serverIds });
+
+  return [newFolderId, null] as const;
+};
+
 export const updateServerOrder = async (userId: string, orderedServerIds: string[]) => {
   const user = await prisma.user.findFirst({
     where: { id: userId },
-    select: { servers: { select: { id: true } } },
+    select: { servers: { select: { id: true } }, serverFolders: { select: { id: true } } },
   });
 
   if (!user) {
@@ -626,14 +699,17 @@ export const updateServerOrder = async (userId: string, orderedServerIds: string
   }
 
   const joinedServerIds = user.servers.map((server) => server.id);
-  if (joinedServerIds.length !== orderedServerIds.length) {
+  const serverFolderIds = user.serverFolders.map((folder) => folder.id);
+  const combinedIds = [...joinedServerIds, ...serverFolderIds];
+
+  if (combinedIds.length !== orderedServerIds.length) {
     return [null, generateError('Server order length does not match.')];
   }
 
-  const doesNotExist = joinedServerIds.find((id) => !orderedServerIds.includes(id));
+  const doesNotExist = combinedIds.find((id) => !orderedServerIds.includes(id));
 
   if (doesNotExist) {
-    return [null, generateError('Invalid server ids.')];
+    return [null, generateError('Invalid server/folder ids.')];
   }
 
   await prisma.account.update({

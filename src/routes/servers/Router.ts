@@ -37,9 +37,14 @@ import { serverWelcomeQuestionUpdate } from './serverWelcomeQuestionUpdate';
 import { serverWelcomeQuestionDelete } from './serverWelcomeQuestionDelete';
 import { serverWelcomeAnswer } from './serverWelcomeAnswer';
 import { serverWelcomeAnswerRemove } from './serverWelcomeAnswerRemove';
+import { serverCreateFolder } from './serverCreateFolder';
+import { Server } from 'http';
+import { serverUpdateFolder } from './serverUpdateFolder';
 
 const ServersRouter = Router();
 
+serverUpdateFolder(ServersRouter);
+serverCreateFolder(ServersRouter);
 serverChannelNoticeDelete(ServersRouter);
 serverChannelNoticeUpdate(ServersRouter);
 

@@ -42,6 +42,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
           userId: true,
         },
       },
+      serverFolders: { select: { id: true, icon: true, serverIds: true, name: true } },
       connections: { select: { id: true, provider: true, connectedAt: true } },
       friends: { include: { recipient: { select: publicUserExcludeFields } } },
       notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
@@ -158,6 +159,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     },
     notificationSettings: user.notificationSettings,
     voiceChannelUsers,
+    serverFolders: user.serverFolders,
     servers,
     serverSettings: [], // Safe to remove. Only here for backwards compatibility.
     serverMembers,

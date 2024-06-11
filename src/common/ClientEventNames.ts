@@ -6,8 +6,7 @@ export const USER_NOTICE_CREATED = 'user:notice_created';
 export const USER_CONNECTION_ADDED = 'user:connection_added';
 export const USER_CONNECTION_REMOVED = 'user:connection_removed';
 
-export const USER_NOTIFICATION_SETTINGS_UPDATE =
-  'user:notification_settings_update';
+export const USER_NOTIFICATION_SETTINGS_UPDATE = 'user:notification_settings_update';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 export const USER_BLOCKED = 'user:blocked';
@@ -33,6 +32,8 @@ export const SERVER_ROLE_UPDATED = 'server:role_updated';
 export const SERVER_ROLE_ORDER_UPDATED = 'server:role_order_updated';
 export const SERVER_CHANNEL_ORDER_UPDATED = 'server:channel_order_updated';
 export const SERVER_ORDER_UPDATED = 'server:order_updated';
+export const SERVER_FOLDER_CREATED = 'server:folder_created';
+export const SERVER_FOLDER_UPDATED = 'server:folder_updated';
 export const SERVER_ROLE_DELETED = 'server:role_deleted';
 export const SERVER_MEMBER_JOINED = 'server:member_joined';
 export const SERVER_MEMBER_LEFT = 'server:member_left';
