@@ -6,24 +6,19 @@ import { generateId } from '../common/flakeId';
 import { joinServer } from './Server';
 import { updateServerCache } from '../cache/ServerCache';
 
-export const getPublicServers = async (
-  sort: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped',
-  filter: 'all' | 'verified'
-): Promise<PublicServer[]> => {
+export const getPublicServers = async (sort: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped', filter: 'all' | 'verified', limit?: number): Promise<PublicServer[]> => {
   const where = (): Prisma.PublicServerWhereInput => {
     if (filter === 'verified') return { server: { verified: true } };
     return {};
   };
 
-  const orderBy =
-    (): Prisma.Enumerable<Prisma.PublicServerOrderByWithRelationInput> => {
-      if (sort === 'most_bumps') return { bumpCount: 'desc' };
-      if (sort === 'most_members')
-        return { server: { serverMembers: { _count: 'desc' } } };
-      if (sort === 'recently_added') return { createdAt: 'desc' };
-      if (sort === 'recently_bumped') return { bumpedAt: 'desc' };
-      return {};
-    };
+  const orderBy = (): Prisma.Enumerable<Prisma.PublicServerOrderByWithRelationInput> => {
+    if (sort === 'most_bumps') return { bumpCount: 'desc' };
+    if (sort === 'most_members') return { server: { serverMembers: { _count: 'desc' } } };
+    if (sort === 'recently_added') return { createdAt: 'desc' };
+    if (sort === 'recently_bumped') return { bumpedAt: 'desc' };
+    return {};
+  };
 
   const publicServers = await prisma.publicServer.findMany({
     where: where(),
@@ -31,14 +26,13 @@ export const getPublicServers = async (
     include: {
       server: { include: { _count: { select: { serverMembers: true } } } },
     },
+    ...(limit ? { take: limit } : {}),
   });
 
   return publicServers;
 };
 
-export const getPublicServer = async (
-  serverId: string
-): Promise<CustomResult<PublicServer, CustomError>> => {
+export const getPublicServer = async (serverId: string): Promise<CustomResult<PublicServer, CustomError>> => {
   const publicServer = await prisma.publicServer.findFirst({
     where: { serverId },
     include: {
@@ -53,9 +47,7 @@ export const getPublicServer = async (
   return [publicServer, null];
 };
 
-export const bumpPublicServer = async (
-  serverId: string
-): Promise<CustomResult<PublicServer, CustomError>> => {
+export const bumpPublicServer = async (serverId: string): Promise<CustomResult<PublicServer, CustomError>> => {
   const publicServer = await prisma.publicServer.findFirst({
     where: { serverId },
   });
@@ -87,10 +79,7 @@ export const bumpPublicServer = async (
   return [newPublicServer, null];
 };
 
-export const updatePublicServer = async (
-  serverId: string,
-  description: string
-): Promise<CustomResult<PublicServer, CustomError>> => {
+export const updatePublicServer = async (serverId: string, description: string): Promise<CustomResult<PublicServer, CustomError>> => {
   const publicServer = await prisma.publicServer.upsert({
     where: {
       serverId,
@@ -110,9 +99,7 @@ export const updatePublicServer = async (
   return [publicServer, null];
 };
 
-export const deletePublicServer = async (
-  serverId: string
-): Promise<CustomResult<PublicServer, CustomError>> => {
+export const deletePublicServer = async (serverId: string): Promise<CustomResult<PublicServer, CustomError>> => {
   const publicServer = await prisma.publicServer.delete({
     where: { serverId },
   });
@@ -120,10 +107,7 @@ export const deletePublicServer = async (
   return [publicServer, null];
 };
 
-export const joinPublicServer = async (
-  userId: string,
-  serverId: string
-): Promise<CustomResult<Server, CustomError>> => {
+export const joinPublicServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>> => {
   const publicServer = await prisma.publicServer.findFirst({
     where: { serverId },
   });
