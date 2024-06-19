@@ -578,9 +578,9 @@ async function hasReachedMaxServerEmojis(serverId?: string) {
 
   const emojiCount = await prisma.customEmoji.count({ where: { serverId } });
   if (server.verified) {
-    return emojiCount >= 100;
+    return emojiCount >= 200;
   }
-  return emojiCount >= 50;
+  return emojiCount >= 80;
 }
 
 export const addServerEmoji = async (opts: AddServerEmojiOpts) => {
