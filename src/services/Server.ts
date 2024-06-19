@@ -671,7 +671,7 @@ export const deleteServerEmoji = async (serverId: string, emojiId: string) => {
   if (!emoji) return [null, 'Emoji not found.'] as const;
 
   await prisma.customEmoji.delete({ where: { id: emoji.id } });
-  await nerimityCDN.deleteImage('emojis/' + emoji.id + (emoji.gif ? '.gif' : '.webp'));
+  // await nerimityCDN.deleteImage('emojis/' + emoji.id + (emoji.gif ? '.gif' : '.webp'));
   emitServerEmojiRemove(serverId, emojiId);
   return [true, null] as const;
 };
