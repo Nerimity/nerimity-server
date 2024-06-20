@@ -10,7 +10,7 @@ import { updateBot } from '../../services/Application';
 export function userUpdate(Router: Router) {
   Router.post(
     '/users',
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'user_update_limit',
       restrictMS: 60000,
