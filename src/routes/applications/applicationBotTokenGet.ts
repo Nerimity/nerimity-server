@@ -11,7 +11,7 @@ export function applicationBotTokenGet(Router: Router) {
     rateLimit({
       name: 'get-bot-token',
       restrictMS: 60000,
-      requests: 5,
+      requests: 10,
     }),
     route
   );

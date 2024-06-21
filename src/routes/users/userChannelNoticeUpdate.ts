@@ -9,13 +9,8 @@ import { upsertChannelNotice } from '../../services/Channel';
 export function userChannelNoticeUpdate(Router: Router) {
   Router.put(
     '/users/channel-notice',
-    authenticate(),
-    body('content')
-      .trim()
-      .isString()
-      .withMessage('Content must be a string.')
-      .isLength({ min: 4, max: 300 })
-      .withMessage('Content must be between 4 and 300 characters long.'),
+    authenticate({ allowBot: true }),
+    body('content').trim().isString().withMessage('Content must be a string.').isLength({ min: 4, max: 300 }).withMessage('Content must be between 4 and 300 characters long.'),
     rateLimit({
       name: 'user_channel_notice_update',
       restrictMS: 10000,

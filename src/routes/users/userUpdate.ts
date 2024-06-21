@@ -121,11 +121,23 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  const profile = {
+    ...(body.bio !== undefined ? { bio: body.bio } : {}),
+    ...(body.bgColorOne !== undefined ? { bgColorOne: body.bgColorOne } : {}),
+    ...(body.bgColorTwo !== undefined ? { bgColorTwo: body.bgColorTwo } : {}),
+    ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {})
+  }
+
   if (req.userCache.bot) {
 
     const [result, error] = await updateBot({
       ...body,
       userId: req.userCache.id,
+      ...(Object.keys(profile).length
+      ? {
+          profile
+        }
+      : {}),
     })
 
     if (error) {
@@ -134,13 +146,6 @@ async function route(req: Request, res: Response) {
   
     return res.json(result);
 
-  }
-
-  const profile = {
-    ...(body.bio !== undefined ? { bio: body.bio } : {}),
-    ...(body.bgColorOne !== undefined ? { bgColorOne: body.bgColorOne } : {}),
-    ...(body.bgColorTwo !== undefined ? { bgColorTwo: body.bgColorTwo } : {}),
-    ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {})
   }
 
   const [result, error] = await updateUser({
