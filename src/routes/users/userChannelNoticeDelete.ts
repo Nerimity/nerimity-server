@@ -7,7 +7,7 @@ import { deleteChannelNotice } from '../../services/Channel';
 export function userChannelNoticeDelete(Router: Router) {
   Router.delete(
     '/users/channel-notice',
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'user_channel_notice_delete',
       restrictMS: 10000,

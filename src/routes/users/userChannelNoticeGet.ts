@@ -7,7 +7,7 @@ import { getChannelNotice } from '../../services/Channel';
 export function userChannelNoticeGet(Router: Router) {
   Router.get(
     '/users/channel-notice',
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'user_channel_notice_get',
       restrictMS: 10000,
