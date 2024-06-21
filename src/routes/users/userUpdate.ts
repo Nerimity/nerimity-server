@@ -16,79 +16,20 @@ export function userUpdate(Router: Router) {
       restrictMS: 60000,
       requests: 10,
     }),
-    body('email')
-      .isEmail()
-      .withMessage('Invalid email.')
-      .isLength({ min: 1, max: 320 })
-      .withMessage('Email must be between 1 and 320 characters long.')
-      .optional({ nullable: true }),
-    body('username')
-      .isString()
-      .withMessage('Invalid username.')
-      .not()
-      .contains('@')
-      .withMessage('Username cannot contain the @ symbol')
-      .not()
-      .contains(':')
-      .withMessage('Username cannot contain the : symbol')
-      .isLength({ min: 3, max: 35 })
-      .withMessage('Username must be between 3 and 35 characters long.')
-      .optional({ nullable: true }),
-    body('tag')
-      .isString()
-      .withMessage('Invalid tag.')
-      .isAlphanumeric()
-      .withMessage('Tag must be alphanumerical!')
-      .isLength({ min: 4, max: 4 })
-      .withMessage('Tag must be 4 characters long')
-      .optional({ nullable: true }),
-    body('password')
-      .isString()
-      .withMessage('Password must be a string.')
-      .optional({ nullable: true }),
-    body('newPassword')
-      .isString()
-      .withMessage('New password must be a string.')
-      .isLength({ min: 4, max: 64 })
-      .withMessage('New password must be between 4 and 64 characters long.')
-      .optional({ nullable: true }),
-    body('socketId')
-      .isString()
-      .withMessage('socketId must be a string.')
-      .isLength({ min: 4, max: 164 })
-      .withMessage('socketId must be between 4 and 255 characters long.')
-      .optional({ nullable: true }),
+    body('email').isEmail().withMessage('Invalid email.').isLength({ min: 1, max: 320 }).withMessage('Email must be between 1 and 320 characters long.').optional({ nullable: true }),
+    body('username').isString().withMessage('Invalid username.').not().contains('@').withMessage('Username cannot contain the @ symbol').not().contains(':').withMessage('Username cannot contain the : symbol').isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.').optional({ nullable: true }),
+    body('tag').isString().withMessage('Invalid tag.').isAlphanumeric().withMessage('Tag must be alphanumerical!').isLength({ min: 4, max: 4 }).withMessage('Tag must be 4 characters long').optional({ nullable: true }),
+    body('password').isString().withMessage('Password must be a string.').optional({ nullable: true }),
+    body('newPassword').isString().withMessage('New password must be a string.').isLength({ min: 4, max: 64 }).withMessage('New password must be between 4 and 64 characters long.').optional({ nullable: true }),
+    body('socketId').isString().withMessage('socketId must be a string.').isLength({ min: 4, max: 164 }).withMessage('socketId must be between 4 and 255 characters long.').optional({ nullable: true }),
 
-    body('bio')
-      .isString()
-      .withMessage('Bio must be a string.')
-      .isLength({ min: 1, max: 1000 })
-      .withMessage('Bio must be between 1 and 1000 characters long.')
-      .optional({ nullable: true }),
-      body('bgColorOne')
-      .isString()
-      .withMessage('bgColorOne must be a string.')
-      .isLength({ min: 4, max: 100 })
-      .optional({ nullable: true }),
-      body('bgColorTwo')
-      .isString()
-      .withMessage('bgColorTwo must be a string.')
-      .isLength({ min: 4, max: 100 })
-      .optional({ nullable: true }),
-      body('primaryColor')
-      .isString()
-      .withMessage('primaryColor must be a string.')
-      .isLength({ min: 4, max: 100 })
-      .optional({ nullable: true }),
+    body('bio').isString().withMessage('Bio must be a string.').isLength({ min: 1, max: 1000 }).withMessage('Bio must be between 1 and 1000 characters long.').optional({ nullable: true }),
+    body('bgColorOne').isString().withMessage('bgColorOne must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
+    body('bgColorTwo').isString().withMessage('bgColorTwo must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
+    body('primaryColor').isString().withMessage('primaryColor must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
 
-    body('dmStatus')
-      .isInt({ min: 0, max: 2 })
-      .withMessage('dmStatus must be a number.')
-      .optional({ nullable: true }),
-    body('friendRequestStatus')
-      .isInt({ min: 0, max: 2 })
-      .withMessage('friendRequestStatus must be a number.')
-      .optional({ nullable: true }),
+    body('dmStatus').isInt({ min: 0, max: 2 }).withMessage('dmStatus must be a number.').optional({ nullable: true }),
+    body('friendRequestStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
     route
   );
 }
@@ -107,9 +48,9 @@ interface Body {
   friendRequestStatus?: number;
 
   bio?: string | null;
-  bgColorOne?: string | null
-  bgColorTwo?: string | null
-  primaryColor?: string | null
+  bgColorOne?: string | null;
+  bgColorTwo?: string | null;
+  primaryColor?: string | null;
 }
 
 async function route(req: Request, res: Response) {
@@ -125,27 +66,25 @@ async function route(req: Request, res: Response) {
     ...(body.bio !== undefined ? { bio: body.bio } : {}),
     ...(body.bgColorOne !== undefined ? { bgColorOne: body.bgColorOne } : {}),
     ...(body.bgColorTwo !== undefined ? { bgColorTwo: body.bgColorTwo } : {}),
-    ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {})
-  }
+    ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {}),
+  };
 
   if (req.userCache.bot) {
-
     const [result, error] = await updateBot({
       ...body,
       userId: req.userCache.id,
       ...(Object.keys(profile).length
-      ? {
-          profile
-        }
-      : {}),
-    })
+        ? {
+            profile,
+          }
+        : {}),
+    });
 
     if (error) {
       return res.status(400).json(error);
     }
-  
-    return res.json(result);
 
+    return res.json({ user: result });
   }
 
   const [result, error] = await updateUser({
@@ -163,7 +102,7 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('friendRequestStatus', body.friendRequestStatus),
     ...(Object.keys(profile).length
       ? {
-          profile
+          profile,
         }
       : {}),
   });

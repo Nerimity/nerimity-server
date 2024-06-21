@@ -269,6 +269,7 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
           }
         : undefined),
     },
+    include: { profile: { select: { bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } },
   });
 };
 
