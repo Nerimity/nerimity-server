@@ -19,6 +19,8 @@ import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common
 import { ChannelType } from '../types/Channel';
 import { Log } from '../common/Log';
 import { replaceBadWords } from '../common/badWords';
+import { htmlToJson } from '@nerimity/html-embed';
+import { zip } from '../common/zip';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -56,7 +58,6 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
     return result;
   }
 
-  const t0 = performance.now();
   const messages = await prisma.message.findMany({
     where: {
       channelId,
@@ -169,9 +170,6 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       : undefined),
   });
 
-  const t1 = performance.now();
-  if (opts?.requesterId === '1289157673362825217') Log.debug(`get messages: ${t1 - t0}ms`);
-
   const modifiedMessages = messages.map((message) => {
     (message.reactions as any) = message.reactions.map((reaction) => ({
       ...reaction,
@@ -209,7 +207,7 @@ export const deleteRecentUserServerMessages = async (userId: string, serverId: s
     serverId,
     fromTime,
     toTime,
-  })
+  });
 };
 
 interface EditMessageOptions {
@@ -324,11 +322,11 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
       messageData: {
         content: isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
         editedAt: dateToDateTime(),
-        embed: Prisma.JsonNull
+        embed: Prisma.JsonNull,
       },
       creatorId: opts.userId,
-      update: true
-  }),
+      update: true,
+    }),
     include: MessageInclude,
   });
 
@@ -359,6 +357,7 @@ interface SendMessageOptions {
   updateLastSeen?: boolean; // by default, this is true.
   attachment?: Partial<Attachment>;
   everyoneMentioned?: boolean;
+  htmlEmbed?: string;
 }
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
@@ -373,7 +372,7 @@ interface ConstructDataOpts {
   update?: boolean;
   bypassQuotesCheck?: boolean;
 }
-async function constructData({ messageData, creatorId, update, bypassQuotesCheck}: ConstructDataOpts) {
+async function constructData({ messageData, creatorId, update, bypassQuotesCheck }: ConstructDataOpts) {
   if (typeof messageData.content === 'string') {
     const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1]));
 
@@ -410,6 +409,15 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
   const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
 
+  let htmlEmbed = undefined;
+  if (opts.htmlEmbed) {
+    try {
+      htmlEmbed = htmlToJson(opts.htmlEmbed);
+    } catch (err: any) {
+      return [null, generateError(err.message, 'htmlEmbed')];
+    }
+  }
+
   const createMessageQuery = prisma.message.create({
     data: await constructData({
       messageData: {
@@ -419,6 +427,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
         channelId: opts.channelId,
         type: opts.type,
         createdAt: messageCreatedAt,
+        ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
         ...(opts.attachment
           ? {
               attachments: {
@@ -432,9 +441,9 @@ export const createMessage = async (opts: SendMessageOptions) => {
             }
           : undefined),
       },
-      creatorId: opts.userId, 
-      bypassQuotesCheck: channel?.type === ChannelType.TICKET
-  }),
+      creatorId: opts.userId,
+      bypassQuotesCheck: channel?.type === ChannelType.TICKET,
+    }),
     include: {
       createdBy: {
         select: {
@@ -876,7 +885,7 @@ interface GetMessageReactedUsersOpts {
   messageId: string;
   name: string;
   emojiId?: string;
-  limit: number
+  limit: number;
 }
 
 export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) => {
@@ -896,8 +905,8 @@ export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) =
     take: opts.limit,
     select: { user: { select: publicUserExcludeFields }, reactedAt: true },
     orderBy: { reactedAt: 'asc' },
-  })
-  
+  });
+
   return [reactedUsers, null] as const;
 };
 
@@ -906,21 +915,23 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
     where: {
       id: { in: quotedMessageIds },
       type: MessageType.CONTENT,
-      ...(!bypassQuotesCheck ? {
-        channel: {
-          OR: [
-            { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
-            {
-              inbox: {
-                // is inbox channel
-                some: {
-                  OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+      ...(!bypassQuotesCheck
+        ? {
+            channel: {
+              OR: [
+                { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
+                {
+                  inbox: {
+                    // is inbox channel
+                    some: {
+                      OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+                    },
+                  },
                 },
-              },
+              ],
             },
-          ],
-        }
-      } : {}),
+          }
+        : {}),
     },
     select: {
       id: true,

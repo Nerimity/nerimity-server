@@ -65,6 +65,13 @@ export function channelMessageCreate(Router: Router) {
       .isObject()
       .withMessage('googleDriveFile must be an object!'),
 
+      body('htmlEmbed')
+      .optional(true)
+      .isString()
+      .withMessage('htmlEmbed must be a string!')
+      .isLength({ min: 1, max: 5000 })
+      .withMessage('htmlEmbed length must be between 1 and 5000 characters.'),
+
     body('googleDriveAttachment.id')
       .optional(true)
       .isString()
@@ -110,6 +117,7 @@ export function channelMessageCreate(Router: Router) {
 interface Body {
   content?: string;
   socketId?: string;
+  htmlEmbed?: string;
   googleDriveAttachment?: {
     id: string;
     mime: string;
@@ -301,6 +309,7 @@ async function route(req: Request, res: Response) {
     type: MessageType.CONTENT,
     attachment,
     everyoneMentioned: canMentionEveryone,
+    htmlEmbed: body.htmlEmbed,
   });
 
   if (error) {

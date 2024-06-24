@@ -546,6 +546,7 @@ model Message {
   quotedInMessages Message[] @relation(name: "quoted_messages")
 
   embed Json?
+  htmlEmbed Json?
 
   messageNotifications         MessageNotification[]
 
