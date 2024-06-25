@@ -238,6 +238,8 @@ export const updateBot = async (opts: UpdateBotProps) => {
 
   const updateResult = await updateBotInDatabase(opts);
 
+  await removeUserCacheByUserIds([opts.userId]);
+
   emitUserUpdated(opts.userId, {
     username: updateResult.username,
     tag: updateResult.tag,
