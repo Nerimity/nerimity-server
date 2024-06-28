@@ -3,11 +3,11 @@ import { prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
 import { emitServerMemberUpdated } from '../emits/Server';
 import { arrayDiff, removeDuplicates } from '../common/utils';
-import { deleteAllServerMemberCache } from '../cache/ServerMemberCache';
+import { deleteAllServerMemberCache, getServerMemberCache } from '../cache/ServerMemberCache';
 import { ServerRole } from '@prisma/client';
 import { generateId } from '../common/flakeId';
 import { updateSingleMemberPrivateChannelSocketRooms } from './Channel';
-import { CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
 
 export const getTopRole = async (serverId: string, userId: string): Promise<CustomResult<ServerRole, CustomError>> => {
   const server = await prisma.server.findFirst({
@@ -34,6 +34,7 @@ export const getTopRole = async (serverId: string, userId: string): Promise<Cust
 
 export interface UpdateServerMember {
   roleIds?: string[];
+  nickname?: string;
 }
 
 export const updateServerMember = async (serverId: string, userId: string, updatedByUserId: string, update: UpdateServerMember): Promise<CustomResult<UpdateServerMember, CustomError>> => {
@@ -115,6 +116,45 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     isPrivate: true,
     serverId,
     userId,
+  });
+
+  deleteAllServerMemberCache(serverId);
+
+  emitServerMemberUpdated(serverId, userId, update);
+
+  return [update, null];
+};
+interface UpdateServerMemberProfile {
+  nickname?: string;
+}
+export const updateServerMemberProfile = async (serverId: string, userId: string, updatedByUserId: string, update: UpdateServerMemberProfile): Promise<CustomResult<UpdateServerMemberProfile, CustomError>> => {
+  const server = await prisma.server.findFirst({ where: { id: serverId } });
+  if (!server) {
+    return [null, generateError('Server does not exist.')];
+  }
+  const member = await prisma.serverMember.findFirst({
+    where: { serverId, userId: userId },
+  });
+  if (!member) {
+    return [null, generateError('Member is not in this server.')];
+  }
+
+  if (userId !== updatedByUserId) {
+    const [updatedByCache] = await getServerMemberCache(updatedByUserId, serverId);
+    const isAdmin = hasBit(updatedByCache?.permissions || 0, ROLE_PERMISSIONS.ADMIN.bit);
+    const isCreator = server.createdById === updatedByUserId;
+    if (!isAdmin && !isCreator) {
+      return [null, generateError('You do not have permission to update this member.')];
+    }
+
+    if (userId === server.createdById && !isCreator) {
+      return [null, generateError('You cannot update the server creator.')];
+    }
+  }
+
+  await prisma.serverMember.update({
+    where: { userId_serverId: { serverId, userId } },
+    data: update,
   });
 
   deleteAllServerMemberCache(serverId);

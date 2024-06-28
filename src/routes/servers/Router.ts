@@ -37,6 +37,7 @@ import { serverWelcomeQuestionUpdate } from './serverWelcomeQuestionUpdate';
 import { serverWelcomeQuestionDelete } from './serverWelcomeQuestionDelete';
 import { serverWelcomeAnswer } from './serverWelcomeAnswer';
 import { serverWelcomeAnswerRemove } from './serverWelcomeAnswerRemove';
+import { serverMemberProfileUpdate } from './serveMemberProfileUpdate';
 
 const ServersRouter = Router();
 
@@ -66,6 +67,8 @@ serverChannelDelete(ServersRouter);
 serverRoleCreate(ServersRouter);
 serverRoleUpdate(ServersRouter);
 serverRoleDelete(ServersRouter);
+
+serverMemberProfileUpdate(ServersRouter);
 
 serverMemberUpdate(ServersRouter);
 serverMemberKick(ServersRouter);

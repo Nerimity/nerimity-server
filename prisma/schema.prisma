@@ -427,6 +427,7 @@ model ServerMember {
   joinedAt DateTime @default(now())
   server   Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id])
+  nickname String?
 
   roleIds  String[]
 

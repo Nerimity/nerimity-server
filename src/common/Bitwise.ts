@@ -33,31 +33,25 @@ export const USER_BADGES = {
 };
 
 export const isUserAdmin = (badge: number) => {
-  return (
-    hasBit(badge, USER_BADGES.ADMIN.bit) ||
-    hasBit(badge, USER_BADGES.FOUNDER.bit)
-  );
+  return hasBit(badge, USER_BADGES.ADMIN.bit) || hasBit(badge, USER_BADGES.FOUNDER.bit);
 };
 
 export const CHANNEL_PERMISSIONS = {
   PRIVATE_CHANNEL: {
     name: 'Private Channel',
-    description:
-      'Disable access to the channel. Server admins can still access the channel.',
+    description: 'Disable access to the channel. Server admins can still access the channel.',
     bit: 1,
     icon: 'lock',
   },
   SEND_MESSAGE: {
     name: 'Send Message',
-    description:
-      'Enable sending messages in the channel. Server admins can still send messages.',
+    description: 'Enable sending messages in the channel. Server admins can still send messages.',
     bit: 2,
     icon: 'mail',
   },
   JOIN_VOICE: {
     name: 'Join Voice',
-    description:
-      'Enable joining voice channels in the channel. Server admins can still join voice channels.',
+    description: 'Enable joining voice channels in the channel. Server admins can still join voice channels.',
     bit: 4,
     icon: 'call',
   },
@@ -72,8 +66,7 @@ export const ROLE_PERMISSIONS = {
   },
   SEND_MESSAGE: {
     name: 'Send Message',
-    description:
-      'Enable sending messages in this server. Server admins can still send messages.',
+    description: 'Enable sending messages in this server. Server admins can still send messages.',
     bit: 2,
     icon: 'mail',
   },
@@ -107,6 +100,12 @@ export const ROLE_PERMISSIONS = {
     bit: 64,
     //icon: 'mention'
   },
+  NICKNAME_MEMBER: {
+    name: 'Nickname Member',
+    description: 'mentionEveryoneDescription',
+    bit: 128,
+    //icon: 'mention'
+  },
 };
 
 export const hasBit = (permissions: number, bit: number) => {
@@ -117,10 +116,7 @@ export const addBit = (permissions: number, bit: number) => {
   return permissions | bit;
 };
 
-export const getAllPermissions = (
-  permissionList: Record<string, Bitwise>,
-  permissions: number
-) => {
+export const getAllPermissions = (permissionList: Record<string, Bitwise>, permissions: number) => {
   return Object.values(permissionList).map((permission) => {
     const hasPerm = hasBit(permissions, permission.bit);
     return {
