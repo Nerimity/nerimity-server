@@ -24,9 +24,7 @@ interface Params {
 async function route(req: Request, res: Response) {
   const params = req.params as unknown as Params;
 
-  const [followers, error] = await followerUsers(
-    params.userId || req.userCache.id
-  );
+  const [followers, error] = await followerUsers(params.userId || req.userCache.id, req.userCache.id);
 
   if (error) {
     return res.status(400).json(error);

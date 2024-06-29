@@ -332,11 +332,11 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
   });
   const isSuspensionExpired = suspension?.expireAt && isExpired(suspension.expireAt);
 
-  if (user.account?.hideFollowers) {
+  if (user.account?.hideFollowers && requesterId !== recipientId) {
     user._count.followers = 0;
   }
 
-  if (user.account?.hideFollowing) {
+  if (user.account?.hideFollowing && requesterId !== recipientId) {
     user._count.following = 0;
   }
 
@@ -419,7 +419,7 @@ export async function unfollowUser(requesterId: string, unfollowId: string): Pro
   return [true, null];
 }
 
-export async function followingUsers(userId: string) {
+export async function followingUsers(userId: string, requesterId: string) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     select: {
@@ -430,11 +430,11 @@ export async function followingUsers(userId: string) {
     },
   });
   if (!user) return [null, generateError('invalid User')];
-  if (user.account?.hideFollowing) return [null, generateError('This user has hidden their following list')];
+  if (user.account?.hideFollowing && requesterId !== userId) return [null, generateError('This user has hidden their following list')];
   return [user?.following.map((follower) => follower.followedTo), null];
 }
 
-export async function followerUsers(userId: string) {
+export async function followerUsers(userId: string, requesterId: string) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     select: {
@@ -445,7 +445,7 @@ export async function followerUsers(userId: string) {
     },
   });
   if (!user) return [null, generateError('invalid User')];
-  if (user.account?.hideFollowers) return [null, generateError('This user has hidden their followers list')];
+  if (user.account?.hideFollowers && requesterId !== userId) return [null, generateError('This user has hidden their followers list')];
   return [user?.followers.map((follower) => follower.followedBy), null];
 }
 
