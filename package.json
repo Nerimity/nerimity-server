@@ -40,7 +40,7 @@
   "dependencies": {
     "@brecert/flakeid": "^2.0.1",
     "@nerimity/flakeid": "^1.0.3",
-    "@nerimity/html-embed": "^1.1.7",
+    "@nerimity/html-embed": "^1.1.8",
     "@prisma/client": "^5.9.1",
     "@socket.io/redis-adapter": "^8.2.1",
     "@socket.io/redis-streams-adapter": "^0.2.0",

@@ -15,8 +15,8 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3
       '@nerimity/html-embed':
-        specifier: ^1.1.7
-        version: 1.1.7
+        specifier: ^1.1.8
+        version: 1.1.8
       '@prisma/client':
         specifier: ^5.9.1
         version: 5.9.1(prisma@5.9.1)
@@ -432,8 +432,8 @@ packages:
   '@nerimity/flakeid@1.0.3':
     resolution: {integrity: sha512-PdJ49S/nGfTcBtraygFPiOPFBiu2oXn9+UZYEk2rWIEVQrRbC81zi2BcLYvTsrG913aA0KISFkrVmUnGXytT3g==}
 
-  '@nerimity/html-embed@1.1.7':
-    resolution: {integrity: sha512-BijoZLyTajkLPQMrU4wlR+HpK3E+3AmBu40hjojiHf3+EFWw4jJoNZzKe94wdh3k1JaX9SvH+fYT0kcdCz0AIA==}
+  '@nerimity/html-embed@1.1.8':
+    resolution: {integrity: sha512-IhW8Aa2UwEEFVXfdHD2UaeaYunTfFOb8GYXYmj7zCCKsE5JK1gAlUP3PR/82ob3GP5a5WHS4U2dAtR+xP6UGUQ==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2735,7 +2735,7 @@ snapshots:
 
   '@nerimity/flakeid@1.0.3': {}
 
-  '@nerimity/html-embed@1.1.7':
+  '@nerimity/html-embed@1.1.8':
     dependencies:
       css: 3.0.0
       htm: 3.1.1
