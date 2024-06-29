@@ -332,6 +332,14 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
   });
   const isSuspensionExpired = suspension?.expireAt && isExpired(suspension.expireAt);
 
+  if (user.account?.hideFollowers) {
+    user._count.followers = 0;
+  }
+
+  if (user.account?.hideFollowing) {
+    user._count.following = 0;
+  }
+
   return [
     {
       block: isBlocked,
