@@ -35,6 +35,9 @@ model Account {
   resetPasswordCodeExpiresAt DateTime?
 
   applications Application[]
+
+  hideFollowers Boolean @default(false)
+  hideFollowing Boolean @default(false)
 }
 
 model Application {

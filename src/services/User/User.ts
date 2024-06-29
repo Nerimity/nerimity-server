@@ -1,26 +1,13 @@
 import { CustomError, generateError } from '../../common/errorHandler';
 import { CustomResult } from '../../common/CustomResult';
-import {
-  emitInboxClosed,
-  emitInboxOpened,
-  emitUserPresenceUpdate,
-  emitUserNotificationSettingsUpdate,
-} from '../../emits/User';
+import { emitInboxClosed, emitInboxOpened, emitUserPresenceUpdate, emitUserNotificationSettingsUpdate } from '../../emits/User';
 import { ChannelType } from '../../types/Channel';
 import { Presence, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
-import {
-  excludeFields,
-  prisma,
-  publicUserExcludeFields,
-} from '../../common/database';
+import { excludeFields, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 
-import {
-  createPostNotification,
-  fetchLatestPost,
-  PostNotificationType,
-} from '../Post';
+import { createPostNotification, fetchLatestPost, PostNotificationType } from '../Post';
 
 import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
@@ -28,10 +15,7 @@ import { removeDuplicates } from '../../common/utils';
 import { isUserAdmin } from '../../common/Bitwise';
 import { Prisma } from '@prisma/client';
 
-export const getBlockedUserIds = async (
-  userIds: string[],
-  blockedUserId: string
-) => {
+export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
   const blockedUsers = await prisma.friend.findMany({
     where: {
       status: FriendStatus.BLOCKED,
@@ -72,7 +56,7 @@ export const isIpBanned = async (ipAddress: string) => {
 };
 
 export const getSuspensionDetails = async (userId: string) => {
-  const suspend = await prisma.suspension.findFirst({ where: { userId }, include: {suspendBy: {select: {username: true,}}} });
+  const suspend = await prisma.suspension.findFirst({ where: { userId }, include: { suspendBy: { select: { username: true } } } });
   if (!suspend) return false;
   if (!suspend.expireAt) return suspend;
 
@@ -114,8 +98,7 @@ export const closeDMChannel = async (userId: string, channelId: string) => {
   });
   if (!inbox) return [null, generateError('Channel does not exist.')] as const;
 
-  if (inbox.closed)
-    return [null, generateError('This channel is already closed.')] as const;
+  if (inbox.closed) return [null, generateError('This channel is already closed.')] as const;
 
   await leaveVoiceChannel(userId, channelId);
 
@@ -228,10 +211,7 @@ type PresencePayload = Partial<Omit<Omit<Presence, 'custom'>, 'userId'>> & {
   custom?: null | string;
 };
 
-export const updateUserPresence = async (
-  userId: string,
-  presence: PresencePayload
-) => {
+export const updateUserPresence = async (userId: string, presence: PresencePayload) => {
   const user = await prisma.user.findFirst({ where: { id: userId } });
   if (!user) {
     return [null, generateError('User not found.', 'user')];
@@ -269,10 +249,7 @@ export const updateUserPresence = async (
   return ['Presence updated.', null];
 };
 
-export const getUserDetails = async (
-  requesterId: string,
-  recipientId: string
-) => {
+export const getUserDetails = async (requesterId: string, recipientId: string) => {
   const user = await prisma.user.findFirst({
     where: { id: recipientId },
     select: {
@@ -294,6 +271,12 @@ export const getUserDetails = async (
           posts: { where: { deleted: null } },
         },
       },
+      account: {
+        select: {
+          hideFollowers: true,
+          hideFollowing: true,
+        },
+      },
     },
   });
 
@@ -305,9 +288,7 @@ export const getUserDetails = async (
   const recipientFriends = await prisma.friend.findMany({
     where: { userId: recipientId, status: FriendStatus.FRIENDS },
   });
-  const recipientFriendsIds = recipientFriends.map(
-    (friend) => friend.recipientId
-  );
+  const recipientFriendsIds = recipientFriends.map((friend) => friend.recipientId);
 
   const mutualFriends = await prisma.friend.findMany({
     where: {
@@ -347,19 +328,21 @@ export const getUserDetails = async (
     },
     select: {
       expireAt: true,
-    }
-  })
-  const isSuspensionExpired = suspension?.expireAt && isExpired(suspension.expireAt)
+    },
+  });
+  const isSuspensionExpired = suspension?.expireAt && isExpired(suspension.expireAt);
 
   return [
     {
       block: isBlocked,
       user: { ...user, profile: undefined },
+      hideFollowing: user.account?.hideFollowing,
+      hideFollowers: user.account?.hideFollowers,
       mutualFriendIds,
       mutualServerIds,
       latestPost,
       profile: user.profile,
-      ...(!isSuspensionExpired ? {suspensionExpiresAt: suspension?.expireAt} : {})
+      ...(!isSuspensionExpired ? { suspensionExpiresAt: suspension?.expireAt } : {}),
     },
     null,
   ];
@@ -376,16 +359,12 @@ export enum FriendRequestStatus {
   CLOSED = 2,
 }
 
-export async function followUser(
-  requesterId: string,
-  followToId: string
-): Promise<CustomResult<boolean, CustomError>> {
+export async function followUser(requesterId: string, followToId: string): Promise<CustomResult<boolean, CustomError>> {
   // check if already following
   const existingFollow = await prisma.follower.findFirst({
     where: { followedById: requesterId, followedToId: followToId },
   });
-  if (existingFollow)
-    return [null, generateError('You are already following this user.')];
+  if (existingFollow) return [null, generateError('You are already following this user.')];
 
   if (requesterId === followToId) {
     return [null, generateError('You cannot follow yourself.')];
@@ -421,16 +400,12 @@ export async function followUser(
   return [true, null];
 }
 
-export async function unfollowUser(
-  requesterId: string,
-  unfollowId: string
-): Promise<CustomResult<boolean, CustomError>> {
+export async function unfollowUser(requesterId: string, unfollowId: string): Promise<CustomResult<boolean, CustomError>> {
   // check if already following
   const existingFollow = await prisma.follower.findFirst({
     where: { followedById: requesterId, followedToId: unfollowId },
   });
-  if (!existingFollow)
-    return [null, generateError('You are already not following this user.')];
+  if (!existingFollow) return [null, generateError('You are already not following this user.')];
 
   await prisma.follower.delete({ where: { id: existingFollow.id } });
   return [true, null];
@@ -440,12 +415,14 @@ export async function followingUsers(userId: string) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     select: {
+      account: { select: { hideFollowing: true } },
       following: {
         select: { followedTo: { select: publicUserExcludeFields } },
       },
     },
   });
   if (!user) return [null, generateError('invalid User')];
+  if (user.account?.hideFollowing) return [null, generateError('This user has hidden their following list')];
   return [user?.following.map((follower) => follower.followedTo), null];
 }
 
@@ -453,12 +430,14 @@ export async function followerUsers(userId: string) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     select: {
+      account: { select: { hideFollowers: true } },
       followers: {
         select: { followedBy: { select: publicUserExcludeFields } },
       },
     },
   });
   if (!user) return [null, generateError('invalid User')];
+  if (user.account?.hideFollowers) return [null, generateError('This user has hidden their followers list')];
   return [user?.followers.map((follower) => follower.followedBy), null];
 }
 
@@ -478,32 +457,16 @@ export const NotificationPingMode = {
 type NonNullable<T> = Exclude<T, null | undefined>; // Remove null and undefined from T
 
 interface UpdateUserNotificationSettings {
-  notificationSoundMode?: NonNullable<
-    (typeof NotificationSoundMode)[keyof typeof NotificationSoundMode]
-  >;
-  notificationPingMode?: NonNullable<
-    (typeof NotificationPingMode)[keyof typeof NotificationPingMode]
-  >;
+  notificationSoundMode?: NonNullable<(typeof NotificationSoundMode)[keyof typeof NotificationSoundMode]>;
+  notificationPingMode?: NonNullable<(typeof NotificationPingMode)[keyof typeof NotificationPingMode]>;
 }
 
-export async function updateUserNotificationSettings(
-  userId: string,
-  update: UpdateUserNotificationSettings,
-  serverId?: string,
-  channelId?: string
-) {
-  if (serverId && channelId)
-    return [
-      null,
-      generateError('You must provide one of serverId or channelId.'),
-    ] as const;
+export async function updateUserNotificationSettings(userId: string, update: UpdateUserNotificationSettings, serverId?: string, channelId?: string) {
+  if (serverId && channelId) return [null, generateError('You must provide one of serverId or channelId.')] as const;
 
-  if (!serverId && !channelId)
-    return [null, generateError('ServerId or channelId is required.')] as const;
+  if (!serverId && !channelId) return [null, generateError('ServerId or channelId is required.')] as const;
 
-  const where: Prisma.UserNotificationSettingsWhereUniqueInput = channelId
-    ? { userId_channelId: { userId, channelId } }
-    : { userId_serverId: { userId, serverId: serverId! } };
+  const where: Prisma.UserNotificationSettingsWhereUniqueInput = channelId ? { userId_channelId: { userId, channelId } } : { userId_serverId: { userId, serverId: serverId! } };
 
   await prisma.userNotificationSettings.upsert({
     where,
@@ -585,17 +548,17 @@ export async function dismissUserNotice(noticeId: string, userId: string) {
   const notice = await prisma.userNotice.findFirst({
     where: {
       id: noticeId,
-      userId
-    }
-  })
+      userId,
+    },
+  });
 
   if (!notice) {
     return [null, generateError('Notice not found')];
   }
   await prisma.userNotice.delete({
     where: {
-      id: noticeId
-    }
-  })
+      id: noticeId,
+    },
+  });
   return [true, null];
 }

@@ -47,6 +47,8 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
       account: {
         select: {
+          hideFollowers: true,
+          hideFollowing: true,
           email: true,
           serverOrderIds: true,
           dmStatus: true,
@@ -147,6 +149,8 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   socket.emit(AUTHENTICATED, {
     user: {
       ...userCacheWithoutAccount,
+      hideFollowing: user.account?.hideFollowing,
+      hideFollowers: user.account?.hideFollowers,
       email: user.account?.email,
       customStatus: user.customStatus,
       orderedServerIds: user.account?.serverOrderIds,

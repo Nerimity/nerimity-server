@@ -25,11 +25,14 @@ interface UpdateUserProps {
   dmStatus?: DmStatus;
   friendRequestStatus?: FriendRequestStatus;
 
+  hideFollowing?: boolean;
+  hideFollowers?: boolean;
+
   profile?: {
     bio?: string | null;
-    bgColorOne?: string | null // used for gradient background color
-    bgColorTwo?: string | null // used for gradient background color
-    primaryColor?: string | null
+    bgColorOne?: string | null; // used for gradient background color
+    bgColorTwo?: string | null; // used for gradient background color
+    primaryColor?: string | null;
   };
 }
 
@@ -43,10 +46,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
   const isPasswordRequired = checkPasswordRequired(opts);
 
   if (isPasswordRequired) {
-    const passwordCheckResult = await checkPassword(
-      account.password,
-      opts.password
-    );
+    const passwordCheckResult = await checkPassword(account.password, opts.password);
     if (passwordCheckResult) return [null, passwordCheckResult] as const;
   }
 
@@ -60,8 +60,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
       newUsername: opts.username,
       newTag: opts.tag,
     });
-    if (usernameOrTagCheckResults)
-      return [null, usernameOrTagCheckResults] as const;
+    if (usernameOrTagCheckResults) return [null, usernameOrTagCheckResults] as const;
   }
 
   if (opts.email) {
@@ -69,10 +68,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
       where: { email: opts.email.trim(), NOT: { userId: opts.userId } },
     });
     if (accountExists) {
-      return [
-        null,
-        generateError('This email is already used by someone else.'),
-      ] as const;
+      return [null, generateError('This email is already used by someone else.')] as const;
     }
   }
 
@@ -89,10 +85,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
   }
 
   if (opts.banner) {
-    const [data, error] = await nerimityCDN.uploadBanner(
-      opts.banner,
-      opts.userId
-    );
+    const [data, error] = await nerimityCDN.uploadBanner(opts.banner, opts.userId);
     if (error) return [null, generateError(error)] as const;
     if (data) {
       opts.banner = data.path;
@@ -111,15 +104,16 @@ export const updateUser = async (opts: UpdateUserProps) => {
     email: updateResult.email!,
     username: updateResult.user.username,
     tag: updateResult.user.tag,
+    ...addToObjectIfExists('profile', opts.profile),
+    ...addToObjectIfExists('hideFollowing', opts.hideFollowing),
+    ...addToObjectIfExists('hideFollowers', opts.hideFollowers),
     ...addToObjectIfExists('avatar', opts.avatar),
     ...addToObjectIfExists('banner', opts.banner),
     ...addToObjectIfExists('dmStatus', opts.dmStatus),
     ...addToObjectIfExists('friendRequestStatus', opts.friendRequestStatus),
   });
 
-  const newToken = opts.newPassword?.trim()
-    ? generateToken(account.user.id, updateResult.passwordVersion)
-    : undefined;
+  const newToken = opts.newPassword?.trim() ? generateToken(account.user.id, updateResult.passwordVersion) : undefined;
 
   if (newToken) {
     disconnectSockets(opts.userId, opts.socketId);
@@ -178,22 +172,19 @@ export const checkUsernameOrTag = async (opts: CheckUsernameOrTagOpts) => {
   });
 
   if (userExists) {
-    return generateError(
-      'Someone already has this combination of tag and username.'
-    );
+    return generateError('Someone already has this combination of tag and username.');
   }
 };
 
-const updateAccountInDatabase = async (
-  email: string,
-  opts: UpdateUserProps
-) => {
+const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => {
   return prisma.account.update({
     where: { userId: opts.userId },
     data: {
       ...addToObjectIfExists('email', opts.email?.trim()),
       ...addToObjectIfExists('dmStatus', opts.dmStatus),
       ...addToObjectIfExists('friendRequestStatus', opts.friendRequestStatus),
+      ...addToObjectIfExists('hideFollowers', opts.hideFollowers),
+      ...addToObjectIfExists('hideFollowing', opts.hideFollowing),
       ...(opts.newPassword?.trim()
         ? {
             password: await bcrypt.hash(opts.newPassword!.trim(), 10),
@@ -201,9 +192,7 @@ const updateAccountInDatabase = async (
           }
         : undefined),
 
-      ...(opts.email && opts.email !== email
-        ? { emailConfirmed: false }
-        : undefined),
+      ...(opts.email && opts.email !== email ? { emailConfirmed: false } : undefined),
 
       user: {
         update: {
@@ -226,6 +215,6 @@ const updateAccountInDatabase = async (
         },
       },
     },
-    include: { user: {include: {profile: {select: {bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true}}}} },
+    include: { user: { include: { profile: { select: { bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } } } },
   });
 };
