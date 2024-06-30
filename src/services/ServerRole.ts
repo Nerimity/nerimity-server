@@ -92,7 +92,7 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
     }
   }
   if (role.hexColor && !isValidHex(role.hexColor)) {
-    return [null, generateError('Invalid hex color.')]
+    return [null, generateError('Invalid hex color.')];
   }
 
   await prisma.serverRole.update({ where: { id: role.id }, data: update });
@@ -198,6 +198,7 @@ export const updateServerRoleOrder = async (requesterTopRole: number, serverId: 
 
   const changingHigherPriorityRole = roleIds.find((roleId, index) => {
     const role = server.roles.find((r) => r.id === roleId)!;
+    if (!role) return false;
     const shouldMove = role.order < requesterTopRole;
     const changed = server.roles[index]?.id !== roleId;
     return !shouldMove && changed;
