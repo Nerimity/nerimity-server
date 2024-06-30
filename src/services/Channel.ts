@@ -162,7 +162,7 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
     return [null, generateError('Channel does not exist.')];
   }
 
-  if (update.permissions && channel.category) {
+  if (update.permissions !== undefined && channel.category) {
     const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
     if (isPrivate !== wasPrivate && !isPrivate) {
