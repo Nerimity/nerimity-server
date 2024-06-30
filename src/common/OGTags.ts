@@ -104,9 +104,6 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   return object;
 }
 
-getOGTags('https://www.youtube.com/watch?v=Ctww6ndcPWI').then(
-  () => console.log
-);
 const addProtocolToUrl = (unsafeUrl: string) => {
   const startsWithHttp = unsafeUrl.startsWith('http://');
   const startsWithHttps = unsafeUrl.startsWith('https://');
