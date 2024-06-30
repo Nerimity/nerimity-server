@@ -2,15 +2,16 @@
 
 import connectBusboy from 'connect-busboy';
 import { NextFunction, Request, Response } from 'express';
+import { generateError } from '../common/errorHandler';
 
 export function connectBusboyWrapper(req: Request, res: Response, next: NextFunction) {
   if (!req.headers['content-type']?.startsWith('multipart/form-data')) return next();
-  
-  connectBusboy({immediate: true, limits: {files: 1, fileSize: 7840000}})(req, res, () => {
+
+  connectBusboy({ immediate: true, limits: { files: 1, fileSize: 7840000 } })(req, res, () => {
     //
   });
   if (!req.busboy) return next();
-  
+
   const fields: any = {};
   let fileInfo: typeof req.fileInfo | undefined;
 
@@ -20,8 +21,12 @@ export function connectBusboyWrapper(req: Request, res: Response, next: NextFunc
 
   req.busboy.on('file', async (name, file, info) => {
     req.body = fields;
-    fileInfo = {name, file, info};
+    fileInfo = { name, file, info };
     req.fileInfo = fileInfo;
     next();
+  });
+  req.busboy.on('error', (error) => {
+    console.log(error);
+    res.json(generateError('Something went wrong. Please try again later. (connectBusboyWrapper.ts)'));
   });
 }
