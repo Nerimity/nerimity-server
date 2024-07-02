@@ -554,8 +554,30 @@ model Message {
 
   messageNotifications         MessageNotification[]
 
+  replyMessages ReplyMessages[] @relation(name: "reply_messages")
+  mentionReplies Boolean?
+
+  replyToMessages ReplyMessages[] @relation(name: "reply_to_messages")
+
+
+
+
+
   @@index([channelId])
   @@index([channelId, createdAt])
+}
+
+model ReplyMessages {
+  id       String @id
+  messageId String
+
+  replyToMessageId String?
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade, name: "reply_messages")
+  replyToMessage Message? @relation(fields: [replyToMessageId], references: [id], onDelete: SetNull, name: "reply_to_messages")
+
+  @@unique([messageId, replyToMessageId])
+
 }
 
 // When deleting a channel or a server, we will delete 1000 messages every 1 minute

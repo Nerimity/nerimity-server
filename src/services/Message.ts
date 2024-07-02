@@ -93,6 +93,42 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
           avatar: true,
         },
       },
+      replyMessages: {
+        select: {
+          replyToMessage: {
+            select: {
+              id: true,
+              content: true,
+              editedAt: true,
+              createdAt: true,
+              attachments: {
+                select: {
+                  height: true,
+                  width: true,
+                  path: true,
+                  id: true,
+                  provider: true,
+                  fileId: true,
+                  mime: true,
+                  createdAt: true,
+                },
+              },
+              createdBy: {
+                select: {
+                  id: true,
+                  username: true,
+                  tag: true,
+                  hexColor: true,
+                  avatar: true,
+                  badges: true,
+                  bot: true,
+                },
+              },
+            },
+          },
+        },
+      },
+
       quotedMessages: {
         select: {
           id: true,
@@ -358,6 +394,9 @@ interface SendMessageOptions {
   attachment?: Partial<Attachment>;
   everyoneMentioned?: boolean;
   htmlEmbed?: string;
+
+  replyToMessageIds?: string[];
+  mentionReplies?: boolean;
 }
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
@@ -371,8 +410,9 @@ interface ConstructDataOpts {
   creatorId: string;
   update?: boolean;
   bypassQuotesCheck?: boolean;
+  sendMessageOpts?: SendMessageOptions;
 }
-async function constructData({ messageData, creatorId, update, bypassQuotesCheck }: ConstructDataOpts) {
+async function constructData({ messageData, creatorId, update, bypassQuotesCheck, sendMessageOpts }: ConstructDataOpts) {
   if (typeof messageData.content === 'string') {
     const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1]));
 
@@ -384,6 +424,27 @@ async function constructData({ messageData, creatorId, update, bypassQuotesCheck
       messageData.mentions = {
         ...(update ? { set: users } : { connect: users }),
       };
+    }
+
+    if (!update && sendMessageOpts?.replyToMessageIds?.length) {
+      const replyToMessageIds = removeDuplicates(sendMessageOpts.replyToMessageIds);
+
+      const validReplyToMessages = await prisma.message.findMany({
+        where: { id: { in: replyToMessageIds }, channelId: sendMessageOpts?.channelId },
+      });
+      const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
+
+      if (validReplyToMessageIds.length) {
+        messageData.replyMessages = {
+          createMany: {
+            data: validReplyToMessageIds.map((id) => ({ replyToMessageId: id, id: generateId() })),
+          },
+        };
+
+        if (sendMessageOpts.mentionReplies) {
+          messageData.mentionReplies = sendMessageOpts.mentionReplies;
+        }
+      }
     }
 
     const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])).slice(0, 8);
@@ -443,6 +504,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
       },
       creatorId: opts.userId,
       bypassQuotesCheck: channel?.type === ChannelType.TICKET,
+      sendMessageOpts: opts,
     }),
     include: {
       createdBy: {
@@ -463,6 +525,41 @@ export const createMessage = async (opts: SendMessageOptions) => {
           tag: true,
           hexColor: true,
           avatar: true,
+        },
+      },
+      replyMessages: {
+        select: {
+          replyToMessage: {
+            select: {
+              id: true,
+              content: true,
+              editedAt: true,
+              createdAt: true,
+              attachments: {
+                select: {
+                  height: true,
+                  width: true,
+                  path: true,
+                  id: true,
+                  provider: true,
+                  fileId: true,
+                  mime: true,
+                  createdAt: true,
+                },
+              },
+              createdBy: {
+                select: {
+                  id: true,
+                  username: true,
+                  tag: true,
+                  hexColor: true,
+                  avatar: true,
+                  badges: true,
+                  bot: true,
+                },
+              },
+            },
+          },
         },
       },
       quotedMessages: {
@@ -555,6 +652,13 @@ export const createMessage = async (opts: SendMessageOptions) => {
       });
       mentionUserIds = serverMembers.map((member) => member.userId);
     } else {
+      if (message.mentionReplies) {
+        const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy.id);
+        if (userIds.length) {
+          mentionUserIds = [...mentionUserIds, ...userIds];
+        }
+      }
+
       if (message.mentions.length) {
         mentionUserIds = message.mentions.map((mention) => mention.id);
       }

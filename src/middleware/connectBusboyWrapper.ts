@@ -21,6 +21,17 @@ export function connectBusboyWrapper(req: Request, res: Response, next: NextFunc
 
   req.busboy.on('file', async (name, file, info) => {
     req.body = fields;
+
+    // used for message replies
+    if (typeof req.body.replyToMessageIds === 'string') {
+      try {
+        req.body.replyToMessageIds = JSON.parse(req.body.replyToMessageIds);
+        req.body.mentionReplies = JSON.parse(req.body.mentionReplies as unknown as string);
+      } catch (e) {
+        return res.status(400).json(generateError('Invalid replyToMessageIds format.'));
+      }
+    }
+
     fileInfo = { name, file, info };
     req.fileInfo = fileInfo;
     next();
