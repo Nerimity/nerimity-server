@@ -277,6 +277,41 @@ export const MessageInclude = {
       avatar: true,
     },
   },
+  replyMessages: {
+    select: {
+      replyToMessage: {
+        select: {
+          id: true,
+          content: true,
+          editedAt: true,
+          createdAt: true,
+          attachments: {
+            select: {
+              height: true,
+              width: true,
+              path: true,
+              id: true,
+              provider: true,
+              fileId: true,
+              mime: true,
+              createdAt: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
+              badges: true,
+              bot: true,
+            },
+          },
+        },
+      },
+    },
+  },
   quotedMessages: {
     select: {
       id: true,
