@@ -21,6 +21,7 @@ import { Log } from '../common/Log';
 import { replaceBadWords } from '../common/badWords';
 import { htmlToJson } from '@nerimity/html-embed';
 import { zip } from '../common/zip';
+import { FriendStatus } from '../types/Friend';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -1076,7 +1077,7 @@ async function addMention(userIds: string[], serverId: string, channelId: string
     where: {
       id: { in: filteredUserIds, not: requesterId },
       servers: { some: { id: serverId } },
-      friends: { none: { recipientId: requesterId } },
+      friends: { none: { recipientId: requesterId, status: FriendStatus.BLOCKED } },
     },
     select: {
       id: true,
