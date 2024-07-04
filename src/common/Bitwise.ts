@@ -3,6 +3,7 @@ export interface Bitwise {
   description?: string;
   bit: number;
   icon?: string;
+  free?: boolean;
 }
 
 export const USER_BADGES = {
@@ -29,6 +30,13 @@ export const USER_BADGES = {
     description: 'Supported this project by donating money',
     bit: 8,
     color: '#d86f6f',
+  },
+  PALESTINE: {
+    free: true,
+    name: 'Palestine',
+    description: 'Palestine',
+    bit: 16,
+    color: 'linear-gradient(90deg, rgba(224,26,185,1) 0%, rgba(64,122,255,1) 100%);',
   },
 };
 
@@ -114,6 +122,10 @@ export const hasBit = (permissions: number, bit: number) => {
 
 export const addBit = (permissions: number, bit: number) => {
   return permissions | bit;
+};
+
+export const removeBit = (permissions: number, bit: number) => {
+  return permissions & ~bit;
 };
 
 export const getAllPermissions = (permissionList: Record<string, Bitwise>, permissions: number) => {

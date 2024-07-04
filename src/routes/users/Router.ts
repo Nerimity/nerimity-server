@@ -23,6 +23,7 @@ import { userChannelNoticeUpdate } from './userChannelNoticeUpdate';
 import { userDismissNotice } from './userDismissNotice';
 import { userPasswordResetCodeSent } from './userPasswordResetCodeSend';
 import { userPasswordReset } from './userPasswordReset';
+import { userToggleBadge } from './userToggleBadge';
 
 const UsersRouter = Router();
 
@@ -52,6 +53,7 @@ userDeleteAccount(UsersRouter);
 
 userNotifications(UsersRouter);
 userDetails(UsersRouter);
+userToggleBadge(UsersRouter);
 
 userFollow(UsersRouter);
 userUnfollow(UsersRouter);

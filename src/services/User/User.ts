@@ -2,7 +2,7 @@ import { CustomError, generateError } from '../../common/errorHandler';
 import { CustomResult } from '../../common/CustomResult';
 import { emitInboxClosed, emitInboxOpened, emitUserPresenceUpdate, emitUserNotificationSettingsUpdate } from '../../emits/User';
 import { ChannelType } from '../../types/Channel';
-import { Presence, updateCachePresence } from '../../cache/UserCache';
+import { Presence, removeUserCacheByUserIds, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
 import { excludeFields, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
@@ -12,7 +12,7 @@ import { createPostNotification, fetchLatestPost, PostNotificationType } from '.
 import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
 import { removeDuplicates } from '../../common/utils';
-import { isUserAdmin } from '../../common/Bitwise';
+import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
 import { Prisma } from '@prisma/client';
 
 export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
@@ -517,6 +517,44 @@ export async function removeFCMTokens(tokens: string[]) {
   return await prisma.firebaseMessagingToken.deleteMany({
     where: { token: { in: tokens } },
   });
+}
+
+export async function toggleFreeBadge(userId: string, badgeBit: number) {
+  const badge = Object.values(USER_BADGES).find((b) => b.bit === badgeBit);
+  if (!badge) {
+    return [null, generateError('Invalid badge bit')] as const;
+  }
+  const isBadgeFree = 'free' in badge && badge.free;
+
+  if (!isBadgeFree) {
+    return [null, generateError('This badge is not free')] as const;
+  }
+
+  const account = await prisma.account.findUnique({
+    where: { userId },
+    select: { user: { select: { badges: true } } },
+  });
+
+  if (!account) {
+    return [null, generateError('Invalid userId')] as const;
+  }
+
+  let newBadges = account.user.badges;
+  const hasBadge = hasBit(newBadges, badgeBit);
+
+  if (hasBadge) {
+    newBadges = removeBit(newBadges, badgeBit);
+  } else {
+    newBadges = addBit(newBadges, badgeBit);
+  }
+
+  await prisma.account.update({
+    where: { userId },
+    data: { user: { update: { badges: newBadges } } },
+  });
+  await removeUserCacheByUserIds([userId]);
+
+  return [{ badges: newBadges }, null] as const;
 }
 
 export async function getUserNotifications(userId: string) {
