@@ -23,7 +23,6 @@ model Account {
   dmStatus               Int                     @default(0)
   friendRequestStatus    Int                     @default(0)
 
-
   FCMTokens        FirebaseMessagingToken[]
 
   emailConfirmed  Boolean @default(false)
@@ -102,6 +101,10 @@ model User {
   createdServerRoles     ServerRole[]
   bannedServers          BannedServerMember[]
   customEmojis           CustomEmoji[]
+
+  lastOnlineAt          DateTime?
+  lastOnlineStatus       Int                     @default(0)
+
 
   reactedMessageEmojis   ReactedMessageUser[]
 
