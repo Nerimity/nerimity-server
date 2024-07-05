@@ -14,6 +14,7 @@ import { getServers } from '../../services/Server';
 import { onDisconnect } from './onDisconnect';
 import { getVoiceUsersByChannelId } from '../../cache/VoiceCache';
 import { serverMemberHasPermission } from '../../common/serverMembeHasPermission';
+import { LastOnlineStatus } from '../../services/User/User';
 
 interface Payload {
   token: string;
@@ -43,7 +44,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
         },
       },
       connections: { select: { id: true, provider: true, connectedAt: true } },
-      friends: { include: { recipient: { select: publicUserExcludeFields } } },
+      friends: { include: { recipient: { select: { ...publicUserExcludeFields, lastOnlineStatus: true, lastOnlineAt: true } } } },
       notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
       account: {
         select: {
@@ -78,6 +79,21 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   });
 
   const friendUserIds = user.friends.map((friend) => friend.recipientId);
+
+  const updatedFriends = user.friends.map((friend) => {
+    const isPrivacyFriendsAndServers = [LastOnlineStatus.FRIENDS, LastOnlineStatus.FRIENDS_AND_SERVERS].includes(friend.recipient?.lastOnlineStatus);
+
+    const { lastOnlineAt, ...user } = friend.recipient;
+    const newObj = {
+      ...friend,
+      recipient: {
+        ...user,
+        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : {}),
+      },
+    };
+
+    return newObj;
+  });
 
   // join room
   for (let i = 0; i < servers.length; i++) {
@@ -169,7 +185,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     lastSeenServerChannelIds,
     messageMentions,
     presences,
-    friends: user.friends,
+    friends: updatedFriends,
     channels,
     inbox: inboxResponse,
   });

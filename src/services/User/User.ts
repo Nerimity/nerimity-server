@@ -356,6 +356,12 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
   ];
 };
 
+export enum LastOnlineStatus {
+  HIDDEN = 0,
+  FRIENDS = 1,
+  FRIENDS_AND_SERVERS = 2,
+}
+
 export enum DmStatus {
   OPEN = 0,
   FRIENDS_AND_SERVERS = 1,

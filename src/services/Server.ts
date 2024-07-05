@@ -1,4 +1,4 @@
-import { Channel, Server } from '@prisma/client';
+import { Channel, Prisma, Server } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
@@ -24,7 +24,30 @@ import { getPublicServer } from './Explore';
 import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
+import { LastOnlineStatus } from './User/User';
 
+const serverMemberWithLastOnlineDetails = Prisma.validator<Prisma.ServerMemberDefaultArgs>()({
+  include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
+});
+
+type ServerMemberWithLastOnlineDetails = Prisma.ServerMemberGetPayload<typeof serverMemberWithLastOnlineDetails>;
+
+const filterLastOnlineDetailsFromServerMembers = (serverMembers: ServerMemberWithLastOnlineDetails[]) => {
+  return serverMembers.map((serverMember) => {
+    const isPrivacyFriendsAndServers = serverMember.user?.lastOnlineStatus === LastOnlineStatus.FRIENDS_AND_SERVERS;
+
+    const { lastOnlineAt, ...user } = serverMember.user;
+    const newObj = {
+      ...serverMember,
+      user: {
+        ...user,
+        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : {}),
+      },
+    };
+
+    return newObj;
+  });
+};
 interface CreateServerOptions {
   name: string;
   creatorId: string;
@@ -145,15 +168,17 @@ export const getServers = async (userId: string) => {
     }),
     prisma.serverMember.findMany({
       where: { serverId: { in: serverIds } },
-      include: { user: { select: publicUserExcludeFields } },
+      include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
     }),
     prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
   ]);
 
+  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers);
+
   return {
     servers: user?.servers || [],
     serverChannels,
-    serverMembers,
+    serverMembers: updatedServerMembers,
     serverRoles,
   };
 };
@@ -239,9 +264,11 @@ export const joinServer = async (
     }),
     prisma.serverMember.findMany({
       where: { serverId: server.id },
-      include: { user: { select: publicUserExcludeFields } },
+      include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
     }),
   ]);
+
+  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers);
 
   if (server.systemChannelId) {
     await createMessage({
@@ -262,7 +289,7 @@ export const joinServer = async (
     channels: serverChannels,
     members: serverMembers,
     roles: serverRoles,
-    joinedMember: serverMember,
+    joinedMember: updatedServerMembers,
     memberPresences,
     voiceChannelUsers,
   });
