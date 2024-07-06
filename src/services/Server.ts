@@ -32,8 +32,11 @@ const serverMemberWithLastOnlineDetails = Prisma.validator<Prisma.ServerMemberDe
 
 type ServerMemberWithLastOnlineDetails = Prisma.ServerMemberGetPayload<typeof serverMemberWithLastOnlineDetails>;
 
-const filterLastOnlineDetailsFromServerMembers = (serverMembers: ServerMemberWithLastOnlineDetails[]) => {
+const filterLastOnlineDetailsFromServerMembers = (serverMembers: ServerMemberWithLastOnlineDetails[], requesterUserId: string) => {
   return serverMembers.map((serverMember) => {
+    if (serverMember.userId === requesterUserId) {
+      return serverMember;
+    }
     const isPrivacyFriendsAndServers = serverMember.user?.lastOnlineStatus === LastOnlineStatus.FRIENDS_AND_SERVERS;
 
     const { lastOnlineAt, ...user } = serverMember.user;
@@ -173,7 +176,7 @@ export const getServers = async (userId: string) => {
     prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
   ]);
 
-  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers);
+  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
 
   return {
     servers: user?.servers || [],
@@ -268,7 +271,7 @@ export const joinServer = async (
     }),
   ]);
 
-  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers);
+  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
 
   if (server.systemChannelId) {
     await createMessage({
