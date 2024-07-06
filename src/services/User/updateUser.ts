@@ -1,15 +1,16 @@
-import { DmStatus, FriendRequestStatus } from './User';
+import { DmStatus, FriendRequestStatus, LastOnlineStatus } from './User';
 import { checkUserPassword } from '../UserAuthentication';
 import * as nerimityCDN from '../../common/nerimityCDN';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import bcrypt from 'bcrypt';
 import { deleteAllInboxCache } from '../../cache/ChannelCache';
-import { emitUserUpdated } from '../../emits/User';
+import { emitUserUpdatedSelf, emitUserUpdated } from '../../emits/User';
 import { generateToken } from '../../common/JWT';
 import { prisma } from '../../common/database';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { generateError } from '../../common/errorHandler';
 import { disconnectSockets } from './UserManagement';
+import { emitToAll } from '../../socket/socket';
 
 interface UpdateUserProps {
   userId: string;
@@ -23,6 +24,7 @@ interface UpdateUserProps {
   avatarPoints?: number[];
   banner?: string;
   dmStatus?: DmStatus;
+  lastOnlineStatus?: LastOnlineStatus;
   friendRequestStatus?: FriendRequestStatus;
 
   hideFollowing?: boolean;
@@ -100,7 +102,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
 
   await removeUserCacheByUserIds([opts.userId]);
 
-  emitUserUpdated(opts.userId, {
+  emitUserUpdatedSelf(opts.userId, {
     email: updateResult.email!,
     username: updateResult.user.username,
     tag: updateResult.user.tag,
@@ -111,6 +113,15 @@ export const updateUser = async (opts: UpdateUserProps) => {
     ...addToObjectIfExists('banner', opts.banner),
     ...addToObjectIfExists('dmStatus', opts.dmStatus),
     ...addToObjectIfExists('friendRequestStatus', opts.friendRequestStatus),
+    ...addToObjectIfExists('lastOnlineStatus', opts.lastOnlineStatus),
+  });
+
+  emitUserUpdated(opts.userId, {
+    username: updateResult.user.username,
+    tag: updateResult.user.tag,
+    ...addToObjectIfExists('avatar', opts.avatar),
+    ...addToObjectIfExists('banner', opts.banner),
+    ...addToObjectIfExists('lastOnlineStatus', opts.lastOnlineStatus),
   });
 
   const newToken = opts.newPassword?.trim() ? generateToken(account.user.id, updateResult.passwordVersion) : undefined;
@@ -201,7 +212,8 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
           ...addToObjectIfExists('avatar', opts.avatar),
           ...addToObjectIfExists('banner', opts.banner),
           ...addToObjectIfExists('profile', opts.profile),
-
+          ...addToObjectIfExists('lastOnlineStatus', opts.lastOnlineStatus),
+          ...(opts.lastOnlineStatus === LastOnlineStatus.HIDDEN ? { lastOnlineAt: null } : undefined),
           ...(opts.profile
             ? {
                 profile: {

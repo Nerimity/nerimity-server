@@ -4,7 +4,7 @@ export const prisma = new PrismaClient({
   // log: ['error', 'warn', 'info', 'query']
 });
 
-export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus']);
+export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus', 'lastOnlineAt', 'lastOnlineStatus']);
 
 export async function exists<Model extends { count: any }>(model: Model, args: Parameters<Model['count']>[0]): Promise<boolean> {
   const count = await model.count(args);

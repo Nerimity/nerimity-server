@@ -1,13 +1,13 @@
 export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
+export const USER_UPDATED_SELF = 'user:updatedSelf';
 export const USER_UPDATED = 'user:updated';
 export const USER_NOTICE_CREATED = 'user:notice_created';
 
 export const USER_CONNECTION_ADDED = 'user:connection_added';
 export const USER_CONNECTION_REMOVED = 'user:connection_removed';
 
-export const USER_NOTIFICATION_SETTINGS_UPDATE =
-  'user:notification_settings_update';
+export const USER_NOTIFICATION_SETTINGS_UPDATE = 'user:notification_settings_update';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';
 export const USER_BLOCKED = 'user:blocked';

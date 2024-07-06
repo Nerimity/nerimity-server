@@ -4,7 +4,7 @@ import { emitInboxClosed, emitInboxOpened, emitUserPresenceUpdate, emitUserNotif
 import { ChannelType } from '../../types/Channel';
 import { Presence, removeUserCacheByUserIds, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
-import { excludeFields, prisma, publicUserExcludeFields } from '../../common/database';
+import { dateToDateTime, excludeFields, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 
 import { createPostNotification, fetchLatestPost, PostNotificationType } from '../Post';
@@ -14,6 +14,7 @@ import { MessageInclude } from '../Message';
 import { removeDuplicates } from '../../common/utils';
 import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
 import { Prisma } from '@prisma/client';
+import { UserStatus } from '../../types/User';
 
 export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
   const blockedUsers = await prisma.friend.findMany({
@@ -217,11 +218,15 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
     return [null, generateError('User not found.', 'user')];
   }
 
+  const changedToOffline = user.status !== UserStatus.OFFLINE && presence.status === UserStatus.OFFLINE;
+  const lastOnlineStatusHidden = user.lastOnlineStatus === LastOnlineStatus.HIDDEN;
+
   const newUser = await prisma.user.update({
     where: { id: userId },
     data: {
       status: presence.status,
       customStatus: presence.custom,
+      ...(changedToOffline && !lastOnlineStatusHidden ? { lastOnlineAt: dateToDateTime() } : {}),
     },
     select: { customStatus: true, status: true },
   });
@@ -355,6 +360,12 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
     null,
   ];
 };
+
+export enum LastOnlineStatus {
+  HIDDEN = 0,
+  FRIENDS = 1,
+  FRIENDS_AND_SERVERS = 2,
+}
 
 export enum DmStatus {
   OPEN = 0,

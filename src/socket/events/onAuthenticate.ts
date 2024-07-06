@@ -14,6 +14,8 @@ import { getServers } from '../../services/Server';
 import { onDisconnect } from './onDisconnect';
 import { getVoiceUsersByChannelId } from '../../cache/VoiceCache';
 import { serverMemberHasPermission } from '../../common/serverMembeHasPermission';
+import { LastOnlineStatus } from '../../services/User/User';
+import { FriendStatus } from '../../types/Friend';
 
 interface Payload {
   token: string;
@@ -43,7 +45,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
         },
       },
       connections: { select: { id: true, provider: true, connectedAt: true } },
-      friends: { include: { recipient: { select: publicUserExcludeFields } } },
+      friends: { include: { recipient: { select: { ...publicUserExcludeFields, lastOnlineStatus: true, lastOnlineAt: true } } } },
       notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
       account: {
         select: {
@@ -78,6 +80,25 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
   });
 
   const friendUserIds = user.friends.map((friend) => friend.recipientId);
+
+  const updatedFriends = user.friends.map((friend) => {
+    let isPrivacyFriendsAndServers = [LastOnlineStatus.FRIENDS, LastOnlineStatus.FRIENDS_AND_SERVERS].includes(friend.recipient?.lastOnlineStatus);
+
+    if (friend.status === FriendStatus.BLOCKED) {
+      isPrivacyFriendsAndServers = false;
+    }
+
+    const { lastOnlineAt, ...user } = friend.recipient;
+    const newObj = {
+      ...friend,
+      recipient: {
+        ...user,
+        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : {}),
+      },
+    };
+
+    return newObj;
+  });
 
   // join room
   for (let i = 0; i < servers.length; i++) {
@@ -156,6 +177,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
       orderedServerIds: user.account?.serverOrderIds,
       dmStatus: user.account?.dmStatus,
       friendRequestStatus: user.account?.friendRequestStatus,
+      lastOnlineStatus: user.lastOnlineStatus,
       emailConfirmed: user.account?.emailConfirmed,
       connections: user.connections,
       notices: user.notices,
@@ -169,7 +191,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     lastSeenServerChannelIds,
     messageMentions,
     presences,
-    friends: user.friends,
+    friends: updatedFriends,
     channels,
     inbox: inboxResponse,
   });
