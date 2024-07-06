@@ -287,9 +287,9 @@ export const joinServer = async (
   emitServerJoined({
     server: server,
     channels: serverChannels,
-    members: serverMembers,
+    members: updatedServerMembers,
     roles: serverRoles,
-    joinedMember: updatedServerMembers,
+    joinedMember: serverMember,
     memberPresences,
     voiceChannelUsers,
   });

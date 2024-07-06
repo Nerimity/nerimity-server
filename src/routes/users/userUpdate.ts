@@ -30,6 +30,7 @@ export function userUpdate(Router: Router) {
 
     body('dmStatus').isInt({ min: 0, max: 2 }).withMessage('dmStatus must be a number.').optional({ nullable: true }),
     body('friendRequestStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
+    body('lastOnlineStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
 
     body('hideFollowing').isBoolean().withMessage('hideFollowing must be a boolean.').optional({ nullable: true }),
     body('hideFollowers').isBoolean().withMessage('hideFollowers must be a boolean.').optional({ nullable: true }),
@@ -49,6 +50,8 @@ interface Body {
   socketId?: string;
   dmStatus?: number;
   friendRequestStatus?: number;
+
+  lastOnlineStatus?: number;
 
   bio?: string | null;
   bgColorOne?: string | null;
@@ -108,6 +111,7 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('hideFollowers', body.hideFollowers),
     ...addToObjectIfExists('dmStatus', body.dmStatus),
     ...addToObjectIfExists('friendRequestStatus', body.friendRequestStatus),
+    ...addToObjectIfExists('lastOnlineStatus', body.lastOnlineStatus),
     ...(Object.keys(profile).length
       ? {
           profile,

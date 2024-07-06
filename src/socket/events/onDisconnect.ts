@@ -1,13 +1,11 @@
 import { Socket } from 'socket.io';
 import { getUserIdBySocketId, getUserPresences, socketDisconnect, updateCachePresence } from '../../cache/UserCache';
-import { prisma } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { emitUserPresenceUpdate } from '../../emits/User';
 import { UserStatus } from '../../types/User';
-import {
-  getVoiceUserByUserId,
-} from '../../cache/VoiceCache';
+import { getVoiceUserByUserId } from '../../cache/VoiceCache';
 import { leaveVoiceChannel } from '../../services/Voice';
-
+import { LastOnlineStatus } from '../../services/User/User';
 
 export async function onDisconnect(socket: Socket) {
   const userId = await getUserIdBySocketId(socket.id);
@@ -16,19 +14,25 @@ export async function onDisconnect(socket: Socket) {
   const isLastDisconnect = await socketDisconnect(socket.id, userId);
 
   if (!isLastDisconnect && presence[0]?.activity?.socketId === socket.id) {
-    const shouldEmit = await updateCachePresence(userId, { activity: null, userId })
+    const shouldEmit = await updateCachePresence(userId, { activity: null, userId });
     emitUserPresenceUpdate(userId, { activity: null, userId }, !shouldEmit);
-
   }
 
   const user = await prisma.user.findFirst({
     where: { id: userId },
-    select: { status: true },
+    select: { status: true, lastOnlineStatus: true },
   });
   if (!user) return;
 
   if (isLastDisconnect && user.status !== UserStatus.OFFLINE) {
     emitUserPresenceUpdate(userId, { status: UserStatus.OFFLINE, userId });
+
+    if (user.lastOnlineStatus !== LastOnlineStatus.HIDDEN) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { lastOnlineAt: dateToDateTime() },
+      });
+    }
   }
 
   const voice = await getVoiceUserByUserId(userId);
