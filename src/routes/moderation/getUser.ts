@@ -5,12 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 
 export function getUser(Router: Router) {
-  Router.get(
-    '/moderation/users/:userId',
-    authenticate(),
-    isModMiddleware,
-    route
-  );
+  Router.get('/moderation/users/:userId', authenticate(), isModMiddleware, route);
 }
 
 async function route(req: Request, res: Response) {
@@ -21,8 +16,8 @@ async function route(req: Request, res: Response) {
     include: {
       suspension: {
         include: {
-          suspendBy: true
-        }
+          suspendBy: true,
+        },
       },
       profile: true,
       devices: { orderBy: { createdAt: 'desc' } },
@@ -35,6 +30,26 @@ async function route(req: Request, res: Response) {
           createdAt: true,
           createdBy: { select: { id: true, username: true, tag: true } },
           avatar: true,
+        },
+      },
+      application: {
+        include: {
+          creatorAccount: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  joinedAt: true,
+                  tag: true,
+                  hexColor: true,
+                  avatar: true,
+                  suspension: true,
+                  badges: true,
+                },
+              },
+            },
+          },
         },
       },
       account: {
@@ -54,6 +69,12 @@ async function route(req: Request, res: Response) {
 
   if (user.suspension?.expireAt && isExpired(user.suspension.expireAt)) {
     user.suspension = null;
+  }
+
+  const applicationUser = user.application?.creatorAccount.user;
+
+  if (applicationUser && applicationUser.suspension?.expireAt && isExpired(applicationUser.suspension.expireAt)) {
+    applicationUser.suspension = null;
   }
 
   res.json(user);

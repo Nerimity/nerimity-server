@@ -5,12 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 
 export function getUsersWithSameIPAddress(Router: Router) {
-  Router.get(
-    '/moderation/users/:userId/users-with-same-ip',
-    authenticate(),
-    isModMiddleware,
-    route
-  );
+  Router.get('/moderation/users/:userId/users-with-same-ip', authenticate(), isModMiddleware, route);
 }
 
 async function route(req: Request, res: Response) {
@@ -50,6 +45,7 @@ async function route(req: Request, res: Response) {
       hexColor: true,
       avatar: true,
       suspension: true,
+      bot: true,
     },
   });
 

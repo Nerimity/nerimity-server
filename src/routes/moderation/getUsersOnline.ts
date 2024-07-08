@@ -5,12 +5,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
 export function getUsersOnline(Router: Router) {
-  Router.get(
-    '/moderation/online-users',
-    authenticate(),
-    isModMiddleware,
-    route
-  );
+  Router.get('/moderation/online-users', authenticate(), isModMiddleware, route);
 }
 
 async function route(req: Request, res: Response) {
@@ -27,6 +22,7 @@ async function route(req: Request, res: Response) {
       joinedAt: true,
       tag: true,
       hexColor: true,
+      bot: true,
       avatar: true,
       badges: true,
     },
