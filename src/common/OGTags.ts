@@ -1,6 +1,7 @@
 import fetch, { Response } from 'node-fetch';
-import { parse } from 'node-html-parser';
+import { HTMLElement, parse } from 'node-html-parser';
 import { proxyUrlImageDimensions } from './nerimityCDN';
+import { readFile } from 'fs/promises';
 
 const mapper = new Map(
   Object.entries({
@@ -17,14 +18,11 @@ const mapper = new Map(
 
 type GetOGTagsReturn = Promise<false | Record<string, string | number>>;
 
-const youtubeLinkRegex =
-  /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
+const youtubeLinkRegex = /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
 
 export async function getOGTags(url: string): GetOGTagsReturn {
   const youtubeWatchCode = url.match(youtubeLinkRegex)?.[3];
-  const updatedUrl = youtubeWatchCode
-    ? `https://www.youtube.com/watch?v=${youtubeWatchCode}`
-    : url;
+  const updatedUrl = youtubeWatchCode ? `https://www.youtube.com/watch?v=${youtubeWatchCode}?hl=en&persist_hl=1` : url;
 
   const res = await fetch(updatedUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
@@ -41,6 +39,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   if (!isHtml) return false;
 
   const html = await res.text().catch(() => {});
+
   if (!html) return false;
   const root = parse(html);
   const metaTags = root.querySelectorAll('head meta');
@@ -52,27 +51,21 @@ export async function getOGTags(url: string): GetOGTagsReturn {
     return isOG && isValidField && hasContent;
   });
 
-  const entries = filteredOGTags.map((el) => [
-    mapper.get(el.attributes.property.split('og:')[1]),
-    el.attributes.content.substring(0, 1000),
-  ]);
-  if (!entries.length) return false;
+  const entries = filteredOGTags.map((el) => [mapper.get(el.attributes.property.split('og:')[1]), el.attributes.content.substring(0, 1000)]);
+  if (!youtubeWatchCode && !entries.length) return false;
+  let object = Object.fromEntries(entries || []);
 
-  const object = Object.fromEntries(entries);
+  if (youtubeWatchCode && !entries.length) {
+    object = rateLimitedYoutube(root);
+  }
 
   object.url = addProtocolToUrl(object.url || url);
   if (youtubeWatchCode) {
     object.url = addProtocolToUrl(updatedUrl);
   }
 
-  if (
-    object.imageUrl &&
-    (object.imageUrl.startsWith('http://') ||
-      object.imageUrl.startsWith('https://'))
-  ) {
-    object.imageMime = (
-      await fetch(object.imageUrl).catch(() => {})
-    )?.headers.get('content-type');
+  if (object.imageUrl && (object.imageUrl.startsWith('http://') || object.imageUrl.startsWith('https://'))) {
+    object.imageMime = (await fetch(object.imageUrl).catch(() => {}))?.headers.get('content-type');
     if (!object.imageMime) return false;
   }
 
@@ -90,12 +83,9 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   }
 
   if (youtubeWatchCode) {
-    const uploadDate = root.querySelector('meta[itemprop=uploadDate]')
-      ?.attributes?.content;
+    const uploadDate = root.querySelector('meta[itemprop=uploadDate]')?.attributes?.content;
 
-    const channelName = root.querySelector(
-      'span[itemprop=author] link[itemprop=name]'
-    )?.attributes?.content;
+    const channelName = root.querySelector('span[itemprop=author] link[itemprop=name]')?.attributes?.content;
 
     uploadDate && (object.uploadDate = uploadDate);
     channelName && (object.channelName = channelName);
@@ -126,5 +116,34 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
     imageWidth: dimensions!.width,
     imageHeight: dimensions!.height,
     imageMime: resForSure.headers.get('content-type')!,
+  };
+}
+
+function rateLimitedYoutube(root: HTMLElement) {
+  const ytInitialDataStartWith = `var ytInitialData = `;
+
+  const script = root.getElementsByTagName('script').find((el) => {
+    return el.innerText.startsWith(ytInitialDataStartWith);
+  });
+  if (!script) return;
+
+  const rawYtInitialData = script.innerText.substring(ytInitialDataStartWith.length, script.innerText.length - 1);
+  const ytInitialData = JSON.parse(rawYtInitialData);
+
+  const videoPrimaryInfoRenderer = ytInitialData.contents.twoColumnWatchNextResults.results.results.contents[0].videoPrimaryInfoRenderer;
+  const videoSecondaryInfoRenderer = ytInitialData.contents.twoColumnWatchNextResults.results.results.contents[1].videoSecondaryInfoRenderer;
+
+  const channelName = videoSecondaryInfoRenderer.owner.videoOwnerRenderer.title.runs[0].text;
+  const title = videoPrimaryInfoRenderer.title.runs[0].text;
+  const viewCount = videoPrimaryInfoRenderer.viewCount.videoViewCountRenderer.originalViewCount;
+  const uploadedAt = videoPrimaryInfoRenderer.relativeDateText.simpleText;
+  const description = videoSecondaryInfoRenderer.attributedDescription.content.slice(0, 200);
+
+  return {
+    title,
+    channelName,
+    description,
+    uploadDate: uploadedAt,
+    viewCount,
   };
 }
