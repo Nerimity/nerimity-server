@@ -22,7 +22,7 @@ const youtubeLinkRegex = /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&
 
 export async function getOGTags(url: string): GetOGTagsReturn {
   const youtubeWatchCode = url.match(youtubeLinkRegex)?.[3];
-  const updatedUrl = youtubeWatchCode ? `https://www.youtube.com/watch?v=${youtubeWatchCode}?hl=en&persist_hl=1` : url;
+  const updatedUrl = youtubeWatchCode ? `https://www.youtube.com/watch?v=${youtubeWatchCode}&hl=en&persist_hl=1` : url;
 
   const res = await fetch(updatedUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
