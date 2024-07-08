@@ -57,6 +57,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
 
   if (youtubeWatchCode && !entries.length) {
     object = rateLimitedYoutube(root);
+    if (!object) return false;
   }
 
   object.url = addProtocolToUrl(object.url || url);
@@ -130,14 +131,16 @@ function rateLimitedYoutube(root: HTMLElement) {
   const rawYtInitialData = script.innerText.substring(ytInitialDataStartWith.length, script.innerText.length - 1);
   const ytInitialData = JSON.parse(rawYtInitialData);
 
-  const videoPrimaryInfoRenderer = ytInitialData.contents.twoColumnWatchNextResults.results.results.contents[0].videoPrimaryInfoRenderer;
-  const videoSecondaryInfoRenderer = ytInitialData.contents.twoColumnWatchNextResults.results.results.contents[1].videoSecondaryInfoRenderer;
+  const videoPrimaryInfoRenderer = ytInitialData.contents?.twoColumnWatchNextResults?.results?.results?.contents?.[0]?.videoPrimaryInfoRenderer;
+  const videoSecondaryInfoRenderer = ytInitialData.contents?.twoColumnWatchNextResults?.results?.results?.contents?.[1]?.videoSecondaryInfoRenderer;
 
-  const channelName = videoSecondaryInfoRenderer.owner.videoOwnerRenderer.title.runs[0].text;
-  const title = videoPrimaryInfoRenderer.title.runs[0].text;
-  const viewCount = videoPrimaryInfoRenderer.viewCount.videoViewCountRenderer.originalViewCount;
-  const uploadedAt = videoPrimaryInfoRenderer.relativeDateText.simpleText;
-  const description = videoSecondaryInfoRenderer.attributedDescription.content.slice(0, 200);
+  const channelName = videoSecondaryInfoRenderer?.owner?.videoOwnerRenderer?.title?.runs?.[0]?.text;
+  const title = videoPrimaryInfoRenderer?.title?.runs?.[0]?.text;
+  const viewCount = videoPrimaryInfoRenderer?.viewCount?.videoViewCountRenderer?.originalViewCount;
+  const uploadedAt = videoPrimaryInfoRenderer?.relativeDateText?.simpleText;
+  const description = videoSecondaryInfoRenderer?.attributedDescription?.content?.slice?.(0, 200);
+
+  if (!videoPrimaryInfoRenderer || !videoSecondaryInfoRenderer) return false;
 
   return {
     title,
