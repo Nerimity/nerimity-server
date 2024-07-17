@@ -12,7 +12,7 @@ import { isValidHex } from '../common/utils';
 export const createServerRole = async (name: string, creatorId: string, serverId: string, opts?: { permissions?: number; bot?: boolean }) => {
   const server = await prisma.server.findFirst({
     where: { id: serverId },
-    select: { defaultRoleId: true },
+    select: { defaultRoleId: true, verified: true },
   });
 
   if (!opts?.bot) {
@@ -22,7 +22,12 @@ export const createServerRole = async (name: string, creatorId: string, serverId
         OR: [{ botRole: false }, { botRole: null }],
       },
     });
-    if (roleCount >= env.MAX_ROLES_PER_SERVER) {
+
+    if (server?.verified && roleCount - 1 >= 200) {
+      return [null, generateError('You already created the maximum amount of roles for this server.')] as const;
+    }
+
+    if (!server?.verified && roleCount - 1 >= env.MAX_ROLES_PER_SERVER) {
       return [null, generateError('You already created the maximum amount of roles for this server.')] as const;
     }
   }

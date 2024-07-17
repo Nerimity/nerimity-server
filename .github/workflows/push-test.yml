@@ -55,5 +55,5 @@ jobs:
           PORT: 80
           MAX_CHANNELS_PER_SERVER: 100
           MAX_INVITES_PER_SERVER: 10
-          MAX_ROLES_PER_SERVER: 30
+          MAX_ROLES_PER_SERVER: 50
           DEFAULT_SERVER_ROLE_COLOR: '#fff'
