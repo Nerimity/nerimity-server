@@ -10,10 +10,14 @@ import { updatePrivateChannelSocketRooms } from './Channel';
 import { isValidHex } from '../common/utils';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string, opts?: { permissions?: number; bot?: boolean }) => {
-  const server = await prisma.server.findFirst({
+  const server = await prisma.server.findUnique({
     where: { id: serverId },
     select: { defaultRoleId: true, verified: true },
   });
+
+  if (!server) {
+    return [null, generateError('Server not found.')] as const;
+  }
 
   if (!opts?.bot) {
     const roleCount = await prisma.serverRole.count({
@@ -23,11 +27,11 @@ export const createServerRole = async (name: string, creatorId: string, serverId
       },
     });
 
-    if (server?.verified && roleCount - 1 >= 200) {
+    if (server.verified && roleCount - 1 >= 200) {
       return [null, generateError('You already created the maximum amount of roles for this server.')] as const;
     }
 
-    if (!server?.verified && roleCount - 1 >= env.MAX_ROLES_PER_SERVER) {
+    if (!server.verified && roleCount - 1 >= env.MAX_ROLES_PER_SERVER) {
       return [null, generateError('You already created the maximum amount of roles for this server.')] as const;
     }
   }
