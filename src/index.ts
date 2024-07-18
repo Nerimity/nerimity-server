@@ -75,7 +75,6 @@ const makeOpenGraph = (opts: { url: string; title: string; image?: string; descr
 
 app.get('/api/og/*', rateLimit({ name: 'og', useIP: true, requests: 30, restrictMS: 60 * 1000 }), async (req, res, next) => {
   const query = req.query;
-  console.log(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
   if (typeof query.postId !== 'string') return next();
 
   const postId = query.postId;
@@ -106,7 +105,6 @@ app.get('/api/og/*', rateLimit({ name: 'og', useIP: true, requests: 30, restrict
     image: attachmentPath ? `${env.NERIMITY_CDN}${attachmentPath}` : undefined,
   });
 
-  res.setHeader('ip-test', req.userIP); // used for testing, remove it later.
   res.send(og);
 });
 
