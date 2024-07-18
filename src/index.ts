@@ -57,6 +57,10 @@ app.use(
   })
 );
 
+app.get('/api/og', (req, res, next) => {
+  res.send('Working! ' + req.url);
+});
+
 app.use(express.json({ limit: '20MB' }));
 app.use(express.urlencoded({ extended: false, limit: '20MB' }));
 
