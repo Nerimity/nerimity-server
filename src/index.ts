@@ -82,7 +82,7 @@ app.get('/api/og/*', rateLimit({ name: 'og', useIP: true, requests: 30, restrict
   const post = await prisma.post.findUnique({
     where: {
       id: postId,
-      deleted: false,
+      deleted: null,
     },
     select: {
       content: true,
