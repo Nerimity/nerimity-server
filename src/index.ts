@@ -75,7 +75,8 @@ const makeOpenGraph = (opts: { url: string; title: string; image?: string; descr
 
 app.get('/api/og/*', rateLimit({ name: 'og', useIP: true, requests: 30, restrictMS: 60 * 1000 }), async (req, res, next) => {
   const query = req.query;
-  if (typeof query.postId !== 'string') return;
+  console.log(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
+  if (typeof query.postId !== 'string') return next();
 
   const postId = query.postId;
 
