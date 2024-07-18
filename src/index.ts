@@ -57,6 +57,11 @@ app.use(
   })
 );
 
+app.use(express.json({ limit: '20MB' }));
+app.use(express.urlencoded({ extended: false, limit: '20MB' }));
+
+app.use(userIP);
+
 const makeOpenGraph = (opts: { url: string; title: string; image?: string; description: string }) => {
   const siteName = `<meta content="Nerimity" property="og:site_name" />`;
   const type = `<meta content="article" property="og:type" />`;
@@ -103,11 +108,6 @@ app.get('/api/og/*', rateLimit({ name: 'og', useIP: true, requests: 30, restrict
   res.setHeader('ip-test', req.userIP); // used for testing, remove it later.
   res.send(og);
 });
-
-app.use(express.json({ limit: '20MB' }));
-app.use(express.urlencoded({ extended: false, limit: '20MB' }));
-
-app.use(userIP);
 
 app.use(
   rateLimit({
