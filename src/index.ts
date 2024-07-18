@@ -57,7 +57,7 @@ app.use(
   })
 );
 
-app.get('/api/og', (req, res, next) => {
+app.get('/api/og/*', (req, res, next) => {
   res.send('Working! ' + req.url);
 });
 
