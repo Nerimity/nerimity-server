@@ -7,5 +7,7 @@ export const makeOpenGraph = (opts: { largeImage?: boolean; url: string; title: 
   const image = opts.image ? `<meta content="${opts.image}" property="og:image" />` : '';
   const largeImage = opts.largeImage ? `<meta name="twitter:card" content="summary_large_image">` : '';
 
-  return `<!DOCTYPE html><html><head>${siteName}${type}${url}${title}${description}${largeImage}${image}</head></html>`;
+  const themeColor = `<meta name="theme-color" content="#4c93ff">`;
+
+  return `<!DOCTYPE html><html><head>${siteName}${type}${themeColor}${url}${title}${description}${largeImage}${image}</head></html>`;
 };
