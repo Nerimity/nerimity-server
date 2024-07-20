@@ -55,6 +55,29 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   if (!youtubeWatchCode && !entries.length) return false;
   let object = Object.fromEntries(entries || []);
 
+  const isTwitterStatus = (object.imageUrl && url.startsWith('https://twitter.com')) || url.startsWith('https://x.com');
+  const largeImage = isTwitterStatus || metaTags.find((el) => el.attributes.name === 'twitter:card')?.attributes.content === 'summary_large_image';
+
+  const isTwitterVideo = isTwitterStatus && object.imageUrl.startsWith('https://pbs.twimg.com/ext_tw_video_thumb');
+
+  if (largeImage) {
+    object.largeImage = true;
+  }
+  if (isTwitterVideo) {
+    object.video = !!isTwitterVideo;
+  }
+
+  if (object.imageUrl && (!object.imageWidth || !object.imageHeight)) {
+    const [dimensions, err] = await proxyUrlImageDimensions(object.imageUrl);
+    if (dimensions) {
+      object.imageWidth = dimensions.width;
+      object.imageHeight = dimensions.height;
+    }
+    if (!dimensions || err) {
+      delete object.largeImage;
+    }
+  }
+
   if (youtubeWatchCode && !entries.length) {
     object = rateLimitedYoutube(root);
     if (!object) return false;

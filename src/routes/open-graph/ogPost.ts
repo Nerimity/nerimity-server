@@ -23,6 +23,8 @@ async function route(req: Request, res: Response, next: NextFunction) {
       attachments: {
         select: {
           path: true,
+          width: true,
+          height: true,
         },
       },
       createdBy: { select: { username: true } },
@@ -30,14 +32,17 @@ async function route(req: Request, res: Response, next: NextFunction) {
   });
   if (!post) return next();
 
-  const attachmentPath = post.attachments[0]?.path;
+  const attachment = post.attachments[0];
+  const attachmentPath = attachment?.path;
 
   const og = makeOpenGraph({
     url: `https://nerimity.com/app?postId=${postId}`,
     title: `${post.createdBy.username} on Nerimity`,
     description: post.content || '',
     largeImage: true,
-    image: attachmentPath ? `${env.NERIMITY_CDN}${attachmentPath}` : undefined,
+    imageUrl: attachmentPath ? `${env.NERIMITY_CDN}${attachmentPath}` : undefined,
+    imageWidth: attachment?.width,
+    imageHeight: attachment?.height,
   });
 
   res.send(og);
