@@ -58,14 +58,15 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const isTwitterStatus = (object.imageUrl && url.startsWith('https://twitter.com')) || url.startsWith('https://x.com');
   const largeImage = isTwitterStatus || metaTags.find((el) => el.attributes.name === 'twitter:card')?.attributes.content === 'summary_large_image';
 
-  const isTwitterVideo = isTwitterStatus && object.imageUrl.startsWith('https://pbs.twimg.com/ext_tw_video_thumb');
+  // DOES NOT WORK: Twitter stupidly has multiple different image urls for videos. one of them being the normal image url.
+  // const isTwitterVideo = isTwitterStatus && (object.imageUrl.startsWith('https://pbs.twimg.com/ext_tw_video_thumb') || object.imageUrl.startsWith(' https://pbs.twimg.com/amplify_video_thumb'));
 
   if (largeImage) {
     object.largeImage = true;
   }
-  if (isTwitterVideo) {
-    object.video = !!isTwitterVideo;
-  }
+  // if (isTwitterVideo) {
+  //   object.video = !!isTwitterVideo;
+  // }
 
   if (object.imageUrl && (!object.imageWidth || !object.imageHeight)) {
     const [dimensions, err] = await proxyUrlImageDimensions(object.imageUrl);
