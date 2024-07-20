@@ -129,6 +129,8 @@ export interface UserCache {
   bot?: boolean;
   account?: AccountCache;
   application?: ApplicationCache;
+
+  ip?: string;
 }
 
 export interface AccountCache {
@@ -224,7 +226,7 @@ const beforeAuthenticateCache = async (user: UserCache): Promise<{ type?: string
         type: 'suspend',
         reason: suspendDetails.reason,
         expire: suspendDetails.expireAt,
-        by: {username: suspendDetails.suspendBy?.username},
+        by: { username: suspendDetails.suspendBy?.username },
       },
     };
 };
@@ -252,7 +254,7 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
 
   const isIpAllowed = await isIPAllowedCache(ipAddress);
 
-  if (!isIpAllowed) {
+  if (!isIpAllowed || userCache.ip !== ipAddress) {
     const ipBanned = await isIpBanned(ipAddress);
     if (ipBanned) {
       return [
@@ -267,7 +269,8 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
       ];
     }
     await addAllowedIPCache(ipAddress);
-    addDevice(userCache.id, ipAddress);
+    await updateUserCache(userCache.id, { ip: ipAddress });
+    await addDevice(userCache.id, ipAddress);
   }
 
   return [userCache, null];
