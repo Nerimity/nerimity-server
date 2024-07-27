@@ -7,6 +7,7 @@ import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET,
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
+import { hasBit, USER_BADGES } from '../common/Bitwise';
 
 export interface ActivityStatus {
   socketId: string;
@@ -253,10 +254,13 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
   }
 
   const isIpAllowed = await isIPAllowedCache(ipAddress);
+  
+  const isFounder = hasBit(userCache.badges, USER_BADGES.FOUNDER.bit);
+
 
   if (!isIpAllowed || userCache.ip !== ipAddress) {
     const ipBanned = await isIpBanned(ipAddress);
-    if (ipBanned) {
+    if (ipBanned && !isFounder) {
       return [
         null,
         {

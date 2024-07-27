@@ -13,6 +13,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { removeAllowedIPsCache } from '../../cache/UserCache';
 import { AuditLogType } from '../../common/AuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
+import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
 export function userBatchSuspend(Router: Router) {
   Router.post(
@@ -105,12 +106,31 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
 
+
+  const users = await prisma.user.findMany({
+    where: {id: {in: sanitizedUserIds}},
+    select: {badges: true}
+  });
+
+  const hasFounderBadge = users.find(u => hasBit(u.badges, USER_BADGES.FOUNDER.bit));
+
+  if (hasFounderBadge) {
+    return res
+    .status(403)
+    .json(generateError('You are not allowed to suspend the founder.'));
+
+  }
+
+
   const expireDateTime = dateToDateTime(expireAfter(req.body.days));
 
   const suspendedUsers = await prisma.suspension.findMany({
     where: { userId: { in: sanitizedUserIds } },
     select: { userId: true },
   });
+
+
+
   const suspendedUserIds = suspendedUsers.map((suspend) => suspend.userId);
 
   // Only increment if not suspended
