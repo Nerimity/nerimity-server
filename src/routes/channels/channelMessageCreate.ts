@@ -55,6 +55,22 @@ export function channelMessageCreate(Router: Router) {
 
     body('googleDriveAttachment.mime').optional(true).isString().withMessage('googleDriveAttachment mime must be a string!').isLength({ min: 1, max: 255 }).withMessage('googleDriveAttachment mime length must be between 1 and 255 characters.'),
 
+    body('buttons')
+      .optional(true)
+      .isArray()
+      .withMessage('buttons must be an array of objects!')
+      .custom((value) => {
+        return value.length <= 8;
+      })
+      .withMessage('buttons length must be less than or equal to 8 objects.'),
+
+    body('buttons.*').optional(true).isObject().withMessage('buttons must be an array of objects!'),
+
+    body('buttons.*.label').isString().withMessage('buttons label must be a string!').isLength({ min: 1, max: 64 }).withMessage('button label length must be between 1 and 64 characters.'),
+
+    body('buttons.*.id').isAlphanumeric().withMessage('buttons id must be a string!').isLength({ min: 1, max: 64 }).withMessage('button id length must be between 1 and 64 characters.'),
+    body('buttons.*.alert').optional(true).isBoolean().withMessage('buttons alert must be a boolean!'),
+
     rateLimit({
       name: 'create_message',
       restrictMS: 20000,
@@ -84,6 +100,7 @@ interface Body {
     id: string;
     mime: string;
   };
+  buttons?: { label: string; id: string; alert?: boolean }[];
 }
 
 async function route(req: Request, res: Response) {
@@ -215,6 +232,7 @@ async function route(req: Request, res: Response) {
     attachment,
     everyoneMentioned: canMentionEveryone,
     htmlEmbed: body.htmlEmbed,
+    buttons: body.buttons?.map(({ id, label, alert }) => ({ id, label, alert })),
   });
 
   if (error) {

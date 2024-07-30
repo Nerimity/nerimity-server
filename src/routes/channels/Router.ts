@@ -12,13 +12,18 @@ import { channelDMClose } from './channelDmClose';
 import { channelVoiceJoin } from './channelVoiceJoin';
 import { channelVoiceLeave } from './channelVoiceLeave';
 import { channelNoticeGet } from './channelNoticeGet';
+import { channelMessageButtonClick } from './channelMessageButtonClick';
+import { channelMessageButtonClickCallback } from './channelMessageButtonClickCallback';
 
 const ChannelsRouter = Router();
+
+channelMessageButtonClick(ChannelsRouter);
+channelMessageButtonClickCallback(ChannelsRouter);
 
 channelNoticeGet(ChannelsRouter);
 channelMessages(ChannelsRouter);
 channelVoiceJoin(ChannelsRouter);
-channelVoiceLeave(ChannelsRouter)
+channelVoiceLeave(ChannelsRouter);
 channelAttachments(ChannelsRouter);
 channelMessageCreate(ChannelsRouter);
 channelMessageUpdate(ChannelsRouter);

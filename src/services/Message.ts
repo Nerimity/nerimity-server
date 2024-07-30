@@ -1,5 +1,5 @@
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
-import { emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated } from '../emits/Channel';
+import { emitButtonClick, emitButtonClickCallback, emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
@@ -8,7 +8,7 @@ import { generateId } from '../common/flakeId';
 import { CustomError, generateError } from '../common/errorHandler';
 import { CustomResult } from '../common/CustomResult';
 import { Attachment, Message, Prisma } from '@prisma/client';
-import { removeDuplicates } from '../common/utils';
+import { removeDuplicates, removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { deleteImage } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
@@ -22,6 +22,7 @@ import { replaceBadWords } from '../common/badWords';
 import { htmlToJson } from '@nerimity/html-embed';
 import { zip } from '../common/zip';
 import { FriendStatus } from '../types/Friend';
+import { getIO } from '../socket/socket';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -92,6 +93,14 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
           tag: true,
           hexColor: true,
           avatar: true,
+        },
+      },
+      buttons: {
+        orderBy: { order: 'asc' },
+        select: {
+          alert: true,
+          id: true,
+          label: true,
         },
       },
       replyMessages: {
@@ -277,6 +286,14 @@ export const MessageInclude = {
       avatar: true,
     },
   },
+  buttons: {
+    orderBy: { order: 'asc' },
+    select: {
+      alert: true,
+      id: true,
+      label: true,
+    },
+  },
   replyMessages: {
     select: {
       replyToMessage: {
@@ -433,6 +450,12 @@ interface SendMessageOptions {
 
   replyToMessageIds?: string[];
   mentionReplies?: boolean;
+
+  buttons?: {
+    label: string;
+    id: string;
+    alert?: boolean;
+  }[];
 }
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
@@ -515,6 +538,14 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
   }
 
+  if (opts.buttons) {
+    const ids = opts.buttons.map((b) => b.id);
+    const uniqueButtons = removeDuplicates(ids);
+    if (uniqueButtons.length !== ids.length) {
+      return [null, generateError('Button IDs must be unique', 'buttons')];
+    }
+  }
+
   const createMessageQuery = prisma.message.create({
     data: await constructData({
       messageData: {
@@ -524,6 +555,17 @@ export const createMessage = async (opts: SendMessageOptions) => {
         channelId: opts.channelId,
         type: opts.type,
         createdAt: messageCreatedAt,
+
+        ...(opts.buttons?.length
+          ? {
+              buttons: {
+                createMany: {
+                  data: opts.buttons,
+                },
+              },
+            }
+          : undefined),
+
         ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
         ...(opts.attachment
           ? {
@@ -596,6 +638,14 @@ export const createMessage = async (opts: SendMessageOptions) => {
               },
             },
           },
+        },
+      },
+      buttons: {
+        orderBy: { order: 'asc' },
+        select: {
+          alert: true,
+          id: true,
+          label: true,
         },
       },
       quotedMessages: {
@@ -1168,4 +1218,119 @@ async function addMention(userIds: string[], serverId: string, channelId: string
       })
     ),
   ]);
+}
+
+export async function buttonClick(opts: { channelId: string; messageId: string; buttonId: string; clickedUserId: string }) {
+  const button = await prisma.messageButton.findUnique({
+    where: { messageId_id: { messageId: opts.messageId, id: opts.buttonId } },
+    include: {
+      message: { select: { channelId: true, createdById: true } },
+    },
+  });
+
+  if (button?.message.channelId !== opts.channelId) {
+    return [false, generateError('Button not found')] as const;
+  }
+
+  const channel = await prisma.channel.findUnique({
+    where: { id: opts.channelId },
+    select: { serverId: true },
+  });
+
+  if (!channel) {
+    return [false, generateError('Channel not found')] as const;
+  }
+
+  if (channel.serverId) {
+    const isMessageCreatorInServer = await prisma.serverMember.findUnique({
+      where: {
+        userId_serverId: {
+          serverId: channel.serverId,
+          userId: button?.message.createdById,
+        },
+      },
+    });
+    if (!isMessageCreatorInServer) {
+      return [false, generateError('Button not found')] as const;
+    }
+  }
+
+  emitButtonClick({
+    emitToId: button.message.createdById,
+    userId: opts.clickedUserId,
+    messageId: opts.messageId,
+    channelId: opts.channelId,
+    buttonId: opts.buttonId,
+  });
+
+  return [true, null] as const;
+}
+
+interface ButtonClickCallbackOpts {
+  channelId: string;
+  messageId: string;
+  buttonId: string;
+  data: {
+    userId: string;
+    title?: string;
+    content?: string;
+  };
+}
+
+export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
+  const user = await prisma.user.findUnique({
+    where: { id: opts.data.userId },
+  });
+
+  if (!user) {
+    return [false, generateError('User not found')] as const;
+  }
+
+  const button = await prisma.messageButton.findUnique({
+    where: { messageId_id: { messageId: opts.messageId, id: opts.buttonId } },
+    include: {
+      message: { select: { channelId: true, createdById: true } },
+    },
+  });
+
+  if (button?.message.channelId !== opts.channelId) {
+    return [false, generateError('Button not found')] as const;
+  }
+
+  const channel = await prisma.channel.findUnique({
+    where: { id: opts.channelId },
+    select: { serverId: true },
+  });
+
+  if (!channel) {
+    return [false, generateError('Channel not found')] as const;
+  }
+
+  if (channel.serverId) {
+    const isMemberInServer = await prisma.serverMember.findUnique({
+      where: {
+        userId_serverId: {
+          serverId: channel.serverId,
+          userId: opts.data.userId,
+        },
+      },
+    });
+    if (!isMemberInServer) {
+      return [false, generateError('Button not found')] as const;
+    }
+  }
+
+  emitButtonClickCallback({
+    emitToId: opts.data.userId,
+    userId: button.message.createdById,
+    messageId: opts.messageId,
+    channelId: opts.channelId,
+    buttonId: opts.buttonId,
+    data: {
+      ...addToObjectIfExists('title', opts.data.title),
+      ...addToObjectIfExists('content', opts.data.content),
+    },
+  });
+
+  return [true, null] as const;
 }

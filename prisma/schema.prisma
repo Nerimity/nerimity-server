@@ -562,12 +562,30 @@ model Message {
 
   replyToMessages ReplyMessages[] @relation(name: "reply_to_messages")
 
+  buttons MessageButton[]
+
 
 
 
 
   @@index([channelId])
   @@index([channelId, createdAt])
+}
+
+
+model MessageButton {
+  order Int @default(autoincrement())
+
+  messageId String
+  
+  id     String
+  label  String
+  alert  Boolean?
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, id])
+
 }
 
 model ReplyMessages {
