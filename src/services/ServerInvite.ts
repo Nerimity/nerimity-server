@@ -7,10 +7,7 @@ import { generateId } from '../common/flakeId';
 import { generateServerInviteCode } from '../common/random';
 import { joinServer } from './Server';
 
-export const createServerInvite = async (
-  serverId: string,
-  creatorId: string
-): Promise<CustomResult<ServerInvite, CustomError>> => {
+export const createServerInvite = async (serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
   // check how many invite codes already created by the user
   const count = await prisma.serverInvite.count({
     where: { serverId, createdById: creatorId },
@@ -18,10 +15,19 @@ export const createServerInvite = async (
 
   // if user already created max amount of invites, return error
   if (count >= env.MAX_INVITES_PER_SERVER) {
-    return [
-      null,
-      generateError('You already created the maximum amount of invites!'),
-    ];
+    return [null, generateError('You already created the maximum amount of invites!')];
+  }
+
+  const newInviteCode = generateServerInviteCode();
+
+  const existingInvite = await prisma.serverInvite.findFirst({
+    where: {
+      code: newInviteCode,
+    },
+  });
+
+  if (existingInvite) {
+    return [null, generateError('Something went wrong. Please try again!')];
   }
 
   const serverInvite = await prisma.serverInvite.create({
@@ -29,7 +35,7 @@ export const createServerInvite = async (
       id: generateId(),
       uses: 0,
       createdById: creatorId,
-      code: generateServerInviteCode(),
+      code: newInviteCode,
       serverId: serverId,
       isCustom: false,
     },
@@ -37,18 +43,11 @@ export const createServerInvite = async (
   return [serverInvite, null];
 };
 
-export const deleteServerInvite = async (
-  serverId: string,
-  inviteCode: string,
-  requesterId: string
-) => {
+export const deleteServerInvite = async (serverId: string, inviteCode: string, requesterId: string) => {
   const invite = await prisma.serverInvite.findFirst({
     where: {
       serverId,
-      OR: [
-        { createdById: requesterId },
-        { server: { createdById: requesterId } },
-      ],
+      OR: [{ createdById: requesterId }, { server: { createdById: requesterId } }],
       code: inviteCode,
     },
   });
@@ -64,11 +63,7 @@ export const deleteServerInvite = async (
   return [true, null] as const;
 };
 
-export const createServerCustomInvite = async (
-  code: string,
-  serverId: string,
-  creatorId: string
-): Promise<CustomResult<ServerInvite, CustomError>> => {
+export const createServerCustomInvite = async (code: string, serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
   const server = await prisma.server.findFirst({
     where: { id: serverId },
     select: { verified: true },
@@ -79,10 +74,7 @@ export const createServerCustomInvite = async (
   }
 
   if (!server.verified) {
-    return [
-      null,
-      generateError('Server must be verified to create custom invites.'),
-    ];
+    return [null, generateError('Server must be verified to create custom invites.')];
   }
 
   code = code.trim();
@@ -124,12 +116,9 @@ export const createServerCustomInvite = async (
   return [serverInvite, null];
 };
 
-export const joinServerByInviteCode = async (
-  userId: string,
-  inviteCode: string
-): Promise<CustomResult<Server, CustomError>> => {
+export const joinServerByInviteCode = async (userId: string, inviteCode: string): Promise<CustomResult<Server, CustomError>> => {
   const invite = await prisma.serverInvite.findFirst({
-    where: { code: inviteCode },
+    where: { OR: [{ code: { mode: 'insensitive', equals: inviteCode }, isCustom: true }, { code: inviteCode }] },
   });
   if (!invite) {
     return [null, generateError('Invalid invite code.')];
@@ -153,9 +142,7 @@ export const joinServerByInviteCode = async (
 
 type ServerWithMemberCount = Server & { memberCount: number };
 
-export const getServerDetailsByInviteCode = async (
-  inviteCode: string
-): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
+export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
   const invite = await prisma.serverInvite.findFirst({
     where: { code: inviteCode },
     include: { server: true },
@@ -171,10 +158,7 @@ export const getServerDetailsByInviteCode = async (
   return [{ ...invite.server, memberCount }, null];
 };
 
-export const getServerInvitesByServerId = async (
-  serverId: string,
-  creatorId?: string
-): Promise<ServerInvite[]> => {
+export const getServerInvitesByServerId = async (serverId: string, creatorId?: string): Promise<ServerInvite[]> => {
   const invites = await prisma.serverInvite.findMany({
     where: {
       serverId,
