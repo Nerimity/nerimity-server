@@ -22,28 +22,27 @@ interface TenorResponse {
 }
 
 interface TenorItem {
-  id: string
-  title: string
+  id: string;
+  title: string;
   media_formats: {
     gif?: {
       url: string;
-    }
+    };
     tinygif?: {
       url: string;
-    }
+    };
   };
-  created: number
-  content_description: string
-  itemurl: string
-  url: string
-  tags: string[]
-  flags: any[]
-  hasaudio: boolean
+  created: number;
+  content_description: string;
+  itemurl: string;
+  url: string;
+  tags: string[];
+  flags: any[];
+  hasaudio: boolean;
 }
 
 async function route(req: Request, res: Response) {
   const query = req.query.query as string;
- 
 
   const url = new URL('https://tenor.googleapis.com/v2/search');
 
@@ -65,13 +64,19 @@ async function route(req: Request, res: Response) {
     return;
   }
 
-  const transformedResults = json.results.filter((item: TenorItem) => {
-    return item.media_formats.gif || item.media_formats.tinygif;
-  })
-  .map((item: TenorItem) => ({
-    url: item.itemurl,
-    previewUrl: item.media_formats.tinygif?.url || item.media_formats.gif?.url,
-  }));
-  
+  const transformedResults = json?.results
+    ?.filter((item: TenorItem) => {
+      return item.media_formats.gif || item.media_formats.tinygif;
+    })
+    ?.map((item: TenorItem) => ({
+      url: item.itemurl,
+      previewUrl: item.media_formats.tinygif?.url || item.media_formats.gif?.url,
+    }));
+
+  if (!transformedResults) {
+    res.status(403).send();
+    return;
+  }
+
   res.json(transformedResults);
 }
