@@ -144,7 +144,7 @@ type ServerWithMemberCount = Server & { memberCount: number };
 
 export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
   const invite = await prisma.serverInvite.findFirst({
-    where: { code: inviteCode },
+    where: { OR: [{ code: { mode: 'insensitive', equals: inviteCode }, isCustom: true }, { code: inviteCode }] },
     include: { server: true },
   });
   if (!invite) {
