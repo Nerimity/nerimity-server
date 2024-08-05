@@ -246,30 +246,38 @@ export const joinServer = async (
     botRoleId = botRole?.id || null;
   }
 
-  const [_, serverRoles, serverMember, serverChannels, serverMembers] = await prisma.$transaction([
-    prisma.user.update({
-      where: { id: userId },
-      data: { servers: { connect: { id: serverId } } },
-    }),
-    prisma.serverRole.findMany({ where: { serverId } }),
-    prisma.serverMember.create({
-      data: {
-        id: generateId(),
-        serverId,
-        userId,
-        roleIds: botRoleId ? [botRoleId] : [],
-      },
-      include: { user: { select: publicUserExcludeFields } },
-    }),
-    prisma.channel.findMany({
-      where: { serverId: server.id, deleting: null },
-      include: { _count: { select: { attachments: true } } },
-    }),
-    prisma.serverMember.findMany({
-      where: { serverId: server.id },
-      include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
-    }),
-  ]);
+  const [_, serverRoles, serverMember, serverChannels, serverMembers] = await prisma
+    .$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { servers: { connect: { id: serverId } } },
+      }),
+      prisma.serverRole.findMany({ where: { serverId } }),
+      prisma.serverMember.create({
+        data: {
+          id: generateId(),
+          serverId,
+          userId,
+          roleIds: botRoleId ? [botRoleId] : [],
+        },
+        include: { user: { select: publicUserExcludeFields } },
+      }),
+      prisma.channel.findMany({
+        where: { serverId: server.id, deleting: null },
+        include: { _count: { select: { attachments: true } } },
+      }),
+      prisma.serverMember.findMany({
+        where: { serverId: server.id },
+        include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
+      }),
+    ])
+    .catch(() => []);
+  if (!serverMember) {
+    if (botRoleId) {
+      await deleteServerRole(serverId, botRoleId);
+    }
+    return [null, generateError('Failed to join server. Please try again.')] as const;
+  }
 
   const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
 
