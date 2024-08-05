@@ -104,6 +104,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
         },
       },
       replyMessages: {
+        orderBy: { id: 'desc' },
         select: {
           replyToMessage: {
             select: {
@@ -295,6 +296,7 @@ export const MessageInclude = {
     },
   },
   replyMessages: {
+    orderBy: { id: 'desc' },
     select: {
       replyToMessage: {
         select: {
@@ -606,6 +608,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
         },
       },
       replyMessages: {
+        orderBy: { id: 'desc' },
         select: {
           replyToMessage: {
             select: {
