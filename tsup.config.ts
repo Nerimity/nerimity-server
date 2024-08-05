@@ -1,9 +1,9 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: ['src/index.ts', 'src/worker.ts'],
   splitting: false,
   sourcemap: true,
   clean: true,
   format: ['esm'],
-})
+});

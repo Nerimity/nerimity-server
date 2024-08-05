@@ -1,3 +1,4 @@
+import { workerData } from 'node:worker_threads';
 enum color {
   Reset = '\x1b[0m',
   Bright = '\x1b[1m',
@@ -23,7 +24,7 @@ enum color {
   BgBlue = '\x1b[44m',
   BgMagenta = '\x1b[45m',
   BgCyan = '\x1b[46m',
-  BgWhite = '\x1b[47m'
+  BgWhite = '\x1b[47m',
 }
 
 function getTime() {
@@ -39,19 +40,19 @@ function numberHandler(value: number) {
   return value > 9 ? value : `0${value}`;
 }
 
+const cpu = workerData?.cpu !== undefined ? `CPU ${workerData?.cpu}` : 'Main';
 
 export const Log = {
   info(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] ${color.FgGreen}[INFO]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgGreen}[INFO]:${color.Reset}`, ...args);
   },
   debug(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] ${color.FgBlue}[DEBUG]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgBlue}[DEBUG]:${color.Reset}`, ...args);
   },
   warn(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
-
+    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
   },
   error(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
-  }
+    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
+  },
 };

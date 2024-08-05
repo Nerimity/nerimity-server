@@ -1,91 +1,38 @@
-import express from 'express';
-import http from 'http';
-import env from './common/env';
-import { Log } from './common/Log';
-import { connectRedis } from './common/redis';
-import cors from 'cors';
-
-import { createIO } from './socket/socket';
-import { UsersRouter } from './routes/users/Router';
-import { ServersRouter } from './routes/servers/Router';
-import { ChannelsRouter } from './routes/channels/Router';
-import { FriendsRouter } from './routes/friends/Router';
+import { Worker } from 'node:worker_threads';
+import { cpus } from 'node:os';
 import { prisma } from './common/database';
-import { userIP } from './middleware/userIP';
-import { rateLimit } from './middleware/rateLimit';
-import { ModerationRouter } from './routes/moderation/Router';
-import { ExploreRouter } from './routes/explore/Router';
+import { Log } from './common/Log';
 import schedule from 'node-schedule';
-import { PostsRouter } from './routes/posts/Router';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
-import { GoogleRouter } from './routes/google/Router';
-import { TicketsRouter } from './routes/tickets/Router';
-import { EmojisRouter } from './routes/emojis/Router';
-import { TenorRouter } from './routes/tenor/Router';
-import { ApplicationsRouter } from './routes/applications/Router';
-import { OpenGraphRouter } from './routes/open-graph/Router';
+import env from './common/env';
 
-(Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
-  return this.getTime();
-};
+let cpuCount = cpus().length;
 
-const app = express();
-const server = http.createServer(app);
+if (env.DEV_MODE) {
+  cpuCount = 1;
+}
+let prismaConnected = false;
 
-// eslint-disable-next-line no-async-promise-executor
-const main = async () => {
-  await connectRedis();
-  Log.info('Connected to Redis');
-  createIO(server);
+prisma.$connect().then(() => {
+  Log.info('Connected to PostgreSQL');
 
-  prisma.$connect().then(() => {
-    Log.info('Connected to PostgreSQL');
-    scheduleBumpReset();
-    scheduleDeleteMessages();
-    removeIPAddressSchedule();
-    if (server.listening) return;
+  if (prismaConnected) return;
 
-    server.listen(env.PORT, () => {
-      Log.info('listening on *:' + env.PORT);
-    });
+  prismaConnected = true;
+
+  scheduleBumpReset();
+  vacuumSchedule();
+  scheduleDeleteMessages();
+  removeIPAddressSchedule();
+});
+
+for (let i = 0; i < cpuCount; i++) {
+  const worker = new Worker('./dist/worker.mjs', {
+    workerData: {
+      cpu: i,
+    },
   });
-};
-main();
-
-app.use(
-  cors({
-    origin: env.ORIGIN,
-  })
-);
-
-app.use(express.json({ limit: '20MB' }));
-app.use(express.urlencoded({ extended: false, limit: '20MB' }));
-
-app.use(userIP);
-
-app.use('/api', OpenGraphRouter);
-
-app.use(
-  rateLimit({
-    name: 'global_limit',
-    useIP: true,
-    restrictMS: 30000,
-    requests: 100,
-  })
-);
-
-app.use('/api', ModerationRouter);
-app.use('/api', UsersRouter);
-app.use('/api', ServersRouter);
-app.use('/api', ChannelsRouter);
-app.use('/api', FriendsRouter);
-app.use('/api', ExploreRouter);
-app.use('/api', PostsRouter);
-app.use('/api', GoogleRouter);
-app.use('/api', TicketsRouter);
-app.use('/api', EmojisRouter);
-app.use('/api', TenorRouter);
-app.use('/api', ApplicationsRouter);
+}
 
 function scheduleBumpReset() {
   // Schedule the task to run every Monday at 0:00 UTC
@@ -102,7 +49,6 @@ function scheduleBumpReset() {
 
 // Messages are not deleted all at once to reduce database strain.
 function scheduleDeleteMessages() {
-  vacuumSchedule();
   setInterval(async () => {
     const details = await prisma.scheduleMessageDelete.findFirst();
     if (!details) return;
