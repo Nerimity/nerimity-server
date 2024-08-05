@@ -374,13 +374,17 @@ export async function likePost(userId: string, postId: string): Promise<CustomRe
     return [null, generateError('You have been blocked by this user!')];
   }
 
-  await prisma.postLike.create({
-    data: {
-      id: generateId(),
-      likedById: userId,
-      postId,
-    },
-  });
+  const newPostLike = await prisma.postLike
+    .create({
+      data: {
+        id: generateId(),
+        likedById: userId,
+        postId,
+      },
+    })
+    .catch(() => {});
+  if (!newPostLike) return [null, generateError('Something went wrong! Try again later.')];
+
   const newPost = (await fetchPost({
     postId,
     requesterUserId: userId,
