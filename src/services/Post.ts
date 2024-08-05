@@ -13,20 +13,20 @@ function constructInclude(requesterUserId: string, continueIter = true): Prisma.
     poll: {
       select: {
         id: true,
-        _count: {select: {votedUsers: true}},
+        _count: { select: { votedUsers: true } },
         votedUsers: {
-          where: {userId: requesterUserId},
-          select: {pollChoiceId: true},
+          where: { userId: requesterUserId },
+          select: { pollChoiceId: true },
         },
         choices: {
-          orderBy: {id: 'asc'},
+          orderBy: { id: 'asc' },
           select: {
             id: true,
             content: true,
-            _count: {select: {votedUsers: true}},
-          }
-        }
-      }
+            _count: { select: { votedUsers: true } },
+          },
+        },
+      },
     },
     ...(continueIter ? { commentTo: { include: constructInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
@@ -45,7 +45,7 @@ interface CreatePostOpts {
   content?: string;
   commentToId?: string;
   attachment?: { width?: number; height?: number; path: string };
-  poll?: {choices: string[]};
+  poll?: { choices: string[] };
 }
 export async function createPost(opts: CreatePostOpts) {
   if (opts.commentToId) {
@@ -80,16 +80,18 @@ export async function createPost(opts: CreatePostOpts) {
           }
         : undefined),
 
-        ...(opts.poll?.choices.length ? {
-          poll: {
-            create: {
-              id: generateId(),
-              choices: {
-                createMany: {data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice }))}
-              }
-            }
+      ...(opts.poll?.choices.length
+        ? {
+            poll: {
+              create: {
+                id: generateId(),
+                choices: {
+                  createMany: { data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice })) },
+                },
+              },
+            },
           }
-        } : {})
+        : {}),
     },
     include: constructInclude(opts.userId),
   });
@@ -158,49 +160,62 @@ interface FetchPostsOpts {
   afterId?: string;
   beforeId?: string;
 
-  where?: Prisma.PostWhereInput
+  where?: Prisma.PostWhereInput;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
-  const posts = await prisma.post.findMany({
-    where: {
-      ...opts.where,
-      ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
-      ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
+  const where = {
+    ...opts.where,
+    ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
+    ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
 
-      ...(opts.userId ? { createdById: opts.userId } : undefined),
-      ...(!opts.withReplies ? { commentToId: null } : undefined),
-      ...(opts.postId ? { commentToId: opts.postId } : undefined),
-      ...(!opts.bypassBlocked
-        ? {
-            createdBy: {
-              ...(opts.hideIfBlockedByMe
-                ? {
-                    recipientFriends: {
-                      none: {
-                        status: FriendStatus.BLOCKED,
-                        userId: opts.requesterUserId,
-                      },
+    ...(opts.userId ? { createdById: opts.userId } : undefined),
+    ...(!opts.withReplies ? { commentToId: null } : undefined),
+    ...(opts.postId ? { commentToId: opts.postId } : undefined),
+    ...(!opts.bypassBlocked
+      ? {
+          createdBy: {
+            ...(opts.hideIfBlockedByMe
+              ? {
+                  recipientFriends: {
+                    none: {
+                      status: FriendStatus.BLOCKED,
+                      userId: opts.requesterUserId,
                     },
-                  }
-                : {}),
-              friends: {
-                none: {
-                  status: FriendStatus.BLOCKED,
-                  recipientId: opts.requesterUserId,
-                },
+                  },
+                }
+              : {}),
+            friends: {
+              none: {
+                status: FriendStatus.BLOCKED,
+                recipientId: opts.requesterUserId,
               },
             },
-          }
-        : undefined),
-      deleted: null,
-    },
+          },
+        }
+      : undefined),
+    deleted: null,
+  };
+
+  const posts = await prisma.post.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
     include: constructInclude(opts.requesterUserId),
   });
+  updateViews(posts);
 
   return posts.reverse();
+}
+async function updateViews(posts: Post[]) {
+  const ids = [...posts.map((post) => post.id), ...posts.flatMap((post) => post.commentToId ?? [])];
+  if (!ids.length) return;
+  await prisma.post.updateMany({
+    where: { id: { in: ids } },
+    data: {
+      views: { increment: 1 },
+    },
+  });
 }
 
 interface fetchLinkedPostsOpts {
@@ -233,7 +248,11 @@ export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
     take: 50,
   });
 
-  return likes.map((like) => like.post).reverse();
+  const posts = likes.map((like) => like.post);
+
+  updateViews(posts);
+
+  return posts.reverse();
 }
 
 interface fetchLatestPostOpts {
@@ -266,6 +285,8 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
   });
 
   if (!post) return null;
+
+  updateViews([post]);
 
   return post;
 }
@@ -328,6 +349,8 @@ export async function fetchPost(opts: FetchPostOpts) {
       });
     }
   }
+
+  updateViews([post]);
 
   return post;
 }
@@ -412,7 +435,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
       },
     }),
     prisma.postLike.deleteMany({ where: { postId } }),
-    prisma.postPoll.deleteMany({where: {postId}}),
+    prisma.postPoll.deleteMany({ where: { postId } }),
     prisma.attachment.deleteMany({ where: { postId } }),
   ]);
 
@@ -449,6 +472,8 @@ export async function getFeed(opts: GetFeedOpts) {
     include: constructInclude(opts.userId),
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
   });
+
+  updateViews(feedPosts);
   return feedPosts;
 }
 
@@ -563,23 +588,24 @@ export async function dismissPostNotification(userId: string) {
   });
 }
 
-export async function votePostPoll(requesterId: string, postId: string, pollId: string, choiceId: string ) {
-
+export async function votePostPoll(requesterId: string, postId: string, pollId: string, choiceId: string) {
   const poll = await prisma.postPoll.findUnique({
-    where: {postId, id: pollId},
-    select: {post: {
-      select: {
-        createdBy: {
-          select: {
-            id: true
-          }
-        }
-      }
-    }}
-  })
+    where: { postId, id: pollId },
+    select: {
+      post: {
+        select: {
+          createdBy: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
   if (!poll) {
-    return [null, generateError('Poll not found.')] as const
+    return [null, generateError('Poll not found.')] as const;
   }
 
   const blockedUserIds = await getBlockedUserIds([poll?.post.createdBy.id], requesterId);
@@ -588,19 +614,19 @@ export async function votePostPoll(requesterId: string, postId: string, pollId: 
   }
 
   const choice = await prisma.postPollChoice.findUnique({
-    where: {pollId, id: choiceId}
-  })
+    where: { pollId, id: choiceId },
+  });
   if (!choice) {
-    return [null, generateError('Poll not found.')] as const
+    return [null, generateError('Poll not found.')] as const;
   }
 
   const alreadyVoted = await prisma.postPollVotedUser.findFirst({
-    where: {userId: requesterId, pollId},
-    select: {id: true}
-  })
+    where: { userId: requesterId, pollId },
+    select: { id: true },
+  });
 
   if (alreadyVoted) {
-    return [null, generateError('Already voted.')] as const
+    return [null, generateError('Already voted.')] as const;
   }
 
   await prisma.postPollVotedUser.create({
@@ -610,7 +636,7 @@ export async function votePostPoll(requesterId: string, postId: string, pollId: 
       pollId,
       pollChoiceId: choiceId,
     },
-    select: {id: true}
-  })
-  return [true, null] as const
+    select: { id: true },
+  });
+  return [true, null] as const;
 }

@@ -710,6 +710,8 @@ model Post {
 
   likedBy    PostLike[]
 
+  views      Int  @default(0)
+
 
 
   commentToId  String?
