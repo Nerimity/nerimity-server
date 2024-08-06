@@ -5,6 +5,7 @@ import { Log } from './common/Log';
 import schedule from 'node-schedule';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
 import env from './common/env';
+import { connectRedis, redisClient } from './common/redis';
 
 let cpuCount = cpus().length;
 
@@ -12,6 +13,9 @@ if (env.DEV_MODE) {
   cpuCount = 1;
 }
 let prismaConnected = false;
+
+await connectRedis();
+await redisClient.flushAll();
 
 prisma.$connect().then(() => {
   Log.info('Connected to PostgreSQL');

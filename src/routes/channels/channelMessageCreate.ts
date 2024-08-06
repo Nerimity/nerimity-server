@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, USER_BADGES, hasBit, isUserAdmin } from '../../common/Bitwise';
@@ -19,6 +19,8 @@ import { UserCache } from '../../cache/UserCache';
 import { ServerCache } from '../../cache/ServerCache';
 import { CloseTicketStatuses, TicketStatus, updateTicketStatus } from '../../services/Ticket';
 import { banServerMember } from '../../services/Server';
+import { AltQueue, Queue } from '@nerimity/mimiqueue';
+import { redisClient } from '../../common/redis';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -86,9 +88,19 @@ export function channelMessageCreate(Router: Router) {
         await banServerMember(req.userCache.id, req.serverCache.id, true);
       },
     }),
-    route
+    queueRoute
   );
 }
+
+const queue = new AltQueue({
+  name: 'create_message',
+  redisClient,
+});
+
+const queueRoute = async (req: Request, res: Response) => {
+  const finish = await queue.start();
+  route(req, res).finally(() => finish());
+};
 
 interface Body {
   content?: string;
