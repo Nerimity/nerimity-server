@@ -7,6 +7,7 @@ import { deleteImage } from '../common/nerimityCDN';
 import { FriendStatus } from '../types/Friend';
 import { getBlockedUserIds, isUserBlocked } from './User/User';
 import { replaceBadWords } from '../common/badWords';
+import { addPostViewsToCache } from '../cache/PostViewsCache';
 
 function constructInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
@@ -210,12 +211,13 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 async function updateViews(posts: Post[]) {
   const ids = [...posts.map((post) => post.id), ...posts.flatMap((post) => post.commentToId ?? [])];
   if (!ids.length) return;
-  await prisma.post.updateMany({
-    where: { id: { in: ids } },
-    data: {
-      views: { increment: 1 },
-    },
-  });
+  addPostViewsToCache(ids, '127.0.0.1');
+  // await prisma.post.updateMany({
+  //   where: { id: { in: ids } },
+  //   data: {
+  //     views: { increment: 1 },
+  //   },
+  // });
 }
 
 interface fetchLinkedPostsOpts {

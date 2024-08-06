@@ -1,5 +1,6 @@
 import { createClient } from 'redis';
 import env from './env';
+import { POST_VIEWS_KEY } from '../cache/CacheKeys';
 
 export const redisClient = createClient({
   socket: {
@@ -20,4 +21,10 @@ export function connectRedis(): Promise<typeof redisClient> {
       reject(err);
     });
   });
+}
+
+export async function customRedisFlush() {
+  let keys = await redisClient.keys('*');
+  keys = keys.filter((key) => !key.startsWith(POST_VIEWS_KEY('')));
+  await redisClient.del(keys);
 }

@@ -5,7 +5,8 @@ import { Log } from './common/Log';
 import schedule from 'node-schedule';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
 import env from './common/env';
-import { connectRedis, redisClient } from './common/redis';
+import { connectRedis, customRedisFlush } from './common/redis';
+import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
 
 let cpuCount = cpus().length;
 
@@ -15,7 +16,8 @@ if (env.DEV_MODE) {
 let prismaConnected = false;
 
 await connectRedis();
-await redisClient.flushAll();
+
+await customRedisFlush();
 
 prisma.$connect().then(() => {
   Log.info('Connected to PostgreSQL');
@@ -28,6 +30,7 @@ prisma.$connect().then(() => {
   vacuumSchedule();
   scheduleDeleteMessages();
   removeIPAddressSchedule();
+  schedulePostViews();
 });
 
 for (let i = 0; i < cpuCount; i++) {
@@ -132,4 +135,24 @@ async function removeIPAddressSchedule() {
       },
     });
   });
+}
+
+function schedulePostViews() {
+  updatePostViews();
+  setInterval(async () => {
+    updatePostViews();
+  }, 60000); // every minute
+}
+async function updatePostViews() {
+  const cacheData = await getAndRemovePostViewsCache();
+  if (!cacheData.length) return;
+
+  await prisma.$transaction(
+    cacheData.map((d) =>
+      prisma.post.update({
+        where: { id: d.id },
+        data: { views: { increment: d.views } },
+      })
+    )
+  );
 }
