@@ -567,7 +567,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
 }
 
 export async function getPostNotifications(userId: string) {
-  return await prisma.postNotification.findMany({
+  const notifications = await prisma.postNotification.findMany({
     orderBy: { createdAt: 'desc' },
     where: { toId: userId },
     take: 20,
@@ -576,6 +576,11 @@ export async function getPostNotifications(userId: string) {
       post: { include: constructInclude(userId) },
     },
   });
+  const posts = notifications.filter((n) => n.type === PostNotificationType.REPLIED).map((n) => n.post!);
+
+  updateViews(posts);
+
+  return notifications;
 }
 
 export async function getPostNotificationCount(userId: string) {
