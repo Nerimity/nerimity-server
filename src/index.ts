@@ -141,7 +141,7 @@ function schedulePostViews() {
   updatePostViews();
   setInterval(async () => {
     updatePostViews();
-  }, 60000); // every minute
+  }, 60000 * 60); // every 1 hour
 }
 async function updatePostViews() {
   const cacheData = await getAndRemovePostViewsCache();
