@@ -1,4 +1,5 @@
-import { workerData } from 'node:worker_threads';
+import env from './env';
+
 enum color {
   Reset = '\x1b[0m',
   Bright = '\x1b[1m',
@@ -40,7 +41,7 @@ function numberHandler(value: number) {
   return value > 9 ? value : `0${value}`;
 }
 
-const cpu = workerData?.cpu !== undefined ? `CPU ${workerData?.cpu}` : 'Main';
+const cpu = env.CPU !== undefined ? `CPU ${env.CPU}` : 'Main';
 
 export const Log = {
   info(...args: any) {

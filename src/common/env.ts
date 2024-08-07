@@ -29,15 +29,9 @@ export default {
   NERIMITY_CDN: process.env.NERIMITY_CDN as string,
   NERIMITY_CDN_SECRET: process.env.NERIMITY_CDN_SECRET as string,
 
-  MAX_CHANNELS_PER_SERVER: parseInt(
-    process.env.MAX_CHANNELS_PER_SERVER || '0'
-  ) as number,
-  MAX_INVITES_PER_SERVER: parseInt(
-    process.env.MAX_INVITES_PER_SERVER || '0'
-  ) as number,
-  MAX_ROLES_PER_SERVER: parseInt(
-    process.env.MAX_ROLES_PER_SERVER || '0'
-  ) as number,
+  MAX_CHANNELS_PER_SERVER: parseInt(process.env.MAX_CHANNELS_PER_SERVER || '0') as number,
+  MAX_INVITES_PER_SERVER: parseInt(process.env.MAX_INVITES_PER_SERVER || '0') as number,
+  MAX_ROLES_PER_SERVER: parseInt(process.env.MAX_ROLES_PER_SERVER || '0') as number,
 
   DEFAULT_SERVER_ROLE_COLOR: process.env.DEFAULT_SERVER_ROLE_COLOR as string,
 
@@ -52,4 +46,5 @@ export default {
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,
   GOOGLE_REDIRECT_URL: process.env.GOOGLE_REDIRECT_URL as string,
   TENOR_API_KEY: process.env.TENOR_API_KEY as string,
+  CPU: process.env.CPU === undefined ? undefined : parseInt(process.env.CPU as string),
 };

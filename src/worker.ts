@@ -22,7 +22,6 @@ import { EmojisRouter } from './routes/emojis/Router';
 import { TenorRouter } from './routes/tenor/Router';
 import { ApplicationsRouter } from './routes/applications/Router';
 import { OpenGraphRouter } from './routes/open-graph/Router';
-import { workerData } from 'node:worker_threads';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -42,7 +41,7 @@ const main = async () => {
 
     if (server.listening) return;
 
-    const port = env.PORT + workerData.cpu;
+    const port = env.PORT;
 
     server.listen(port, () => {
       Log.info('listening on *:' + port);

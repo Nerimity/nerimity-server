@@ -16,7 +16,7 @@ import { getVoiceUsersByChannelId } from '../../cache/VoiceCache';
 import { serverMemberHasPermission } from '../../common/serverMembeHasPermission';
 import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
-import { workerData } from 'node:worker_threads';
+import env from '../../common/env';
 
 interface Payload {
   token: string;
@@ -195,6 +195,6 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     friends: updatedFriends,
     channels,
     inbox: inboxResponse,
-    cpu: workerData?.cpu,
+    cpu: env.CPU,
   });
 }

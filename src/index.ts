@@ -1,4 +1,3 @@
-import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
 import { prisma } from './common/database';
 import { Log } from './common/Log';
@@ -8,37 +7,44 @@ import env from './common/env';
 import { connectRedis, customRedisFlush } from './common/redis';
 import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
 
-let cpuCount = cpus().length;
+import cluster from 'node:cluster';
 
-if (env.DEV_MODE) {
-  cpuCount = 1;
-}
-let prismaConnected = false;
+if (cluster.isPrimary) {
+  console.log(`Master process ${process.pid} is running`);
 
-await connectRedis();
+  let cpuCount = cpus().length;
 
-await customRedisFlush();
+  if (env.DEV_MODE) {
+    cpuCount = 1;
+  }
+  let prismaConnected = false;
 
-prisma.$connect().then(() => {
-  Log.info('Connected to PostgreSQL');
+  await connectRedis();
+  await customRedisFlush();
+  prisma.$connect().then(() => {
+    Log.info('Connected to PostgreSQL');
 
-  if (prismaConnected) return;
+    if (prismaConnected) return;
 
-  prismaConnected = true;
+    prismaConnected = true;
 
-  scheduleBumpReset();
-  vacuumSchedule();
-  scheduleDeleteMessages();
-  removeIPAddressSchedule();
-  schedulePostViews();
-});
-
-for (let i = 0; i < cpuCount; i++) {
-  const worker = new Worker('./dist/worker.mjs', {
-    workerData: {
-      cpu: i,
-    },
+    scheduleBumpReset();
+    vacuumSchedule();
+    scheduleDeleteMessages();
+    removeIPAddressSchedule();
+    schedulePostViews();
   });
+
+  for (let i = 0; i < cpuCount; i++) {
+    cluster.fork({ cpu: i });
+  }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`Worker process ${worker.process.pid} died. Restarting...`);
+    cluster.fork();
+  });
+} else {
+  import('./worker');
 }
 
 function scheduleBumpReset() {
