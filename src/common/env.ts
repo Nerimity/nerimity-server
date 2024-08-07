@@ -46,5 +46,4 @@ export default {
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,
   GOOGLE_REDIRECT_URL: process.env.GOOGLE_REDIRECT_URL as string,
   TENOR_API_KEY: process.env.TENOR_API_KEY as string,
-  CPU: process.env.CPU === undefined ? undefined : parseInt(process.env.CPU as string),
 };

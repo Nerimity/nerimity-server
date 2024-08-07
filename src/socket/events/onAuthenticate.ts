@@ -195,6 +195,6 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     friends: updatedFriends,
     channels,
     inbox: inboxResponse,
-    cpu: env.CPU,
+    pid: process.pid,
   });
 }

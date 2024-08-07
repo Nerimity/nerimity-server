@@ -1,3 +1,4 @@
+import cluster from 'cluster';
 import env from './env';
 
 enum color {
@@ -41,19 +42,19 @@ function numberHandler(value: number) {
   return value > 9 ? value : `0${value}`;
 }
 
-const cpu = env.CPU !== undefined ? `CPU ${env.CPU}` : 'Main';
+const pid = !cluster.isPrimary ? `PID ${process.pid}` : 'Main';
 
 export const Log = {
   info(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgGreen}[INFO]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgGreen}[INFO]:${color.Reset}`, ...args);
   },
   debug(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgBlue}[DEBUG]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgBlue}[DEBUG]:${color.Reset}`, ...args);
   },
   warn(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
   },
   error(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${cpu}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
   },
 };

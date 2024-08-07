@@ -34,11 +34,11 @@ if (cluster.isPrimary) {
   });
 
   for (let i = 0; i < cpuCount; i++) {
-    cluster.fork({ cpu: i });
+    cluster.fork();
   }
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`Worker process ${cpuCount} died. Restarting...`);
+    console.log(`Worker process ${worker.process.pid} died. Restarting...`);
     cluster.fork();
   });
 } else {
