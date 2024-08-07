@@ -17,18 +17,31 @@ import { serverMemberHasPermission } from '../../common/serverMembeHasPermission
 import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
 import env from '../../common/env';
+import { AltQueue } from '@nerimity/mimiqueue';
+import { redisClient } from '../../common/redis';
 
 interface Payload {
   token: string;
 }
 
+const authQueue = new AltQueue({
+  name: 'wsAuth',
+  redisClient,
+});
+
 export async function onAuthenticate(socket: Socket, payload: Payload) {
   const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
+  const finish = await authQueue.start({ groupName: ip });
+  if (!socket.connected) {
+    finish();
+    return;
+  }
 
   const [userCache, error] = await authenticateUser(payload.token, ip);
 
   if (error !== null) {
     emitError(socket, { ...error, disconnect: true });
+    finish();
     return;
   }
   socket.join(userCache.id);
@@ -64,6 +77,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   if (!user) {
     emitError(socket, { message: 'User not found.', disconnect: true });
+    finish();
     return;
   }
   const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id);
@@ -157,6 +171,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 
   if (!socket.connected) {
     onDisconnect(socket);
+    finish();
     return;
   }
 
@@ -197,4 +212,5 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
     inbox: inboxResponse,
     pid: process.pid,
   });
+  finish();
 }
