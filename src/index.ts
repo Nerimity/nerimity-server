@@ -10,8 +10,6 @@ import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
 import cluster from 'node:cluster';
 
 if (cluster.isPrimary) {
-  console.log(`Master process ${process.pid} is running`);
-
   let cpuCount = cpus().length;
 
   if (env.DEV_MODE) {
@@ -40,7 +38,7 @@ if (cluster.isPrimary) {
   }
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`Worker process ${worker.process.pid} died. Restarting...`);
+    console.log(`Worker process ${cpuCount} died. Restarting...`);
     cluster.fork();
   });
 } else {
