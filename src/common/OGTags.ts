@@ -68,7 +68,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   //   object.video = !!isTwitterVideo;
   // }
 
-  if (object.imageUrl && (!object.imageWidth || !object.imageHeight)) {
+  if (object.imageUrl) {
     const [dimensions, err] = await proxyUrlImageDimensions(object.imageUrl);
     if (dimensions) {
       object.imageWidth = dimensions.width;
