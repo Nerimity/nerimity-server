@@ -280,15 +280,7 @@ export const joinServer = async (
   }
 
   const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
-
-  if (server.systemChannelId) {
-    await createMessage({
-      channelId: server.systemChannelId,
-      type: MessageType.JOIN_SERVER,
-      serverId: serverId,
-      userId: userId,
-    });
-  }
+ 
   const memberIds = serverMembers.map((sm) => sm.user.id);
   const memberPresences = await getUserPresences(memberIds);
 
@@ -308,6 +300,15 @@ export const joinServer = async (
   deleteAllInboxCache(userId);
   const [userPresence] = await getUserPresences([userId]);
   userPresence && emitUserPresenceUpdateTo(serverId, userPresence);
+
+  if (server.systemChannelId) {
+    await createMessage({
+      channelId: server.systemChannelId,
+      type: MessageType.JOIN_SERVER,
+      serverId: serverId,
+      userId: userId,
+    });
+  }
 
   return [server, null] as const;
 };
