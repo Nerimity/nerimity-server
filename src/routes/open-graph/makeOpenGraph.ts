@@ -6,6 +6,7 @@ interface Options {
   imageWidth?: number | null;
   imageHeight?: number | null;
   description: string;
+  color?: string | null;
 }
 
 export const makeOpenGraph = (opts: Options) => {
@@ -18,7 +19,7 @@ export const makeOpenGraph = (opts: Options) => {
   const imageWidth = opts.imageWidth ? `<meta content="${opts.imageWidth}" property="og:image:width" />` : '';
   const imageHeight = opts.imageHeight ? `<meta content="${opts.imageHeight}" property="og:image:height" />` : '';
 
-  const themeColor = `<meta name="theme-color" content="#4c93ff">`;
+  const themeColor = `<meta name="theme-color" content="${opts.color || '#4c93ff'}">`;
 
   const title1 = `<title>${opts.title}</title>`;
   const title2 = `<meta name="title" content="${opts.title}">`;
