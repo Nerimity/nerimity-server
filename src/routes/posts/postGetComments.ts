@@ -9,17 +9,15 @@ import { isUserAdmin } from '../../common/Bitwise';
 export function postsGetComments(Router: Router) {
   Router.get(
     '/posts/:postId/comments',
-    authenticate(),
+    authenticate({
+      allowNoToken: true,
+    }),
     rateLimit({
       name: 'post_get_comments',
       restrictMS: 20000,
       requests: 100,
     }),
-    param('postId')
-      .isString()
-      .withMessage('postId must be a string!')
-      .isLength({ min: 1, max: 100 })
-      .withMessage('postId length must be between 1 and 100 characters.'),
+    param('postId').isString().withMessage('postId must be a string!').isLength({ min: 1, max: 100 }).withMessage('postId length must be between 1 and 100 characters.'),
     route
   );
 }
@@ -45,11 +43,11 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const isAdmin = isUserAdmin(req.userCache.badges);
+  const isAdmin = req.userCache && isUserAdmin(req.userCache.badges);
 
   const commentPosts = await fetchPosts({
     postId: params.postId,
-    requesterUserId: req.userCache.id,
+    requesterUserId: req.userCache?.id,
     bypassBlocked: isAdmin,
     limit: query.limit ? parseInt(query.limit) : undefined,
     afterId: query.afterId,

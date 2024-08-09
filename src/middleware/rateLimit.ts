@@ -35,6 +35,9 @@ export function rateLimit(opts: Options) {
 
     if (!opts.globalLimit) {
       id = opts.useIP ? ip : req.userCache?.id;
+      if (!id) {
+        id = ip;
+      }
       if (opts.name) {
         id = `${id}-${opts.name}`;
       }
@@ -59,9 +62,7 @@ export function rateLimit(opts: Options) {
     }
 
     if (ttl) {
-      return res
-        .status(429)
-        .json({ ...generateError(opts.message || 'Slow down!'), ttl });
+      return res.status(429).json({ ...generateError(opts.message || 'Slow down!'), ttl });
     }
 
     next();

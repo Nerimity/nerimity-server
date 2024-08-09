@@ -4,12 +4,16 @@ import { generateError } from '../common/errorHandler';
 
 interface Options {
   allowBot?: boolean;
+  allowNoToken?: boolean;
 }
 
 export function authenticate(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const token = req.header('Authorization');
     if (!token) {
+      if (opts?.allowNoToken) {
+        return next();
+      }
       return res.status(401).json(generateError('No token provided.'));
     }
 
@@ -18,9 +22,7 @@ export function authenticate(opts?: Options) {
       return res.status(401).json(generateError(error.message));
     }
     if (!opts?.allowBot && cachedUser.bot) {
-      return res
-        .status(401)
-        .json(generateError('Bots are not allowed to use this route.'));
+      return res.status(401).json(generateError('Bots are not allowed to use this route.'));
     }
     req.userCache = cachedUser;
     next();
