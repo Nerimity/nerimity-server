@@ -39,7 +39,7 @@ async function route(req: Request, res: Response) {
 
   const post = await fetchPost({
     postId: params.postId,
-    requesterUserId: req.userCache?.id,
+    requesterUserId: req.userCache?.id || '123',
     bypassBlocked: isAdmin,
   });
 

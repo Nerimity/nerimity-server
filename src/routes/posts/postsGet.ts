@@ -9,22 +9,14 @@ import { isUserAdmin } from '../../common/Bitwise';
 export function postsGet(Router: Router) {
   Router.get(
     '/users/:userId/posts',
-    authenticate(),
+    authenticate({ allowNoToken: true }),
     rateLimit({
       name: 'post_get',
       restrictMS: 20000,
       requests: 100,
     }),
-    param('userId')
-      .isString()
-      .withMessage('userId must be a string!')
-      .isLength({ min: 1, max: 100 })
-      .withMessage('userId length must be between 1 and 100 characters.')
-      .optional(true),
-    query('withReplies')
-      .isBoolean()
-      .withMessage('withReplies must be a boolean!')
-      .optional(true),
+    param('userId').isString().withMessage('userId must be a string!').isLength({ min: 1, max: 100 }).withMessage('userId length must be between 1 and 100 characters.').optional(true),
+    query('withReplies').isBoolean().withMessage('withReplies must be a boolean!').optional(true),
     route
   );
 
@@ -53,11 +45,11 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const isAdmin = isUserAdmin(req.userCache.badges);
+  const isAdmin = isUserAdmin(req.userCache?.badges);
 
   const posts = await fetchPosts({
-    userId: params.userId || req.userCache.id,
-    requesterUserId: req.userCache.id,
+    userId: params.userId || req.userCache?.id,
+    requesterUserId: req.userCache?.id || '123',
     withReplies: query.withReplies,
     bypassBlocked: isAdmin,
 
