@@ -20,6 +20,8 @@ export const makeOpenGraph = (opts: Options) => {
 
   const themeColor = `<meta name="theme-color" content="#4c93ff">`;
 
+  const title1 = `<title>${opts.title}</title>`;
+  const title2 = `<meta name="title" content="${opts.title}">`;
   const htmlDescription = `<meta name="description" content="${opts.description}">`;
 
   const largeImage = opts.largeImage ? `<meta name="twitter:card" content="summary_large_image">` : '';
@@ -29,5 +31,5 @@ export const makeOpenGraph = (opts: Options) => {
   const twitterTitle = `<meta name="twitter:title" content="${opts.title}">`;
   const twitterImage = opts.imageUrl ? `<meta name="twitter:image" content="${opts.imageUrl}">` : '';
 
-  return `<!DOCTYPE html><html><head>${htmlDescription}${siteName}${type}${themeColor}${url}${title}${description}${imageWidth}${imageHeight}${largeImage}${image}${twitterDomain}${twitterUrl}${twitterDescription}${twitterTitle}${twitterImage}</head></html>`;
+  return `<!DOCTYPE html><html><head>${title1}${title2}${htmlDescription}${siteName}${type}${themeColor}${url}${title}${description}${imageWidth}${imageHeight}${largeImage}${image}${twitterDomain}${twitterUrl}${twitterDescription}${twitterTitle}${twitterImage}</head></html>`;
 };
