@@ -14,6 +14,7 @@ import { getIO } from '../socket/socket';
 import env from '../common/env';
 import { getUserIdsBySocketIds } from '../cache/UserCache';
 import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
+import { omit } from '../common/omit';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -422,4 +423,19 @@ export const getChannelNotice = async (where: { channelId?: string; userId?: str
     .catch(() => {});
   if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
   return [res, null] as const;
+};
+
+export const getChannel = async (channelId: string, requesterId: string) => {
+  const channel = await prisma.channel.findUnique({
+    where: { id: channelId },
+  });
+
+  const isChannelBeingDeleted = channel?.deleting;
+
+  if (!channel || isChannelBeingDeleted) {
+    return [null, generateError('Channel does not exist.')];
+  }
+  const channelWithoutDeleting = omit(channel, 'deleting');
+
+  return [channelWithoutDeleting, null] as const;
 };

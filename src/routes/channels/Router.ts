@@ -14,12 +14,14 @@ import { channelVoiceLeave } from './channelVoiceLeave';
 import { channelNoticeGet } from './channelNoticeGet';
 import { channelMessageButtonClick } from './channelMessageButtonClick';
 import { channelMessageButtonClickCallback } from './channelMessageButtonClickCallback';
+import { channelGet } from './channelGet';
 
 const ChannelsRouter = Router();
 
 channelMessageButtonClick(ChannelsRouter);
 channelMessageButtonClickCallback(ChannelsRouter);
 
+channelGet(ChannelsRouter);
 channelNoticeGet(ChannelsRouter);
 channelMessages(ChannelsRouter);
 channelVoiceJoin(ChannelsRouter);
