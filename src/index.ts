@@ -172,7 +172,7 @@ async function updatePostViews() {
 }
 
 function scheduleSuspendedAccountDeletion() {
-  const threeMinutesToMilliseconds = 3 * 60 * 1000;
+  const oneMinuteToMilliseconds = 1 * 60 * 1000;
   const oneMonthInThePast = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   setTimeout(async () => {
     const suspension = await prisma.suspension.findFirst({
@@ -213,5 +213,5 @@ function scheduleSuspendedAccountDeletion() {
     }
 
     scheduleSuspendedAccountDeletion();
-  }, threeMinutesToMilliseconds);
+  }, oneMinuteToMilliseconds);
 }
