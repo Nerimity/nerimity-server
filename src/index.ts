@@ -1,5 +1,5 @@
 import { cpus } from 'node:os';
-import { prisma } from './common/database';
+import { dateToDateTime, prisma } from './common/database';
 import { Log } from './common/Log';
 import schedule from 'node-schedule';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
@@ -8,6 +8,14 @@ import { connectRedis, customRedisFlush } from './common/redis';
 import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
 
 import cluster from 'node:cluster';
+import { createIO, getIO } from './socket/socket';
+import { deleteAccount, deleteAllApplications, deleteOrLeaveAllServers } from './services/User/UserManagement';
+import { createHash } from 'node:crypto';
+import { addToObjectIfExists } from './common/addToObjectIfExists';
+
+(Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
+  return this.getTime();
+};
 
 if (cluster.isPrimary) {
   let cpuCount = cpus().length;
@@ -19,6 +27,7 @@ if (cluster.isPrimary) {
 
   await connectRedis();
   await customRedisFlush();
+  createIO();
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');
 
@@ -31,6 +40,7 @@ if (cluster.isPrimary) {
     scheduleDeleteMessages();
     removeIPAddressSchedule();
     schedulePostViews();
+    scheduleSuspendedAccountDeletion();
   });
 
   for (let i = 0; i < cpuCount; i++) {
@@ -159,4 +169,50 @@ async function updatePostViews() {
       })
     )
   );
+}
+
+function scheduleSuspendedAccountDeletion() {
+  // const tenMinutesToMilliseconds = 10 * 60 * 1000;
+  const tenMinutesToMilliseconds = 3000;
+  const oneMonthInThePast = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  setTimeout(async () => {
+    const suspension = await prisma.suspension.findFirst({
+      where: {
+        expireAt: null,
+        userDeleted: false,
+        suspendedAt: {
+          lte: oneMonthInThePast,
+        },
+      },
+      select: {
+        id: true,
+        user: { select: { id: true, username: true, account: { select: { email: true } } } },
+      },
+    });
+    if (suspension) {
+      try {
+        const emailSha = suspension.user.account?.email ? createHash('sha256').update(suspension.user.account.email).digest('hex') : undefined;
+        Log.info(`Deleting account ${suspension.user.username} because it was perm suspended more than 30 days ago.`);
+        await deleteAllApplications(suspension.user.id);
+        await deleteOrLeaveAllServers(suspension.user.id);
+        await deleteAccount(suspension.user.id);
+        await prisma.suspension.update({
+          where: {
+            id: suspension.id,
+          },
+          data: {
+            reason: null,
+            userDeleted: true,
+            ...addToObjectIfExists('emailHash', emailSha),
+          },
+        });
+
+        Log.info(`Deleted account ${suspension.user.username}.`);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    scheduleSuspendedAccountDeletion();
+  }, tenMinutesToMilliseconds);
 }

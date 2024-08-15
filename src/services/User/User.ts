@@ -15,6 +15,7 @@ import { removeDuplicates } from '../../common/utils';
 import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
 import { Prisma } from '@prisma/client';
 import { UserStatus } from '../../types/User';
+import { createHash } from 'node:crypto';
 
 export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
   const blockedUsers = await prisma.friend.findMany({
@@ -56,6 +57,11 @@ export const isIpBanned = async (ipAddress: string) => {
   return false;
 };
 
+export const isEmailSuspended = async (email: string) => {
+  const inputHash = createHash('sha256').update(email).digest('hex');
+  const suspend = await prisma.suspension.findFirst({ where: { emailHash: inputHash, expireAt: null } });
+  return !!suspend;
+};
 export const getSuspensionDetails = async (userId: string) => {
   const suspend = await prisma.suspension.findFirst({ where: { userId }, include: { suspendBy: { select: { username: true } } } });
   if (!suspend) return false;

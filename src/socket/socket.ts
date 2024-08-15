@@ -9,7 +9,7 @@ import { getFriendIds } from '../services/Friend';
 
 let io: socketIO.Server;
 
-export async function createIO(server: http.Server) {
+export async function createIO(server?: http.Server) {
   io = new socketIO.Server(server, {
     transports: ['websocket'],
   });

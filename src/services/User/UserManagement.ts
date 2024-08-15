@@ -8,7 +8,9 @@ import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../../common/JWT';
 import env from '../../common/env';
-
+import { deleteServer, leaveServer } from '../Server';
+import { setTimeout as setPromiseTimeout } from 'timers/promises';
+import { deleteApplication } from '../Application';
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
 
@@ -50,7 +52,7 @@ export async function sendResetPasswordCode(email: string) {
   }
 
   const code = await updateForgotPasswordCode(account.userId);
-  const url = `${env.CLIENT_URL}/reset-password?code=${code}&userId=${account.userId}`
+  const url = `${env.CLIENT_URL}/reset-password?code=${code}&userId=${account.userId}`;
 
   if (env.DEV_MODE) {
     return [{ message: `DEV MODE: Password reset link: ${url}` }, null] as const;
@@ -66,10 +68,10 @@ const updateForgotPasswordCode = async (userId: string) => {
 
   await prisma.account.update({
     where: { userId },
-    data: { 
+    data: {
       resetPasswordCode: code,
-      resetPasswordCodeExpiresAt: dateToDateTime(new Date(Date.now() + 60 * 60 * 1000)) // expires in 1 hour
-     },
+      resetPasswordCodeExpiresAt: dateToDateTime(new Date(Date.now() + 60 * 60 * 1000)), // expires in 1 hour
+    },
   });
   return code;
 };
@@ -86,10 +88,7 @@ export async function verifyEmailConfirmCode(userId: string, code: string) {
   }
 
   if (!account.emailConfirmCode) {
-    return [
-      null,
-      generateError('You must request email verification first.'),
-    ] as const;
+    return [null, generateError('You must request email verification first.')] as const;
   }
 
   if (account.emailConfirmCode !== code) {
@@ -128,6 +127,51 @@ const updateAccountEmailConfirmed = async (userId: string) => {
   return code;
 };
 
+export async function deleteAllApplications(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      account: {
+        select: {
+          id: true,
+          applications: { select: { id: true } },
+        },
+      },
+    },
+  });
+  if (!user?.account) return [null, generateError('Invalid userId.')] as const;
+
+  for (let i = 0; i < user.account.applications.length; i++) {
+    await setPromiseTimeout(500);
+    const application = user.account.applications[i]!;
+    await deleteApplication(user.account.id, application.id);
+  }
+
+  return [true, null] as const;
+}
+export async function deleteOrLeaveAllServers(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      servers: { select: { id: true, createdById: true } },
+    },
+  });
+
+  if (!user) return [null, generateError('Invalid userId.')] as const;
+
+  for (let i = 0; i < user.servers.length; i++) {
+    await setPromiseTimeout(500);
+    const server = user.servers[i]!;
+    if (server.createdById === userId) {
+      await deleteServer(server.id);
+      continue;
+    }
+    await leaveServer(userId, server.id);
+  }
+
+  return [true, null] as const;
+}
+
 export async function deleteAccount(userId: string, bot?: boolean) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -145,20 +189,10 @@ export async function deleteAccount(userId: string, bot?: boolean) {
 
   if (!bot) {
     if (user?._count.servers) {
-      return [
-        null,
-        generateError(
-          'You must leave all servers before deleting your account.'
-        ),
-      ] as const;
+      return [null, generateError('You must leave all servers before deleting your account.')] as const;
     }
     if (user?.account?._count.applications) {
-      return [
-        null,
-        generateError(
-          'You must delete all applications before deleting your account.'
-        ),
-      ] as const;
+      return [null, generateError('You must delete all applications before deleting your account.')] as const;
     }
   }
 
@@ -210,27 +244,27 @@ export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
   broadcaster.disconnectSockets(true);
 };
 
-export const resetPassword = async (opts: {userId: string, code: string, newPassword: string}) => {
+export const resetPassword = async (opts: { userId: string; code: string; newPassword: string }) => {
   if (!opts.code) {
-    return [null, generateError('Invalid code.')] as const
+    return [null, generateError('Invalid code.')] as const;
   }
   if (!opts.newPassword) {
-    return [null, generateError('Invalid password.')] as const
+    return [null, generateError('Invalid password.')] as const;
   }
   if (!opts.userId) {
-    return [null, generateError('Invalid userId.')] as const
+    return [null, generateError('Invalid userId.')] as const;
   }
 
   const account = await prisma.account.findFirst({
-    where: { 
+    where: {
       userId: opts.userId,
       resetPasswordCode: opts.code,
-      resetPasswordCodeExpiresAt: { gte: new Date() }
+      resetPasswordCodeExpiresAt: { gte: new Date() },
     },
-  })
+  });
 
   if (!account) {
-    return [null, generateError('Invalid or expired code.')] as const
+    return [null, generateError('Invalid or expired code.')] as const;
   }
 
   const updateResult = await prisma.account.update({
@@ -239,17 +273,16 @@ export const resetPassword = async (opts: {userId: string, code: string, newPass
       password: await bcrypt.hash(opts.newPassword.trim(), 10),
       passwordVersion: { increment: 1 },
       resetPasswordCode: null,
-      resetPasswordCodeExpiresAt: null
-    }
-  })
+      resetPasswordCodeExpiresAt: null,
+    },
+  });
   await removeUserCacheByUserIds([opts.userId]);
 
-  const newToken = generateToken(account.userId, updateResult.passwordVersion)
+  const newToken = generateToken(account.userId, updateResult.passwordVersion);
 
   if (newToken) {
     disconnectSockets(opts.userId);
   }
 
-  return [newToken, null] as const
-
-}
+  return [newToken, null] as const;
+};

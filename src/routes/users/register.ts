@@ -6,7 +6,7 @@ import {
 } from '../../common/errorHandler';
 import { turnstileVerify } from '../../common/turnstileVerify';
 import { rateLimit } from '../../middleware/rateLimit';
-import { isIpBanned } from '../../services/User/User';
+import { isEmailSuspended, isIpBanned } from '../../services/User/User';
 import { registerUser } from '../../services/UserAuthentication';
 
 export function register(Router: Router) {
@@ -86,6 +86,13 @@ async function route(req: Request, res: Response) {
   const ipBanned = await isIpBanned(req.userIP);
   if (ipBanned) {
     return res.status(401).json(generateError('You are IP banned.'));
+  }
+
+  const emailSuspended = await isEmailSuspended(body.email);
+  if (emailSuspended) {
+    return res
+      .status(401)
+      .json(generateError('This email is suspended.', 'email'));
   }
 
   const [userToken, errors] = await registerUser({

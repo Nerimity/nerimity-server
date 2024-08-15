@@ -280,7 +280,7 @@ export const joinServer = async (
   }
 
   const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
- 
+
   const memberIds = serverMembers.map((sm) => sm.user.id);
   const memberPresences = await getUserPresences(memberIds);
 

@@ -1,10 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { dateToDateTime, prisma } from '../../common/database';
-import {
-  customExpressValidatorResult,
-  generateError,
-} from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
@@ -16,49 +13,7 @@ import { checkUserPassword } from '../../services/UserAuthentication';
 import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
 export function userBatchSuspend(Router: Router) {
-  Router.post(
-    '/moderation/users/suspend',
-    authenticate(),
-    isModMiddleware,
-    body('userIds')
-      .not()
-      .isEmpty()
-      .withMessage('userIds is required')
-      .isArray()
-      .withMessage('userIds must be an array.'),
-    body('days')
-      .not()
-      .isEmpty()
-      .withMessage('Days are required')
-      .isNumeric()
-      .withMessage('Days must be a number.')
-      .isLength({ min: 0, max: 5 })
-      .withMessage('Days must be less than 99999'),
-    body('reason')
-      .not()
-      .isEmpty()
-      .withMessage('Reason is required.')
-      .isString()
-      .withMessage('Reason must be a string.')
-      .isLength({ min: 0, max: 500 }),
-    body('ipBan')
-      .optional(true)
-      .isBoolean()
-      .withMessage('ipBan must be a boolean.'),
-    body('deleteRecentMessages')
-      .optional(true)
-      .isBoolean()
-      .withMessage('deleteRecentMessages must be a boolean.'),
-    body('password')
-      .isLength({ min: 4, max: 72 })
-      .withMessage('Password must be between 4 and 72 characters long.')
-      .isString()
-      .withMessage('Password must be a string!')
-      .not()
-      .isEmpty()
-      .withMessage('Password is required'),
-    route
-  );
+  Router.post('/moderation/users/suspend', authenticate(), isModMiddleware, body('userIds').not().isEmpty().withMessage('userIds is required').isArray().withMessage('userIds must be an array.'), body('days').not().isEmpty().withMessage('Days are required').isNumeric().withMessage('Days must be a number.').isLength({ min: 0, max: 5 }).withMessage('Days must be less than 99999'), body('reason').not().isEmpty().withMessage('Reason is required.').isString().withMessage('Reason must be a string.').isLength({ min: 0, max: 500 }), body('ipBan').optional(true).isBoolean().withMessage('ipBan must be a boolean.'), body('deleteRecentMessages').optional(true).isBoolean().withMessage('deleteRecentMessages must be a boolean.'), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
 }
 
 interface Body {
@@ -83,44 +38,33 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  if (req.body.days > 31) {
+    return res.status(403).json(generateError('Days must be less than 31', 'days'));
+  }
+
   const account = await prisma.account.findFirst({
     where: { id: req.userCache.account.id },
     select: { password: true },
   });
-  if (!account)
-    return res
-      .status(404)
-      .json(generateError('Something went wrong. Try again later.'));
+  if (!account) return res.status(404).json(generateError('Something went wrong. Try again later.'));
 
-  const isPasswordValid = await checkUserPassword(
-    account.password,
-    req.body.password
-  );
-  if (!isPasswordValid)
-    return res.status(403).json(generateError('Invalid password.', 'password'));
+  const isPasswordValid = await checkUserPassword(account.password, req.body.password);
+  if (!isPasswordValid) return res.status(403).json(generateError('Invalid password.', 'password'));
 
-  if (req.body.userIds.length >= 5000)
-    return res
-      .status(403)
-      .json(generateError('user ids must contain less than 5000 ids.'));
+  if (req.body.userIds.length >= 5000) return res.status(403).json(generateError('user ids must contain less than 5000 ids.'));
 
   const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
 
-
   const users = await prisma.user.findMany({
-    where: {id: {in: sanitizedUserIds}},
-    select: {badges: true}
+    where: { id: { in: sanitizedUserIds } },
+    select: { badges: true },
   });
 
-  const hasFounderBadge = users.find(u => hasBit(u.badges, USER_BADGES.FOUNDER.bit));
+  const hasFounderBadge = users.find((u) => hasBit(u.badges, USER_BADGES.FOUNDER.bit));
 
   if (hasFounderBadge) {
-    return res
-    .status(403)
-    .json(generateError('You are not allowed to suspend the founder.'));
-
+    return res.status(403).json(generateError('You are not allowed to suspend the founder.'));
   }
-
 
   const expireDateTime = dateToDateTime(expireAfter(req.body.days));
 
@@ -129,14 +73,10 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     select: { userId: true },
   });
 
-
-
   const suspendedUserIds = suspendedUsers.map((suspend) => suspend.userId);
 
   // Only increment if not suspended
-  const incrementUserIds = sanitizedUserIds.filter(
-    (id) => !suspendedUserIds.includes(id)
-  );
+  const incrementUserIds = sanitizedUserIds.filter((id) => !suspendedUserIds.includes(id));
 
   await prisma.account.updateMany({
     where: {
@@ -178,7 +118,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     expire: req.body.days ? expireDateTime : null,
     by: {
       username: req.userCache.username,
-    }
+    },
   });
 
   if (req.body.ipBan) {
@@ -187,9 +127,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     const suspendedUserDevices = await prisma.userDevice.findMany({
       where: { userId: { in: sanitizedUserIds } },
     });
-    const suspendedUserIps = suspendedUserDevices.map(
-      (device) => device.ipAddress
-    );
+    const suspendedUserIps = suspendedUserDevices.map((device) => device.ipAddress);
 
     const userDevicesWithSameIPs = await prisma.userDevice.findMany({
       where: { ipAddress: { in: suspendedUserIps } },
@@ -237,7 +175,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       expireAt: req.body.days ? expireDateTime : null,
     })),
   });
-  
+
   if (req.body.deleteRecentMessages) {
     const lastSevenHours = new Date();
     lastSevenHours.setHours(lastSevenHours.getHours() + 7);

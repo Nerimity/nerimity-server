@@ -8,7 +8,7 @@ import * as nerimityCDN from '../common/nerimityCDN';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { emitUserUpdated } from '../emits/User';
 import { generateToken } from '../common/JWT';
-import { disconnectSockets } from './User/UserManagement';
+import { deleteAccount, disconnectSockets } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
 
 export async function createApplication(requesterAccountId: string) {
@@ -91,6 +91,25 @@ export async function getApplication(requesterAccountId: string, id: string) {
 
   return [application, null] as const;
 }
+
+export async function deleteApplication(accountId: string, appId: string) {
+  const [app, error] = await getApplication(accountId, appId);
+
+  if (error) {
+    return [null, error] as const;
+  }
+
+  if (app.botUserId) {
+    const [, deleteAccountError] = await deleteAccount(app.botUserId, true);
+    if (deleteAccountError) {
+      return [null, deleteAccountError] as const;
+    }
+  }
+  await prisma.application.delete({ where: { id: appId } });
+
+  return [true, null] as const;
+}
+
 export async function getBotToken(requesterAccountId: string, appId: string) {
   const application = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id: appId },
