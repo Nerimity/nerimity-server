@@ -1,17 +1,18 @@
 import { cpus } from 'node:os';
-import { dateToDateTime, prisma } from './common/database';
+import { prisma } from './common/database';
 import { Log } from './common/Log';
 import schedule from 'node-schedule';
 import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
 import env from './common/env';
-import { connectRedis, customRedisFlush } from './common/redis';
+import { connectRedis, customRedisFlush, redisClient } from './common/redis';
 import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
 
 import cluster from 'node:cluster';
-import { createIO, getIO } from './socket/socket';
+import { createIO } from './socket/socket';
 import { deleteAccount, deleteAllApplications, deleteOrLeaveAllServers } from './services/User/UserManagement';
 import { createHash } from 'node:crypto';
 import { addToObjectIfExists } from './common/addToObjectIfExists';
+import { handleTimeout } from '@nerimity/mimiqueue';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -27,6 +28,10 @@ if (cluster.isPrimary) {
 
   await connectRedis();
   await customRedisFlush();
+  handleTimeout({
+    redisClient,
+  });
+
   createIO();
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');
