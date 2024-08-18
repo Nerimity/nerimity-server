@@ -98,7 +98,7 @@ const queue = new AltQueue({
 });
 
 const queueRoute = async (req: Request, res: Response) => {
-  const finish = await queue.start();
+  const finish = await queue.start({ groupName: req.userIP });
   route(req, res).finally(() => finish());
 };
 
