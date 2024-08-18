@@ -95,11 +95,11 @@ export function channelMessageCreate(Router: Router) {
 // const queue = new AltQueue({
 //   name: 'create_message',
 //   redisClient,
-});
+//});
 
 const queueRoute = async (req: Request, res: Response) => {
   // const finish = await queue.start({ groupName: req.userIP });
-  route(req, res)
+  route(req, res);
   // .finally(() => finish());
 };
 
