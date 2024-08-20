@@ -40,6 +40,7 @@ export const AttachmentProviders = {
 export const getMessagesByChannelId = async (channelId: string, opts?: GetMessageByChannelIdOpts) => {
   const limit = opts?.limit || 50;
   if (limit > 100) return [];
+  if (limit <= 0) return [];
 
   if (opts?.aroundMessageId) {
     const halfLimit = Math.round(limit / 2);
