@@ -9,6 +9,7 @@ interface Payload {
   endsAt?: number;
   link?: string;
 
+  updatedAt?: number;
   speed?: number;
   imgSrc?: string;
   title?: string;
@@ -26,6 +27,7 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
         action: payload.action,
         name: payload.name,
         startedAt: payload.startedAt,
+        updatedAt: payload.updatedAt,
         endsAt: payload.endsAt,
         ...(payload?.speed && payload.speed > 1 ? { speed: payload.speed } : {}),
         link: payload.link,
@@ -43,6 +45,12 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
     if (typeof payload.endsAt !== 'number' && payload.endsAt !== undefined) {
       return;
     }
+
+    // check if updatedAt is a number or undefined
+    if (payload.updatedAt && (typeof payload.updatedAt !== 'number')) {
+      return;
+    }
+
     // check if action is a string and is less than 20 characters
     if (typeof payload.action !== 'string' || payload.action.length > 20) {
       return;
