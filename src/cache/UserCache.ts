@@ -15,6 +15,7 @@ export interface ActivityStatus {
   action: string;
   startedAt?: number;
   endsAt?: number;
+  speed?: number;
 
   imgSrc?: string;
   title?: string;
@@ -254,9 +255,8 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
   }
 
   const isIpAllowed = await isIPAllowedCache(ipAddress);
-  
-  const isFounder = hasBit(userCache.badges, USER_BADGES.FOUNDER.bit);
 
+  const isFounder = hasBit(userCache.badges, USER_BADGES.FOUNDER.bit);
 
   if (!isIpAllowed || userCache.ip !== ipAddress) {
     const ipBanned = await isIpBanned(ipAddress);
