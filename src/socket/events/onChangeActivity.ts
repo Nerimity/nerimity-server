@@ -27,7 +27,7 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
         name: payload.name,
         startedAt: payload.startedAt,
         endsAt: payload.endsAt,
-        speed: payload.speed,
+        ...(payload?.speed && payload.speed > 1 ? { speed: payload.speed } : {}),
         link: payload.link,
         imgSrc: payload.imgSrc,
         title: payload.title,
