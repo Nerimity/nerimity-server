@@ -29,7 +29,7 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
         startedAt: payload.startedAt,
         updatedAt: payload.updatedAt,
         endsAt: payload.endsAt,
-        ...(payload?.speed && payload.speed > 1 ? { speed: payload.speed } : {}),
+        ...(payload?.speed && payload.speed > -100 ? { speed: payload.speed } : {}),
         link: payload.link,
         imgSrc: payload.imgSrc,
         title: payload.title,
