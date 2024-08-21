@@ -37,6 +37,8 @@ export function serverRoleUpdate(Router: Router) {
     body('permissions')
       .isNumeric()
       .withMessage('Permissions must be a number.')
+      .isInt({ min: 0, max: 900 })
+      .withMessage('Permissions must be between 0 and 900.')
       .isLength({ min: 0, max: 100 })
       .withMessage('Permissions must be between 0 and 100 characters long.')
       .optional({ nullable: true }),

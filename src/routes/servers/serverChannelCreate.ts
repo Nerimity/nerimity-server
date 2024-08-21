@@ -25,7 +25,7 @@ export function serverChannelCreate(Router: Router) {
       .isNumeric()
       .withMessage('type must be a number.')
       .isInt({ gt: 0, lt: 3 })
-      .withMessage('type must be ')
+      .withMessage('type must be less than 3 and greater than 0.')
       .optional(),
     authenticate({allowBot: true}),
     serverMemberVerification(),

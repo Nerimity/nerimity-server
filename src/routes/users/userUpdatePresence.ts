@@ -10,19 +10,14 @@ import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 export function userUpdatePresence(Router: Router) {
   Router.post(
     '/users/presence',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     body('status')
       .optional(true)
       .isNumeric()
       .withMessage('Invalid status.')
-      .isLength({ min: 0, max: 4 })
+      .custom((val) => val >= 0 && val <= 4)
       .withMessage('Status must be between 0 and 4.'),
-    body('custom')
-      .optional({ values: 'null' })
-      .isString()
-      .withMessage('Invalid custom status.')
-      .isLength({ min: 0, max: 100 })
-      .withMessage('custom status must be between 0 and 100.'),
+    body('custom').optional({ values: 'null' }).isString().withMessage('Invalid custom status.').isLength({ min: 0, max: 100 }).withMessage('custom status must be between 0 and 100.'),
     rateLimit({
       name: 'update_presence',
       restrictMS: 5000,

@@ -45,11 +45,17 @@ async function route(req: Request, res: Response) {
 
   const isAdmin = req.userCache && isUserAdmin(req.userCache.badges);
 
+  let limit = query.limit ? parseInt(query.limit) : undefined;
+
+  if (limit && limit < 0) {
+    limit = undefined;
+  }
+
   const commentPosts = await fetchPosts({
     postId: params.postId,
     requesterUserId: req.userCache?.id || '123',
     bypassBlocked: isAdmin,
-    limit: query.limit ? parseInt(query.limit) : undefined,
+    limit,
     afterId: query.afterId,
     beforeId: query.beforeId,
   });

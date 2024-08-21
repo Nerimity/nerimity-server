@@ -25,9 +25,15 @@ interface Query {
 async function route(req: Request, res: Response) {
   const query = req.query as Query;
 
+  let limit = query.limit ? parseInt(query.limit) : undefined;
+
+  if (limit && limit < 0) {
+    limit = undefined;
+  }
+
   const posts = await getFeed({
     userId: req.userCache.id,
-    limit: query.limit ? parseInt(query.limit) : undefined,
+    limit,
     afterId: query.afterId,
     beforeId: query.beforeId,
   });

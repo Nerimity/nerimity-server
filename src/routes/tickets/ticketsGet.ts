@@ -41,6 +41,9 @@ async function route(req: Request, res: Response) {
   if (limit > 30) {
     limit = 30;
   }
+  if (limit < 0) {
+    limit = 30;
+  }
 
   const tickets = await getOwnTickets(req.userCache.id, {
     status,

@@ -11,7 +11,11 @@ export function exploreServersGet(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+  let limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+
+  if (limit && limit < 0) {
+    limit = 50;
+  }
 
   const validateError = customExpressValidatorResult(req);
   if (validateError) {
