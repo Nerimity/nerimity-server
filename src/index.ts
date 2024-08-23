@@ -53,8 +53,9 @@ if (cluster.isPrimary) {
   }
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`Worker process ${worker.process.pid} died. Restarting...`);
-    cluster.fork();
+    console.log(`Worker process ${worker.process.pid} died.`);
+    // have to just restart all clusters because of redis cache issues with socket.io online users.
+    process.exit(code);
   });
 } else {
   import('./worker');
