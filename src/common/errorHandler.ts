@@ -1,7 +1,6 @@
 import { Request } from 'express';
-import { AlternativeValidationError, FieldValidationError, GroupedAlternativeValidationError, validationResult } from 'express-validator';
+import { FieldValidationError, GroupedAlternativeValidationError, validationResult } from 'express-validator';
 import env from './env';
-import { Log } from './Log';
 
 export type CustomError = { message: string; path: string | null };
 
@@ -22,7 +21,6 @@ export function customExpressValidatorResult(req: Request<unknown, unknown, unkn
   }
 
   if ('nestedErrors' in firstError) {
-    console.log(firstError.nestedErrors[0]);
     return generateError(firstError.nestedErrors[0]?.[0]?.msg, firstError.nestedErrors[0]?.[0]?.path);
   }
   return generateError(firstError.msg, firstError.path);

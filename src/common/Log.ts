@@ -55,6 +55,6 @@ export const Log = {
     console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
   },
   error(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
+    console.error(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
   },
 };

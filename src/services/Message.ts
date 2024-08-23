@@ -716,7 +716,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   });
 
   const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]).catch((e) => {
-    console.log(e);
+    console.error(e);
     return [];
   });
 

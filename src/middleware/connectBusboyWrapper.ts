@@ -37,7 +37,7 @@ export function connectBusboyWrapper(req: Request, res: Response, next: NextFunc
     next();
   });
   req.busboy.on('error', (error) => {
-    console.log(error);
+    console.error(error);
     res.json(generateError('Something went wrong. Please try again later. (connectBusboyWrapper.ts)'));
   });
 }
