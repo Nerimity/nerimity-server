@@ -779,26 +779,31 @@ export const createMessage = async (opts: SendMessageOptions) => {
     // For Server channels, mentions are notifications for @mentions.
     // Don't send notifications for saved notes
     if (channel?.type === ChannelType.DM_TEXT && channel.inbox.recipientId !== channel.inbox.createdById) {
-      await prisma.messageMention.upsert({
-        where: {
-          mentionedById_mentionedToId_channelId: {
+      const upsertResult = await prisma.messageMention
+        .upsert({
+          where: {
+            mentionedById_mentionedToId_channelId: {
+              channelId: channel.id,
+              mentionedById: opts.userId,
+              mentionedToId: channel.inbox.recipientId,
+            },
+          },
+          update: {
+            count: { increment: 1 },
+          },
+          create: {
+            id: generateId(),
+            count: 1,
             channelId: channel.id,
             mentionedById: opts.userId,
             mentionedToId: channel.inbox.recipientId,
+            createdAt: dateToDateTime(message.createdAt),
           },
-        },
-        update: {
-          count: { increment: 1 },
-        },
-        create: {
-          id: generateId(),
-          count: 1,
-          channelId: channel.id,
-          mentionedById: opts.userId,
-          mentionedToId: channel.inbox.recipientId,
-          createdAt: dateToDateTime(message.createdAt),
-        },
-      });
+        })
+        .catch(console.error);
+      if (!upsertResult) {
+        return [null, "Couldn't create message mention"] as const;
+      }
     }
 
     emitDMMessageCreated(channel, message, opts.socketId);

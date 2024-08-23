@@ -293,9 +293,11 @@ async function addDevice(userId: string, ipAddress: string) {
     return;
   }
 
-  await prisma.userDevice.create({
-    data: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime() },
-  });
+  await prisma.userDevice
+    .create({
+      data: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime() },
+    })
+    .catch(console.error);
 }
 
 // Moderators Only
