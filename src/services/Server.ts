@@ -472,7 +472,7 @@ export const kickServerMember = async (userId: string, serverId: string) => {
     return [null, generateError('You can not kick yourself.')];
   }
 
-  const [, error] = await leaveServer(userId, serverId, false, true);
+  const [, error] = await leaveServer(userId, serverId, false, false);
   if (error) return [null, error];
 
   if (server.systemChannelId) {
