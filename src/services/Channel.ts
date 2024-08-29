@@ -147,6 +147,7 @@ export interface UpdateServerChannelOptions {
   name?: string;
   permissions?: number;
   icon?: string | null;
+  slowModeSeconds?: number | null;
 }
 
 export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
@@ -177,6 +178,7 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
   await updateServerChannelCache(channelId, {
     ...addToObjectIfExists('name', update.name),
     ...addToObjectIfExists('permissions', update.permissions),
+    ...addToObjectIfExists('slowModeSeconds', update.slowModeSeconds),
   });
 
   if (update.permissions !== undefined) {

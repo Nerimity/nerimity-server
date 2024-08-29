@@ -21,6 +21,8 @@ import { CloseTicketStatuses, TicketStatus, updateTicketStatus } from '../../ser
 import { banServerMember } from '../../services/Server';
 import { AltQueue, Queue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
+import { checkAndUpdateRateLimit } from '../../cache/RateLimitCache';
+import { ServerMemberCache } from '../../cache/ServerMemberCache';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -117,6 +119,19 @@ interface Body {
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
+
+  if (req.channelCache.type === ChannelType.SERVER_TEXT && req.channelCache.slowModeSeconds && !isServerMemberModerator(req.serverCache, req.serverMemberCache)) {
+    const ttl = await checkAndUpdateRateLimit({
+      id: `${req.userCache.id}-${req.channelCache.id}`,
+      perMS: req.channelCache.slowModeSeconds * 1000,
+      restrictMS: req.channelCache.slowModeSeconds * 1000,
+      requests: 1,
+    });
+
+    if (ttl) {
+      return res.status(429).json({ ...generateError('Slow down!'), ttl });
+    }
+  }
 
   const validateError = customExpressValidatorResult(req);
 
@@ -272,4 +287,9 @@ const isPrivateChannel = (channel: ChannelCache) => {
 
 const isServerPublic = (server: ServerCache) => {
   return server.public;
+};
+
+const isServerMemberModerator = (server: ServerCache, member: ServerMemberCache) => {
+  if (server.createdById === member.userId) return true;
+  return hasBit(member.permissions, ROLE_PERMISSIONS.ADMIN.bit);
 };

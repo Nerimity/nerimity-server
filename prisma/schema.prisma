@@ -478,6 +478,7 @@ model Channel {
   serverId               String?
   createdById            String?
   type                   Int
+  slowModeSeconds        Int?
   
   categoryId             String?
   category               Channel?                @relation(fields: [categoryId], references: [id], name: "channel_categories", onDelete: SetNull)
