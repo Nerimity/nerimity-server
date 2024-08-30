@@ -129,7 +129,7 @@ async function route(req: Request, res: Response) {
     });
 
     if (ttl) {
-      return res.status(429).json({ ...generateError('Slow down!'), ttl });
+      return res.status(429).json({ ...generateError('Slow down!'), ttl, slowMode: true });
     }
   }
 
