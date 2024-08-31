@@ -165,7 +165,7 @@ async function route(req: Request, res: Response) {
   const hasAttachment = body.googleDriveAttachment || req.fileInfo?.file;
 
   if (hasAttachment) {
-    if (!isEmailConfirmed(req.userCache)) {
+    if (!isEmailConfirmed(req.userCache) && !req.userCache.bot) {
       return res.status(400).json(generateError('You must confirm your email to send attachment messages.'));
     }
 
