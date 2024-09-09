@@ -146,6 +146,7 @@ model User {
   votedPostPolls PostPollVotedUser[]
 
 
+  scheduledForContentDeletion ScheduleAccountContentDelete?
 }
 
 model UserConnection {
@@ -613,6 +614,14 @@ model ScheduleMessageDelete {
   deletingMessages    Boolean  @default(true)
   deletingAttachments Boolean  @default(true)
   scheduledAt         DateTime @default(now())
+}
+
+model ScheduleAccountContentDelete {
+  userId           String   @unique
+  deleteMessages    Boolean  @default(false)
+  deletePosts       Boolean  @default(false)
+  user              User     @relation(fields: [userId], references: [id])
+  scheduledAt      DateTime @default(now())
 }
 
 model MessageReaction {

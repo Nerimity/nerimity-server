@@ -100,7 +100,7 @@ export async function deleteApplication(accountId: string, appId: string) {
   }
 
   if (app.botUserId) {
-    const [, deleteAccountError] = await deleteAccount(app.botUserId, true);
+    const [, deleteAccountError] = await deleteAccount(app.botUserId, { bot: true });
     if (deleteAccountError) {
       return [null, deleteAccountError] as const;
     }

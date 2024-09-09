@@ -191,7 +191,7 @@ function scheduleSuspendedAccountDeletion() {
       },
       select: {
         id: true,
-        user: { select: { id: true, username: true, account: { select: { email: true } } } },
+        user: { select: { bot: true, id: true, username: true, account: { select: { email: true } } } },
       },
     });
     if (suspension) {
@@ -200,7 +200,7 @@ function scheduleSuspendedAccountDeletion() {
         Log.info(`Deleting account ${suspension.user.username} because it was perm suspended more than 30 days ago.`);
         await deleteAllApplications(suspension.user.id);
         await deleteOrLeaveAllServers(suspension.user.id);
-        await deleteAccount(suspension.user.id);
+        await deleteAccount(suspension.user.id, { bot: suspension.user.bot || false });
         await prisma.suspension.update({
           where: {
             id: suspension.id,

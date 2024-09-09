@@ -172,7 +172,13 @@ export async function deleteOrLeaveAllServers(userId: string) {
   return [true, null] as const;
 }
 
-export async function deleteAccount(userId: string, bot?: boolean) {
+export interface DeleteAccountOptions {
+  bot?: boolean;
+  deleteMessages?: boolean;
+  deletePosts?: boolean;
+}
+
+export async function deleteAccount(userId: string, opts?: DeleteAccountOptions) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -187,7 +193,7 @@ export async function deleteAccount(userId: string, bot?: boolean) {
     return [null, generateError('Invalid userId.')] as const;
   }
 
-  if (!bot) {
+  if (!opts?.bot) {
     if (user?._count.servers) {
       return [null, generateError('You must leave all servers before deleting your account.')] as const;
     }
@@ -196,7 +202,7 @@ export async function deleteAccount(userId: string, bot?: boolean) {
     }
   }
 
-  await deleteAccountFromDatabase(userId, bot);
+  await deleteAccountFromDatabase(userId, opts);
 
   await removeUserCacheByUserIds([userId]);
 
@@ -205,7 +211,7 @@ export async function deleteAccount(userId: string, bot?: boolean) {
   return [true, null] as const;
 }
 
-const deleteAccountFromDatabase = async (userId: string, bot?: boolean) => {
+const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOptions) => {
   await prisma.$transaction([
     prisma.follower.deleteMany({
       where: {
@@ -220,9 +226,19 @@ const deleteAccountFromDatabase = async (userId: string, bot?: boolean) => {
         avatar: null,
         banner: null,
         badges: 0,
+        ...(opts?.deleteMessages || opts?.deletePosts
+          ? {
+              scheduledForContentDeletion: {
+                create: {
+                  deletePosts: opts.deletePosts,
+                  deleteMessages: opts.deleteMessages,
+                },
+              },
+            }
+          : {}),
 
         customStatus: null,
-        username: `Deleted ${bot ? 'Bot' : 'User'} ${generateTag()}`,
+        username: `Deleted ${opts?.bot ? 'Bot' : 'User'} ${generateTag()}`,
       },
     }),
     prisma.account.deleteMany({
