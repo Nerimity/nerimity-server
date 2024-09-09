@@ -16,8 +16,7 @@ export function userDeleteAccount(Router: Router) {
       restrictMS: 60000,
       requests: 20,
     }),
-    body('deleteMessages').isBoolean().withMessage('deleteMessages must be a boolean.'),
-    body('deletePosts').isBoolean().withMessage('deletePosts must be a boolean.'),
+    body('deleteContent').isBoolean().withMessage('deleteContent must be a boolean.'),
     body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').not().isEmpty().withMessage('Password required!').isString().withMessage('Password must be a string.'),
     route
   );
@@ -25,8 +24,7 @@ export function userDeleteAccount(Router: Router) {
 
 interface Body {
   password: string;
-  deleteMessages: boolean;
-  deletePosts: boolean;
+  deleteContent: boolean;
 }
 
 async function route(req: Request, res: Response) {
@@ -52,8 +50,7 @@ async function route(req: Request, res: Response) {
   if (!isPasswordValid) return res.status(403).json(generateError('Invalid password.', 'password'));
 
   const [, error] = await deleteAccount(req.userCache.id, {
-    deleteMessages: body.deleteMessages,
-    deletePosts: body.deletePosts,
+    deleteContent: body.deleteContent,
   });
 
   if (error) {

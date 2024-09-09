@@ -174,8 +174,7 @@ export async function deleteOrLeaveAllServers(userId: string) {
 
 export interface DeleteAccountOptions {
   bot?: boolean;
-  deleteMessages?: boolean;
-  deletePosts?: boolean;
+  deleteContent?: boolean;
 }
 
 export async function deleteAccount(userId: string, opts?: DeleteAccountOptions) {
@@ -226,19 +225,13 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
         avatar: null,
         banner: null,
         badges: 0,
-        ...(opts?.deleteMessages || opts?.deletePosts
-          ? {
-              scheduledForContentDeletion: {
-                create: {
-                  deletePosts: opts.deletePosts,
-                  deleteMessages: opts.deleteMessages,
-                },
-              },
-            }
-          : {}),
-
         customStatus: null,
         username: `Deleted ${opts?.bot ? 'Bot' : 'User'} ${generateTag()}`,
+      },
+    }),
+    prisma.scheduleAccountContentDelete.create({
+      data: {
+        userId,
       },
     }),
     prisma.account.deleteMany({

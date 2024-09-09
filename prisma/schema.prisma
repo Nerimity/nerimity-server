@@ -618,8 +618,6 @@ model ScheduleMessageDelete {
 
 model ScheduleAccountContentDelete {
   userId           String   @unique
-  deleteMessages    Boolean  @default(false)
-  deletePosts       Boolean  @default(false)
   user              User     @relation(fields: [userId], references: [id])
   scheduledAt      DateTime @default(now())
 }

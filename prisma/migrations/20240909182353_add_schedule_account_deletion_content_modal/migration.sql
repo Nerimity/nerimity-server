@@ -1,8 +1,6 @@
 -- CreateTable
 CREATE TABLE "ScheduleAccountContentDelete" (
     "userId" TEXT NOT NULL,
-    "deleteMessages" BOOLEAN NOT NULL DEFAULT false,
-    "deletePosts" BOOLEAN NOT NULL DEFAULT false,
     "scheduledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -14,9 +12,9 @@ ALTER TABLE "ScheduleAccountContentDelete" ADD CONSTRAINT "ScheduleAccountConten
 
 
 -- Add existing users to the schedule table
-INSERT INTO "public"."ScheduleAccountContentDelete" ("userId", "deleteMessages", "deletePosts")
+INSERT INTO "public"."ScheduleAccountContentDelete" ("userId")
 SELECT
-	"public"."User"."id", true, true
+	"public"."User"."id"
 FROM
 	"public"."User"
 	LEFT JOIN "public"."Application" AS "j1" ON ("j1"."botUserId") = ("public"."User"."id")
