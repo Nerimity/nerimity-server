@@ -175,7 +175,7 @@ export async function deleteChannelAttachmentBatch(channelId: string): Promise<C
 }
 
 export async function deleteImageBatch(paths: string[]) {
-  return await fetch(env.NERIMITY_CDN + '/batch', {
+  return await fetch(env.NERIMITY_CDN + 'batch', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
