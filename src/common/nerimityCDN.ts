@@ -4,19 +4,11 @@ import { CustomResult } from './CustomResult';
 import env from './env';
 import internal from 'stream';
 
-export function proxyUrlImageDimensions(
-  url: string
-): Promise<CustomResult<{ width: number; height: number }, any>> {
+export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ width: number; height: number }, any>> {
   return new Promise((resolve) => {
-    fetch(
-      env.NERIMITY_CDN +
-        `proxy-dimensions?url=${encodeURI(url)}&secret=${
-          env.NERIMITY_CDN_SECRET
-        }`,
-      {
-        method: 'GET',
-      }
-    )
+    fetch(env.NERIMITY_CDN + `proxy-dimensions?url=${encodeURI(url)}&secret=${env.NERIMITY_CDN_SECRET}`, {
+      method: 'GET',
+    })
       .then(async (res) => {
         if (res.status == 200) return resolve([await res.json(), null]);
         resolve([null, true]);
@@ -24,10 +16,7 @@ export function proxyUrlImageDimensions(
       .catch(() => [null, true]);
   });
 }
-export function uploadEmoji(
-  base64: string,
-  serverId: string
-): Promise<CustomResult<{ path: string; id: string; gif: boolean }, any>> {
+export function uploadEmoji(base64: string, serverId: string): Promise<CustomResult<{ path: string; id: string; gif: boolean }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
     let buffer: Buffer | undefined;
@@ -92,8 +81,7 @@ export async function uploadAvatar(opts: UploadAvatarOpts) {
     body: form,
   })
     .then(async (res) => {
-      if (res.status == 200)
-        return [(await res.json()) as { path: string }, null] as const;
+      if (res.status == 200) return [(await res.json()) as { path: string }, null] as const;
       return [null, await res.json()] as const;
     })
     .catch(() => [null, 'Could not connect to the CDN.'] as const);
@@ -101,10 +89,7 @@ export async function uploadAvatar(opts: UploadAvatarOpts) {
   return [res, err] as const;
 }
 
-export function uploadBanner(
-  base64: string,
-  uniqueId: string
-): Promise<CustomResult<{ path: string }, any>> {
+export function uploadBanner(base64: string, uniqueId: string): Promise<CustomResult<{ path: string }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
     let buffer: Buffer | undefined;
@@ -140,11 +125,7 @@ interface Dimensions {
   height: number;
 }
 
-export function uploadImage(
-  readable: internal.Readable,
-  filename: string,
-  uniqueId: string
-): Promise<CustomResult<{ path: string; dimensions: Dimensions }, any>> {
+export function uploadImage(readable: internal.Readable, filename: string, uniqueId: string): Promise<CustomResult<{ path: string; dimensions: Dimensions }, any>> {
   return new Promise((resolve) => {
     const form = new FormData();
 
@@ -176,14 +157,7 @@ export async function deleteImage(path: string) {
 }
 
 // deletes 1000 images from a channel.
-export async function deleteChannelAttachmentBatch(
-  channelId: string
-): Promise<
-  CustomResult<
-    { count?: number; status: boolean },
-    { type: string; code?: string }
-  >
-> {
+export async function deleteChannelAttachmentBatch(channelId: string): Promise<CustomResult<{ count?: number; status: boolean }, { type: string; code?: string }>> {
   return new Promise((resolve) => {
     fetch(env.NERIMITY_CDN + `channels/${channelId}/attachments/batch`, {
       method: 'DELETE',
@@ -198,6 +172,17 @@ export async function deleteChannelAttachmentBatch(
       })
       .catch(() => resolve([null, { type: 'CDN_CONNECTION_FAIL' }]));
   });
+}
+
+export async function deleteImageBatch(paths: string[]) {
+  return await fetch(env.NERIMITY_CDN + '/batch', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ paths, secret: env.NERIMITY_CDN_SECRET }),
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+  }).catch((e) => {});
 }
 
 // function base64MimeType(encoded: string) {

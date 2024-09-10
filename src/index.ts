@@ -2,7 +2,7 @@ import { cpus } from 'node:os';
 import { prisma } from './common/database';
 import { Log } from './common/Log';
 import schedule from 'node-schedule';
-import { deleteChannelAttachmentBatch } from './common/nerimityCDN';
+import { deleteChannelAttachmentBatch, deleteImageBatch } from './common/nerimityCDN';
 import env from './common/env';
 import { connectRedis, customRedisFlush, redisClient } from './common/redis';
 import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
@@ -13,6 +13,7 @@ import { deleteAccount, deleteAllApplications, deleteOrLeaveAllServers } from '.
 import { createHash } from 'node:crypto';
 import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { handleTimeout } from '@nerimity/mimiqueue';
+import { MESSAGE_REACTION_ADDED } from './common/ClientEventNames';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -43,6 +44,7 @@ if (cluster.isPrimary) {
     scheduleBumpReset();
     vacuumSchedule();
     scheduleDeleteMessages();
+    scheduleDeleteAccountContent();
     removeIPAddressSchedule();
     schedulePostViews();
     scheduleSuspendedAccountDeletion();
@@ -72,6 +74,69 @@ function scheduleBumpReset() {
     await prisma.publicServer.updateMany({ data: { bumpCount: 0 } });
     Log.info('All public server bumps have been reset to 0.');
   });
+}
+
+async function scheduleDeleteAccountContent() {
+  setInterval(async () => {
+    const messages = await prisma.message.findMany({
+      take: 1000,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: { id: true, attachments: { select: { path: true } } },
+      where: {
+        createdBy: {
+          scheduledForContentDeletion: { isNot: null },
+        },
+      },
+    });
+    const messageAttachments = messages.filter((m) => m.attachments.length).map((m) => m.attachments[0]?.path);
+    const messageIds = messages.map((m) => m.id);
+
+    const posts = await prisma.post.findMany({
+      take: 1000,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: { id: true, attachments: { select: { path: true } } },
+      where: {
+        deleted: null,
+        createdBy: {
+          scheduledForContentDeletion: { isNot: null },
+        },
+      },
+    });
+    const postAttachments = posts.filter((p) => p.attachments.length).map((p) => p.attachments[0]?.path);
+    const postIds = posts.map((p) => p.id);
+    if (messageIds.length) {
+      await prisma.message.deleteMany({
+        where: { id: { in: messageIds } },
+      });
+    }
+    if (postIds.length) {
+      await prisma.$transaction([
+        prisma.post.updateMany({
+          where: { id: { in: postIds } },
+          data: {
+            content: null,
+            deleted: true,
+          },
+        }),
+        prisma.postLike.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.postPoll.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.attachment.deleteMany({ where: { postId: { in: postIds } } }),
+      ]);
+    }
+    if (messages.length && posts.length) {
+      Log.info(`Deleted ${messages.length} messages & ${posts.length} Posts from deleted accounts.`);
+    }
+
+    const attachments = [...postAttachments, ...messageAttachments] as string[];
+
+    if (attachments.length) {
+      deleteImageBatch(attachments);
+    }
+  }, 60000);
 }
 
 // Messages are not deleted all at once to reduce database strain.

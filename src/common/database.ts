@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
 export const prisma = new PrismaClient({
-  log: ['error', 'warn', 'info', 'query'],
+  // log: ['error', 'warn', 'info', 'query'],
 });
 
 export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus', 'lastOnlineAt', 'lastOnlineStatus']);
