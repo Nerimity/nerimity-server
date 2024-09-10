@@ -78,6 +78,22 @@ function scheduleBumpReset() {
 
 async function scheduleDeleteAccountContent() {
   setInterval(async () => {
+    const likedPosts = await prisma.postLike.findMany({
+      take: 1000,
+      where: {
+        likedBy: {
+          account: null,
+          application: null,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (likedPosts.length) {
+      const ids = likedPosts.map((p) => p.id);
+      await prisma.postLike.deleteMany({ where: { id: { in: ids } } });
+    }
+
     const messages = await prisma.message.findMany({
       take: 1000,
       orderBy: {
@@ -127,8 +143,8 @@ async function scheduleDeleteAccountContent() {
         prisma.attachment.deleteMany({ where: { postId: { in: postIds } } }),
       ]);
     }
-    if (messages.length || posts.length) {
-      Log.info(`Deleted ${messages.length} messages & ${posts.length} Posts from deleted accounts.`);
+    if (messages.length || posts.length || likedPosts.length) {
+      Log.info(`Deleted ${messages.length} messages & ${posts.length} posts & ${likedPosts.length} liked posts from deleted accounts.`);
     }
 
     const attachments = [...postAttachments, ...messageAttachments] as string[];
