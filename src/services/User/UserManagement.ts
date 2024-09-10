@@ -229,11 +229,15 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
         username: `Deleted ${opts?.bot ? 'Bot' : 'User'} ${generateTag()}`,
       },
     }),
-    prisma.scheduleAccountContentDelete.create({
-      data: {
-        userId,
-      },
-    }),
+    ...(opts?.deleteContent
+      ? [
+          prisma.scheduleAccountContentDelete.create({
+            data: {
+              userId,
+            },
+          }),
+        ]
+      : []),
     prisma.account.deleteMany({
       where: { userId },
     }),
