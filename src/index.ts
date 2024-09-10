@@ -127,7 +127,7 @@ async function scheduleDeleteAccountContent() {
         prisma.attachment.deleteMany({ where: { postId: { in: postIds } } }),
       ]);
     }
-    if (messages.length && posts.length) {
+    if (messages.length || posts.length) {
       Log.info(`Deleted ${messages.length} messages & ${posts.length} Posts from deleted accounts.`);
     }
 
