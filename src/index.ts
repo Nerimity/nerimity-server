@@ -51,7 +51,7 @@ if (cluster.isPrimary) {
   });
 
   for (let i = 0; i < cpuCount; i++) {
-    cluster.fork();
+    cluster.fork({ CLUSTER_INDEX: i });
   }
 
   cluster.on('exit', (worker, code, signal) => {
