@@ -276,6 +276,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
                   tag: true,
                   avatar: true,
                   badges: true,
+                  hexColor: true,
                 },
               },
             },
