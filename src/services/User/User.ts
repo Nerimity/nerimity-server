@@ -265,6 +265,23 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
     where: { id: recipientId },
     select: {
       ...publicUserExcludeFields,
+      application: {
+        select: {
+          creatorAccount: {
+            select: {
+              user: {
+                select: {
+                  username: true,
+                  id: true,
+                  tag: true,
+                  avatar: true,
+                  badges: true,
+                },
+              },
+            },
+          },
+        },
+      },
       followers: {
         where: { followedById: requesterId },
         select: { followedToId: true },
