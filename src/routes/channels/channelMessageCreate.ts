@@ -111,6 +111,7 @@ interface Body {
   htmlEmbed?: string;
   replyToMessageIds?: string[];
   mentionReplies?: boolean;
+  silent?: boolean;
   googleDriveAttachment?: {
     id: string;
     mime: string;
@@ -247,6 +248,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [message, error] = await createMessage({
+    silent: body.silent,
     channelId: req.channelCache.id,
     content: body.content,
     userId: req.userCache.id,
