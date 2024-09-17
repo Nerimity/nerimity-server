@@ -42,6 +42,7 @@ export async function sendServerPushMessageNotification(
   channel: ChannelCache,
   server: ServerCache
 ) {
+  if (message.silent) return;
   if (!credentials) return;
   const mentionedUserIds = message.mentions.map((user) => user.id);
 
@@ -133,6 +134,7 @@ export async function sendDmPushNotification(
   },
   channel: ChannelCache
 ) {
+  if (message.silent) return;
   if (!credentials) return;
   const recipientId = channel.inbox?.recipientId;
   const tokens = (

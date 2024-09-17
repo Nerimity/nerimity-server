@@ -74,6 +74,7 @@ export function channelMessageCreate(Router: Router) {
 
     body('buttons.*.id').isAlphanumeric().withMessage('buttons id must be a string!').isLength({ min: 1, max: 64 }).withMessage('button id length must be between 1 and 64 characters.'),
     body('buttons.*.alert').optional(true).isBoolean().withMessage('buttons alert must be a boolean!'),
+    body('silent').optional(true).isBoolean().withMessage('silent must be a boolean!'),
 
     rateLimit({
       name: 'create_message',

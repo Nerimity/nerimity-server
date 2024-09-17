@@ -570,6 +570,8 @@ model Message {
 
   buttons MessageButton[]
 
+  silent Boolean?
+
 
 
 

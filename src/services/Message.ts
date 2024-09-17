@@ -453,6 +453,7 @@ interface SendMessageOptions {
 
   replyToMessageIds?: string[];
   mentionReplies?: boolean;
+  silent?: boolean;
 
   buttons?: {
     label: string;
@@ -552,6 +553,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   const createMessageQuery = prisma.message.create({
     data: await constructData({
       messageData: {
+        silent: opts.silent,
         id: generateId(),
         content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
         createdById: opts.userId,
