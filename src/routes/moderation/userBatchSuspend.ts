@@ -157,6 +157,18 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       message: 'You have been IP Banned',
       expire: ipExpireDateTime,
     });
+
+    if (ips.length) {
+      await prisma.auditLog.createMany({
+        data: removeDuplicates(ips).map((ip) => ({
+          id: generateId(),
+          actionType: AuditLogType.ipBan,
+          actionById: req.userCache.id,
+          ipAddress: ip,
+          expireAt: dateToDateTime(expireAfter(7)),
+        })),
+      });
+    }
   }
 
   const newSuspendedUsers = await prisma.user.findMany({
