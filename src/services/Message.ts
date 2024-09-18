@@ -854,7 +854,7 @@ interface MessageDeletedOptions {
 export const deleteMessage = async (opts: MessageDeletedOptions) => {
   const message = await prisma.message.findFirst({
     where: { id: opts.messageId, channelId: opts.channelId },
-    include: { attachments: true },
+    include: { attachments: true, _count: { select: { attachments: true } } },
   });
   if (!message) return [false, 'Message not found!'] as const;
 
@@ -884,6 +884,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   emitDMMessageDeleted(channel, {
     channelId: opts.channelId,
     messageId: opts.messageId,
+    deletedAttachmentCount: message._count.attachments,
   });
   return [true, null] as const;
 };
