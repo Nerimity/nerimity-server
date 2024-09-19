@@ -858,7 +858,11 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   });
   if (!message) return [false, 'Message not found!'] as const;
 
-  await prisma.message.delete({ where: { id: opts.messageId } });
+  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => {});
+
+  if (!deleteRes) {
+    return [false, 'Something went wrong, try again later.'];
+  }
 
   if (message.attachments?.[0]?.path && message.attachments[0].provider === AttachmentProviders.Local) {
     deleteImage(message.attachments[0].path);
