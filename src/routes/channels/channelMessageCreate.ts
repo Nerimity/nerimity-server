@@ -190,7 +190,7 @@ async function route(req: Request, res: Response) {
 
   const isServerChannel = req.channelCache.type === ChannelType.SERVER_TEXT || req.channelCache.type === ChannelType.CATEGORY;
 
-  if (!req.userCache.application && isServerChannel && !req.userCache.account.emailConfirmed) {
+  if (!req.userCache.application && isServerChannel && !req.userCache.account?.emailConfirmed) {
     return res.status(400).json(generateError('You must confirm your email to send messages.'));
   }
 
