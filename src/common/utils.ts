@@ -1,6 +1,6 @@
 // remove duplicate values from an array
-export function removeDuplicates(arr: any[]) {
-  return Array.from(new Set(arr));
+export function removeDuplicates<T extends any[]>(arr: T) {
+  return Array.from(new Set(arr)) as T;
 }
 
 export function arrayDiff<T>(arr1: any[], arr2: any[], key?: string) {
@@ -8,7 +8,7 @@ export function arrayDiff<T>(arr1: any[], arr2: any[], key?: string) {
     if (!key) {
       return arr2.indexOf(i) < 0;
     }
-    return !arr2.find(i2 => i2[key] === i[key]);
+    return !arr2.find((i2) => i2[key] === i[key]);
   }) as unknown as T;
 }
 

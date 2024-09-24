@@ -845,7 +845,7 @@ model AuditLog {
   userId       String?
   username     String?
   
-  ipAddress    String? // used for ip bans
+  count        Int?
   reason       String?
   expireAt     DateTime?
 }
