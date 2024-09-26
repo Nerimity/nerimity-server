@@ -260,14 +260,14 @@ async function updatePostViews() {
 
 function scheduleSuspendedAccountDeletion() {
   const oneMinuteToMilliseconds = 1 * 60 * 1000;
-  const oneMonthInThePast = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const fifteenDaysInThePast = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
   setTimeout(async () => {
     const suspension = await prisma.suspension.findFirst({
       where: {
         expireAt: null,
         userDeleted: false,
         suspendedAt: {
-          lte: oneMonthInThePast,
+          lte: fifteenDaysInThePast,
         },
       },
       select: {
@@ -278,7 +278,7 @@ function scheduleSuspendedAccountDeletion() {
     if (suspension) {
       try {
         const emailSha = suspension.user.account?.email ? createHash('sha256').update(suspension.user.account.email).digest('hex') : undefined;
-        Log.info(`Deleting account ${suspension.user.username} because it was perm suspended more than 30 days ago.`);
+        Log.info(`Deleting account ${suspension.user.username} because it was perm suspended more than 15 days ago.`);
         await deleteAllApplications(suspension.user.id);
         await deleteOrLeaveAllServers(suspension.user.id);
         await deleteAccount(suspension.user.id, { bot: suspension.user.bot || false, deleteContent: true });
