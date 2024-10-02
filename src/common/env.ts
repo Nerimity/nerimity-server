@@ -27,6 +27,7 @@ export default {
   ORIGIN: origin(),
   CLIENT_URL: process.env.CLIENT_URL as string,
   NERIMITY_CDN: process.env.NERIMITY_CDN as string,
+  LOCAL_NERIMITY_CDN: process.env.LOCAL_NERIMITY_CDN as string,
   NERIMITY_CDN_SECRET: process.env.NERIMITY_CDN_SECRET as string,
 
   MAX_CHANNELS_PER_SERVER: parseInt(process.env.MAX_CHANNELS_PER_SERVER || '0') as number,

@@ -6,7 +6,7 @@ import internal from 'stream';
 
 export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ width: number; height: number }, any>> {
   return new Promise((resolve) => {
-    fetch(env.NERIMITY_CDN + `proxy-dimensions?url=${encodeURI(url)}&secret=${env.NERIMITY_CDN_SECRET}`, {
+    fetch(env.LOCAL_NERIMITY_CDN + `proxy-dimensions?url=${encodeURI(url)}&secret=${env.NERIMITY_CDN_SECRET}`, {
       method: 'GET',
     })
       .then(async (res) => {
@@ -35,7 +35,7 @@ export function uploadEmoji(base64: string, serverId: string): Promise<CustomRes
     form.append('id', serverId);
     form.append('file', buffer, 'temp.' + type);
 
-    fetch(env.NERIMITY_CDN + 'emojis', {
+    fetch(env.LOCAL_NERIMITY_CDN + 'emojis', {
       method: 'POST',
       body: form,
     })
@@ -76,7 +76,7 @@ export async function uploadAvatar(opts: UploadAvatarOpts) {
 
   form.append('file', buffer, 'temp.' + type);
 
-  const [res, err] = await fetch(env.NERIMITY_CDN + 'avatars', {
+  const [res, err] = await fetch(env.LOCAL_NERIMITY_CDN + 'avatars', {
     method: 'POST',
     body: form,
   })
@@ -108,7 +108,7 @@ export function uploadBanner(base64: string, uniqueId: string): Promise<CustomRe
     form.append('id', uniqueId);
     form.append('file', buffer, 'temp.' + type);
 
-    fetch(env.NERIMITY_CDN + 'banners', {
+    fetch(env.LOCAL_NERIMITY_CDN + 'banners', {
       method: 'POST',
       body: form,
     })
@@ -133,7 +133,7 @@ export function uploadImage(readable: internal.Readable, filename: string, uniqu
     form.append('id', uniqueId);
     form.append('file', readable, filename);
 
-    fetch(env.NERIMITY_CDN + 'attachments', {
+    fetch(env.LOCAL_NERIMITY_CDN + 'attachments', {
       method: 'POST',
       body: form,
     })
@@ -146,7 +146,7 @@ export function uploadImage(readable: internal.Readable, filename: string, uniqu
 }
 
 export async function deleteImage(path: string) {
-  return await fetch(env.NERIMITY_CDN, {
+  return await fetch(env.LOCAL_NERIMITY_CDN, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export async function deleteImage(path: string) {
 // deletes 1000 images from a channel.
 export async function deleteChannelAttachmentBatch(channelId: string): Promise<CustomResult<{ count?: number; status: boolean }, { type: string; code?: string }>> {
   return new Promise((resolve) => {
-    fetch(env.NERIMITY_CDN + `channels/${channelId}/attachments/batch`, {
+    fetch(env.LOCAL_NERIMITY_CDN + `channels/${channelId}/attachments/batch`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ export async function deleteChannelAttachmentBatch(channelId: string): Promise<C
 }
 
 export async function deleteImageBatch(paths: string[]) {
-  return await fetch(env.NERIMITY_CDN + 'batch', {
+  return await fetch(env.LOCAL_NERIMITY_CDN + 'batch', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
