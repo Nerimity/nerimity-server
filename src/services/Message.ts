@@ -10,7 +10,7 @@ import { CustomResult } from '../common/CustomResult';
 import { Attachment, Message, Prisma } from '@prisma/client';
 import { removeDuplicates, removeDuplicates } from '../common/utils';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
-import { deleteImage } from '../common/nerimityCDN';
+import { deleteFile } from '../common/nerimityCDN';
 import { getOGTags } from '../common/OGTags';
 import { sendDmPushNotification, sendServerPushMessageNotification } from '../fcm/pushNotification';
 import { ServerCache, getServerCache } from '../cache/ServerCache';
@@ -66,13 +66,13 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       channelId,
       ...(opts?.beforeMessageId
         ? {
-            id: { lt: opts.beforeMessageId },
-          }
+          id: { lt: opts.beforeMessageId },
+        }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-            id: { gt: opts.afterMessageId },
-          }
+          id: { gt: opts.afterMessageId },
+        }
         : undefined),
     },
     include: {
@@ -121,6 +121,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
                   id: true,
                   provider: true,
                   fileId: true,
+                  filesize: true,
                   mime: true,
                   createdAt: true,
                 },
@@ -164,6 +165,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
               path: true,
               id: true,
               provider: true,
+              filesize: true,
               fileId: true,
               mime: true,
               createdAt: true,
@@ -202,6 +204,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
           width: true,
           path: true,
           id: true,
+          filesize: true,
           provider: true,
           fileId: true,
           mime: true,
@@ -213,8 +216,8 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-          orderBy: { createdAt: 'asc' },
-        }
+        orderBy: { createdAt: 'asc' },
+      }
       : undefined),
   });
 
@@ -311,6 +314,7 @@ export const MessageInclude = {
               width: true,
               path: true,
               id: true,
+              filesize: true,
               provider: true,
               fileId: true,
               mime: true,
@@ -355,6 +359,7 @@ export const MessageInclude = {
           path: true,
           id: true,
           provider: true,
+          filesize: true,
           fileId: true,
           mime: true,
           createdAt: true,
@@ -380,6 +385,7 @@ export const MessageInclude = {
       path: true,
       id: true,
       provider: true,
+      filesize: true,
       fileId: true,
       mime: true,
       createdAt: true,
@@ -563,26 +569,26 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
         ...(opts.buttons?.length
           ? {
-              buttons: {
-                createMany: {
-                  data: opts.buttons,
-                },
+            buttons: {
+              createMany: {
+                data: opts.buttons,
               },
-            }
+            },
+          }
           : undefined),
 
         ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
         ...(opts.attachment
           ? {
-              attachments: {
-                create: {
-                  ...opts.attachment,
-                  id: generateId(),
-                  channelId: opts.channelId,
-                  serverId: opts.serverId,
-                },
+            attachments: {
+              create: {
+                ...opts.attachment,
+                id: generateId(),
+                channelId: opts.channelId,
+                serverId: opts.serverId,
               },
-            }
+            },
+          }
           : undefined),
       },
       creatorId: opts.userId,
@@ -626,6 +632,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
                   path: true,
                   id: true,
                   provider: true,
+                  filesize: true,
                   fileId: true,
                   mime: true,
                   createdAt: true,
@@ -677,6 +684,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
               path: true,
               id: true,
               provider: true,
+              filesize: true,
               fileId: true,
               mime: true,
               createdAt: true,
@@ -701,6 +709,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
           width: true,
           path: true,
           id: true,
+          filesize: true,
           provider: true,
           fileId: true,
           mime: true,
@@ -831,7 +840,7 @@ const addMessageEmbed = async (message: Message, opts: { serverId?: string; chan
       data: { embed: OGTags },
     })
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -858,14 +867,14 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   });
   if (!message) return [false, 'Message not found!'] as const;
 
-  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => {});
+  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => { });
 
   if (!deleteRes) {
     return [false, 'Something went wrong, try again later.'];
   }
 
   if (message.attachments?.[0]?.path && message.attachments[0].provider === AttachmentProviders.Local) {
-    deleteImage(message.attachments[0].path);
+    deleteFile(message.attachments[0].path);
   }
 
   if (opts.serverId) {
@@ -1123,20 +1132,20 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
       type: MessageType.CONTENT,
       ...(!bypassQuotesCheck
         ? {
-            channel: {
-              OR: [
-                { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
-                {
-                  inbox: {
-                    // is inbox channel
-                    some: {
-                      OR: [{ recipientId: creatorId }, { createdById: creatorId }],
-                    },
+          channel: {
+            OR: [
+              { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
+              {
+                inbox: {
+                  // is inbox channel
+                  some: {
+                    OR: [{ recipientId: creatorId }, { createdById: creatorId }],
                   },
                 },
-              ],
-            },
-          }
+              },
+            ],
+          },
+        }
         : {}),
     },
     select: {

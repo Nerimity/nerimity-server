@@ -11,7 +11,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { AuditLogType } from '../../common/AuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
-import { deleteImage } from '../../common/nerimityCDN';
+import { deleteFile } from '../../common/nerimityCDN';
 
 export function postBatchSuspend(Router: Router) {
   Router.post(
@@ -73,7 +73,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const posts = await prisma.post.findMany({
     where: { id: { in: sanitizedPostIds }, deleted: null },
-    select: {id: true, createdBy: {select: {id: true, username: true}}, attachments: {select: {path: true}}},
+    select: { id: true, createdBy: { select: { id: true, username: true } }, attachments: { select: { path: true } } },
   });
   const validPostIds = posts.map((post) => post.id);
   if (!validPostIds.length) {
@@ -82,15 +82,15 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   await prisma.$transaction([
     prisma.post.updateMany({
-      where: { id: {in: validPostIds} },
+      where: { id: { in: validPostIds } },
       data: {
         content: null,
         deleted: true,
       },
     }),
-    prisma.postLike.deleteMany({ where: { postId: {in: validPostIds} } }),
-    prisma.attachment.deleteMany({ where: { postId: {in: validPostIds} } }),
-    prisma.postPoll.deleteMany({ where: { postId: {in: validPostIds} } }),
+    prisma.postLike.deleteMany({ where: { postId: { in: validPostIds } } }),
+    prisma.attachment.deleteMany({ where: { postId: { in: validPostIds } } }),
+    prisma.postPoll.deleteMany({ where: { postId: { in: validPostIds } } }),
   ]);
 
   await prisma.auditLog.createMany({
@@ -98,7 +98,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
       id: generateId(),
       actionType: AuditLogType.postDelete,
       actionById: req.userCache.id,
-      
+
       username: post.createdBy.username,
       userId: post.createdBy.id,
     })),
@@ -111,7 +111,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     if (!post?.attachments[0]) continue;
     const attachment = post.attachments[0];
     if (!attachment.path) continue;
-    await deleteImage(attachment.path).catch(() => {});
+    await deleteFile(attachment.path).catch(() => { });
   }
 
 }
