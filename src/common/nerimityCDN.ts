@@ -123,31 +123,6 @@ export function uploadBanner(base64: string, uniqueId: string): Promise<CustomRe
   });
 }
 
-interface Dimensions {
-  width: number;
-  height: number;
-}
-
-export function uploadImage(readable: internal.Readable, filename: string, uniqueId: string): Promise<CustomResult<{ path: string; dimensions: Dimensions }, any>> {
-  return new Promise((resolve) => {
-    const form = new FormData();
-
-    form.append('secret', env.NERIMITY_CDN_SECRET);
-    form.append('id', uniqueId);
-    form.append('file', readable, filename);
-
-    fetch(env.LOCAL_NERIMITY_CDN + 'attachments', {
-      method: 'POST',
-      body: form,
-    })
-      .then(async (res) => {
-        if (res.status == 200) return resolve([await res.json(), null]);
-        resolve([null, await res.json()]);
-      })
-      .catch(() => [null, 'Could not connect to the CDN.']);
-  });
-}
-
 export async function deleteFile(path: string) {
   return await fetch(env.LOCAL_NERIMITY_CDN, {
     method: 'DELETE',

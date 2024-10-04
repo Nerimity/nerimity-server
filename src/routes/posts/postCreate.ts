@@ -4,7 +4,7 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { createPost } from '../../services/Post';
-import { uploadImage, verifyUpload } from '../../common/nerimityCDN';
+import { verifyUpload } from '../../common/nerimityCDN';
 import { UserCache } from '../../cache/UserCache';
 
 export function postCreate(Router: Router) {
