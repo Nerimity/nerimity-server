@@ -9,8 +9,7 @@ import { MessageType } from '../../types/Message';
 import { AttachmentProviders, createMessage } from '../../services/Message';
 import { memberHasRolePermission, memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
-import { deleteImage, uploadImage } from '../../common/nerimityCDN';
-import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
+import { deleteFile, verifyUpload } from '../../common/nerimityCDN';
 import { ChannelType, TextChannelTypes } from '../../types/Channel';
 import { Attachment } from '@prisma/client';
 import { dateToDateTime, prisma } from '../../common/database';
@@ -34,7 +33,6 @@ export function channelMessageCreate(Router: Router) {
       message: 'You are not allowed to send messages in this channel.',
     }),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.SEND_MESSAGE),
-    connectBusboyWrapper,
     body('content').optional(true).isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
     body('socketId').optional(true).isString().withMessage('SocketId must be a string!').isLength({ min: 1, max: 255 }).withMessage('SocketId length must be between 1 and 255 characters.'),
 
@@ -58,6 +56,7 @@ export function channelMessageCreate(Router: Router) {
     body('googleDriveAttachment.id').optional(true).isString().withMessage('googleDriveAttachment id must be a string!').isLength({ min: 1, max: 255 }).withMessage('googleDriveAttachment id length must be between 1 and 255 characters.'),
 
     body('googleDriveAttachment.mime').optional(true).isString().withMessage('googleDriveAttachment mime must be a string!').isLength({ min: 1, max: 255 }).withMessage('googleDriveAttachment mime length must be between 1 and 255 characters.'),
+    body('nerimityCdnFileId').optional(true).isString().withMessage('nerimityCdnFileId id must be a string!').isLength({ min: 1, max: 255 }).withMessage('nerimityCdnFileId length must be between 1 and 255 characters.'),
 
     body('buttons')
       .optional(true)
@@ -112,6 +111,7 @@ interface Body {
   replyToMessageIds?: string[];
   mentionReplies?: boolean;
   silent?: boolean;
+  nerimityCdnFileId?: string;
   googleDriveAttachment?: {
     id: string;
     mime: string;
@@ -164,7 +164,7 @@ async function route(req: Request, res: Response) {
     }
   }
 
-  const hasAttachment = body.googleDriveAttachment || req.fileInfo?.file;
+  const hasAttachment = body.googleDriveAttachment || body.nerimityCdnFileId;
 
   if (hasAttachment) {
     if (!isEmailConfirmed(req.userCache) && !req.userCache.bot) {
@@ -206,7 +206,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('You cannot send messages in this channel.'));
   }
 
-  if (!body.content?.trim() && !req.fileInfo?.file && !body.googleDriveAttachment) {
+  if (!body.content?.trim() && !body.nerimityCdnFileId && !body.googleDriveAttachment) {
     return res.status(400).json(generateError('content or attachment is required.'));
   }
 
@@ -218,23 +218,24 @@ async function route(req: Request, res: Response) {
 
   let attachment: Partial<Attachment> | undefined = undefined;
 
-  if (req.fileInfo?.file) {
-    const [uploadedImage, err] = await uploadImage(req.fileInfo?.file, req.fileInfo.info.filename, req.channelCache.id);
+  if (body.nerimityCdnFileId) {
+    const [uploadedFile, err] = await verifyUpload({
+      fileId: body.nerimityCdnFileId,
+      groupId: req.channelCache.id,
+      type: 'ATTACHMENT',
+    });
 
     if (err) {
-      if (typeof err === 'string') {
-        return res.status(403).json(generateError(err));
-      }
-      if (err.type === 'INVALID_IMAGE') {
-        return res.status(403).json(generateError('You can only upload images for now.'));
-      }
-      return res.status(403).json(generateError(`An unknown error has occurred (${err.type})`));
+      return res.status(403).json(generateError(err));
     }
 
     attachment = {
-      width: uploadedImage!.dimensions.width,
-      height: uploadedImage!.dimensions.height,
-      path: uploadedImage!.path,
+      width: uploadedFile!.width,
+      height: uploadedFile!.height,
+      path: uploadedFile!.path,
+      mime: uploadedFile!.mimetype,
+      provider: AttachmentProviders.Local,
+      filesize: uploadedFile!.filesize,
     };
   }
 
@@ -266,8 +267,8 @@ async function route(req: Request, res: Response) {
   });
 
   if (error) {
-    if (req.fileInfo?.file && attachment?.path) {
-      deleteImage(attachment.path);
+    if (attachment?.provider === AttachmentProviders.Local && attachment.path) {
+      deleteFile(attachment.path);
     }
     return res.status(400).json(generateError(error));
   }

@@ -1,12 +1,13 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { addServerEmoji } from '../../services/Server';
+import { verifyUpload } from '../../common/nerimityCDN';
 
 export function serverEmojiAdd(Router: Router) {
   Router.post(
@@ -22,12 +23,14 @@ export function serverEmojiAdd(Router: Router) {
       .withMessage('Name must be a string.')
       .isLength({ min: 2, max: 15 })
       .withMessage('Name must be between 2 and 15 characters long.'),
-    body('emoji')
+    body('fileId')
       .not()
       .isEmpty()
-      .withMessage('Emoji is required')
+      .withMessage('fileId is required')
       .isString()
-      .withMessage('Emoji must be a string.'),
+      .withMessage('fileId must be a string.')
+      .isLength({ min: 2, max: 255 })
+      .withMessage('fileId must be between 2 and 255 characters long.'),
     rateLimit({
       name: 'server_add_emojis',
       restrictMS: 10000,
@@ -40,6 +43,7 @@ export function serverEmojiAdd(Router: Router) {
 interface Body {
   name: string;
   emoji: string;
+  fileId: string;
 }
 
 async function route(req: Request, res: Response) {
@@ -50,9 +54,20 @@ async function route(req: Request, res: Response) {
 
   const body: Body = req.body;
 
+  const [uploadedFile, err] = await verifyUpload({
+    fileId: body.fileId,
+    type: 'EMOJI',
+  });
+
+  if (err) {
+    return res.status(403).json(generateError(err));
+  }
+
   const [updated, error] = await addServerEmoji({
     name: body.name,
-    base64: body.emoji,
+    emojiPath: uploadedFile!.path,
+    emojiId: uploadedFile!.fileId!,
+    animated: uploadedFile!.animated,
     serverId: req.serverCache.id,
     uploadedById: req.userCache.id,
   });

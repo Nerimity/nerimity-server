@@ -4,8 +4,7 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { createPost } from '../../services/Post';
-import { connectBusboyWrapper } from '../../middleware/connectBusboyWrapper';
-import { uploadImage } from '../../common/nerimityCDN';
+import { verifyUpload } from '../../common/nerimityCDN';
 import { UserCache } from '../../cache/UserCache';
 
 export function postCreate(Router: Router) {
@@ -17,11 +16,11 @@ export function postCreate(Router: Router) {
       restrictMS: 20000,
       requests: 5,
     }),
-    connectBusboyWrapper,
     body('content').isString().withMessage('Content must be a string!').isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.').optional(true),
     body('postId').isString().withMessage('postId must be a string!').isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.').optional(true),
 
     body('poll.choices').isArray({ min: 0, max: 6 }).withMessage('Poll must be an array with minimum 6 choices').optional(true),
+    body('nerimityCdnFileId').optional(true).isString().withMessage('nerimityCdnFileId id must be a string!').isLength({ min: 1, max: 255 }).withMessage('nerimityCdnFileId length must be between 1 and 255 characters.'),
 
     body('poll.choices.*').isString().withMessage('Poll choices must be an array of strings').isLength({ min: 0, max: 56 }).withMessage('Poll choices length must be between 1 and 50 characters').optional(true),
     route
@@ -34,20 +33,12 @@ interface Body {
   poll?: {
     choices: string[];
   };
+  nerimityCdnFileId?: string;
 }
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
   if (body.poll) {
-    // used for formdata
-    if (typeof body.poll === 'string') {
-      try {
-        body.poll = JSON.parse(body.poll);
-      } catch (e) {
-        return res.status(400).json(generateError('Invalid poll format'));
-      }
-    }
-
     body.poll!.choices = body.poll!.choices.map((choice) => choice.trim()).filter((choice) => choice);
   }
 
@@ -61,28 +52,28 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('You must confirm your email to create posts.'));
   }
 
-  if (!body.content?.trim() && !req.fileInfo?.file) {
+  if (!body.content?.trim() && !body.nerimityCdnFileId) {
     return res.status(400).json(generateError('content or attachment is required.'));
   }
 
   let attachment: { width?: number; height?: number; path: string } | undefined = undefined;
 
-  if (req.fileInfo?.file) {
-    const [uploadedImage, err] = await uploadImage(req.fileInfo?.file, req.fileInfo.info.filename, req.userCache.id);
+  if (body.nerimityCdnFileId) {
+    const [uploadedFile, err] = await verifyUpload({
+      fileId: body.nerimityCdnFileId,
+      groupId: req.userCache.id,
+      type: 'ATTACHMENT',
+      imageOnly: true
+    });
+
     if (err) {
-      if (typeof err === 'string') {
-        return res.status(403).json(generateError(err));
-      }
-      if (err.type === 'INVALID_IMAGE') {
-        return res.status(403).json(generateError('You can only upload images for now.'));
-      }
-      return res.status(403).json(generateError(`An unknown error has occurred (${err.type})`));
+      return res.status(403).json(generateError(err));
     }
 
     attachment = {
-      width: uploadedImage!.dimensions.width,
-      height: uploadedImage!.dimensions.height,
-      path: uploadedImage!.path,
+      width: uploadedFile!.width,
+      height: uploadedFile!.height,
+      path: uploadedFile!.path,
     };
   }
 
