@@ -1,11 +1,12 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { updateUser } from '../../services/User/updateUser';
 import { updateBot } from '../../services/Application';
+import { verifyUpload } from '../../common/nerimityCDN';
 
 export function userUpdate(Router: Router) {
   Router.post(
@@ -32,6 +33,13 @@ export function userUpdate(Router: Router) {
     body('friendRequestStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
     body('lastOnlineStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
 
+    body('avatarId')
+      .isString().withMessage('avatarId must be a string.')
+      .isLength({ min: 4, max: 100 }).withMessage('avatarId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('bannerId')
+      .isString().withMessage('bannerId must be a string.')
+      .isLength({ min: 4, max: 100 }).withMessage('bannerId must be between 4 and 100 characters long.').optional({ nullable: true }),
+
     body('hideFollowing').isBoolean().withMessage('hideFollowing must be a boolean.').optional({ nullable: true }),
     body('hideFollowers').isBoolean().withMessage('hideFollowers must be a boolean.').optional({ nullable: true }),
     route
@@ -44,9 +52,8 @@ interface Body {
   tag?: string;
   password?: string;
   newPassword?: string;
-  avatar?: string;
-  avatarPoints?: number[];
-  banner?: string;
+  avatarId?: string;
+  bannerId?: string;
   socketId?: string;
   dmStatus?: number;
   friendRequestStatus?: number;
@@ -78,14 +85,47 @@ async function route(req: Request, res: Response) {
     ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {}),
   };
 
+  let avatar: string | undefined;
+  let banner: string | undefined;
+
+  if (body.avatarId) {
+    const [uploadedFile, err] = await verifyUpload({
+      fileId: body.avatarId,
+      type: 'AVATAR',
+      groupId: req.userCache.id
+    })
+
+    if (err) {
+      return res.status(403).json(generateError(err));
+    }
+
+    avatar = uploadedFile!.path;
+  }
+
+  if (body.bannerId) {
+    const [uploadedFile, err] = await verifyUpload({
+      fileId: body.bannerId,
+      type: 'BANNER',
+      groupId: req.userCache.id
+    })
+
+    if (err) {
+      return res.status(403).json(generateError(err));
+    }
+
+    banner = uploadedFile!.path;
+  }
+
   if (req.userCache.bot) {
     const [result, error] = await updateBot({
       ...body,
+      avatar,
+      banner,
       userId: req.userCache.id,
       ...(Object.keys(profile).length
         ? {
-            profile,
-          }
+          profile,
+        }
         : {}),
     });
 
@@ -103,9 +143,8 @@ async function route(req: Request, res: Response) {
     username: body.username,
     tag: body.tag,
     password: body.password,
-    avatar: body.avatar,
-    avatarPoints: body.avatarPoints,
-    banner: body.banner,
+    banner,
+    avatar,
     newPassword: body.newPassword,
     ...addToObjectIfExists('hideFollowing', body.hideFollowing),
     ...addToObjectIfExists('hideFollowers', body.hideFollowers),
@@ -114,8 +153,8 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('lastOnlineStatus', body.lastOnlineStatus),
     ...(Object.keys(profile).length
       ? {
-          profile,
-        }
+        profile,
+      }
       : {}),
   });
 

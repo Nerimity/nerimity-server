@@ -138,14 +138,14 @@ export async function getApplicationBot(appId: string, opts?: { includeCreator?:
           ...publicUserExcludeFields,
           ...(opts?.includeCreator
             ? {
-                application: {
-                  select: {
-                    creatorAccount: {
-                      select: { user: { select: publicUserExcludeFields } },
-                    },
+              application: {
+                select: {
+                  creatorAccount: {
+                    select: { user: { select: publicUserExcludeFields } },
                   },
                 },
-              }
+              },
+            }
             : {}),
         },
       },
@@ -235,26 +235,6 @@ export const updateBot = async (opts: UpdateBotProps) => {
     if (usernameOrTagCheckResults) return [null, usernameOrTagCheckResults] as const;
   }
 
-  if (opts.avatar) {
-    const [data, error] = await nerimityCDN.uploadAvatar({
-      base64: opts.avatar,
-      uniqueId: opts.userId,
-      points: opts.avatarPoints,
-    });
-    if (error) return [null, generateError(error)] as const;
-    if (data) {
-      opts.avatar = data.path;
-    }
-  }
-
-  if (opts.banner) {
-    const [data, error] = await nerimityCDN.uploadBanner(opts.banner, opts.userId);
-    if (error) return [null, generateError(error)] as const;
-    if (data) {
-      opts.banner = data.path;
-    }
-  }
-
   const updateResult = await updateBotInDatabase(opts);
 
   await removeUserCacheByUserIds([opts.userId]);
@@ -281,13 +261,13 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
 
       ...(opts.profile
         ? {
-            profile: {
-              upsert: {
-                create: opts.profile,
-                update: opts.profile,
-              },
+          profile: {
+            upsert: {
+              create: opts.profile,
+              update: opts.profile,
             },
-          }
+          },
+        }
         : undefined),
     },
     include: { profile: { select: { bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } },

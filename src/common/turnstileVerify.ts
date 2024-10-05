@@ -15,7 +15,7 @@ export async function turnstileVerify(token: string) {
       body: params,
     }
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-  ).catch(() => {});
+  ).catch(() => { });
 
   if (!res) return false;
 

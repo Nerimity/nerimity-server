@@ -573,25 +573,6 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
     }
   }
 
-  if (update.avatar) {
-    const [data, error] = await nerimityCDN.uploadAvatar({
-      base64: update.avatar,
-      uniqueId: serverId,
-    });
-    if (error) return [null, generateError(error)];
-    if (data) {
-      update.avatar = data.path;
-    }
-  }
-
-  if (update.banner) {
-    const [data, error] = await nerimityCDN.uploadBanner(update.banner, serverId);
-    if (error) return [null, generateError(error)];
-    if (data) {
-      update.banner = data.path;
-    }
-  }
-
   if (update.name && update.name?.trim() !== server.name.trim()) {
     update.verified = false;
   }
@@ -605,7 +586,9 @@ interface AddServerEmojiOpts {
   name: string;
   serverId: string;
   uploadedById: string;
-  base64: string;
+  emojiPath: string;
+  emojiId: string;
+  animated?: boolean;
 }
 
 async function hasReachedMaxServerEmojis(serverId?: string) {
@@ -624,16 +607,14 @@ async function hasReachedMaxServerEmojis(serverId?: string) {
 
 export const addServerEmoji = async (opts: AddServerEmojiOpts) => {
   if (await hasReachedMaxServerEmojis(opts.serverId)) return [null, 'You have reached the maximum number of emojis for this server.'] as const;
-  const [data, error] = await nerimityCDN.uploadEmoji(opts.base64, opts.serverId);
-  if (error) return [null, generateError(error)] as const;
 
   opts.name = opts.name.replace(/[^0-9a-zA-Z]/g, '_');
 
   const result = await prisma.customEmoji.create({
     data: {
-      id: data!.id,
+      id: opts.emojiId,
       name: opts.name,
-      gif: data!.gif || false,
+      gif: opts.animated || false,
       serverId: opts.serverId,
       uploadedById: opts.uploadedById,
     },
@@ -765,14 +746,14 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
           // update or add categoryId
           ...(opts.categoryId && opts.categoryId !== channel.categoryId && opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: opts.categoryId,
-              }
+              categoryId: opts.categoryId,
+            }
             : undefined),
           // remove categoryId
           ...(!opts.categoryId && channel.categoryId && opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: null,
-              }
+              categoryId: null,
+            }
             : undefined),
         },
       })
@@ -930,10 +911,10 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
   await prisma.$transaction([
     ...(opts.answers.length && removedAnswerIds.length
       ? [
-          prisma.serverWelcomeAnswer.deleteMany({
-            where: { id: { in: removedAnswerIds }, questionId: opts.id },
-          }),
-        ]
+        prisma.serverWelcomeAnswer.deleteMany({
+          where: { id: { in: removedAnswerIds }, questionId: opts.id },
+        }),
+      ]
       : []),
     prisma.serverWelcomeQuestion.update({
       where: { id: opts.id },
@@ -958,10 +939,10 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
           ...addToObjectIfExists('order', answer.order),
           ...(answer.roleIds
             ? {
-                roleIds: {
-                  set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
-                },
-              }
+              roleIds: {
+                set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
+              },
+            }
             : {}),
         },
       })

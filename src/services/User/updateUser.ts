@@ -21,7 +21,6 @@ interface UpdateUserProps {
   password?: string;
   newPassword?: string;
   avatar?: string;
-  avatarPoints?: number[];
   banner?: string;
   dmStatus?: DmStatus;
   lastOnlineStatus?: LastOnlineStatus;
@@ -71,26 +70,6 @@ export const updateUser = async (opts: UpdateUserProps) => {
     });
     if (accountExists) {
       return [null, generateError('This email is already used by someone else.')] as const;
-    }
-  }
-
-  if (opts.avatar) {
-    const [data, error] = await nerimityCDN.uploadAvatar({
-      base64: opts.avatar,
-      uniqueId: opts.userId,
-      points: opts.avatarPoints,
-    });
-    if (error) return [null, generateError(error)] as const;
-    if (data) {
-      opts.avatar = data.path;
-    }
-  }
-
-  if (opts.banner) {
-    const [data, error] = await nerimityCDN.uploadBanner(opts.banner, opts.userId);
-    if (error) return [null, generateError(error)] as const;
-    if (data) {
-      opts.banner = data.path;
     }
   }
 
@@ -198,9 +177,9 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
       ...addToObjectIfExists('hideFollowing', opts.hideFollowing),
       ...(opts.newPassword?.trim()
         ? {
-            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-            passwordVersion: { increment: 1 },
-          }
+          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+          passwordVersion: { increment: 1 },
+        }
         : undefined),
 
       ...(opts.email && opts.email !== email ? { emailConfirmed: false } : undefined),
@@ -216,13 +195,13 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
           ...(opts.lastOnlineStatus === LastOnlineStatus.HIDDEN ? { lastOnlineAt: null } : undefined),
           ...(opts.profile
             ? {
-                profile: {
-                  upsert: {
-                    create: opts.profile,
-                    update: opts.profile,
-                  },
+              profile: {
+                upsert: {
+                  create: opts.profile,
+                  update: opts.profile,
                 },
-              }
+              },
+            }
             : undefined),
         },
       },
