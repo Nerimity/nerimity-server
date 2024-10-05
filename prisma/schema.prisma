@@ -680,6 +680,8 @@ model Attachment {
   height      Int?
   filesize    Int?
 
+  expireAt    DateTime?  
+
   messageId   String?
   message     Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
