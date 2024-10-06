@@ -35,7 +35,7 @@ export async function deleteFile(path: string) {
 // deletes 1000 images from a channel.
 export async function deleteChannelAttachmentBatch(channelId: string): Promise<CustomResult<{ count?: number; status: boolean }, { type: string; error?: string }>> {
   return new Promise((resolve) => {
-    fetch(env.LOCAL_NERIMITY_CDN + `/attachments/${channelId}/batch`, {
+    fetch(env.LOCAL_NERIMITY_CDN + `attachments/${channelId}/batch`, {
       method: 'DELETE',
       headers: {
         secret: env.NERIMITY_CDN_SECRET,
