@@ -22,6 +22,7 @@ import { EmojisRouter } from './routes/emojis/Router';
 import { TenorRouter } from './routes/tenor/Router';
 import { ApplicationsRouter } from './routes/applications/Router';
 import { OpenGraphRouter } from './routes/open-graph/Router';
+import helmet from 'helmet';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -49,6 +50,8 @@ const main = async () => {
   });
 };
 main();
+
+app.use(helmet());
 
 app.use(
   cors({
