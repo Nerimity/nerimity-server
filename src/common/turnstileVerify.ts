@@ -1,8 +1,6 @@
-import fetch from 'node-fetch';
 import env from './env';
 
 export async function turnstileVerify(token: string) {
-  if (env.DEV_MODE) return true;
 
   const params = new URLSearchParams();
   params.append('secret', env.TURNSTILE_SECRET);
@@ -22,3 +20,4 @@ export async function turnstileVerify(token: string) {
   const json = (await res.json()) as { success: boolean };
   return json.success;
 }
+

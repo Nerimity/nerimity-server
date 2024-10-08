@@ -13,7 +13,7 @@ export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ wid
         if (res.status == 200) return resolve([await res.json(), null]);
         resolve([null, true]);
       })
-      .catch(() => [null, true]);
+      .catch((err) => resolve([null, true]));
   });
 }
 

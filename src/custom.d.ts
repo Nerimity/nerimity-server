@@ -3,7 +3,6 @@ import { ChannelCache } from './cache/ChannelCache';
 import { ServerCache } from './cache/ServerCache';
 import { ServerMemberCache } from './cache/ServerMemberCache';
 import { UserCache } from './cache/UserCache';
-// import { Auth } from 'googleapis';
 
 declare global {
   namespace Express {
