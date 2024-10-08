@@ -5,6 +5,8 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { joinServer } from './Server';
 import { updateServerCache } from '../cache/ServerCache';
+import { createMessage } from './Message';
+import { MessageType } from '../types/Message';
 
 export const getPublicServers = async (sort: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped', filter: 'all' | 'verified', limit?: number): Promise<PublicServer[]> => {
   const where = (): Prisma.PublicServerWhereInput => {
@@ -47,9 +49,16 @@ export const getPublicServer = async (serverId: string): Promise<CustomResult<Pu
   return [publicServer, null];
 };
 
-export const bumpPublicServer = async (serverId: string): Promise<CustomResult<PublicServer, CustomError>> => {
-  const publicServer = await prisma.publicServer.findFirst({
+export const bumpPublicServer = async (serverId: string, bumpedByUserId: string): Promise<CustomResult<PublicServer, CustomError>> => {
+  const publicServer = await prisma.publicServer.findUnique({
     where: { serverId },
+    include: {
+      server: {
+        select: {
+          systemChannelId: true
+        }
+      }
+    }
   });
 
   if (!publicServer) {
@@ -75,6 +84,15 @@ export const bumpPublicServer = async (serverId: string): Promise<CustomResult<P
       server: { include: { _count: { select: { serverMembers: true } } } },
     },
   });
+
+  if (publicServer.server.systemChannelId) {
+    await createMessage({
+      channelId: publicServer.server.systemChannelId,
+      type: MessageType.BUMP_SERVER,
+      userId: bumpedByUserId,
+      serverId,
+    });
+  }
 
   return [newPublicServer, null];
 };
