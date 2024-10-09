@@ -28,7 +28,11 @@ export async function sendEmailConfirmCode(userId: string) {
     return [{ message: `DEV MODE: Email verify code: ${code}` }, null] as const;
   }
 
-  sendConfirmCodeMail(code, account.email);
+  const result = await sendConfirmCodeMail(code, account.email).catch(() => false);
+
+  if (!result) {
+    return [null, generateError('Failed to send email. Daily limit exceeded.')] as const;
+  }
 
   return [{ message: 'Email confirmation code sent.' }, null] as const;
 }
@@ -58,7 +62,11 @@ export async function sendResetPasswordCode(email: string) {
     return [{ message: `DEV MODE: Password reset link: ${url}` }, null] as const;
   }
 
-  sendResetPasswordMail(url, account.email);
+  const result = await sendResetPasswordMail(url, account.email).catch(() => false);
+
+  if (!result) {
+    return [null, generateError('Failed to send email. Daily limit exceeded.')] as const;
+  }
 
   return [{ message: 'Password reset link sent to your email.' }, null] as const;
 }
@@ -231,12 +239,12 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
     }),
     ...(opts?.deleteContent
       ? [
-          prisma.scheduleAccountContentDelete.create({
-            data: {
-              userId,
-            },
-          }),
-        ]
+        prisma.scheduleAccountContentDelete.create({
+          data: {
+            userId,
+          },
+        }),
+      ]
       : []),
     prisma.account.deleteMany({
       where: { userId },

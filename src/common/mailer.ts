@@ -21,9 +21,7 @@ export async function sendMail(opts: Options) {
     to: opts.to.toLowerCase().trim(),
     subject: `${opts.subject} - Nerimity`,
     html: opts.body,
-  }).catch((err) => {
-    console.log(err)
-  });
+  })
 }
 
 export async function sendConfirmCodeMail(code: string, to: string) {
