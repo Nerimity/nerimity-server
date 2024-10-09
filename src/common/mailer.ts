@@ -21,6 +21,8 @@ export async function sendMail(opts: Options) {
     to: opts.to.toLowerCase().trim(),
     subject: `${opts.subject} - Nerimity`,
     html: opts.body,
+  }).catch((err) => {
+    console.log(err)
   });
 }
 
@@ -28,11 +30,9 @@ export async function sendConfirmCodeMail(code: string, to: string) {
   let htmlDigits = '';
 
   for (let i = 0; i < code.length; i++) {
-    const htmlDigit = `<div style=${
-      i !== code.length ? 'margin-left:5px;' : ''
-    }text-align:center;display:inline-block;line-height:1.6;width:40px;height:40px;background-color:#00000075;border-radius:8px;font-size:24px>${
-      code[i]
-    }</div>`;
+    const htmlDigit = `<div style=${i !== code.length ? 'margin-left:5px;' : ''
+      }text-align:center;display:inline-block;line-height:1.6;width:40px;height:40px;background-color:#00000075;border-radius:8px;font-size:24px>${code[i]
+      }</div>`;
     htmlDigits += htmlDigit;
   }
 
