@@ -38,10 +38,11 @@ export default {
 
   TURNSTILE_SECRET: process.env.TURNSTILE_SECRET as string,
 
-  SMTP_SERVICE: process.env.SMTP_SERVICE as string,
   SMTP_USER: process.env.SMTP_USER as string,
   SMTP_PASS: process.env.SMTP_PASS as string,
   SMTP_FROM: process.env.SMTP_FROM as string,
+  SMTP_HOST: process.env.SMTP_HOST as string,
+  SMTP_PORT: parseInt(process.env.SMTP_PORT as string),
 
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID as string,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET as string,
