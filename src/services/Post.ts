@@ -655,7 +655,7 @@ export async function votePostPoll(requesterId: string, postId: string, pollId: 
 }
 
 export async function addAnnouncementPost(postId: string) {
-  await prisma.announcementPost.create({
+  return await prisma.announcementPost.create({
     data: {
       postId,
     }
@@ -678,7 +678,7 @@ export async function getAnnouncementPosts(requesterId: string) {
 }
 
 export async function removeAnnouncementPost(postId: string) {
-  await prisma.announcementPost.delete({
+  return await prisma.announcementPost.delete({
     where: {
       postId
     }

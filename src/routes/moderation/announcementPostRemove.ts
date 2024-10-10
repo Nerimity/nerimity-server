@@ -67,11 +67,15 @@ async function route(req: Request<{ postId: string }, unknown, Body>, res: Respo
       .json(generateError('Post not found', 'postId'));
   }
 
-  await removeAnnouncementPost(postId).catch(() => {
+  const removeRes = await removeAnnouncementPost(postId).catch(() => {
     return res
       .status(500)
       .json(generateError('Something went wrong. Try again later.'));
   });
+
+  if (!removeRes) {
+    return
+  }
 
   res.json({ success: true });
 }

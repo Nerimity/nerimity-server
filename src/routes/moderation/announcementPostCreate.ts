@@ -67,11 +67,21 @@ async function route(req: Request<{ postId: string }, unknown, Body>, res: Respo
       .json(generateError('Post not found', 'postId'));
   }
 
-  await addAnnouncementPost(postId).catch(() => {
+  const addRes = await addAnnouncementPost(postId).catch(() => {
     return res
       .status(500)
       .json(generateError('Something went wrong. Try again later.'));
-  });
+  })
+  if (!addRes) return;
 
   res.json({ success: true });
 }
+
+// ## Changes To Terms And Conditions
+// Please review these changes in the link below:
+// https://nerimity.com/terms-and-conditions
+// ### Noteworthy Changes:
+// This is a hobby passion project and I reserve the right to suspend anyone for any reason.
+// Everyone must make their servers and the content inside it in English.
+// links, videos depicting mentions of bodily gore, self harm, disturbing imagery, triggering or illegal topics are absolutely prohibited
+// + More
