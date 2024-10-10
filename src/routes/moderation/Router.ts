@@ -22,6 +22,8 @@ import { getPosts } from './getPosts';
 import { postBatchSuspend } from './postBatchDelete';
 import { useEditSuspension } from './userEditSuspension';
 import { userBatchWarn } from './userBatchWarn';
+import { announcementPostCreate } from './announcementPostCreate';
+import { announcementPostRemove } from './announcementPostRemove';
 
 const ModerationRouter = Router();
 
@@ -49,6 +51,8 @@ getTicket(ModerationRouter);
 getTickets(ModerationRouter);
 ticketUpdate(ModerationRouter);
 
+announcementPostCreate(ModerationRouter);
+announcementPostRemove(ModerationRouter);
 searchPosts(ModerationRouter);
 getPosts(ModerationRouter);
 postBatchSuspend(ModerationRouter);

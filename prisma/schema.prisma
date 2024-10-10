@@ -710,6 +710,12 @@ model ServerChannelLastSeen {
   @@unique([channelId, userId, serverId])
 }
 
+model AnnouncementPost {
+  postId String @id
+
+  createdAt DateTime @default(now())
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
 
 model Post {
   id          String   @id
@@ -728,6 +734,8 @@ model Post {
   likedBy    PostLike[]
 
   views      Int  @default(0)
+
+  announcement AnnouncementPost?
 
 
 

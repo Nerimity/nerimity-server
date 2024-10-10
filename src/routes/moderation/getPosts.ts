@@ -21,6 +21,9 @@ async function route(req: Request, res: Response) {
     requesterUserId: req.userCache.id,
     limit: limit,
     afterId: after,
+    additionalInclude: {
+      announcement: { select: { createdAt: true } }
+    }
   });
 
   res.json(posts);

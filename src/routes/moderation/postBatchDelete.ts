@@ -91,6 +91,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     prisma.postLike.deleteMany({ where: { postId: { in: validPostIds } } }),
     prisma.attachment.deleteMany({ where: { postId: { in: validPostIds } } }),
     prisma.postPoll.deleteMany({ where: { postId: { in: validPostIds } } }),
+    prisma.announcementPost.deleteMany({ where: { postId: { in: validPostIds } } }),
   ]);
 
   await prisma.auditLog.createMany({

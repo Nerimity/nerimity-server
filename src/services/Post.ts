@@ -162,6 +162,7 @@ interface FetchPostsOpts {
   beforeId?: string;
 
   where?: Prisma.PostWhereInput;
+  additionalInclude?: Prisma.PostInclude;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
@@ -202,7 +203,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     where,
     orderBy: { createdAt: 'desc' },
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
-    include: constructInclude(opts.requesterUserId),
+    include: { ...constructInclude(opts.requesterUserId), ...opts.additionalInclude },
   });
   updateViews(posts);
 
@@ -443,6 +444,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
     prisma.postLike.deleteMany({ where: { postId } }),
     prisma.postPoll.deleteMany({ where: { postId } }),
     prisma.attachment.deleteMany({ where: { postId } }),
+    prisma.announcementPost.deleteMany({ where: { postId } }),
   ]);
 
   return [true, null];
@@ -549,7 +551,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
         },
       }),
     ])
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+
     .catch(() => { });
 
   // // delete if more than 10 notifications exist
@@ -650,4 +652,35 @@ export async function votePostPoll(requesterId: string, postId: string, pollId: 
     select: { id: true },
   });
   return [true, null] as const;
+}
+
+export async function addAnnouncementPost(postId: string) {
+  await prisma.announcementPost.create({
+    data: {
+      postId,
+    }
+  })
+}
+
+export async function getAnnouncementPosts(requesterId: string) {
+  const feedPosts = await prisma.post.findMany({
+    orderBy: { createdAt: 'desc' },
+    where: {
+      NOT: {
+        announcement: null
+      }
+    },
+    include: constructInclude(requesterId),
+  });
+
+  updateViews(feedPosts);
+  return feedPosts;
+}
+
+export async function removeAnnouncementPost(postId: string) {
+  await prisma.announcementPost.delete({
+    where: {
+      postId
+    }
+  })
 }
