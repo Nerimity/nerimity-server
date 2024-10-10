@@ -38,6 +38,12 @@ export const USER_BADGES = {
     bit: 16,
     color: 'linear-gradient(90deg, rgba(224,26,185,1) 0%, rgba(64,122,255,1) 100%);',
   },
+  MOD: {
+    name: 'Moderator',
+    description: 'Moderator of Nerimity',
+    bit: 64,
+    credit: 'Avatar Border by upklyak on Freepik',
+  },
 };
 
 export const isUserAdmin = (badge: number) => {
