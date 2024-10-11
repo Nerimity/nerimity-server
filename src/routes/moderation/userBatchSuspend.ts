@@ -159,7 +159,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     });
 
     if (ips.length) {
-      prisma.auditLog.create({
+      await prisma.auditLog.create({
         data: {
           id: generateId(),
           actionType: AuditLogType.ipBan,
@@ -167,7 +167,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
           count: removeDuplicates(ips).length,
           expireAt: dateToDateTime(expireAfter(7)),
         },
-      });
+      }).catch(() => { });
     }
   }
 
