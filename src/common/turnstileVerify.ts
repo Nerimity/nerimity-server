@@ -2,6 +2,8 @@ import env from './env';
 
 export async function turnstileVerify(token: string) {
 
+  if (env.DEV_MODE) return true;
+
   const params = new URLSearchParams();
   params.append('secret', env.TURNSTILE_SECRET);
   params.append('response', token);
@@ -12,7 +14,7 @@ export async function turnstileVerify(token: string) {
       method: 'POST',
       body: params,
     }
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+     
   ).catch(() => { });
 
   if (!res) return false;
