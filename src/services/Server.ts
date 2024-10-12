@@ -429,8 +429,6 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
   }
   await prisma.$transaction(transactions);
 
-  await leaveVoiceChannel(userId);
-
   deleteAllInboxCache(userId);
   await removeServerIdFromAccountOrder(userId, serverId);
   if (server.systemChannelId && leaveMessage) {
