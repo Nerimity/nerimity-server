@@ -31,6 +31,11 @@ export const USER_BADGES = {
     bit: 8,
     color: '#d86f6f',
   },
+  EMO_SUPPORTER: {
+    name: 'Emo Supporter',
+    description: 'Supported this project by donating money',
+    bit: 128,
+  },
   PALESTINE: {
     free: true,
     name: 'Palestine',
