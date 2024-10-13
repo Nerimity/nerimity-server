@@ -11,10 +11,16 @@ export function getUsersOnline(Router: Router) {
 async function route(req: Request, res: Response) {
   const connectedUserIds = await getAllConnectedUserIds();
 
+  let sort = req.query.sort as "desc" | "asc";
+
+  if (sort && !["desc", "asc"].includes(sort)) {
+    sort = "desc";
+  }
+
   const users = await prisma.user.findMany({
     where: { id: { in: connectedUserIds } },
     orderBy: {
-      joinedAt: 'desc',
+      joinedAt: sort,
     },
     select: {
       id: true,
