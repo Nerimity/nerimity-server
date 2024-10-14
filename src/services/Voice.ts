@@ -8,13 +8,32 @@ import {
   removeVoiceUserByUserId,
 } from '../cache/VoiceCache';
 import { prisma } from '../common/database';
+import env from '../common/env';
 import { generateError } from '../common/errorHandler';
 import { emitServerVoiceUserLeft, emitServerVoiceUserJoined, emitDMVoiceUserLeft, emitDMVoiceUserJoined } from '../emits/Voice';
 import { ChannelType, TextChannelTypes } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
 import { MessageType } from '../types/Message';
 import { createMessage } from './Message';
-import { isUserBlocked } from './User/User';
+
+export const generateTurnCredentials = async () => {
+  const res = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${env.CLOUDFLARE_CALLS_ID}/credentials/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.CLOUDFLARE_CALLS_TOKEN}`,
+    },
+    body: JSON.stringify({
+      ttl: 86400
+    })
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  return (await res.json() as any).iceServers;
+}
 
 export const joinVoiceChannel = async (
   userId: string,
@@ -57,8 +76,8 @@ export const joinVoiceChannel = async (
       where: {
         status: FriendStatus.BLOCKED,
         OR: [
-          {userId: userId, recipientId: channelCache.inbox.recipientId},
-          {userId: channelCache.inbox.recipientId, recipientId: userId},
+          { userId: userId, recipientId: channelCache.inbox.recipientId },
+          { userId: channelCache.inbox.recipientId, recipientId: userId },
         ]
       }
     })

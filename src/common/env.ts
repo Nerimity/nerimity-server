@@ -37,6 +37,8 @@ export default {
   DEFAULT_SERVER_ROLE_COLOR: process.env.DEFAULT_SERVER_ROLE_COLOR as string,
 
   TURNSTILE_SECRET: process.env.TURNSTILE_SECRET as string,
+  CLOUDFLARE_CALLS_ID: process.env.CLOUDFLARE_CALLS_ID as string,
+  CLOUDFLARE_CALLS_TOKEN: process.env.CLOUDFLARE_CALLS_TOKEN as string,
 
   SMTP_USER: process.env.SMTP_USER as string,
   SMTP_PASS: process.env.SMTP_PASS as string,
