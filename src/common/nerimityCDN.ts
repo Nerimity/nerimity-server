@@ -6,8 +6,8 @@ export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ wid
     fetch(env.LOCAL_NERIMITY_CDN + `proxy-dimensions?url=${encodeURI(url)}`, {
       method: 'GET',
       headers: {
-        secret: env.NERIMITY_CDN_SECRET
-      }
+        secret: env.NERIMITY_CDN_SECRET,
+      },
     })
       .then(async (res) => {
         if (res.status == 200) return resolve([await res.json(), null]);
@@ -22,14 +22,12 @@ export async function deleteFile(path: string) {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      secret: env.NERIMITY_CDN_SECRET
+      secret: env.NERIMITY_CDN_SECRET,
     },
     body: JSON.stringify({ path }),
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-  })
-    .catch((err) => {
-      console.log(err)
-    });
+  }).catch((err) => {
+    console.trace(err);
+  });
 }
 
 // deletes 1000 images from a channel.
@@ -54,18 +52,17 @@ export async function deleteImageBatch(paths: string[]) {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      secret: env.NERIMITY_CDN_SECRET
+      secret: env.NERIMITY_CDN_SECRET,
     },
     body: JSON.stringify({ paths }),
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-  }).catch((e) => { });
+  }).catch((e) => {});
 }
 
 // /verify/:groupId?/:fileId
 interface VerifyUploadOpts {
   fileId: string;
   groupId?: string;
-  type: "ATTACHMENT" | "AVATAR" | "BANNER" | "EMOJI";
+  type: 'ATTACHMENT' | 'AVATAR' | 'BANNER' | 'EMOJI';
   imageOnly?: boolean;
 }
 
@@ -79,10 +76,9 @@ export interface VerifyResponse {
   compressed: boolean;
   width?: number;
   height?: number;
-  expireAt?: number
+  expireAt?: number;
 }
 export async function verifyUpload(opts: VerifyUploadOpts) {
-
   const url = new URL(env.LOCAL_NERIMITY_CDN);
   url.pathname = `verify/${opts.fileId}`;
   if (opts.groupId) url.pathname = `verify/${opts.groupId}/${opts.fileId}`;
@@ -92,11 +88,11 @@ export async function verifyUpload(opts: VerifyUploadOpts) {
   return await fetch(url, {
     method: 'POST',
     headers: {
-      'secret': env.NERIMITY_CDN_SECRET,
-    }
+      secret: env.NERIMITY_CDN_SECRET,
+    },
   })
     .then(async (res) => {
-      if (res.status == 200) return [await res.json() as VerifyResponse, null] as const;
+      if (res.status == 200) return [(await res.json()) as VerifyResponse, null] as const;
       return [null, (await res.json()).error as string] as const;
     })
     .catch(() => [null, 'Could not connect to the CDN.'] as const);
