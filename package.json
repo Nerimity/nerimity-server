@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "start": "tsup --onSuccess \"node --enable-source-maps dist/index.mjs\"",
+    "start": "tsup --onSuccess \"node --trace-warnings --enable-source-maps dist/index.mjs\"",
     "bundle": "tsup",
     "dev": "tsup --watch --onSuccess \"node --enable-source-maps dist/index.mjs\"",
     "build": "pnpm bundle",
