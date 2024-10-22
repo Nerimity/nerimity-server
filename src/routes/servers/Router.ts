@@ -38,6 +38,7 @@ import { serverWelcomeQuestionDelete } from './serverWelcomeQuestionDelete';
 import { serverWelcomeAnswer } from './serverWelcomeAnswer';
 import { serverWelcomeAnswerRemove } from './serverWelcomeAnswerRemove';
 import { serverMemberProfileUpdate } from './serveMemberProfileUpdate';
+import { serverAuditLogsGet } from './serverAuditlogsGet';
 
 const ServersRouter = Router();
 
@@ -50,7 +51,7 @@ serverCreate(ServersRouter);
 serverDelete(ServersRouter);
 serverLeave(ServersRouter);
 serverUpdate(ServersRouter);
-
+serverAuditLogsGet(ServersRouter);
 serverInviteJoin(ServersRouter);
 serverInviteDetails(ServersRouter);
 serverInviteCreate(ServersRouter);

@@ -9,8 +9,9 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { kickServerMember } from '../../services/Server';
 
 export function serverMemberKick(Router: Router) {
-  Router.delete('/servers/:serverId/members/:userId/kick',
-    authenticate({allowBot: true}),
+  Router.delete(
+    '/servers/:serverId/members/:userId/kick',
+    authenticate({ allowBot: true }),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.KICK),
     rateLimit({
@@ -23,13 +24,11 @@ export function serverMemberKick(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-
   const userId = req.params.userId as string;
 
-  const [, error] = await kickServerMember(userId, req.serverCache.id);
+  const [, error] = await kickServerMember(userId, req.serverCache.id, req.userCache.id);
   if (error) {
     return res.status(400).json(error);
   }
   res.json({ status: true });
-
 }

@@ -50,7 +50,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
 
   if (!server) return res.status(404).json(generateError('Server does not exist.'));
 
-  const [, error] = await deleteServer(req.params.serverId);
+  const [, error] = await deleteServer(req.params.serverId, req.userCache.id);
   if (error) {
     return res.status(403).json(error);
   }
