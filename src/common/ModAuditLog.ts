@@ -1,4 +1,4 @@
-export const AuditLogType = {
+export const ModAuditLogType = {
   userSuspend: 0,
   userUnsuspend: 1,
   userUpdate: 2,

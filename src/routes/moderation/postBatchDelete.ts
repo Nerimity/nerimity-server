@@ -6,7 +6,7 @@ import { generateId } from '../../common/flakeId';
 import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { AuditLogType } from '../../common/ModAuditLog';
+import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 import { deleteFile } from '../../common/nerimityCDN';
 
@@ -72,7 +72,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   await prisma.modAuditLog.createMany({
     data: posts.map((post) => ({
       id: generateId(),
-      actionType: AuditLogType.postDelete,
+      actionType: ModAuditLogType.postDelete,
       actionById: req.userCache.id,
 
       username: post.createdBy.username,

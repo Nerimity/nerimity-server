@@ -7,7 +7,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { deleteServer } from '../../services/Server';
 import { generateId } from '../../common/flakeId';
-import { AuditLogType } from '../../common/ModAuditLog';
+import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function serverDelete(Router: Router) {
@@ -58,7 +58,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
   await prisma.modAuditLog.create({
     data: {
       id: generateId(),
-      actionType: AuditLogType.serverDelete,
+      actionType: ModAuditLogType.serverDelete,
       actionById: req.userCache.id,
       serverName: server.name,
       serverId: server.id,

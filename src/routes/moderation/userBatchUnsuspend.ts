@@ -7,7 +7,7 @@ import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
-import { AuditLogType } from '../../common/ModAuditLog';
+import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function userBatchUnsuspend(Router: Router) {
@@ -67,7 +67,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   await prisma.modAuditLog.createMany({
     data: unsuspendUsers.map((user) => ({
       id: generateId(),
-      actionType: AuditLogType.userUnsuspend,
+      actionType: ModAuditLogType.userUnsuspend,
       actionById: req.userCache.id,
       username: user.username,
       userId: user.id,

@@ -7,7 +7,7 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { emitServerUpdated } from '../../emits/Server';
 import { generateId } from '../../common/flakeId';
-import { AuditLogType } from '../../common/ModAuditLog';
+import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function updateServer(Router: Router) {
@@ -55,7 +55,7 @@ async function route(req: Request, res: Response) {
   await prisma.modAuditLog.create({
     data: {
       id: generateId(),
-      actionType: AuditLogType.serverUpdate,
+      actionType: ModAuditLogType.serverUpdate,
       actionById: req.userCache.id,
       serverName: server.name,
       serverId: server.id,

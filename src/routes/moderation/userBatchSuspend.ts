@@ -8,7 +8,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { disconnectUsers } from '../../services/Moderation';
 import { isModMiddleware } from './isModMiddleware';
 import { removeAllowedIPsCache } from '../../cache/UserCache';
-import { AuditLogType } from '../../common/ModAuditLog';
+import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
@@ -163,7 +163,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
         .create({
           data: {
             id: generateId(),
-            actionType: AuditLogType.ipBan,
+            actionType: ModAuditLogType.ipBan,
             actionById: req.userCache.id,
             count: removeDuplicates(ips).length,
             expireAt: dateToDateTime(expireAfter(7)),
@@ -181,7 +181,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   await prisma.modAuditLog.createMany({
     data: newSuspendedUsers.map((user) => ({
       id: generateId(),
-      actionType: AuditLogType.userSuspend,
+      actionType: ModAuditLogType.userSuspend,
       actionById: req.userCache.id,
       username: user.username,
       userId: user.id,
