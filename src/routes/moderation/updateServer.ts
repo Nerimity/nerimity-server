@@ -3,39 +3,15 @@ import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { body } from 'express-validator';
-import {
-  customExpressValidatorResult,
-  generateError,
-} from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { emitServerUpdated } from '../../emits/Server';
 import { generateId } from '../../common/flakeId';
-import { AuditLogType } from '../../common/AuditLog';
+import { AuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function updateServer(Router: Router) {
-  Router.post(
-    '/moderation/servers/:serverId',
-    authenticate(),
-    isModMiddleware,
-    body('name')
-      .isString()
-      .withMessage('Password must be a string!')
-      .optional(),
-    body('verified')
-      .isBoolean()
-      .withMessage('Verified must be a boolean!')
-      .optional(),
-    body('password')
-      .isLength({ min: 4, max: 72 })
-      .withMessage('Password must be between 4 and 72 characters long.')
-      .isString()
-      .withMessage('Password must be a string!')
-      .not()
-      .isEmpty()
-      .withMessage('Password is required'),
-    route
-  );
+  Router.post('/moderation/servers/:serverId', authenticate(), isModMiddleware, body('name').isString().withMessage('Password must be a string!').optional(), body('verified').isBoolean().withMessage('Verified must be a boolean!').optional(), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
 }
 
 async function route(req: Request, res: Response) {
@@ -50,17 +26,10 @@ async function route(req: Request, res: Response) {
     where: { id: req.userCache.account.id },
     select: { password: true },
   });
-  if (!account)
-    return res
-      .status(404)
-      .json(generateError('Something went wrong. Try again later.'));
+  if (!account) return res.status(404).json(generateError('Something went wrong. Try again later.'));
 
-  const isPasswordValid = await checkUserPassword(
-    account.password,
-    req.body.password
-  );
-  if (!isPasswordValid)
-    return res.status(403).json(generateError('Invalid password.', 'password'));
+  const isPasswordValid = await checkUserPassword(account.password, req.body.password);
+  if (!isPasswordValid) return res.status(403).json(generateError('Invalid password.', 'password'));
 
   const update = {
     ...addToObjectIfExists('name', req.body.name),
@@ -83,7 +52,7 @@ async function route(req: Request, res: Response) {
 
   emitServerUpdated(serverId, update);
 
-  await prisma.auditLog.create({
+  await prisma.modAuditLog.create({
     data: {
       id: generateId(),
       actionType: AuditLogType.serverUpdate,

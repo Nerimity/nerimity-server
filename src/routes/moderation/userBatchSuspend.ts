@@ -8,7 +8,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { disconnectUsers } from '../../services/Moderation';
 import { isModMiddleware } from './isModMiddleware';
 import { removeAllowedIPsCache } from '../../cache/UserCache';
-import { AuditLogType } from '../../common/AuditLog';
+import { AuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
@@ -159,15 +159,17 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     });
 
     if (ips.length) {
-      await prisma.auditLog.create({
-        data: {
-          id: generateId(),
-          actionType: AuditLogType.ipBan,
-          actionById: req.userCache.id,
-          count: removeDuplicates(ips).length,
-          expireAt: dateToDateTime(expireAfter(7)),
-        },
-      }).catch(() => { });
+      await prisma.modAuditLog
+        .create({
+          data: {
+            id: generateId(),
+            actionType: AuditLogType.ipBan,
+            actionById: req.userCache.id,
+            count: removeDuplicates(ips).length,
+            expireAt: dateToDateTime(expireAfter(7)),
+          },
+        })
+        .catch(() => {});
     }
   }
 
@@ -176,7 +178,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     select: { id: true, username: true },
   });
 
-  await prisma.auditLog.createMany({
+  await prisma.modAuditLog.createMany({
     data: newSuspendedUsers.map((user) => ({
       id: generateId(),
       actionType: AuditLogType.userSuspend,

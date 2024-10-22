@@ -129,7 +129,7 @@ model User {
   connections           UserConnection[]
   notice ChatNotice?
 
-  auditActions          AuditLog[]
+  auditActions          ModAuditLog[]
 
   openedTickets         Ticket[]
 
@@ -837,7 +837,7 @@ model ChatNotice {
 }
 
 
-model AuditLog {
+model ModAuditLog {
   id          String   @id
   createdAt   DateTime @default(now())
 

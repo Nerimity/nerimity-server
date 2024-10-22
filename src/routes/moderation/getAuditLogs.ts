@@ -16,7 +16,7 @@ async function route(req: Request, res: Response) {
     limit = 30;
   }
 
-  const logs = await prisma.auditLog.findMany({
+  const logs = await prisma.modAuditLog.findMany({
     orderBy: {
       createdAt: 'desc',
     },
