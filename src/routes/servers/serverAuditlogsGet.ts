@@ -6,7 +6,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { getAuditLogs } from '../../services/AuditLog';
 
-export function serverMemberUpdate(Router: Router) {
+export function serverAuditLogsGet(Router: Router) {
   Router.post(
     '/servers/:serverId/audit-logs',
     authenticate({ allowBot: true }),
@@ -14,7 +14,7 @@ export function serverMemberUpdate(Router: Router) {
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
 
     rateLimit({
-      name: 'server_auditlogs_get',
+      name: 'server_auditLogs_get',
       restrictMS: 10000,
       requests: 10,
     }),

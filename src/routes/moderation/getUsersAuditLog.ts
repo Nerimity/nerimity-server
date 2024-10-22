@@ -3,7 +3,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { getAuditLogs } from '../../services/AuditLog';
 
-export function searchPosts(Router: Router) {
+export function getUsersAuditLog(Router: Router) {
   Router.get('/moderation/search', authenticate(), isModMiddleware, route);
 }
 

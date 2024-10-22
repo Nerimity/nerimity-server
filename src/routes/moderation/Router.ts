@@ -24,11 +24,13 @@ import { useEditSuspension } from './userEditSuspension';
 import { userBatchWarn } from './userBatchWarn';
 import { announcementPostCreate } from './announcementPostCreate';
 import { announcementPostRemove } from './announcementPostRemove';
+import { getUsersAuditLog } from './getUsersAuditLog';
 
 const ModerationRouter = Router();
 
 userBatchWarn(ModerationRouter);
 
+getUsersAuditLog(ModerationRouter);
 getAuditLogs(ModerationRouter);
 getStats(ModerationRouter);
 userBatchUnsuspend(ModerationRouter);
