@@ -17,7 +17,9 @@ async function route(req: Request, res: Response) {
     limit = 50;
   }
 
-  const posts = await getAuditLogs(undefined, limit, after, search);
+  const serverId = undefined; // No specific server, search across all servers
+
+  const posts = await getAuditLogs(serverId, limit, after, search);
 
   res.json(posts);
 }
