@@ -129,7 +129,7 @@ model User {
   connections           UserConnection[]
   notice ChatNotice?
 
-  auditActions          ModAuditLog[]
+  modAuditActions          ModAuditLog[]
 
   openedTickets         Ticket[]
 
