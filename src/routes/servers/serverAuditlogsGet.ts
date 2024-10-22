@@ -7,7 +7,7 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { getAuditLogs } from '../../services/AuditLog';
 
 export function serverAuditLogsGet(Router: Router) {
-  Router.post(
+  Router.get(
     '/servers/:serverId/audit-logs',
     authenticate({ allowBot: true }),
     serverMemberVerification(),
