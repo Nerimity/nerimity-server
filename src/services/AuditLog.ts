@@ -167,18 +167,20 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
 
   auditLogs.forEach((auditLog) => {
     userIdSet.add(auditLog.actionById);
-    if (auditLog.actionType === AuditLogType.SERVER_OWNERSHIP_UPDATE) {
-      userIdSet.add(auditLog.data.newOwnerUserId);
-      userIdSet.add(auditLog.data.oldOwnerUserId);
-    }
-    if (auditLog.actionType === AuditLogType.SERVER_USER_BAN) {
-      userIdSet.add(auditLog.data.bannedUserId);
-    }
-    if (auditLog.actionType === AuditLogType.SERVER_USER_UNBAN) {
-      userIdSet.add(auditLog.data.unbannedUserId);
-    }
-    if (auditLog.actionType === AuditLogType.SERVER_USER_KICK) {
-      userIdSet.add(auditLog.data.kickedUserId);
+    switch (auditLog.actionType) {
+      case AuditLogType.SERVER_OWNERSHIP_UPDATE:
+        userIdSet.add(auditLog.data.newOwnerUserId);
+        userIdSet.add(auditLog.data.oldOwnerUserId);
+        break;
+      case AuditLogType.SERVER_USER_BAN:
+        userIdSet.add(auditLog.data.bannedUserId);
+        break;
+      case AuditLogType.SERVER_USER_UNBAN:
+        userIdSet.add(auditLog.data.unbannedUserId);
+        break;
+      case AuditLogType.SERVER_USER_KICK:
+        userIdSet.add(auditLog.data.kickedUserId);
+        break;
     }
   });
 
