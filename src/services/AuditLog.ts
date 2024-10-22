@@ -6,9 +6,9 @@ enum AuditLogType {
   SERVER_OWNERSHIP_UPDATE = 'SERVER_OWNERSHIP_UPDATE',
   SERVER_DELETE = 'SERVER_DELETE',
 
-  SERVER_USER_BAN = 'USER_BAN',
-  SERVER_USER_UNBAN = 'USER_UNBAN',
-  SERVER_USER_KICK = 'USER_KICK',
+  SERVER_USER_BAN = 'SERVER_USER_BAN',
+  SERVER_USER_UNBAN = 'SERVER_USER_UNBAN',
+  SERVER_USER_KICK = 'SERVER_USER_KICK',
 }
 
 interface ServerOwnershipUpdateAuditLog {
@@ -85,8 +85,8 @@ export const logServerDelete = async (opts: ServerDeleteOpts) => {
       id: generateId(),
       actionType: AuditLogType.SERVER_DELETE,
       actionById: opts.userId,
+      serverId: opts.serverId,
       data: {
-        serverId: opts.serverId,
         serverName: opts.serverName,
       },
     },
