@@ -25,6 +25,7 @@ import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
 import { LastOnlineStatus } from './User/User';
+import { logServerDelete, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
 
 const serverMemberWithLastOnlineDetails = Prisma.validator<Prisma.ServerMemberDefaultArgs>()({
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -313,7 +314,7 @@ export const joinServer = async (
   return [server, null] as const;
 };
 
-export const deleteServer = async (serverId: string) => {
+export const deleteServer = async (serverId: string, deletedByUserId: string) => {
   const server = await prisma.server.findFirst({
     where: { id: serverId },
     include: { channels: { select: { id: true } } },
@@ -341,6 +342,12 @@ export const deleteServer = async (serverId: string) => {
 
   await deleteServerChannelCaches(server.channels.map((channel) => channel.id));
   await deleteServerCache(serverId);
+
+  await logServerDelete({
+    serverId,
+    serverName: server.name,
+    userId: deletedByUserId,
+  });
 
   emitServerLeft({
     serverId,
@@ -461,7 +468,7 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
   return [false, null];
 };
 
-export const kickServerMember = async (userId: string, serverId: string) => {
+export const kickServerMember = async (userId: string, serverId: string, kickedByUserId: string) => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -482,6 +489,8 @@ export const kickServerMember = async (userId: string, serverId: string) => {
       updateLastSeen: false,
     });
   }
+
+  await logServerUserKicked({ userId: kickedByUserId, serverId, kickedUserId: userId });
   return [true, null];
 };
 
@@ -491,7 +500,7 @@ export const serverMemberBans = async (serverId: string) => {
     select: { serverId: true, user: true },
   });
 };
-export const serverMemberRemoveBan = async (serverId: string, userId: string): Promise<CustomResult<boolean, CustomError>> => {
+export const serverMemberRemoveBan = async (serverId: string, userId: string, banRemovedById: string): Promise<CustomResult<boolean, CustomError>> => {
   const bannedMember = await prisma.bannedServerMember.findFirst({
     where: { serverId, userId },
   });
@@ -499,10 +508,13 @@ export const serverMemberRemoveBan = async (serverId: string, userId: string): P
     return [null, generateError('This member is not banned.')];
   }
   await prisma.bannedServerMember.delete({ where: { id: bannedMember.id } });
+
+  await logServerUserUnbanned({ userId: banRemovedById, serverId, unbannedUserId: userId });
+
   return [true, null];
 };
 
-export const banServerMember = async (userId: string, serverId: string, shouldDeleteRecentMessages?: boolean) => {
+export const banServerMember = async (userId: string, serverId: string, bannedByUserId?: string, shouldDeleteRecentMessages?: boolean) => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -521,6 +533,12 @@ export const banServerMember = async (userId: string, serverId: string, shouldDe
 
   const [, error] = await leaveServer(userId, serverId, true, false);
   if (error) return [null, error];
+
+  await logServerUserBanned({
+    userId: bannedByUserId,
+    serverId,
+    bannedUserId: userId,
+  });
 
   if (shouldDeleteRecentMessages) {
     await deleteRecentUserServerMessages(userId, serverId);
@@ -744,14 +762,14 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
           // update or add categoryId
           ...(opts.categoryId && opts.categoryId !== channel.categoryId && opts.orderedChannelIds.includes(channel.id)
             ? {
-              categoryId: opts.categoryId,
-            }
+                categoryId: opts.categoryId,
+              }
             : undefined),
           // remove categoryId
           ...(!opts.categoryId && channel.categoryId && opts.orderedChannelIds.includes(channel.id)
             ? {
-              categoryId: null,
-            }
+                categoryId: null,
+              }
             : undefined),
         },
       })
@@ -909,10 +927,10 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
   await prisma.$transaction([
     ...(opts.answers.length && removedAnswerIds.length
       ? [
-        prisma.serverWelcomeAnswer.deleteMany({
-          where: { id: { in: removedAnswerIds }, questionId: opts.id },
-        }),
-      ]
+          prisma.serverWelcomeAnswer.deleteMany({
+            where: { id: { in: removedAnswerIds }, questionId: opts.id },
+          }),
+        ]
       : []),
     prisma.serverWelcomeQuestion.update({
       where: { id: opts.id },
@@ -937,10 +955,10 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
           ...addToObjectIfExists('order', answer.order),
           ...(answer.roleIds
             ? {
-              roleIds: {
-                set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
-              },
-            }
+                roleIds: {
+                  set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
+                },
+              }
             : {}),
         },
       })

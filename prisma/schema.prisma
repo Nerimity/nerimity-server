@@ -129,7 +129,7 @@ model User {
   connections           UserConnection[]
   notice ChatNotice?
 
-  modAuditActions          ModAuditLog[]
+  modAuditLogs          ModAuditLog[]
 
   openedTickets         Ticket[]
 
@@ -262,6 +262,7 @@ model Server {
   defaultChannelId       String
   systemChannelId        String? @unique // Used for system messages eg member joined message. 
   defaultRoleId          String
+
 
 
   systemChannel          Channel?                @relation("systemChannel", fields: [systemChannelId], references: [id], onDelete: SetNull)
@@ -862,3 +863,17 @@ model ModAuditLog {
 }
 
 
+model AuditLog {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  actionType   String
+
+  actionById   String
+
+  serverId     String?
+
+  data         Json?
+
+  @@index([actionById, createdAt])
+  @@index([serverId, createdAt])
+}

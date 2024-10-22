@@ -4,29 +4,29 @@ import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { serverMemberRemoveBan } from '../../services/Server';
+import { getAuditLogs } from '../../services/AuditLog';
 
-export function serverMemberBanRemove(Router: Router) {
-  Router.delete(
-    '/servers/:serverId/bans/:userId',
+export function serverMemberUpdate(Router: Router) {
+  Router.post(
+    '/servers/:serverId/audit-logs',
     authenticate({ allowBot: true }),
     serverMemberVerification(),
-    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.BAN),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
+
     rateLimit({
-      name: 'server_ban_member',
+      name: 'server_auditlogs_get',
       restrictMS: 10000,
-      requests: 80,
+      requests: 10,
     }),
     route
   );
 }
 
 async function route(req: Request, res: Response) {
-  const userId = req.params.userId as string;
+  const logs = await getAuditLogs(req.params.serverId!);
 
-  const [, error] = await serverMemberRemoveBan(req.serverCache.id, userId, req.userCache.id);
-  if (error) {
-    return res.status(400).json(error);
-  }
-  res.json({ status: true });
+  res.json({
+    auditLogs: logs.auditLogs,
+    users: logs.users,
+  });
 }

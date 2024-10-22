@@ -171,7 +171,7 @@ export async function deleteOrLeaveAllServers(userId: string) {
     await setPromiseTimeout(500);
     const server = user.servers[i]!;
     if (server.createdById === userId) {
-      await deleteServer(server.id);
+      await deleteServer(server.id, userId);
       continue;
     }
     await leaveServer(userId, server.id);
@@ -239,12 +239,12 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
     }),
     ...(opts?.deleteContent
       ? [
-        prisma.scheduleAccountContentDelete.create({
-          data: {
-            userId,
-          },
-        }),
-      ]
+          prisma.scheduleAccountContentDelete.create({
+            data: {
+              userId,
+            },
+          }),
+        ]
       : []),
     prisma.account.deleteMany({
       where: { userId },

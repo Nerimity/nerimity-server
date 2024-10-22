@@ -87,7 +87,7 @@ export function channelMessageCreate(Router: Router) {
         const isServerOwner = req.userCache.id === req.serverCache.createdById;
         if (isServerOwner) return;
 
-        await banServerMember(req.userCache.id, req.serverCache.id, true);
+        await banServerMember(req.userCache.id, req.serverCache.id, undefined, true);
       },
     }),
     queueRoute
