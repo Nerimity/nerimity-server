@@ -164,9 +164,11 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
   })) as TypedAuditLog[];
 
   const userIdSet = new Set<string>();
+  const serverIdSet = new Set<string>();
 
   auditLogs.forEach((auditLog) => {
     userIdSet.add(auditLog.actionById);
+    serverIdSet.add(auditLog.serverId);
     switch (auditLog.actionType) {
       case AuditLogType.SERVER_OWNERSHIP_UPDATE:
         userIdSet.add(auditLog.data.newOwnerUserId);
@@ -185,11 +187,16 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
   });
 
   const userIds = Array.from(userIdSet).filter((id) => id && id !== 'System');
+  const serverIds = Array.from(serverIdSet).filter((id) => id);
 
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: { id: true, username: true },
   });
+  const servers = await prisma.server.findMany({
+    where: { id: { in: serverIds } },
+    select: { name: true, id: true },
+  });
 
-  return { auditLogs, users };
+  return { auditLogs, users, servers };
 };
