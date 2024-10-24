@@ -156,9 +156,9 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
   const auditLogs = (await prisma.auditLog.findMany({
     where: {
       serverId,
-      ...(afterId ? { cursor: { id: afterId } } : undefined),
       ...(search ? { OR: [{ serverId: search }, { actionById: search }] } : undefined),
     },
+    ...(afterId ? { cursor: { id: afterId } } : undefined),
     orderBy: { createdAt: 'desc' },
     take: limit || 50,
   })) as TypedAuditLog[];
