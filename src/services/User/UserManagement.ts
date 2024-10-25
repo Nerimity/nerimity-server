@@ -192,12 +192,17 @@ export async function deleteAccount(userId: string, opts?: DeleteAccountOptions)
       account: {
         select: { id: true, _count: { select: { applications: true } } },
       },
+      application: { select: { id: true } },
       _count: { select: { servers: true } },
     },
   });
 
   if (!user) {
     return [null, generateError('Invalid userId.')] as const;
+  }
+
+  if (!user?.application && !user?.account) {
+    return [true, null] as const;
   }
 
   if (!opts?.bot) {
