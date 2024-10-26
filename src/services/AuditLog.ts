@@ -158,6 +158,7 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
       serverId,
       ...(search ? { OR: [{ serverId: search }, { actionById: search }] } : undefined),
     },
+    ...(afterId ? { skip: 1 } : undefined),
     ...(afterId ? { cursor: { id: afterId } } : undefined),
     orderBy: { createdAt: 'desc' },
     take: limit || 50,
