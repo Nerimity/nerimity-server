@@ -23,7 +23,14 @@ export function serverAuditLogsGet(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const logs = await getAuditLogs(req.params.serverId!);
+  const after = req.query.after as string | undefined;
+  let limit = parseInt((req.query.limit || '50') as string);
+
+  if (limit > 50) {
+    limit = 50;
+  }
+
+  const logs = await getAuditLogs(req.params.serverId!, limit, after);
 
   res.json({
     auditLogs: logs.auditLogs,
