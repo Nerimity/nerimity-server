@@ -89,5 +89,5 @@ async function route(req: Request, res: Response) {
         }
       : {}),
   });
-  res.json(posts.map((e) => ({ content: e.content, id: e.id, likes: e.estimateLikes })));
+  res.json(posts);
 }
