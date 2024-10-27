@@ -47,6 +47,7 @@ async function route(req: Request, res: Response) {
   }
 
   const posts = await fetchPosts({
+    doNotReverse: !!sort,
     hideIfBlockedByMe: true,
     withReplies: false,
     bypassBlocked: isAdmin,

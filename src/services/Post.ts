@@ -164,6 +164,7 @@ interface FetchPostsOpts {
   where?: Prisma.PostWhereInput;
   additionalInclude?: Prisma.PostInclude;
   orderBy?: Prisma.PostOrderByWithRelationInput;
+  doNotReverse?: boolean;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
@@ -208,6 +209,9 @@ export async function fetchPosts(opts: FetchPostsOpts) {
   });
   updateViews(posts);
 
+  if (opts.doNotReverse) {
+    return posts;
+  }
   return posts.reverse();
 }
 async function updateViews(posts: Post[]) {
