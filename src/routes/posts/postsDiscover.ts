@@ -24,7 +24,7 @@ interface Query {
   sort?: string;
 }
 
-const SortOptions = ['mostLiked30days', 'mostLikedAllTime'];
+const SortOptions = ['mostLiked7Days', 'mostLiked30days', 'mostLikedAllTime'];
 async function route(req: Request, res: Response) {
   const query = req.query as Query;
 
@@ -43,6 +43,9 @@ async function route(req: Request, res: Response) {
   if (sort) {
     if (sort === 'mostLiked30days') {
       afterDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+    if (sort === 'mostLiked7Days') {
+      afterDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     }
   }
 
