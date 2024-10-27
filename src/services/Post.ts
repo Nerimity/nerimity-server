@@ -163,6 +163,7 @@ interface FetchPostsOpts {
 
   where?: Prisma.PostWhereInput;
   additionalInclude?: Prisma.PostInclude;
+  orderBy?: Prisma.PostOrderByWithRelationInput;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
@@ -201,7 +202,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 
   const posts = await prisma.post.findMany({
     where,
-    orderBy: { createdAt: 'desc' },
+    orderBy: opts.orderBy || { createdAt: 'desc' },
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
     include: { ...constructInclude(opts.requesterUserId), ...opts.additionalInclude },
   });

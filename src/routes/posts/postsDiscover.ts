@@ -21,8 +21,10 @@ interface Query {
   limit?: string;
   afterId?: string;
   beforeId?: string;
+  sort?: string;
 }
 
+const SortOptions = ['mostLiked30days', 'mostLikedAllTime'];
 async function route(req: Request, res: Response) {
   const query = req.query as Query;
 
@@ -34,6 +36,16 @@ async function route(req: Request, res: Response) {
     limit = undefined;
   }
 
+  const sort = SortOptions.includes(query.sort!) ? query.sort : undefined;
+
+  let afterDate: Date | undefined = undefined;
+
+  if (sort) {
+    if (sort === 'mostLiked30days') {
+      afterDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+  }
+
   const posts = await fetchPosts({
     hideIfBlockedByMe: true,
     withReplies: false,
@@ -42,6 +54,23 @@ async function route(req: Request, res: Response) {
     limit,
     afterId: query.afterId,
     beforeId: query.beforeId,
+
+    ...(sort
+      ? {
+          orderBy: {
+            estimateLikes: 'asc',
+          },
+          ...(afterDate
+            ? {
+                where: {
+                  createdAt: {
+                    gte: afterDate,
+                  },
+                },
+              }
+            : {}),
+        }
+      : {}),
   });
   res.json(posts);
 }
