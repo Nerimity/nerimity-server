@@ -163,8 +163,9 @@ interface FetchPostsOpts {
 
   where?: Prisma.PostWhereInput;
   additionalInclude?: Prisma.PostInclude;
-  orderBy?: Prisma.PostOrderByWithRelationInput;
-  doNotReverse?: boolean;
+  orderBy?: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
+  skip?: number;
+  cursor?: Prisma.PostWhereUniqueInput;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
@@ -203,15 +204,14 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 
   const posts = await prisma.post.findMany({
     where,
+    skip: opts.skip,
     orderBy: opts.orderBy || { createdAt: 'desc' },
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
+    cursor: opts.cursor,
     include: { ...constructInclude(opts.requesterUserId), ...opts.additionalInclude },
   });
   updateViews(posts);
 
-  if (opts.doNotReverse) {
-    return posts;
-  }
   return posts.reverse();
 }
 async function updateViews(posts: Post[]) {

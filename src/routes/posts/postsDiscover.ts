@@ -22,6 +22,7 @@ interface Query {
   afterId?: string;
   beforeId?: string;
   sort?: string;
+  skip?: string;
 }
 
 const SortOptions = ['mostLiked7Days', 'mostLiked30days', 'mostLikedAllTime'];
@@ -36,6 +37,7 @@ async function route(req: Request, res: Response) {
     limit = undefined;
   }
 
+  const skip = query.skip ? parseInt(query.skip) : 0;
   const sort = SortOptions.includes(query.sort!) ? query.sort : undefined;
 
   let afterDate: Date | undefined = undefined;
@@ -55,14 +57,26 @@ async function route(req: Request, res: Response) {
     bypassBlocked: isAdmin,
     requesterUserId: req.userCache.id,
     limit,
-    afterId: query.afterId,
-    beforeId: query.beforeId,
+
+    ...(!sort
+      ? {
+          afterId: query.afterId,
+          beforeId: query.beforeId,
+        }
+      : {}),
 
     ...(sort
       ? {
-          orderBy: {
-            estimateLikes: query.afterId || query.beforeId ? 'asc' : 'desc',
-          },
+          ...(query.afterId
+            ? {
+                skip: 1,
+                cursor: {
+                  id: query.afterId,
+                },
+              }
+            : {}),
+
+          orderBy: [{ estimateLikes: 'desc' }, { createdAt: 'asc' }],
           ...(afterDate
             ? {
                 where: {
@@ -75,5 +89,5 @@ async function route(req: Request, res: Response) {
         }
       : {}),
   });
-  res.json(posts);
+  res.json(posts.map((e) => ({ content: e.content, id: e.id, likes: e.estimateLikes })));
 }
