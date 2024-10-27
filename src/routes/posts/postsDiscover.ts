@@ -61,7 +61,7 @@ async function route(req: Request, res: Response) {
     ...(sort
       ? {
           orderBy: {
-            estimateLikes: 'desc',
+            estimateLikes: query.afterId || query.beforeId ? 'asc' : 'desc',
           },
           ...(afterDate
             ? {
