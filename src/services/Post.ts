@@ -70,28 +70,28 @@ export async function createPost(opts: CreatePostOpts) {
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
         ? {
-          attachments: {
-            create: {
-              id: generateId(),
-              height: opts.attachment.height,
-              width: opts.attachment.width,
-              path: opts.attachment.path,
+            attachments: {
+              create: {
+                id: generateId(),
+                height: opts.attachment.height,
+                width: opts.attachment.width,
+                path: opts.attachment.path,
+              },
             },
-          },
-        }
+          }
         : undefined),
 
       ...(opts.poll?.choices.length
         ? {
-          poll: {
-            create: {
-              id: generateId(),
-              choices: {
-                createMany: { data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice })) },
+            poll: {
+              create: {
+                id: generateId(),
+                choices: {
+                  createMany: { data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice })) },
+                },
               },
             },
-          },
-        }
+          }
         : {}),
     },
     include: constructInclude(opts.userId),
@@ -125,7 +125,7 @@ export async function editPost(opts: { editById: string; postId: string; content
       },
       include: constructInclude(opts.editById),
     })
-    .catch(() => { });
+    .catch(() => {});
 
   if (!newPost) return [null, generateError('Something went wrong. Try again later.')] as const;
 
@@ -176,25 +176,25 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     ...(opts.postId ? { commentToId: opts.postId } : undefined),
     ...(!opts.bypassBlocked
       ? {
-        createdBy: {
-          ...(opts.hideIfBlockedByMe
-            ? {
-              recipientFriends: {
-                none: {
-                  status: FriendStatus.BLOCKED,
-                  userId: opts.requesterUserId,
-                },
+          createdBy: {
+            ...(opts.hideIfBlockedByMe
+              ? {
+                  recipientFriends: {
+                    none: {
+                      status: FriendStatus.BLOCKED,
+                      userId: opts.requesterUserId,
+                    },
+                  },
+                }
+              : {}),
+            friends: {
+              none: {
+                status: FriendStatus.BLOCKED,
+                recipientId: opts.requesterUserId,
               },
-            }
-            : {}),
-          friends: {
-            none: {
-              status: FriendStatus.BLOCKED,
-              recipientId: opts.requesterUserId,
             },
           },
-        },
-      }
+        }
       : undefined),
     deleted: null,
   };
@@ -234,15 +234,15 @@ export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
       post: {
         ...(!opts.bypassBlocked
           ? {
-            createdBy: {
-              friends: {
-                none: {
-                  status: FriendStatus.BLOCKED,
-                  recipientId: opts.requesterUserId,
+              createdBy: {
+                friends: {
+                  none: {
+                    status: FriendStatus.BLOCKED,
+                    recipientId: opts.requesterUserId,
+                  },
                 },
               },
-            },
-          }
+            }
           : undefined),
       },
     },
@@ -273,15 +273,15 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
       createdById: opts.userId,
       ...(!opts.bypassBlocked
         ? {
-          createdBy: {
-            friends: {
-              none: {
-                status: FriendStatus.BLOCKED,
-                recipientId: opts.requesterUserId,
+            createdBy: {
+              friends: {
+                none: {
+                  status: FriendStatus.BLOCKED,
+                  recipientId: opts.requesterUserId,
+                },
               },
             },
-          },
-        }
+          }
         : undefined),
     },
     include: constructInclude(opts.requesterUserId),
@@ -377,6 +377,15 @@ export async function likePost(userId: string, postId: string): Promise<CustomRe
     return [null, generateError('You have been blocked by this user!')];
   }
 
+  await prisma.post.update({
+    where: { id: postId },
+    data: {
+      estimateLikes: {
+        increment: 1,
+      },
+    },
+  });
+
   const newPostLike = await prisma.postLike
     .create({
       data: {
@@ -385,7 +394,7 @@ export async function likePost(userId: string, postId: string): Promise<CustomRe
         postId,
       },
     })
-    .catch(() => { });
+    .catch(() => {});
   if (!newPostLike) return [null, generateError('Something went wrong! Try again later.')];
 
   const newPost = (await fetchPost({
@@ -409,6 +418,15 @@ export async function unlikePost(userId: string, postId: string): Promise<Custom
   if (!postLike) {
     return [null, generateError('You have not liked this post!')];
   }
+
+  await prisma.post.update({
+    where: { id: postId },
+    data: {
+      estimateLikes: {
+        decrement: 1,
+      },
+    },
+  });
 
   await prisma.postLike.delete({
     where: { id: postLike.id },
@@ -439,6 +457,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
       data: {
         content: null,
         deleted: true,
+        estimateLikes: 0,
       },
     }),
     prisma.postLike.deleteMany({ where: { postId } }),
@@ -552,7 +571,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
       }),
     ])
 
-    .catch(() => { });
+    .catch(() => {});
 
   // // delete if more than 10 notifications exist
   // const tenthLatestRecord = await prisma.postNotification.findFirst({
@@ -658,8 +677,8 @@ export async function addAnnouncementPost(postId: string) {
   return await prisma.announcementPost.create({
     data: {
       postId,
-    }
-  })
+    },
+  });
 }
 
 export async function getAnnouncementPosts(requesterId: string) {
@@ -667,8 +686,8 @@ export async function getAnnouncementPosts(requesterId: string) {
     orderBy: { createdAt: 'desc' },
     where: {
       NOT: {
-        announcement: null
-      }
+        announcement: null,
+      },
     },
     include: constructInclude(requesterId),
   });
@@ -680,7 +699,7 @@ export async function getAnnouncementPosts(requesterId: string) {
 export async function removeAnnouncementPost(postId: string) {
   return await prisma.announcementPost.delete({
     where: {
-      postId
-    }
-  })
+      postId,
+    },
+  });
 }

@@ -734,6 +734,8 @@ model Post {
 
   likedBy    PostLike[]
 
+  estimateLikes Int @default(0)
+
   views      Int  @default(0)
 
   announcement AnnouncementPost?
@@ -753,7 +755,6 @@ model Post {
   poll PostPoll?
 
   @@index([createdById, createdAt])
-
 
 }
 
