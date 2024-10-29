@@ -51,4 +51,5 @@ export default {
   GOOGLE_REDIRECT_URL: process.env.GOOGLE_REDIRECT_URL as string,
   TENOR_API_KEY: process.env.TENOR_API_KEY as string,
   CLUSTER_INDEX: parseInt(process.env.CLUSTER_INDEX as string),
+  OPTIMIZE_API_KEY: process.env.OPTIMIZE_API_KEY as string,
 };

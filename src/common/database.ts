@@ -1,8 +1,15 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
+import { withOptimize } from '@prisma/extension-optimize';
+import env from './env';
+
 export const prisma = new PrismaClient({
   // log: ['error', 'warn', 'info', 'query'],
-});
+}).$extends(
+  withOptimize({
+    apiKey: env.OPTIMIZE_API_KEY,
+  })
+);
 
 export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus', 'lastOnlineAt', 'lastOnlineStatus']);
 
