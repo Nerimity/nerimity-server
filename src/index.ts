@@ -248,14 +248,16 @@ async function updatePostViews() {
   const cacheData = await getAndRemovePostViewsCache();
   if (!cacheData.length) return;
 
-  await prisma.$transaction(
-    cacheData.map((d) =>
-      prisma.post.update({
-        where: { id: d.id },
-        data: { views: { increment: d.views } },
-      })
+  await prisma
+    .$transaction(
+      cacheData.map((d) =>
+        prisma.post.update({
+          where: { id: d.id },
+          data: { views: { increment: d.views } },
+        })
+      )
     )
-  );
+    .catch((err) => console.error(err));
 }
 
 function scheduleSuspendedAccountDeletion() {
