@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
-import { withOptimize } from '@prisma/extension-optimize';
-import env from './env';
+// import { withOptimize } from '@prisma/extension-optimize';
+// import env from './env';
 
 export const prisma = new PrismaClient({
   // log: ['error', 'warn', 'info', 'query'],
