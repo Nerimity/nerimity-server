@@ -110,11 +110,17 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         name: 'General',
         serverId: serverId,
         type: ChannelType.SERVER_TEXT,
-        permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+        permissions: {
+          create: {
+            serverId: serverId,
+            roleId: roleId,
+            permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+          },
+        },
         createdById: opts.creatorId,
         order: 1,
       },
-      include: { _count: { select: { attachments: true } } },
+      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
     }),
     prisma.user.update({
       where: { id: opts.creatorId },
