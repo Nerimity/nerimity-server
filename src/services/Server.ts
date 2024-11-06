@@ -174,7 +174,7 @@ export const getServers = async (userId: string) => {
   const [serverChannels, serverMembers, serverRoles] = await prisma.$transaction([
     prisma.channel.findMany({
       where: { serverId: { in: serverIds }, deleting: null },
-      include: { _count: { select: { attachments: true } } },
+      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
     }),
     prisma.serverMember.findMany({
       where: { serverId: { in: serverIds } },
@@ -271,7 +271,7 @@ export const joinServer = async (
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
-        include: { _count: { select: { attachments: true } } },
+        include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },
