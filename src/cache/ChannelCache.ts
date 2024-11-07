@@ -1,3 +1,4 @@
+import { addBit } from '../common/Bitwise';
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
 import { TicketStatus } from '../services/Ticket';
@@ -42,6 +43,54 @@ export interface InboxCache {
   createdById: string;
   canMessage: boolean;
 }
+
+export const setServerChannelMemberPermissions = async (serverId: string, channelId: string, userId: string) => {
+  const key = 'somekey';
+
+  const member = await prisma.serverMember.findUnique({
+    where: {
+      userId_serverId: {
+        serverId,
+        userId,
+      },
+    },
+    select: { roleIds: true, server: { select: { defaultRoleId: true } } },
+  });
+  if (!member) {
+    return [null, 'Member not found.'] as const;
+  }
+
+  const channel = await prisma.channel.findUnique({
+    where: {
+      id: channelId,
+    },
+    select: {
+      permissions: {
+        select: {
+          roleId: true,
+          permissions: true,
+        },
+      },
+    },
+  });
+  if (!channel) {
+    return [null, 'Channel not found.'] as const;
+  }
+
+  member.roleIds.push(member.server.defaultRoleId);
+
+  // const rolePermissions = channel.permissions.filter((p) => member.roleIds.includes(p.roleId));
+
+  let permissions = 0;
+
+  for (let i = 0; i < channel.permissions.length; i++) {
+    const rolePermission = channel.permissions[i]!;
+    if (!member.roleIds.includes(rolePermission?.roleId)) continue;
+    permissions = addBit(permissions, rolePermission.permissions || 0);
+  }
+
+  redisClient.set(key, permissions.toString());
+};
 
 export const getChannelCache = async (channelId: string, userId: string) => {
   // Check server channel in cache.
