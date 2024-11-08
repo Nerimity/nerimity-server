@@ -5,6 +5,8 @@ export const GOOGLE_ACCESS_TOKEN = (userId: string) => `${PREFIX}GOOGLE_ACCESS_T
 
 export const SERVER_KEY_STRING = (serverId: string) => `${PREFIX}SERVER:${serverId}` as const;
 
+export const SERVER_CHANNEL_PERMISSION_KEY_HASH = (channelId: string) => `${PREFIX}SERVER_CHANNEL_PERMISSION:${channelId}` as const;
+
 export const SERVER_CHANNEL_KEY_STRING = (channelId: string) => `${PREFIX}SERVER_CHANNEL:${channelId}` as const;
 export const DM_CHANNEL_KEY_STRING = (channelId: string) => `${PREFIX}DM_CHANNEL:${channelId}` as const;
 export const TICKET_CHANNEL_KEY_STRING = (channelId: string) => `${PREFIX}TICKET_CHANNEL:${channelId}` as const;
