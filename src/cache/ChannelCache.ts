@@ -213,7 +213,7 @@ export const deleteServerChannelCaches = async (channelIds: string[]) => {
   for (let i = 0; i < channelIds.length; i++) {
     const channelId = channelIds[i]!;
     multi.del(SERVER_CHANNEL_KEY_STRING(channelId));
-    multi.hDel(SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId), channelId);
+    multi.del(SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId));
   }
   await multi.exec();
 };
