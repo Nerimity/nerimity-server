@@ -18,6 +18,12 @@ import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
 import { AltQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
+import Bottleneck from 'bottleneck';
+
+const limiter = new Bottleneck({
+  maxConcurrent: 2,
+  minTime: 333,
+});
 
 interface Payload {
   token: string;
@@ -29,9 +35,12 @@ export const authQueue = new AltQueue({
 });
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
-  const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
-  const finish = await authQueue.start({ groupName: ip });
-  await handleAuthenticate(socket, payload).finally(() => finish());
+  limiter.schedule(async () => {
+    const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
+
+    const finish = await authQueue.start({ groupName: ip });
+    await handleAuthenticate(socket, payload).finally(() => finish());
+  });
 }
 
 const handleAuthenticate = async (socket: Socket, payload: Payload) => {
