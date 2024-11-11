@@ -42,7 +42,7 @@
   "dependencies": {
     "@nerimity/flakeid": "^1.0.3",
     "@nerimity/html-embed": "^1.1.11",
-    "@nerimity/mimiqueue": "^1.2.3",
+    "@nerimity/mimiqueue": "^2.0.3",
     "@prisma/client": "^5.22.0",
     "@prisma/extension-optimize": "^1.0.1",
     "@socket.io/redis-adapter": "^8.3.0",

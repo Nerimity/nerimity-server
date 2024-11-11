@@ -18,7 +18,7 @@ import { UserCache } from '../../cache/UserCache';
 import { ServerCache } from '../../cache/ServerCache';
 import { CloseTicketStatuses, TicketStatus, updateTicketStatus } from '../../services/Ticket';
 import { banServerMember } from '../../services/Server';
-import { AltQueue, Queue } from '@nerimity/mimiqueue';
+import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
 import { checkAndUpdateRateLimit } from '../../cache/RateLimitCache';
 import { ServerMemberCache } from '../../cache/ServerMemberCache';
@@ -94,14 +94,18 @@ export function channelMessageCreate(Router: Router) {
   );
 }
 
-const queue = new AltQueue({
+const queue = createQueue({
   name: 'create_message',
   redisClient,
 });
 
 const queueRoute = async (req: Request, res: Response) => {
-  const finish = await queue.start({ groupName: req.userIP });
-  route(req, res).finally(() => finish());
+  await queue.add(
+    async () => {
+      await route(req, res);
+    },
+    { groupName: req.userIP }
+  );
 };
 
 interface Body {
