@@ -12,8 +12,7 @@ import { createIO } from './socket/socket';
 import { deleteAccount, deleteAllApplications, deleteOrLeaveAllServers } from './services/User/UserManagement';
 import { createHash } from 'node:crypto';
 import { addToObjectIfExists } from './common/addToObjectIfExists';
-import { handleTimeout } from '@nerimity/mimiqueue';
-import { MESSAGE_REACTION_ADDED } from './common/ClientEventNames';
+import { createQueueProcessor } from '@nerimity/mimiqueue';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -29,7 +28,7 @@ if (cluster.isPrimary) {
 
   await connectRedis();
   await customRedisFlush();
-  handleTimeout({
+  await createQueueProcessor({
     redisClient,
   });
 

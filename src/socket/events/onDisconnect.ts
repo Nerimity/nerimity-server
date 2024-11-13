@@ -10,8 +10,12 @@ import { authQueue } from './onAuthenticate';
 
 export async function onDisconnect(socket: Socket) {
   const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
-  const finish = await authQueue.start({ groupName: ip });
-  await handleDisconnect(socket).finally(() => finish());
+  authQueue.add(
+    async () => {
+      await handleDisconnect(socket);
+    },
+    { groupName: ip }
+  );
 }
 
 const handleDisconnect = async (socket: Socket) => {

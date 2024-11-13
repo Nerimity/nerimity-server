@@ -16,7 +16,7 @@ import { getVoiceUsersByChannelId } from '../../cache/VoiceCache';
 import { serverMemberHasPermission } from '../../common/serverMembeHasPermission';
 import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
-import { AltQueue } from '@nerimity/mimiqueue';
+import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
 import Bottleneck from 'bottleneck';
 
@@ -29,17 +29,24 @@ interface Payload {
   token: string;
 }
 
-export const authQueue = new AltQueue({
+export const authQueue = createQueue({
   name: 'wsAuth',
   redisClient,
+  minTime: 100,
 });
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
   limiter.schedule(async () => {
     const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
 
-    const finish = await authQueue.start({ groupName: ip });
-    await handleAuthenticate(socket, payload).finally(() => finish());
+    authQueue.add(
+      async () => {
+        await handleAuthenticate(socket, payload).catch((err) => {
+          console.error(err);
+        });
+      },
+      { groupName: ip }
+    );
   });
 }
 

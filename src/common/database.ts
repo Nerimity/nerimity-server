@@ -1,10 +1,25 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { Log } from './Log';
 
 // import { withOptimize } from '@prisma/extension-optimize';
 // import env from './env';
 
 export const prisma = new PrismaClient({
   // log: ['error', 'warn', 'info', 'query'],
+  log: [
+    'warn',
+    'error',
+    {
+      emit: 'event',
+      level: 'query',
+    },
+  ],
+});
+
+prisma.$on('query', (e) => {
+  if (e.duration >= 3000) {
+    Log.warn('Long Query:', e.duration, 'ms', e.query);
+  }
 });
 
 // .$extends(
