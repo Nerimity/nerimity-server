@@ -612,7 +612,7 @@ model ReplyMessages {
   @@unique([messageId, replyToMessageId])
 
 
-  @@index([messageId, replyToMessageId])
+  @@index([replyToMessageId, messageId])
 
 }
 
