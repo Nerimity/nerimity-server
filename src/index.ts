@@ -190,6 +190,7 @@ function scheduleDeleteMessages() {
           SELECT id 
           FROM "Message"
           WHERE "channelId"=${details.channelId}
+          ORDER BY "createdAt" DESC
           LIMIT 300       
       );
     `;
@@ -202,7 +203,7 @@ function scheduleDeleteMessages() {
         prisma.channel.delete({ where: { id: details.channelId } }),
       ]);
     }
-    Log.info('Deleted', deletedCount, 'message(s).');
+    Log.info('Deleted', deletedCount, 'message(s). channelId', details.channelId);
   }, 60000);
 }
 

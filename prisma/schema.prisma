@@ -189,6 +189,8 @@ model MessageNotification {
   serverMember   ServerMember? @relation(fields: [userId, serverId], references: [userId, serverId], onDelete: Cascade)
 
   createdAt               DateTime                @default(now())
+
+  @@index([messageId, createdAt])
 }
 
 
@@ -633,6 +635,9 @@ model ReplyMessages {
 
   @@unique([messageId, replyToMessageId])
 
+
+  @@index([replyToMessageId, messageId])
+
 }
 
 // When deleting a channel or a server, we will delete 1000 messages every 1 minute
@@ -660,6 +665,10 @@ model MessageReaction {
 
   messageId    String
   message      Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+
+  @@index([messageId])
+
 }
 
 model ReactedMessageUser {
@@ -721,6 +730,9 @@ model Attachment {
   server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
+
+  @@index([messageId, createdAt])
+
 }
 
 model ServerChannelLastSeen {
