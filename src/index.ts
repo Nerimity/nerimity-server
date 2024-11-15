@@ -78,7 +78,7 @@ function scheduleBumpReset() {
 async function scheduleDeleteAccountContent() {
   setInterval(async () => {
     const likedPosts = await prisma.postLike.findMany({
-      take: 1000,
+      take: 300,
       where: {
         likedBy: {
           account: null,
@@ -94,7 +94,7 @@ async function scheduleDeleteAccountContent() {
     }
 
     const messages = await prisma.message.findMany({
-      take: 1000,
+      take: 300,
       orderBy: {
         createdAt: 'desc',
       },
@@ -109,7 +109,7 @@ async function scheduleDeleteAccountContent() {
     const messageIds = messages.map((m) => m.id);
 
     const posts = await prisma.post.findMany({
-      take: 1000,
+      take: 300,
       orderBy: {
         createdAt: 'desc',
       },
@@ -190,10 +190,10 @@ function scheduleDeleteMessages() {
           SELECT id 
           FROM "Message"
           WHERE "channelId"=${details.channelId}
-          LIMIT 1000       
+          LIMIT 300       
       );
     `;
-    if (deletedCount < 1000) {
+    if (deletedCount < 300) {
       await prisma.$transaction([
         prisma.scheduleMessageDelete.update({
           where: { channelId: details.channelId },
