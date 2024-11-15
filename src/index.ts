@@ -203,7 +203,7 @@ function scheduleDeleteMessages() {
         prisma.channel.delete({ where: { id: details.channelId } }),
       ]);
     }
-    Log.info('Deleted', deletedCount, 'message(s).');
+    Log.info('Deleted', deletedCount, 'message(s). channelId', details.channelId);
   }, 60000);
 }
 
