@@ -67,7 +67,6 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   await prisma.$transaction(transactions).catch(() => {});
 
   emit && emitNotificationDismissed(userId, channelId);
@@ -141,6 +140,35 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
   emitServerChannelCreated(opts.serverId, channel);
 
   return [channel, null];
+};
+
+export const updateServerChannelPermissions = async (serverId: string, channelId: string, roleId: string, permissions: number) => {
+  const channel = await prisma.channel.findUnique({ where: { id: channelId, serverId: serverId } });
+  if (!channel) {
+    return [null, generateError('Channel does not exist.')];
+  }
+
+  const role = await prisma.serverRole.findUnique({ where: { id: roleId, serverId } });
+  if (!role) {
+    return [null, generateError('Role does not exist.')];
+  }
+
+  prisma.serverChannelPermissions.upsert({
+    where: {
+      roleId_channelId: {
+        roleId,
+        channelId,
+      },
+    },
+    update: {
+      permissions,
+    },
+    create: {
+      channelId,
+      roleId,
+      serverId,
+    },
+  });
 };
 
 export interface UpdateServerChannelOptions {
