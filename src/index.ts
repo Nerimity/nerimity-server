@@ -190,6 +190,7 @@ function scheduleDeleteMessages() {
           SELECT id 
           FROM "Message"
           WHERE "channelId"=${details.channelId}
+          ORDER BY "createdAt" DESC
           LIMIT 300       
       );
     `;
