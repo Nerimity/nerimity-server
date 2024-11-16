@@ -15,6 +15,7 @@ import env from '../common/env';
 import { getUserIdsBySocketIds } from '../cache/UserCache';
 import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
 import { omit } from '../common/omit';
+import { Interface } from 'readline';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -142,33 +143,49 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
   return [channel, null];
 };
 
-export const updateServerChannelPermissions = async (serverId: string, channelId: string, roleId: string, permissions: number) => {
-  const channel = await prisma.channel.findUnique({ where: { id: channelId, serverId: serverId } });
+interface UpdateServerChannelPermissionsOpts {
+  serverId: string;
+  channelId: string;
+  roleId: string;
+  permissions: number;
+}
+
+export const updateServerChannelPermissions = async (opts: UpdateServerChannelPermissionsOpts) => {
+  const channel = await prisma.channel.findUnique({ where: { id: opts.channelId, serverId: opts.serverId } });
   if (!channel) {
-    return [null, generateError('Channel does not exist.')];
+    return [null, generateError('Channel does not exist.')] as const;
   }
 
-  const role = await prisma.serverRole.findUnique({ where: { id: roleId, serverId } });
+  const role = await prisma.serverRole.findUnique({ where: { id: opts.roleId, serverId: opts.serverId } });
   if (!role) {
-    return [null, generateError('Role does not exist.')];
+    return [null, generateError('Role does not exist.')] as const;
   }
 
-  prisma.serverChannelPermissions.upsert({
+  const updated = await prisma.serverChannelPermissions.upsert({
     where: {
       roleId_channelId: {
-        roleId,
-        channelId,
+        roleId: opts.roleId,
+        channelId: opts.channelId,
       },
     },
     update: {
-      permissions,
+      permissions: opts.permissions,
     },
     create: {
-      channelId,
-      roleId,
-      serverId,
+      channelId: opts.channelId,
+      roleId: opts.roleId,
+      serverId: opts.serverId,
+      permissions: opts.permissions,
+    },
+    select: {
+      permissions: true,
+      roleId: true,
+      serverId: true,
+      channelId: true,
     },
   });
+
+  return [updated, null] as const;
 };
 
 export interface UpdateServerChannelOptions {
