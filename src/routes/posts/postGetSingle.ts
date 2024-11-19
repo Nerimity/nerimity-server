@@ -41,6 +41,7 @@ async function route(req: Request, res: Response) {
     postId: params.postId,
     requesterUserId: req.userCache?.id || '123',
     bypassBlocked: isAdmin,
+    requesterIpAddress: req.userIP,
   });
 
   res.json(post);

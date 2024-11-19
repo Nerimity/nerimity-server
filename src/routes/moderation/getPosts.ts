@@ -20,10 +20,11 @@ async function route(req: Request, res: Response) {
     bypassBlocked: true,
     requesterUserId: req.userCache.id,
     limit: limit,
+    requesterIpAddress: req.userIP,
     afterId: after,
     additionalInclude: {
-      announcement: { select: { createdAt: true } }
-    }
+      announcement: { select: { createdAt: true } },
+    },
   });
 
   res.json(posts);

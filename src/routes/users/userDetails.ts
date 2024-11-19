@@ -17,7 +17,7 @@ async function route(req: Request, res: Response) {
   const requesterId = req.userCache?.id;
   const recipientId = req.params.userId || requesterId;
 
-  const [details, error] = await getUserDetails(requesterId || '123', recipientId);
+  const [details, error] = await getUserDetails(requesterId || '123', recipientId, req.userIP);
   if (error) {
     return res.status(400).json(error);
   }

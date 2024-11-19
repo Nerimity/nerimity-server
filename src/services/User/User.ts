@@ -183,7 +183,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
         recipient: { select: publicUserExcludeFields },
       },
     })
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
+
     .catch(() => {});
 
   if (!newInbox) {
@@ -260,7 +260,7 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
   return ['Presence updated.', null];
 };
 
-export const getUserDetails = async (requesterId: string, recipientId: string) => {
+export const getUserDetails = async (requesterId: string, recipientId: string, requesterIpAddress: string) => {
   const user = await prisma.user.findFirst({
     where: { id: recipientId },
     select: {
@@ -347,6 +347,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string) =
     userId: recipientId,
     requesterUserId: requesterId,
     bypassBlocked: isAdmin,
+    requesterIpAddress,
   });
 
   const isBlocked = await isUserBlocked(requesterId, recipientId);
@@ -617,7 +618,6 @@ export async function getUserNotifications(userId: string) {
           NOT: { id: { in: ids } },
           userId,
         },
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
       })
       .then(() => {});
   }

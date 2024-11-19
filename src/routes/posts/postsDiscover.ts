@@ -55,6 +55,7 @@ async function route(req: Request, res: Response) {
     hideIfBlockedByMe: true,
     withReplies: false,
     bypassBlocked: isAdmin,
+    requesterIpAddress: req.userIP,
     requesterUserId: req.userCache.id,
     limit,
 
