@@ -6,6 +6,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { createPost } from '../../services/Post';
 import { verifyUpload } from '../../common/nerimityCDN';
 import { UserCache } from '../../cache/UserCache';
+import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
 export function postCreate(Router: Router) {
   Router.post(
@@ -16,7 +17,7 @@ export function postCreate(Router: Router) {
       restrictMS: 20000,
       requests: 5,
     }),
-    body('content').isString().withMessage('Content must be a string!').isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.').optional(true),
+    body('content').isString().withMessage('Content must be a string!').optional(true),
     body('postId').isString().withMessage('postId must be a string!').isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.').optional(true),
 
     body('poll.choices').isArray({ min: 0, max: 6 }).withMessage('Poll must be an array with minimum 6 choices').optional(true),
@@ -47,6 +48,11 @@ async function route(req: Request, res: Response) {
   if (validateError) {
     return res.status(400).json(validateError);
   }
+  const contentLimit = hasBit(req.userCache.badges, USER_BADGES.SUPPORTER.bit) ? 1500 : 500;
+
+  if (body.content?.length > contentLimit) {
+    return res.status(400).json(generateError(`Content length must be between 1 and ${contentLimit} characters.`));
+  }
 
   if (!req.userCache.application && !req.userCache.account?.emailConfirmed) {
     return res.status(400).json(generateError('You must confirm your email to create posts.'));
@@ -63,7 +69,7 @@ async function route(req: Request, res: Response) {
       fileId: body.nerimityCdnFileId,
       groupId: req.userCache.id,
       type: 'ATTACHMENT',
-      imageOnly: true
+      imageOnly: true,
     });
 
     if (err) {
