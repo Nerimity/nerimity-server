@@ -54,6 +54,7 @@ async function route(req: Request, res: Response) {
   const commentPosts = await fetchPosts({
     postId: params.postId,
     requesterUserId: req.userCache?.id || '123',
+    requesterIpAddress: req.userIP,
     bypassBlocked: isAdmin,
     limit,
     afterId: query.afterId,

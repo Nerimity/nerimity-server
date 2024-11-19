@@ -17,7 +17,7 @@ export function postsGetAnnouncement(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const posts = await getAnnouncementPosts(req.userCache.id);
+  const posts = await getAnnouncementPosts(req.userCache.id, req.userIP);
 
   res.json(posts);
 }

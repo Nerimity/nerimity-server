@@ -166,6 +166,7 @@ interface FetchPostsOpts {
   orderBy?: Prisma.PostOrderByWithRelationInput | Prisma.PostOrderByWithRelationInput[];
   skip?: number;
   cursor?: Prisma.PostWhereUniqueInput;
+  requesterIpAddress: string;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
@@ -210,26 +211,22 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     cursor: opts.cursor,
     include: { ...constructInclude(opts.requesterUserId), ...opts.additionalInclude },
   });
-  updateViews(posts);
+  updateViews(posts, opts.requesterIpAddress);
 
   return posts.reverse();
 }
-async function updateViews(posts: Post[]) {
+async function updateViews(posts: Post[], ip?: string) {
+  if (!ip) return;
   const ids = [...posts.map((post) => post.id), ...posts.flatMap((post) => post.commentToId ?? [])];
   if (!ids.length) return;
-  addPostViewsToCache(ids, '127.0.0.1');
-  // await prisma.post.updateMany({
-  //   where: { id: { in: ids } },
-  //   data: {
-  //     views: { increment: 1 },
-  //   },
-  // });
+  addPostViewsToCache(ids, ip);
 }
 
 interface fetchLinkedPostsOpts {
   userId: string;
   requesterUserId: string;
   bypassBlocked?: boolean;
+  requesterIpAddress: string;
 }
 
 export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
@@ -258,7 +255,7 @@ export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
 
   const posts = likes.map((like) => like.post);
 
-  updateViews(posts);
+  updateViews(posts, opts.requesterIpAddress);
 
   return posts.reverse();
 }
@@ -267,6 +264,7 @@ interface fetchLatestPostOpts {
   userId: string;
   requesterUserId: string;
   bypassBlocked?: boolean;
+  requesterIpAddress: string;
 }
 
 export async function fetchLatestPost(opts: fetchLatestPostOpts) {
@@ -294,7 +292,7 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
 
   if (!post) return null;
 
-  updateViews([post]);
+  updateViews([post], opts.requesterIpAddress);
 
   return post;
 }
@@ -334,6 +332,7 @@ interface FetchPostOpts {
   postId: string;
   requesterUserId: string;
   bypassBlocked?: boolean;
+  requesterIpAddress?: string;
 }
 
 export async function fetchPost(opts: FetchPostOpts) {
@@ -358,7 +357,7 @@ export async function fetchPost(opts: FetchPostOpts) {
     }
   }
 
-  updateViews([post]);
+  updateViews([post], opts.requesterIpAddress);
 
   return post;
 }
@@ -479,6 +478,7 @@ interface GetFeedOpts {
   afterId?: string;
   beforeId?: string;
   limit?: number;
+  requesterIpAddress: string;
 }
 
 export async function getFeed(opts: GetFeedOpts) {
@@ -505,7 +505,7 @@ export async function getFeed(opts: GetFeedOpts) {
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
   });
 
-  updateViews(feedPosts);
+  updateViews(feedPosts, opts.requesterIpAddress);
   return feedPosts;
 }
 
@@ -594,7 +594,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
   // });
 }
 
-export async function getPostNotifications(userId: string) {
+export async function getPostNotifications(userId: string, requesterIpAddress: string) {
   const notifications = await prisma.postNotification.findMany({
     orderBy: { createdAt: 'desc' },
     where: { toId: userId },
@@ -606,7 +606,7 @@ export async function getPostNotifications(userId: string) {
   });
   const posts = notifications.filter((n) => n.type === PostNotificationType.REPLIED).map((n) => n.post!);
 
-  updateViews(posts);
+  updateViews(posts, requesterIpAddress);
 
   return notifications;
 }
@@ -686,7 +686,7 @@ export async function addAnnouncementPost(postId: string) {
   });
 }
 
-export async function getAnnouncementPosts(requesterId: string) {
+export async function getAnnouncementPosts(requesterId: string, requesterIpAddress: string) {
   const feedPosts = await prisma.post.findMany({
     orderBy: { createdAt: 'desc' },
     where: {
@@ -697,7 +697,7 @@ export async function getAnnouncementPosts(requesterId: string) {
     include: constructInclude(requesterId),
   });
 
-  updateViews(feedPosts);
+  updateViews(feedPosts, requesterIpAddress);
   return feedPosts;
 }
 

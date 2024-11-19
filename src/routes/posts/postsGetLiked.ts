@@ -15,11 +15,7 @@ export function postsGetLiked(Router: Router) {
       restrictMS: 20000,
       requests: 100,
     }),
-    param('userId')
-      .isString()
-      .withMessage('userId must be a string!')
-      .isLength({ min: 1, max: 100 })
-      .withMessage('userId length must be between 1 and 100 characters.'),
+    param('userId').isString().withMessage('userId must be a string!').isLength({ min: 1, max: 100 }).withMessage('userId length must be between 1 and 100 characters.'),
     route
   );
 }
@@ -42,6 +38,7 @@ async function route(req: Request, res: Response) {
   const posts = await fetchLikedPosts({
     userId: params.userId || req.userCache.id,
     requesterUserId: req.userCache.id,
+    requesterIpAddress: req.userIP,
     bypassBlocked: isAdmin,
   });
 

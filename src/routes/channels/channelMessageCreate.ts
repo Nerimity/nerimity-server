@@ -175,14 +175,16 @@ async function route(req: Request, res: Response) {
       return res.status(400).json(generateError('You must confirm your email to send attachment messages.'));
     }
 
+    const isMod = hasBit(req.userCache.badges, USER_BADGES.MOD.bit);
+
     const isServerNotPublicAndNotSupporter = req.serverCache && !isServerPublic(req.serverCache) && !isSupporterOrModerator(req.userCache);
 
-    if (isServerNotPublicAndNotSupporter) {
+    if (!isMod && isServerNotPublicAndNotSupporter) {
       return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private server.'));
     }
     const isPrivateChannelAndNotSupporter = isPrivateChannel(req.channelCache) && !isSupporterOrModerator(req.userCache);
 
-    if (isPrivateChannelAndNotSupporter) {
+    if (!isMod && isPrivateChannelAndNotSupporter) {
       return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private channel.'));
     }
   }

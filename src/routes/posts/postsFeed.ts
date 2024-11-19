@@ -36,6 +36,7 @@ async function route(req: Request, res: Response) {
     limit,
     afterId: query.afterId,
     beforeId: query.beforeId,
+    requesterIpAddress: req.userIP,
   });
 
   res.json(posts);

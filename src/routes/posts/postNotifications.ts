@@ -19,7 +19,7 @@ export function postNotifications(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const notifications = await getPostNotifications(req.userCache.id);
+  const notifications = await getPostNotifications(req.userCache.id, req.userIP);
 
   res.json(notifications);
 }

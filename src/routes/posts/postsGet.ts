@@ -57,6 +57,7 @@ async function route(req: Request, res: Response) {
     userId: params.userId || req.userCache?.id,
     requesterUserId: req.userCache?.id || '123',
     withReplies: query.withReplies,
+    requesterIpAddress: req.userIP,
     bypassBlocked: isAdmin,
 
     limit,
