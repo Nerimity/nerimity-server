@@ -215,7 +215,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 
   return posts.reverse();
 }
-async function updateViews(posts: Post[], ip: string) {
+async function updateViews(posts: Post[], ip?: string) {
   if (!ip) return;
   const ids = [...posts.map((post) => post.id), ...posts.flatMap((post) => post.commentToId ?? [])];
   if (!ids.length) return;
@@ -332,7 +332,7 @@ interface FetchPostOpts {
   postId: string;
   requesterUserId: string;
   bypassBlocked?: boolean;
-  requesterIpAddress: string;
+  requesterIpAddress?: string;
 }
 
 export async function fetchPost(opts: FetchPostOpts) {
