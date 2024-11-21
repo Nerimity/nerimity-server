@@ -124,13 +124,24 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
     return [null, generateError('You already created the maximum amount of channels for this server.')];
   }
 
+  const server = await prisma.server.findUnique({ where: { id: opts.serverId }, select: { defaultRoleId: true } });
+  if (!server?.defaultRoleId) {
+    return [null, generateError('Something went wrong. Please try again! (default role not found)')];
+  }
   const channel = await prisma.channel.create({
     data: {
       id: generateId(),
       name: opts.channelName,
       serverId: opts.serverId,
       type: opts.channelType ?? ChannelType.SERVER_TEXT,
-      permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+
+      permissions: {
+        create: {
+          serverId: opts.serverId,
+          roleId: server.defaultRoleId,
+          permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+        },
+      },
       createdById: opts.creatorId,
       order: channelCount + 1,
     },
