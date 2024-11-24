@@ -4,6 +4,7 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { createPost, editPost } from '../../services/Post';
+import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
 export function postEdit(Router: Router) {
   Router.patch(
@@ -17,8 +18,6 @@ export function postEdit(Router: Router) {
     body('content')
       .isString()
       .withMessage('Content must be a string!')
-      .isLength({ min: 1, max: 500 })
-      .withMessage('Content length must be between 1 and 500 characters.'),
     route
   );
 }
@@ -34,6 +33,12 @@ async function route(req: Request, res: Response) {
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  const contentLimit = hasBit(req.userCache.badges, USER_BADGES.SUPPORTER.bit) ? 1500 : 500;
+
+  if (body.content?.length > contentLimit) {
+    return res.status(400).json(generateError(`Content length must be between 1 and ${contentLimit} characters.`));
   }
 
   const [post, error] = await editPost({
