@@ -17,7 +17,7 @@ export function postEdit(Router: Router) {
     }),
     body('content')
       .isString()
-      .withMessage('Content must be a string!')
+      .withMessage('Content must be a string!'),
     route
   );
 }
