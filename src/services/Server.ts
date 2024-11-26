@@ -1,4 +1,4 @@
-import { Channel, Prisma, Server } from '@prisma/client';
+import { Channel, Prisma, Server, ServerMember, ServerRole } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
@@ -45,7 +45,7 @@ const filterLastOnlineDetailsFromServerMembers = (serverMembers: ServerMemberWit
       ...serverMember,
       user: {
         ...user,
-        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : {}),
+        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : { lastOnlineAt: null }),
       },
     };
 
@@ -157,6 +157,14 @@ export const getServers = async (userId: string) => {
       servers: {
         include: {
           _count: { select: { welcomeQuestions: true } },
+          channels: {
+            where: { deleting: null },
+            include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+          },
+          serverMembers: {
+            include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
+          },
+          roles: true,
           customEmojis: {
             select: {
               id: true,
@@ -168,27 +176,26 @@ export const getServers = async (userId: string) => {
       },
     },
   });
+  const servers = user?.servers || [];
+  let serverChannels: Channel[] = [];
+  let serverMembers: ServerMemberWithLastOnlineDetails[] = [];
 
-  const serverIds = user?.servers.map((server) => server.id);
+  let serverRoles: ServerRole[] = [];
 
-  const [serverChannels, serverMembers, serverRoles] = await prisma.$transaction([
-    prisma.channel.findMany({
-      where: { serverId: { in: serverIds }, deleting: null },
-      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
-    }),
-    prisma.serverMember.findMany({
-      where: { serverId: { in: serverIds } },
-      include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
-    }),
-    prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
-  ]);
+  for (let i = 0; i < servers.length; i++) {
+    const server = servers[i]!;
+    const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(server.serverMembers, userId);
+    server.serverMembers = updatedServerMembers;
 
-  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
+    serverChannels = [...serverChannels, ...server.channels];
+    serverMembers = [...serverMembers, ...server.serverMembers];
+    serverRoles = [...serverRoles, ...server.roles];
+  }
 
   return {
     servers: user?.servers || [],
     serverChannels,
-    serverMembers: updatedServerMembers,
+    serverMembers,
     serverRoles,
   };
 };

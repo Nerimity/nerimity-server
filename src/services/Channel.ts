@@ -16,6 +16,7 @@ import { getUserIdsBySocketIds } from '../cache/UserCache';
 import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
 import { omit } from '../common/omit';
 import { Interface } from 'readline';
+import { emitServerChannelPermissionsUpdated } from '../emits/Server';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -196,12 +197,13 @@ export const updateServerChannelPermissions = async (opts: UpdateServerChannelPe
     },
   });
 
+  emitServerChannelPermissionsUpdated(opts.serverId, updated);
+
   return [updated, null] as const;
 };
 
 export interface UpdateServerChannelOptions {
   name?: string;
-  permissions?: number;
   icon?: string | null;
   slowModeSeconds?: number | null;
 }
@@ -220,36 +222,36 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
     return [null, generateError('Channel does not exist.')];
   }
 
-  if (update.permissions !== undefined && channel.category) {
-    const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    if (isPrivate !== wasPrivate && !isPrivate) {
-      const isCategoryPrivate = hasBit(channel.category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-      if (isCategoryPrivate) return [null, generateError('The category this channel is in is private. Un-private the category to update this permission.')];
-    }
-  }
+  // if (update.permissions !== undefined && channel.category) {
+  //   const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+  //   const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+  //   if (isPrivate !== wasPrivate && !isPrivate) {
+  //     const isCategoryPrivate = hasBit(channel.category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+  //     if (isCategoryPrivate) return [null, generateError('The category this channel is in is private. Un-private the category to update this permission.')];
+  //   }
+  // }
 
   await prisma.channel.update({ where: { id: channel.id }, data: update });
 
   await updateServerChannelCache(channelId, {
     ...addToObjectIfExists('name', update.name),
-    ...addToObjectIfExists('permissions', update.permissions),
+    // ...addToObjectIfExists('permissions', update.permissions),
     ...addToObjectIfExists('slowModeSeconds', update.slowModeSeconds),
   });
 
-  if (update.permissions !== undefined) {
-    const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    if (wasPrivate !== isPrivate) {
-      if (channel.type === ChannelType.CATEGORY && isPrivate) await makeChannelsInCategoryPrivate(channel.id, server.id);
+  // if (update.permissions !== undefined) {
+  //   const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+  //   const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+  //   if (wasPrivate !== isPrivate) {
+  //     if (channel.type === ChannelType.CATEGORY && isPrivate) await makeChannelsInCategoryPrivate(channel.id, server.id);
 
-      await updatePrivateChannelSocketRooms({
-        channelIds: [channelId],
-        isPrivate,
-        serverId,
-      });
-    }
-  }
+  //     await updatePrivateChannelSocketRooms({
+  //       channelIds: [channelId],
+  //       isPrivate,
+  //       serverId,
+  //     });
+  //   }
+  // }
 
   emitServerChannelUpdated(serverId, channelId, update);
 

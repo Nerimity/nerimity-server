@@ -27,7 +27,6 @@ export function serverChannelUpdate(Router: Router) {
       })
       .withMessage('slowModeSeconds must be at least 3 seconds or 0.')
       .optional({ nullable: true }),
-    body('permissions').isNumeric().withMessage('Permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.').isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({ nullable: true }),
     body('icon').isString().withMessage('Icon must be a string.').isLength({ min: 0, max: 100 }).withMessage('Icon must be between 0 and 100 characters long.').optional({ nullable: true }),
     rateLimit({
       name: 'server_channel_update',
@@ -40,7 +39,6 @@ export function serverChannelUpdate(Router: Router) {
 
 interface Body {
   name?: string;
-  permissions?: number;
   icon?: string | null;
   slowModeSeconds?: number | null;
 }
