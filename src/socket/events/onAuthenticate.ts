@@ -154,7 +154,8 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
       let memberChannelPermissions = 0;
 
       for (let y = 0; y < channel.permissions.length; y++) {
-        const permissions = channel.permissions[y];
+        const permissions = channel.permissions[y]!;
+        if (!member.roleIds.includes(permissions.roleId)) continue;
         memberChannelPermissions = addBit(memberChannelPermissions, permissions?.permissions || 0);
       }
 

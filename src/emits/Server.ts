@@ -40,6 +40,10 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
 
   io.in(joinedMemberUserId).socketsJoin(serverId);
 
+  const memberRoleIds = [...opts.joinedMember.roleIds];
+  const defaultRole = opts.roles.find((role) => role.id === opts.server.defaultRoleId)!;
+  memberRoleIds.push(defaultRole.id);
+
   for (let i = 0; i < opts.channels.length; i++) {
     const channel = opts.channels[i]!;
     const isCreator = opts.server.createdById === joinedMemberUserId;
@@ -52,7 +56,8 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
     let memberChannelPermissions = 0;
 
     for (let y = 0; y < channel.permissions.length; y++) {
-      const permissions = channel.permissions[y];
+      const permissions = channel.permissions[y]!;
+      if (!memberRoleIds.includes(permissions.roleId)) continue;
       memberChannelPermissions = addBit(memberChannelPermissions, permissions?.permissions || 0);
     }
 
