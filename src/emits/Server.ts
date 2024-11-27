@@ -61,8 +61,8 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
       memberChannelPermissions = addBit(memberChannelPermissions, permissions?.permissions || 0);
     }
 
-    const isPrivateChannel = hasBit(memberChannelPermissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    if (!isPrivateChannel) {
+    const isPublicChannel = !hasBit(memberChannelPermissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+    if (isPublicChannel) {
       io.in(joinedMemberUserId).socketsJoin(channel.id);
       continue;
     }

@@ -94,6 +94,24 @@ const setServerChannelMemberPermissions = async (serverId: string, channelId: st
   return [permissions, null] as const;
 };
 
+export const removeServerMemberPermissionsCache = async (channelIds: string[], userIds?: string[]) => {
+  const multi = redisClient.multi();
+
+  for (let i = 0; i < channelIds.length; i++) {
+    const channelId = channelIds[i]!;
+    const key = SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId);
+
+    if (userIds) {
+      multi.hDel(key, userIds);
+      continue;
+    }
+
+    multi.del(key);
+  }
+
+  await multi.exec();
+};
+
 const getServerChannelMemberPermissions = async (serverId: string, channelId: string, userId: string) => {
   const key = SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId);
 
@@ -153,10 +171,14 @@ const addChannelToCache = async (channelId: string, userId: string) => {
     const stringifiedChannel = JSON.stringify(channel);
     await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), stringifiedChannel);
 
+    const [permissions, error] = await getServerChannelMemberPermissions(channel.serverId as string, channelId, userId);
+    if (error) return [null, error] as const;
+
     return [
       {
         ...JSON.parse(stringifiedChannel),
         server: await getServerCache(channel.serverId),
+        permissions,
       } as ChannelCache,
       null,
     ] as const;

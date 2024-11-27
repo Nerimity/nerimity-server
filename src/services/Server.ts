@@ -114,7 +114,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
           create: {
             serverId: serverId,
             roleId: roleId,
-            permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+            permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, addBit(CHANNEL_PERMISSIONS.JOIN_VOICE.bit, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)),
           },
         },
         createdById: opts.creatorId,
@@ -791,7 +791,7 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
 
   if (opts.categoryId) {
     const category = channels[opts.categoryId]!;
-    const isPrivateCategory = hasBit(category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+    const isPrivateCategory = !hasBit(category.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
     isPrivateCategory && (await makeChannelsInCategoryPrivate(opts.categoryId, opts.serverId));
   }
 

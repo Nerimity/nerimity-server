@@ -8,7 +8,6 @@ interface Options {
   message: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function channelPermissions(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.channelCache.server) return next();

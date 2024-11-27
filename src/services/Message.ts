@@ -66,13 +66,13 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       channelId,
       ...(opts?.beforeMessageId
         ? {
-          id: { lt: opts.beforeMessageId },
-        }
+            id: { lt: opts.beforeMessageId },
+          }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-          id: { gt: opts.afterMessageId },
-        }
+            id: { gt: opts.afterMessageId },
+          }
         : undefined),
     },
     include: {
@@ -219,8 +219,8 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-        orderBy: { createdAt: 'asc' },
-      }
+          orderBy: { createdAt: 'asc' },
+        }
       : undefined),
   });
 
@@ -575,26 +575,26 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
         ...(opts.buttons?.length
           ? {
-            buttons: {
-              createMany: {
-                data: opts.buttons,
+              buttons: {
+                createMany: {
+                  data: opts.buttons,
+                },
               },
-            },
-          }
+            }
           : undefined),
 
         ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
         ...(opts.attachment
           ? {
-            attachments: {
-              create: {
-                ...opts.attachment,
-                id: generateId(),
-                channelId: opts.channelId,
-                serverId: opts.serverId,
+              attachments: {
+                create: {
+                  ...opts.attachment,
+                  id: generateId(),
+                  channelId: opts.channelId,
+                  serverId: opts.serverId,
+                },
               },
-            },
-          }
+            }
           : undefined),
       },
       creatorId: opts.userId,
@@ -848,8 +848,8 @@ const addMessageEmbed = async (message: Message, opts: { serverId?: string; chan
       where: { id: message.id },
       data: { embed: OGTags },
     })
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+
+    .catch(() => {});
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -876,7 +876,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   });
   if (!message) return [false, 'Message not found!'] as const;
 
-  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => { });
+  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => {});
 
   if (!deleteRes) {
     return [false, 'Something went wrong, try again later.'];
@@ -1141,20 +1141,20 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
       type: MessageType.CONTENT,
       ...(!bypassQuotesCheck
         ? {
-          channel: {
-            OR: [
-              { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
-              {
-                inbox: {
-                  // is inbox channel
-                  some: {
-                    OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+            channel: {
+              OR: [
+                { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
+                {
+                  inbox: {
+                    // is inbox channel
+                    some: {
+                      OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+                    },
                   },
                 },
-              },
-            ],
-          },
-        }
+              ],
+            },
+          }
         : {}),
     },
     select: {
@@ -1166,8 +1166,10 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
 
 async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
   let filteredUserIds = [...userIds];
+
+  const isPrivateChannel = !hasBit(channel.permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
   // is private channel
-  if (hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit)) {
+  if (isPrivateChannel) {
     const roles = await prisma.serverRole.findMany({
       where: { serverId },
       select: { id: true, permissions: true },

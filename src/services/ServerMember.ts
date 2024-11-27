@@ -8,6 +8,7 @@ import { ServerRole } from '@prisma/client';
 import { generateId } from '../common/flakeId';
 import { updateSingleMemberPrivateChannelSocketRooms } from './Channel';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
+import { removeServerMemberPermissionsCache } from '../cache/ChannelCache';
 
 export const getTopRole = async (serverId: string, userId: string): Promise<CustomResult<ServerRole, CustomError>> => {
   const server = await prisma.server.findFirst({
@@ -109,16 +110,21 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     where: { serverId },
     select: { id: true, permissions: true },
   });
-  const privateChannels = serverChannels.filter((c) => hasBit(c.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit));
+  const privateChannels = serverChannels.filter((c) => c.permissions.find((p) => !hasBit(p.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)));
 
   await updateSingleMemberPrivateChannelSocketRooms({
-    channelIds: privateChannels.map((c) => c.id),
-    isPrivate: true,
+    channels: privateChannels,
     serverId,
     userId,
   });
 
   deleteAllServerMemberCache(serverId);
+  if (update.roleIds) {
+    await removeServerMemberPermissionsCache(
+      serverChannels.map((c) => c.id),
+      [userId]
+    );
+  }
 
   emitServerMemberUpdated(serverId, userId, update);
 

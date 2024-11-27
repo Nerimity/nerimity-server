@@ -1,5 +1,5 @@
 import { Channel, Server } from '@prisma/client';
-import { deleteServerChannelCaches, getChannelCache, updateServerChannelCache } from '../cache/ChannelCache';
+import { deleteServerChannelCaches, getChannelCache, removeServerMemberPermissionsCache, updateServerChannelCache } from '../cache/ChannelCache';
 import { ServerMemberCache, getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
@@ -140,7 +140,7 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
         create: {
           serverId: opts.serverId,
           roleId: server.defaultRoleId,
-          permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+          permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, addBit(CHANNEL_PERMISSIONS.JOIN_VOICE.bit, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)),
         },
       },
       createdById: opts.creatorId,
@@ -163,7 +163,7 @@ interface UpdateServerChannelPermissionsOpts {
 }
 
 export const updateServerChannelPermissions = async (opts: UpdateServerChannelPermissionsOpts) => {
-  const channel = await prisma.channel.findUnique({ where: { id: opts.channelId, serverId: opts.serverId } });
+  const channel = await prisma.channel.findUnique({ where: { id: opts.channelId, serverId: opts.serverId }, select: { id: true, permissions: true } });
   if (!channel) {
     return [null, generateError('Channel does not exist.')] as const;
   }
@@ -195,6 +195,14 @@ export const updateServerChannelPermissions = async (opts: UpdateServerChannelPe
       serverId: true,
       channelId: true,
     },
+  });
+  await removeServerMemberPermissionsCache([opts.channelId]);
+
+  channel.permissions = channel.permissions.map((p) => (p.roleId === opts.roleId ? { ...p, permissions: opts.permissions } : p));
+
+  await updatePrivateChannelSocketRooms({
+    channels: [channel],
+    serverId: opts.serverId,
   });
 
   emitServerChannelPermissionsUpdated(opts.serverId, updated);
@@ -259,16 +267,13 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
 };
 
 interface UpdatePrivateChannelSocketRoomsOpts {
-  channelIds: string[];
+  channels: { permissions: { permissions: number | null; roleId: string }[]; id: string }[];
   serverId: string;
-  isPrivate: boolean;
 }
 
 export async function updateSingleMemberPrivateChannelSocketRooms(opts: UpdatePrivateChannelSocketRoomsOpts & { userId: string }) {
-  if (!opts.isPrivate) {
-    getIO().in(opts.userId).socketsJoin(opts.channelIds);
-    return;
-  }
+  const channelIds = opts.channels.map((c) => c.id);
+  if (!channelIds.length) return;
 
   const roles = await prisma.serverRole.findMany({
     where: { serverId: opts.serverId },
@@ -284,29 +289,51 @@ export async function updateSingleMemberPrivateChannelSocketRooms(opts: UpdatePr
   if (!member) return;
 
   const isCreator = server.createdById === member.userId;
-
   if (isCreator) {
-    getIO().in(member.userId).socketsJoin(opts.channelIds);
+    getIO().in(member.userId).socketsJoin(channelIds);
     return;
   }
-  const hasPermission = serverMemberHasPermission({
+
+  const hasAdminPermission = serverMemberHasPermission({
     permission: ROLE_PERMISSIONS.ADMIN,
     member: member,
     serverRoles: roles,
     defaultRoleId: server.defaultRoleId,
   });
-  if (!hasPermission) {
-    getIO().in(member.userId).socketsLeave(opts.channelIds);
+  if (hasAdminPermission) {
+    getIO().in(member.userId).socketsJoin(channelIds);
     return;
   }
-  getIO().in(member.userId).socketsJoin(opts.channelIds);
+  getIO().in(member.userId).socketsLeave(channelIds);
+
+  const roleIds = member.roleIds.filter((id) => id);
+  roleIds.push(server.defaultRoleId);
+
+  const allowChannelIds: string[] = [];
+  for (let c = 0; c < opts.channels.length; c++) {
+    let permissions = 0;
+    const channel = opts.channels[c]!;
+
+    for (let y = 0; y < channel.permissions.length; y++) {
+      const channelPermissions = channel.permissions[y]!;
+      if (roleIds.includes(channelPermissions.roleId)) {
+        permissions = addBit(permissions, channelPermissions.permissions || 0);
+      }
+    }
+
+    const isPublicChannel = hasBit(permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+
+    if (isPublicChannel) {
+      allowChannelIds.push(channel.id);
+    }
+  }
+  if (!allowChannelIds.length) return;
+  getIO().in(member.userId).socketsJoin(allowChannelIds);
 }
 
 export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannelSocketRoomsOpts) {
-  if (!opts.isPrivate) {
-    getIO().in(opts.serverId).socketsJoin(opts.channelIds);
-    return;
-  }
+  const channelIds = opts.channels.map((c) => c.id);
+  if (!channelIds.length) return;
   const onlineMemberSockets = await getIO().in(opts.serverId).fetchSockets();
   const onlineMemberSocketIds = onlineMemberSockets.map((s) => s.id);
 
@@ -329,22 +356,46 @@ export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannel
     if (!member) continue;
 
     const isCreator = server.createdById === member.userId;
-
     if (isCreator) {
-      getIO().in(member.userId).socketsJoin(opts.channelIds);
+      getIO().in(member.userId).socketsJoin(channelIds);
       continue;
     }
-    const hasPermission = serverMemberHasPermission({
+
+    const hasAdminPermission = serverMemberHasPermission({
       permission: ROLE_PERMISSIONS.ADMIN,
       member: member,
       serverRoles: roles,
       defaultRoleId: server.defaultRoleId,
     });
-    if (!hasPermission) {
-      getIO().in(member.userId).socketsLeave(opts.channelIds);
+    if (hasAdminPermission) {
+      getIO().in(member.userId).socketsJoin(channelIds);
       continue;
     }
-    getIO().in(member.userId).socketsJoin(opts.channelIds);
+    getIO().in(member.userId).socketsLeave(channelIds);
+
+    const roleIds = member.roleIds.filter((id) => id);
+    roleIds.push(server.defaultRoleId);
+
+    const allowChannelIds: string[] = [];
+    for (let c = 0; c < opts.channels.length; c++) {
+      let permissions = 0;
+      const channel = opts.channels[c]!;
+
+      for (let y = 0; y < channel.permissions.length; y++) {
+        const channelPermissions = channel.permissions[y]!;
+        if (roleIds.includes(channelPermissions.roleId)) {
+          permissions = addBit(permissions, channelPermissions.permissions || 0);
+        }
+      }
+
+      const isPublicChannel = hasBit(permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+
+      if (isPublicChannel) {
+        allowChannelIds.push(channel.id);
+      }
+    }
+    if (!allowChannelIds.length) continue;
+    getIO().in(member.userId).socketsJoin(allowChannelIds);
   }
 }
 

@@ -293,7 +293,7 @@ const isSupporterOrModerator = (user: UserCache) => {
 
 const isPrivateChannel = (channel: ChannelCache) => {
   if (!channel.serverId) return false;
-  return hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
+  return !hasBit(channel.permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
 };
 
 const isServerPublic = (server: ServerCache) => {
