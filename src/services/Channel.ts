@@ -146,6 +146,14 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
       createdById: opts.creatorId,
       order: channelCount + 1,
     },
+    include: {
+      permissions: {
+        select: {
+          roleId: true,
+          permissions: true,
+        },
+      },
+    },
   });
 
   getIO().in(opts.serverId).socketsJoin(channel.id);
