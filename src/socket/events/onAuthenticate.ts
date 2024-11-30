@@ -174,8 +174,9 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
 
       socket.join(channel.id);
     }
-        const { serverMembers, roles, channels, ...serverData } = server;
-        // Use serverData for further processing or emission
+    server.serverMembers = undefined;
+    server.roles = undefined;
+    server.channels = undefined;
   }
 
   const isFirstConnect = await addSocketUser(userCache.id, socket.id, {
