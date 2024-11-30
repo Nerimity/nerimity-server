@@ -1,4 +1,4 @@
-import { addBit } from '../common/Bitwise';
+import { addBit, CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';
 import { TicketStatus } from '../services/Ticket';
@@ -15,6 +15,7 @@ export interface ServerChannelCache {
   type: ChannelType.SERVER_TEXT | ChannelType.CATEGORY;
   server: ServerCache;
   slowModeSeconds?: number;
+  canBePublic?: boolean; // Check if a channel can be public. (Using Customize page.)
 }
 
 export interface DMChannelCache {
@@ -153,9 +154,10 @@ export const getChannelCache = async (channelId: string, userId: string) => {
 
 const addChannelToCache = async (channelId: string, userId: string) => {
   // If not in cache, fetch from database.
-  const channel = await prisma.channel.findFirst({
+  const channel = await prisma.channel.findUnique({
     where: { id: channelId, deleting: null },
     include: {
+      permissions: { select: { permissions: true, roleId: true } },
       ticket: {
         select: {
           id: true,
@@ -168,7 +170,27 @@ const addChannelToCache = async (channelId: string, userId: string) => {
   if (!channel) return [null, 'Channel does not exist.'] as const;
 
   if (channel.serverId) {
-    const stringifiedChannel = JSON.stringify(channel);
+    const server = await getServerCache(channel.serverId);
+
+    const defaultRoleId = server?.defaultRoleId;
+    const defaultPerm = channel.permissions.find((p) => p.roleId === defaultRoleId);
+    const isPublicChannel = hasBit(defaultPerm?.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+    let canBePublic = false;
+    if (isPublicChannel) {
+      canBePublic = true;
+    }
+    if (!canBePublic) {
+      const publicChannelPermRoleIds = channel?.permissions.filter((p) => hasBit(p.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)).map((p) => p.roleId);
+      if (publicChannelPermRoleIds.length) {
+        const question = await prisma.serverWelcomeQuestion.findFirst({
+          where: { serverId: server.id, answers: { some: { roleIds: { hasSome: publicChannelPermRoleIds } } } },
+          select: { id: true },
+        });
+        if (question) canBePublic = true;
+      }
+    }
+
+    const stringifiedChannel = JSON.stringify({ ...channel, canBePublic });
     await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), stringifiedChannel);
 
     const [permissions, error] = await getServerChannelMemberPermissions(channel.serverId as string, channelId, userId);
@@ -177,7 +199,7 @@ const addChannelToCache = async (channelId: string, userId: string) => {
     return [
       {
         ...JSON.parse(stringifiedChannel),
-        server: await getServerCache(channel.serverId),
+        server,
         permissions,
       } as ChannelCache,
       null,
@@ -230,11 +252,12 @@ export const updateServerChannelCache = async (channelId: string, update: Partia
   await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), JSON.stringify({ ...cache, ...update }));
 };
 
-export const deleteServerChannelCaches = async (channelIds: string[]) => {
+export const deleteServerChannelCaches = async (channelIds: string[], alsoDeletePermissions = true) => {
   const multi = redisClient.multi();
   for (let i = 0; i < channelIds.length; i++) {
     const channelId = channelIds[i]!;
     multi.del(SERVER_CHANNEL_KEY_STRING(channelId));
+    if (!alsoDeletePermissions) continue;
     multi.del(SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId));
   }
   await multi.exec();

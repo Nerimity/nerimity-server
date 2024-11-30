@@ -875,6 +875,13 @@ export const addServerWelcomeQuestion = async (opts: AddServerWelcomeQuestionOpt
     },
   });
 
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { serverId: opts.serverId },
+    select: { channelId: true },
+  });
+  const channelIds = removeDuplicates(channelPermissions.map((permission) => permission.channelId));
+  await deleteServerChannelCaches(channelIds, false);
+
   return [newQuestion, null] as const;
 };
 
@@ -982,6 +989,14 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
       },
     },
   });
+
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { serverId: opts.serverId },
+    select: { channelId: true },
+  });
+  const channelIds = removeDuplicates(channelPermissions.map((permission) => permission.channelId));
+  await deleteServerChannelCaches(channelIds, false);
+
   return [question, null] as const;
 };
 
@@ -1025,6 +1040,14 @@ export const deleteQuestion = async (serverId: string, questionId: string) => {
   if (!question.count) {
     return [null, generateError('Question not found.')] as const;
   }
+
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { serverId },
+    select: { channelId: true },
+  });
+  const channelIds = removeDuplicates(channelPermissions.map((permission) => permission.channelId));
+  await deleteServerChannelCaches(channelIds, false);
+
   return [true, null] as const;
 };
 

@@ -230,7 +230,23 @@ export const addWelcomeAnswerRolesToUser = async (opts: AddWelcomeAnswerRolesToU
     })
   );
   await prisma.$transaction(transaction);
+
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId: opts.serverId },
+    select: { id: true, permissions: true },
+  });
+
+  await updateSingleMemberPrivateChannelSocketRooms({
+    channels: serverChannels,
+    serverId: opts.serverId,
+    userId: opts.userId,
+  });
+
   deleteAllServerMemberCache(opts.serverId);
+  await removeServerMemberPermissionsCache(
+    serverChannels.map((c) => c.id),
+    [opts.userId]
+  );
 
   emitServerMemberUpdated(opts.serverId, opts.userId, { roleIds: newRoles });
   return [true, null] as const;
@@ -297,7 +313,22 @@ export const removeWelcomeAnswerRolesFromUser = async (opts: RemoveWelcomeAnswer
   );
   await prisma.$transaction(transaction);
 
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId: opts.serverId },
+    select: { id: true, permissions: true },
+  });
+
+  await updateSingleMemberPrivateChannelSocketRooms({
+    channels: serverChannels,
+    serverId: opts.serverId,
+    userId: opts.userId,
+  });
+
   deleteAllServerMemberCache(opts.serverId);
+  await removeServerMemberPermissionsCache(
+    serverChannels.map((c) => c.id),
+    [opts.userId]
+  );
 
   emitServerMemberUpdated(opts.serverId, opts.userId, { roleIds: newRoles });
   return [true, null] as const;

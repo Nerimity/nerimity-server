@@ -182,7 +182,7 @@ async function route(req: Request, res: Response) {
     if (!isMod && isServerNotPublicAndNotSupporter) {
       return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private server.'));
     }
-    const isPrivateChannelAndNotSupporter = isPrivateChannel(req.channelCache) && !isSupporterOrModerator(req.userCache);
+    const isPrivateChannelAndNotSupporter = req.channelCache.type === ChannelType.SERVER_TEXT && !req.channelCache.canBePublic && !isSupporterOrModerator(req.userCache);
 
     if (!isMod && isPrivateChannelAndNotSupporter) {
       return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private channel.'));
