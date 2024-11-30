@@ -56,11 +56,11 @@ export const isUserAdmin = (badge: number) => {
 };
 
 export const CHANNEL_PERMISSIONS = {
-  PRIVATE_CHANNEL: {
-    name: 'Private Channel',
-    description: 'Disable access to the channel. Server admins can still access the channel.',
+  PUBLIC_CHANNEL: {
+    name: 'Public Channel',
+    description: 'Enable access to the channel. Server admins can access any channel.',
     bit: 1,
-    icon: 'lock',
+    icon: 'public',
   },
   SEND_MESSAGE: {
     name: 'Send Message',

@@ -66,13 +66,13 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       channelId,
       ...(opts?.beforeMessageId
         ? {
-          id: { lt: opts.beforeMessageId },
-        }
+            id: { lt: opts.beforeMessageId },
+          }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-          id: { gt: opts.afterMessageId },
-        }
+            id: { gt: opts.afterMessageId },
+          }
         : undefined),
     },
     include: {
@@ -219,8 +219,8 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-        orderBy: { createdAt: 'asc' },
-      }
+          orderBy: { createdAt: 'asc' },
+        }
       : undefined),
   });
 
@@ -575,26 +575,26 @@ export const createMessage = async (opts: SendMessageOptions) => {
 
         ...(opts.buttons?.length
           ? {
-            buttons: {
-              createMany: {
-                data: opts.buttons,
+              buttons: {
+                createMany: {
+                  data: opts.buttons,
+                },
               },
-            },
-          }
+            }
           : undefined),
 
         ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
         ...(opts.attachment
           ? {
-            attachments: {
-              create: {
-                ...opts.attachment,
-                id: generateId(),
-                channelId: opts.channelId,
-                serverId: opts.serverId,
+              attachments: {
+                create: {
+                  ...opts.attachment,
+                  id: generateId(),
+                  channelId: opts.channelId,
+                  serverId: opts.serverId,
+                },
               },
-            },
-          }
+            }
           : undefined),
       },
       creatorId: opts.userId,
@@ -848,8 +848,8 @@ const addMessageEmbed = async (message: Message, opts: { serverId?: string; chan
       where: { id: message.id },
       data: { embed: OGTags },
     })
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    .catch(() => { });
+
+    .catch(() => {});
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -876,7 +876,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   });
   if (!message) return [false, 'Message not found!'] as const;
 
-  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => { });
+  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => {});
 
   if (!deleteRes) {
     return [false, 'Something went wrong, try again later.'];
@@ -1141,20 +1141,20 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
       type: MessageType.CONTENT,
       ...(!bypassQuotesCheck
         ? {
-          channel: {
-            OR: [
-              { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
-              {
-                inbox: {
-                  // is inbox channel
-                  some: {
-                    OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+            channel: {
+              OR: [
+                { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
+                {
+                  inbox: {
+                    // is inbox channel
+                    some: {
+                      OR: [{ recipientId: creatorId }, { createdById: creatorId }],
+                    },
                   },
                 },
-              },
-            ],
-          },
-        }
+              ],
+            },
+          }
         : {}),
     },
     select: {
@@ -1166,28 +1166,47 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
 
 async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
   let filteredUserIds = [...userIds];
-  // is private channel
-  if (hasBit(channel.permissions, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit)) {
-    const roles = await prisma.serverRole.findMany({
-      where: { serverId },
-      select: { id: true, permissions: true },
-    });
-    const defaultRole = roles.find((role) => role.id === server.defaultRoleId);
 
-    const mentionedMembers = await prisma.serverMember.findMany({
-      where: { serverId, userId: { in: userIds } },
-      select: { roleIds: true, userId: true },
-    });
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { channelId, serverId },
+  });
+
+  const defaultChannelPerms = channelPermissions.find((permission) => permission.roleId === server.defaultRoleId);
+  const isPrivateChannel = !hasBit(defaultChannelPerms?.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+
+  if (isPrivateChannel) {
+    const [roles, mentionedMembers] = await prisma.$transaction([
+      prisma.serverRole.findMany({
+        where: { serverId },
+        select: { id: true, permissions: true },
+      }),
+      prisma.serverMember.findMany({
+        where: { serverId, userId: { in: userIds } },
+        select: { roleIds: true, userId: true },
+      }),
+    ]);
+
+    const defaultRole = roles.find((role) => role.id === server.defaultRoleId);
 
     filteredUserIds = mentionedMembers
       .filter((member) => {
         if (member.userId === server.createdById) return true;
         const memberRoles = [defaultRole, ...member.roleIds.map((roleId) => roles.find((r) => r.id === roleId))];
-        const permissions = memberRoles.reduce((val, role) => {
+        const rolePerms = memberRoles.reduce((val, role) => {
           if (!role) return val;
           return addBit(val, role?.permissions);
         }, 0);
-        return hasBit(permissions, ROLE_PERMISSIONS.ADMIN.bit);
+
+        let channelPerms = 0;
+
+        for (let i = 0; i < channelPermissions.length; i++) {
+          const perms = channelPermissions[i]!;
+          if (member.roleIds.includes(perms.roleId)) {
+            channelPerms = addBit(channelPerms, perms.permissions || 0);
+          }
+        }
+
+        return hasBit(rolePerms, ROLE_PERMISSIONS.ADMIN.bit) || hasBit(channelPerms, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
       })
       .map((member) => member.userId);
   }

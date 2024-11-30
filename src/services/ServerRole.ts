@@ -8,6 +8,7 @@ import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise
 import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleOrderUpdated, emitServerRoleUpdated } from '../emits/Server';
 import { updatePrivateChannelSocketRooms } from './Channel';
 import { isValidHex } from '../common/utils';
+import { removeServerMemberPermissionsCache } from '../cache/ChannelCache';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string, opts?: { permissions?: number; bot?: boolean }) => {
   const server = await prisma.server.findUnique({
@@ -110,25 +111,14 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
 
   emitServerRoleUpdated(serverId, roleId, update);
 
-  const beforePerm = role.permissions;
-  const afterPerm = update.permissions ?? role.permissions;
-
-  const adminChange = hasBit(beforePerm, ROLE_PERMISSIONS.ADMIN.bit) !== hasBit(afterPerm, ROLE_PERMISSIONS.ADMIN.bit);
-
-  if (adminChange) {
-    const serverChannels = await prisma.channel.findMany({
-      where: { serverId },
-      select: { id: true, permissions: true },
-    });
-    const privateChannels = serverChannels.filter((c) => hasBit(c.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit));
-    if (privateChannels.length) {
-      await updatePrivateChannelSocketRooms({
-        serverId,
-        channelIds: privateChannels.map((c) => c.id),
-        isPrivate: true,
-      });
-    }
-  }
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId },
+    select: { id: true, permissions: true },
+  });
+  await updatePrivateChannelSocketRooms({
+    serverId,
+    channels: serverChannels,
+  });
 
   return [update, null];
 };
@@ -153,6 +143,8 @@ export const deleteServerRole = async (serverId: string, roleId: string, opts?: 
     return [null, generateError('Cannot delete default role.')];
   }
 
+  const roleChannelPermissions = await prisma.serverChannelPermissions.findMany({ where: { roleId }, select: { channelId: true } });
+
   let serverRoles = await prisma.serverRole.findMany({
     where: { serverId },
     orderBy: { order: 'asc' },
@@ -173,24 +165,20 @@ export const deleteServerRole = async (serverId: string, roleId: string, opts?: 
 
   await prisma.$transaction(transactions);
 
-  const hadAdminRole = hasBit(role.permissions, ROLE_PERMISSIONS.ADMIN.bit);
-  if (hadAdminRole) {
-    const serverChannels = await prisma.channel.findMany({
-      where: { serverId },
-      select: { id: true, permissions: true },
-    });
-    const privateChannels = serverChannels.filter((c) => hasBit(c.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit));
-    if (privateChannels.length) {
-      await updatePrivateChannelSocketRooms({
-        serverId,
-        channelIds: privateChannels.map((c) => c.id),
-        isPrivate: true,
-      });
-    }
-  }
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId },
+    select: { id: true, permissions: true },
+  });
+
+  await updatePrivateChannelSocketRooms({
+    serverId,
+    channels: serverChannels,
+  });
 
   deleteAllServerMemberCache(serverId);
+  await removeServerMemberPermissionsCache(roleChannelPermissions.map((c) => c.channelId));
   emitServerRoleDeleted(serverId, roleId);
+
   return [role, null];
 };
 

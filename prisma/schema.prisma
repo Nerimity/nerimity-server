@@ -297,6 +297,8 @@ model Server {
 
   welcomeQuestions ServerWelcomeQuestion[]
 
+  channelPermissions ServerChannelPermissions[]
+
 
 }
 
@@ -371,6 +373,8 @@ model ServerRole {
   botRole     Boolean?
 
   createdAt              DateTime                @default(now())
+
+  channelPermissions     ServerChannelPermissions[]
 
 }
 
@@ -488,7 +492,7 @@ model Channel {
   categoryId             String?
   category               Channel?                @relation(fields: [categoryId], references: [id], name: "channel_categories", onDelete: SetNull)
 
-  permissions            Int?
+
   lastMessagedAt         DateTime?
   createdAt              DateTime                @default(now())
   createdBy              User?                   @relation(fields: [createdById], references: [id])
@@ -511,6 +515,26 @@ model Channel {
   notice ChatNotice?
   ticket Ticket?
   notificationSettings UserNotificationSettings[]
+
+  permissions ServerChannelPermissions[]
+}
+
+model ServerChannelPermissions {
+
+  permissions     Int?
+
+  roleId String
+  role   ServerRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([roleId, channelId])
 }
 
 model Ticket {

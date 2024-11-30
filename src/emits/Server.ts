@@ -1,9 +1,9 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_DELETED_BATCH, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_DELETED_BATCH, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_CHANNEL_PERMISSIONS_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
-import { Channel, CustomEmoji, Message, Server, ServerMember, ServerRole, User } from '@prisma/client';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
+import { Channel, CustomEmoji, Message, Server, ServerChannelPermissions, ServerMember, ServerRole, User } from '@prisma/client';
 import { UpdateServerRoleOptions } from '../services/ServerRole';
 import { UpdateServerMember } from '../services/ServerMember';
 import { VoiceCacheFormatted } from '../cache/VoiceCache';
@@ -20,7 +20,7 @@ type PartialMember = Prisma.ServerMemberGetPayload<typeof partialMember>;
 interface ServerJoinOpts {
   server: Server;
   members: PartialMember[];
-  channels: Channel[];
+  channels: (Channel & { permissions: { permissions: number | null; roleId: string }[] })[];
   joinedMember: PartialMember;
   roles: ServerRole[];
   memberPresences: Presence[];
@@ -40,6 +40,10 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
 
   io.in(joinedMemberUserId).socketsJoin(serverId);
 
+  const memberRoleIds = [...opts.joinedMember.roleIds];
+  const defaultRole = opts.roles.find((role) => role.id === opts.server.defaultRoleId)!;
+  memberRoleIds.push(defaultRole.id);
+
   for (let i = 0; i < opts.channels.length; i++) {
     const channel = opts.channels[i]!;
     const isCreator = opts.server.createdById === joinedMemberUserId;
@@ -49,8 +53,16 @@ export const emitServerJoined = (opts: ServerJoinOpts) => {
       continue;
     }
 
-    const isPrivateChannel = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    if (!isPrivateChannel) {
+    let memberChannelPermissions = 0;
+
+    for (let y = 0; y < channel.permissions.length; y++) {
+      const permissions = channel.permissions[y]!;
+      if (!memberRoleIds.includes(permissions.roleId)) continue;
+      memberChannelPermissions = addBit(memberChannelPermissions, permissions?.permissions || 0);
+    }
+
+    const isPublicChannel = !hasBit(memberChannelPermissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+    if (isPublicChannel) {
       io.in(joinedMemberUserId).socketsJoin(channel.id);
       continue;
     }
@@ -138,7 +150,7 @@ export const emitServerMessageDeleted = (data: { channelId: string; messageId: s
   io.in(data.channelId).emit(MESSAGE_DELETED, data);
 };
 
-export const emitServerMessageDeletedBatch = (data: { userId: string, serverId: string; fromTime: Date, toTime: Date }) => {
+export const emitServerMessageDeletedBatch = (data: { userId: string; serverId: string; fromTime: Date; toTime: Date }) => {
   const io = getIO();
 
   io.in(data.serverId).emit(MESSAGE_DELETED_BATCH, {
@@ -147,7 +159,7 @@ export const emitServerMessageDeletedBatch = (data: { userId: string, serverId: 
     serverId: data.serverId,
     toTime: data.toTime.getTime(),
   });
-}
+};
 
 export const emitServerUpdated = (serverId: string, updated: UpdateServerOptions) => {
   const io = getIO();
@@ -199,6 +211,12 @@ export const emitServerChannelOrderUpdated = (serverId: string, updated: { categ
   const io = getIO();
 
   io.in(serverId).emit(SERVER_CHANNEL_ORDER_UPDATED, { serverId, ...updated });
+};
+
+export const emitServerChannelPermissionsUpdated = (serverId: string, updated: Partial<ServerChannelPermissions>) => {
+  const io = getIO();
+
+  io.in(serverId).emit(SERVER_CHANNEL_PERMISSIONS_UPDATED, updated);
 };
 
 export const emitServerOrderUpdated = (userId: string, serverIds: string[]) => {

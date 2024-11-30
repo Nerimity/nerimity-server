@@ -8,6 +8,7 @@ import { ServerRole } from '@prisma/client';
 import { generateId } from '../common/flakeId';
 import { updateSingleMemberPrivateChannelSocketRooms } from './Channel';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
+import { removeServerMemberPermissionsCache } from '../cache/ChannelCache';
 
 export const getTopRole = async (serverId: string, userId: string): Promise<CustomResult<ServerRole, CustomError>> => {
   const server = await prisma.server.findFirst({
@@ -109,16 +110,20 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     where: { serverId },
     select: { id: true, permissions: true },
   });
-  const privateChannels = serverChannels.filter((c) => hasBit(c.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit));
 
   await updateSingleMemberPrivateChannelSocketRooms({
-    channelIds: privateChannels.map((c) => c.id),
-    isPrivate: true,
+    channels: serverChannels,
     serverId,
     userId,
   });
 
   deleteAllServerMemberCache(serverId);
+  if (update.roleIds) {
+    await removeServerMemberPermissionsCache(
+      serverChannels.map((c) => c.id),
+      [userId]
+    );
+  }
 
   emitServerMemberUpdated(serverId, userId, update);
 
@@ -225,7 +230,23 @@ export const addWelcomeAnswerRolesToUser = async (opts: AddWelcomeAnswerRolesToU
     })
   );
   await prisma.$transaction(transaction);
+
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId: opts.serverId },
+    select: { id: true, permissions: true },
+  });
+
+  await updateSingleMemberPrivateChannelSocketRooms({
+    channels: serverChannels,
+    serverId: opts.serverId,
+    userId: opts.userId,
+  });
+
   deleteAllServerMemberCache(opts.serverId);
+  await removeServerMemberPermissionsCache(
+    serverChannels.map((c) => c.id),
+    [opts.userId]
+  );
 
   emitServerMemberUpdated(opts.serverId, opts.userId, { roleIds: newRoles });
   return [true, null] as const;
@@ -292,7 +313,22 @@ export const removeWelcomeAnswerRolesFromUser = async (opts: RemoveWelcomeAnswer
   );
   await prisma.$transaction(transaction);
 
+  const serverChannels = await prisma.channel.findMany({
+    where: { serverId: opts.serverId },
+    select: { id: true, permissions: true },
+  });
+
+  await updateSingleMemberPrivateChannelSocketRooms({
+    channels: serverChannels,
+    serverId: opts.serverId,
+    userId: opts.userId,
+  });
+
   deleteAllServerMemberCache(opts.serverId);
+  await removeServerMemberPermissionsCache(
+    serverChannels.map((c) => c.id),
+    [opts.userId]
+  );
 
   emitServerMemberUpdated(opts.serverId, opts.userId, { roleIds: newRoles });
   return [true, null] as const;

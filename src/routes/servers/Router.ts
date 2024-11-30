@@ -39,6 +39,7 @@ import { serverWelcomeAnswer } from './serverWelcomeAnswer';
 import { serverWelcomeAnswerRemove } from './serverWelcomeAnswerRemove';
 import { serverMemberProfileUpdate } from './serveMemberProfileUpdate';
 import { serverAuditLogsGet } from './serverAuditlogsGet';
+import { serverChannelPermissionUpdate } from './serverChannelPermissionsUpdate';
 
 const ServersRouter = Router();
 
@@ -64,6 +65,7 @@ serverChannelCreate(ServersRouter);
 serverRoleUpdateOrder(ServersRouter);
 serverChannelUpdate(ServersRouter);
 serverChannelDelete(ServersRouter);
+serverChannelPermissionUpdate(ServersRouter);
 
 serverRoleCreate(ServersRouter);
 serverRoleUpdate(ServersRouter);

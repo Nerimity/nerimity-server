@@ -1,4 +1,4 @@
-import { Channel, Prisma, Server } from '@prisma/client';
+import { Channel, Prisma, Server, ServerMember, ServerRole } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
@@ -12,11 +12,8 @@ import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentUserServerMessages } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
-import * as nerimityCDN from '../common/nerimityCDN';
-import { makeChannelsInCategoryPrivate } from './Channel';
 import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
-import { leaveVoiceChannel } from './Voice';
 import { deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
 import { deleteServerCache } from '../cache/ServerCache';
@@ -45,7 +42,7 @@ const filterLastOnlineDetailsFromServerMembers = (serverMembers: ServerMemberWit
       ...serverMember,
       user: {
         ...user,
-        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : {}),
+        ...(isPrivacyFriendsAndServers ? { lastOnlineAt } : { lastOnlineAt: null }),
       },
     };
 
@@ -110,11 +107,17 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         name: 'General',
         serverId: serverId,
         type: ChannelType.SERVER_TEXT,
-        permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, CHANNEL_PERMISSIONS.JOIN_VOICE.bit),
+        permissions: {
+          create: {
+            serverId: serverId,
+            roleId: roleId,
+            permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, addBit(CHANNEL_PERMISSIONS.JOIN_VOICE.bit, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)),
+          },
+        },
         createdById: opts.creatorId,
         order: 1,
       },
-      include: { _count: { select: { attachments: true } } },
+      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
     }),
     prisma.user.update({
       where: { id: opts.creatorId },
@@ -151,6 +154,14 @@ export const getServers = async (userId: string) => {
       servers: {
         include: {
           _count: { select: { welcomeQuestions: true } },
+          channels: {
+            where: { deleting: null },
+            include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+          },
+          serverMembers: {
+            include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
+          },
+          roles: true,
           customEmojis: {
             select: {
               id: true,
@@ -162,27 +173,26 @@ export const getServers = async (userId: string) => {
       },
     },
   });
+  const servers = user?.servers || [];
+  let serverChannels: Channel[] = [];
+  let serverMembers: ServerMemberWithLastOnlineDetails[] = [];
 
-  const serverIds = user?.servers.map((server) => server.id);
+  let serverRoles: ServerRole[] = [];
 
-  const [serverChannels, serverMembers, serverRoles] = await prisma.$transaction([
-    prisma.channel.findMany({
-      where: { serverId: { in: serverIds }, deleting: null },
-      include: { _count: { select: { attachments: true } } },
-    }),
-    prisma.serverMember.findMany({
-      where: { serverId: { in: serverIds } },
-      include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
-    }),
-    prisma.serverRole.findMany({ where: { serverId: { in: serverIds } } }),
-  ]);
+  for (let i = 0; i < servers.length; i++) {
+    const server = servers[i]!;
+    const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(server.serverMembers, userId);
+    server.serverMembers = updatedServerMembers;
 
-  const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
+    serverChannels = [...serverChannels, ...server.channels];
+    serverMembers = [...serverMembers, ...server.serverMembers];
+    serverRoles = [...serverRoles, ...server.roles];
+  }
 
   return {
     servers: user?.servers || [],
     serverChannels,
-    serverMembers: updatedServerMembers,
+    serverMembers,
     serverRoles,
   };
 };
@@ -265,7 +275,7 @@ export const joinServer = async (
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
-        include: { _count: { select: { attachments: true } } },
+        include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },
@@ -776,12 +786,6 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
     )
   );
 
-  if (opts.categoryId) {
-    const category = channels[opts.categoryId]!;
-    const isPrivateCategory = hasBit(category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-    isPrivateCategory && (await makeChannelsInCategoryPrivate(opts.categoryId, opts.serverId));
-  }
-
   const payload = {
     categoryId: opts.categoryId,
     orderedChannelIds: opts.orderedChannelIds,
@@ -870,6 +874,13 @@ export const addServerWelcomeQuestion = async (opts: AddServerWelcomeQuestionOpt
       answers: true,
     },
   });
+
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { serverId: opts.serverId },
+    select: { channelId: true },
+  });
+  const channelIds = removeDuplicates(channelPermissions.map((permission) => permission.channelId));
+  await deleteServerChannelCaches(channelIds, false);
 
   return [newQuestion, null] as const;
 };
@@ -978,6 +989,14 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
       },
     },
   });
+
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { serverId: opts.serverId },
+    select: { channelId: true },
+  });
+  const channelIds = removeDuplicates(channelPermissions.map((permission) => permission.channelId));
+  await deleteServerChannelCaches(channelIds, false);
+
   return [question, null] as const;
 };
 
@@ -1021,6 +1040,14 @@ export const deleteQuestion = async (serverId: string, questionId: string) => {
   if (!question.count) {
     return [null, generateError('Question not found.')] as const;
   }
+
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { serverId },
+    select: { channelId: true },
+  });
+  const channelIds = removeDuplicates(channelPermissions.map((permission) => permission.channelId));
+  await deleteServerChannelCaches(channelIds, false);
+
   return [true, null] as const;
 };
 
