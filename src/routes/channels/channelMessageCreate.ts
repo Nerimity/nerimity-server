@@ -194,9 +194,9 @@ async function route(req: Request, res: Response) {
     if (!body.googleDriveAttachment.mime) return res.status(400).json(generateError('googleDriveAttachment mime is required'));
   }
 
-  const isServerChannel = req.channelCache.type === ChannelType.SERVER_TEXT || req.channelCache.type === ChannelType.CATEGORY;
+  const isServerOrDMChannel = req.channelCache.type === ChannelType.DM_TEXT || req.channelCache.type === ChannelType.SERVER_TEXT || req.channelCache.type === ChannelType.CATEGORY;
 
-  if (!req.userCache.application && isServerChannel && !req.userCache.account?.emailConfirmed) {
+  if (!req.userCache.application && isServerOrDMChannel && !req.userCache.account?.emailConfirmed) {
     return res.status(400).json(generateError('You must confirm your email to send messages.'));
   }
 
