@@ -238,36 +238,12 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
     return [null, generateError('Channel does not exist.')];
   }
 
-  // if (update.permissions !== undefined && channel.category) {
-  //   const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-  //   const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-  //   if (isPrivate !== wasPrivate && !isPrivate) {
-  //     const isCategoryPrivate = hasBit(channel.category.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-  //     if (isCategoryPrivate) return [null, generateError('The category this channel is in is private. Un-private the category to update this permission.')];
-  //   }
-  // }
-
   await prisma.channel.update({ where: { id: channel.id }, data: update });
 
   await updateServerChannelCache(channelId, {
     ...addToObjectIfExists('name', update.name),
-    // ...addToObjectIfExists('permissions', update.permissions),
     ...addToObjectIfExists('slowModeSeconds', update.slowModeSeconds),
   });
-
-  // if (update.permissions !== undefined) {
-  //   const wasPrivate = hasBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-  //   const isPrivate = hasBit(update.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit);
-  //   if (wasPrivate !== isPrivate) {
-  //     if (channel.type === ChannelType.CATEGORY && isPrivate) await makeChannelsInCategoryPrivate(channel.id, server.id);
-
-  //     await updatePrivateChannelSocketRooms({
-  //       channelIds: [channelId],
-  //       isPrivate,
-  //       serverId,
-  //     });
-  //   }
-  // }
 
   emitServerChannelUpdated(serverId, channelId, update);
 
@@ -406,36 +382,6 @@ export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannel
     getIO().in(member.userId).socketsJoin(allowChannelIds);
   }
 }
-
-export const makeChannelsInCategoryPrivate = async (categoryId: string, serverId: string) => {
-  const category = await prisma.channel.findFirst({
-    where: { id: categoryId, deleting: null },
-    select: { categories: { select: { id: true, permissions: true } } },
-  });
-
-  const categoryChannels = category?.categories;
-  if (!categoryChannels?.length) return;
-
-  await prisma.$transaction(
-    categoryChannels?.map((channel) =>
-      prisma.channel.update({
-        where: { id: channel.id },
-        data: {
-          permissions: addBit(channel.permissions || 0, CHANNEL_PERMISSIONS.PRIVATE_CHANNEL.bit),
-        },
-      })
-    )
-  );
-
-  const categoryChannelIds = categoryChannels.map((c) => c.id);
-  await deleteServerChannelCaches(categoryChannelIds);
-
-  await updatePrivateChannelSocketRooms({
-    channelIds: categoryChannelIds,
-    serverId,
-    isPrivate: true,
-  });
-};
 
 export const deleteServerChannel = async (serverId: string, channelId: string): Promise<CustomResult<string, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });

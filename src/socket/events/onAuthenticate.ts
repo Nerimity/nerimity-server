@@ -140,7 +140,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     const member = server.serverMembers.find((member) => member.user.id === userCache.id && member.serverId === server.id);
     if (!member) continue;
     const defaultRole = server.roles.find((role) => role.id === server.defaultRoleId);
-    member.roleIds.push(defaultRole!.id);
+    const roleIds = [...member.roleIds, defaultRole!.id];
 
     const isCreator = server.createdById === userCache.id;
 
@@ -155,7 +155,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
 
       for (let y = 0; y < channel.permissions.length; y++) {
         const permissions = channel.permissions[y]!;
-        if (!member.roleIds.includes(permissions.roleId)) continue;
+        if (!roleIds.includes(permissions.roleId)) continue;
         memberChannelPermissions = addBit(memberChannelPermissions, permissions?.permissions || 0);
       }
 

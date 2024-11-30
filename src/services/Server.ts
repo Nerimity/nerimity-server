@@ -12,11 +12,8 @@ import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentUserServerMessages } from './Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
-import * as nerimityCDN from '../common/nerimityCDN';
-import { makeChannelsInCategoryPrivate } from './Channel';
 import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
-import { leaveVoiceChannel } from './Voice';
 import { deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
 import { deleteServerCache } from '../cache/ServerCache';
@@ -788,12 +785,6 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
       })
     )
   );
-
-  if (opts.categoryId) {
-    const category = channels[opts.categoryId]!;
-    const isPrivateCategory = !hasBit(category.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
-    isPrivateCategory && (await makeChannelsInCategoryPrivate(opts.categoryId, opts.serverId));
-  }
 
   const payload = {
     categoryId: opts.categoryId,

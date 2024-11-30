@@ -110,10 +110,9 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     where: { serverId },
     select: { id: true, permissions: true },
   });
-  const privateChannels = serverChannels.filter((c) => c.permissions.find((p) => !hasBit(p.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)));
 
   await updateSingleMemberPrivateChannelSocketRooms({
-    channels: privateChannels,
+    channels: serverChannels,
     serverId,
     userId,
   });
