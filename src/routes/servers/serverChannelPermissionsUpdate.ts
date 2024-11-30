@@ -16,7 +16,7 @@ export function serverChannelPermissionUpdate(Router: Router) {
     channelVerification({ allowBot: true }),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
 
-    body('permissions').not().isEmpty().withMessage('Name is required.').isNumeric().withMessage('Permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.').isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.'),
+    body('permissions').not().isEmpty().withMessage('Permissions are required.').isNumeric().withMessage('Permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.'),
 
     rateLimit({
       name: 'server_channel_perm_update',
