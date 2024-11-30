@@ -1167,29 +1167,46 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
 async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
   let filteredUserIds = [...userIds];
 
-  const isPrivateChannel = !hasBit(channel.permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
-  // is private channel
-  if (isPrivateChannel) {
-    const roles = await prisma.serverRole.findMany({
-      where: { serverId },
-      select: { id: true, permissions: true },
-    });
-    const defaultRole = roles.find((role) => role.id === server.defaultRoleId);
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { channelId, serverId },
+  });
 
-    const mentionedMembers = await prisma.serverMember.findMany({
-      where: { serverId, userId: { in: userIds } },
-      select: { roleIds: true, userId: true },
-    });
+  const defaultChannelPerms = channelPermissions.find((permission) => permission.roleId === server.defaultRoleId);
+  const isPrivateChannel = !hasBit(defaultChannelPerms?.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+
+  if (isPrivateChannel) {
+    const [roles, mentionedMembers] = await prisma.$transaction([
+      prisma.serverRole.findMany({
+        where: { serverId },
+        select: { id: true, permissions: true },
+      }),
+      prisma.serverMember.findMany({
+        where: { serverId, userId: { in: userIds } },
+        select: { roleIds: true, userId: true },
+      }),
+    ]);
+
+    const defaultRole = roles.find((role) => role.id === server.defaultRoleId);
 
     filteredUserIds = mentionedMembers
       .filter((member) => {
         if (member.userId === server.createdById) return true;
         const memberRoles = [defaultRole, ...member.roleIds.map((roleId) => roles.find((r) => r.id === roleId))];
-        const permissions = memberRoles.reduce((val, role) => {
+        const rolePerms = memberRoles.reduce((val, role) => {
           if (!role) return val;
           return addBit(val, role?.permissions);
         }, 0);
-        return hasBit(permissions, ROLE_PERMISSIONS.ADMIN.bit);
+
+        let channelPerms = 0;
+
+        for (let i = 0; i < channelPermissions.length; i++) {
+          const perms = channelPermissions[i]!;
+          if (member.roleIds.includes(perms.roleId)) {
+            channelPerms = addBit(channelPerms, perms.permissions || 0);
+          }
+        }
+
+        return hasBit(rolePerms, ROLE_PERMISSIONS.ADMIN.bit) || hasBit(channelPerms, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
       })
       .map((member) => member.userId);
   }
