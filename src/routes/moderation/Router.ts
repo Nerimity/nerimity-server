@@ -25,8 +25,11 @@ import { userBatchWarn } from './userBatchWarn';
 import { announcementPostCreate } from './announcementPostCreate';
 import { announcementPostRemove } from './announcementPostRemove';
 import { getUsersAuditLog } from './getUsersAuditLog';
+import { getMessages } from './getMessages';
 
 const ModerationRouter = Router();
+
+getMessages(ModerationRouter);
 
 userBatchWarn(ModerationRouter);
 
