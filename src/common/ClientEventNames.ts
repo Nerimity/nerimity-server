@@ -1,3 +1,4 @@
+export const USER_AUTH_QUEUE_POSITION = 'user:auth_queue_position';
 export const AUTHENTICATED = 'user:authenticated';
 export const AUTHENTICATE_ERROR = 'user:authenticate_error';
 export const USER_UPDATED_SELF = 'user:updatedSelf';

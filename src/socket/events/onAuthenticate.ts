@@ -1,7 +1,7 @@
 import { Channel, Inbox } from '@prisma/client';
 import { Socket } from 'socket.io';
 import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/UserCache';
-import { AUTHENTICATED } from '../../common/ClientEventNames';
+import { AUTHENTICATED, USER_AUTH_QUEUE_POSITION } from '../../common/ClientEventNames';
 import { prisma, publicUserExcludeFields } from '../../common/database';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../../common/Bitwise';
 import { removeDuplicates } from '../../common/utils';
@@ -18,12 +18,6 @@ import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
 import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
-import Bottleneck from 'bottleneck';
-
-const limiter = new Bottleneck({
-  maxConcurrent: 2,
-  minTime: 333,
-});
 
 interface Payload {
   token: string;
@@ -32,22 +26,35 @@ interface Payload {
 export const authQueue = createQueue({
   name: 'wsAuth',
   redisClient,
-  minTime: 100,
+  minTime: 5000,
 });
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
-  limiter.schedule(async () => {
-    const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
+  const queueId = await authQueue.genId();
 
-    authQueue.add(
-      async () => {
-        await handleAuthenticate(socket, payload).catch((err) => {
-          console.error(err);
-        });
-      },
-      { groupName: ip }
-    );
-  });
+  if (socket.connected) {
+    const setTimeout = setInterval(async () => {
+      const pos = await authQueue.getQueuePosition(queueId);
+      const actualPos = pos === null ? 0 : pos + 1;
+      socket.emit(USER_AUTH_QUEUE_POSITION, { pos: actualPos });
+      if (!actualPos) {
+        clearInterval(setTimeout);
+        return;
+      }
+      if (!socket.connected) {
+        clearInterval(setTimeout);
+      }
+    }, 5000);
+  }
+
+  authQueue.add(
+    async () => {
+      await handleAuthenticate(socket, payload).catch((err) => {
+        console.error(err);
+      });
+    },
+    { id: queueId }
+  );
 }
 
 const handleAuthenticate = async (socket: Socket, payload: Payload) => {
