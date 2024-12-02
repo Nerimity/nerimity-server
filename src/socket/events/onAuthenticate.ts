@@ -26,7 +26,7 @@ interface Payload {
 export const authQueue = createQueue({
   name: 'wsAuth',
   redisClient,
-  minTime: 5000,
+  minTime: 200,
 });
 
 export async function onAuthenticate(socket: Socket, payload: Payload) {
