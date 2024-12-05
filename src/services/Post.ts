@@ -9,7 +9,7 @@ import { getBlockedUserIds, isUserBlocked } from './User/User';
 import { replaceBadWords } from '../common/badWords';
 import { addPostViewsToCache } from '../cache/PostViewsCache';
 
-function constructInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
+export function constructPostInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
     poll: {
       select: {
@@ -29,7 +29,7 @@ function constructInclude(requesterUserId: string, continueIter = true): Prisma.
         },
       },
     },
-    ...(continueIter ? { commentTo: { include: constructInclude(requesterUserId, false) } } : undefined),
+    ...(continueIter ? { commentTo: { include: constructPostInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
       select: { likedBy: true, comments: { where: { deleted: null } } },
@@ -94,7 +94,7 @@ export async function createPost(opts: CreatePostOpts) {
           }
         : {}),
     },
-    include: constructInclude(opts.userId),
+    include: constructPostInclude(opts.userId),
   });
 
   if (opts.commentToId) {
@@ -123,7 +123,7 @@ export async function editPost(opts: { editById: string; postId: string; content
 
         editedAt: dateToDateTime(),
       },
-      include: constructInclude(opts.editById),
+      include: constructPostInclude(opts.editById),
     })
     .catch(() => {});
 
@@ -209,7 +209,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     orderBy: opts.orderBy || { createdAt: 'desc' },
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
     cursor: opts.cursor,
-    include: { ...constructInclude(opts.requesterUserId), ...opts.additionalInclude },
+    include: { ...constructPostInclude(opts.requesterUserId), ...opts.additionalInclude },
   });
   updateViews(posts, opts.requesterIpAddress);
 
@@ -248,7 +248,7 @@ export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
           : undefined),
       },
     },
-    include: { post: { include: constructInclude(opts.requesterUserId) } },
+    include: { post: { include: constructPostInclude(opts.requesterUserId) } },
     orderBy: { createdAt: 'desc' },
     take: 50,
   });
@@ -287,7 +287,7 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
           }
         : undefined),
     },
-    include: constructInclude(opts.requesterUserId),
+    include: constructPostInclude(opts.requesterUserId),
   });
 
   if (!post) return null;
@@ -342,7 +342,7 @@ export async function fetchPost(opts: FetchPostOpts) {
     },
     orderBy: { createdAt: 'desc' },
     take: 50,
-    include: constructInclude(opts.requesterUserId),
+    include: constructPostInclude(opts.requesterUserId),
   });
   if (!post) return null;
 
@@ -501,7 +501,7 @@ export async function getFeed(opts: GetFeedOpts) {
         },
       ],
     },
-    include: constructInclude(opts.userId),
+    include: constructPostInclude(opts.userId),
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
   });
 
@@ -601,7 +601,7 @@ export async function getPostNotifications(userId: string, requesterIpAddress: s
     take: 20,
     include: {
       by: true,
-      post: { include: constructInclude(userId) },
+      post: { include: constructPostInclude(userId) },
     },
   });
   const posts = notifications.filter((n) => n.type === PostNotificationType.REPLIED).map((n) => n.post!);
@@ -694,7 +694,7 @@ export async function getAnnouncementPosts(requesterId: string, requesterIpAddre
         announcement: null,
       },
     },
-    include: constructInclude(requesterId),
+    include: constructPostInclude(requesterId),
   });
 
   updateViews(feedPosts, requesterIpAddress);

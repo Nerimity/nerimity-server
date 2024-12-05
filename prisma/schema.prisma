@@ -134,6 +134,8 @@ model User {
 
   openedTickets         Ticket[]
 
+  reminders             Reminder[]
+
   application           Application? // Bot users will have this
 
   usersSuspended      Suspension[]               @relation(name: "suspended_by") // Only admins
@@ -517,6 +519,8 @@ model Channel {
   notificationSettings UserNotificationSettings[]
 
   permissions ServerChannelPermissions[]
+
+  reminders             Reminder[]
 }
 
 model ServerChannelPermissions {
@@ -601,6 +605,7 @@ model Message {
   silent Boolean?
 
 
+  reminders Reminder[]
 
 
 
@@ -791,6 +796,9 @@ model Post {
 
   poll PostPoll?
 
+
+  reminders Reminder[]
+
   @@index([createdById, createdAt])
 
 }
@@ -914,4 +922,24 @@ model AuditLog {
 
   @@index([actionById, createdAt])
   @@index([serverId, createdAt])
+}
+
+
+model Reminder {
+  id          String   @id
+  createdAt   DateTime @default(now())
+
+  remindAt    DateTime
+  createdById      String
+  createdBy        User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  postId      String?
+  post        Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  messageId String?
+  message    Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
 }

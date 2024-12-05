@@ -18,6 +18,7 @@ import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
 import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
+import { ReminderSelect } from '../../services/Reminder';
 
 interface Payload {
   token: string;
@@ -74,6 +75,10 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   const user = await prisma.user.findUnique({
     where: { id: userCache.id },
     include: {
+      reminders: {
+        orderBy: { remindAt: 'asc' },
+        select: ReminderSelect,
+      },
       notificationSettings: {
         select: {
           notificationPingMode: true,
@@ -231,6 +236,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
       emailConfirmed: user.account?.emailConfirmed,
       connections: user.connections,
       notices: user.notices,
+      reminders: user.reminders,
     },
     notificationSettings: user.notificationSettings,
     voiceChannelUsers,

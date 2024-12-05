@@ -273,131 +273,133 @@ interface EditMessageOptions {
   messageId: string;
 }
 
-export const MessageInclude = {
-  createdBy: {
-    select: {
-      id: true,
-      username: true,
-      tag: true,
-      hexColor: true,
-      avatar: true,
-      badges: true,
-      bot: true,
+export const MessageInclude = Prisma.validator<Prisma.MessageDefaultArgs>()({
+  include: {
+    createdBy: {
+      select: {
+        id: true,
+        username: true,
+        tag: true,
+        hexColor: true,
+        avatar: true,
+        badges: true,
+        bot: true,
+      },
     },
-  },
-  mentions: {
-    select: {
-      id: true,
-      username: true,
-      tag: true,
-      hexColor: true,
-      avatar: true,
+    mentions: {
+      select: {
+        id: true,
+        username: true,
+        tag: true,
+        hexColor: true,
+        avatar: true,
+      },
     },
-  },
-  buttons: {
-    orderBy: { order: 'asc' },
-    select: {
-      alert: true,
-      id: true,
-      label: true,
+    buttons: {
+      orderBy: { order: 'asc' },
+      select: {
+        alert: true,
+        id: true,
+        label: true,
+      },
     },
-  },
-  replyMessages: {
-    orderBy: { id: 'desc' },
-    select: {
-      replyToMessage: {
-        select: {
-          id: true,
-          content: true,
-          editedAt: true,
-          createdAt: true,
-          attachments: {
-            select: {
-              height: true,
-              width: true,
-              path: true,
-              id: true,
-              filesize: true,
-              expireAt: true,
-              provider: true,
-              fileId: true,
-              mime: true,
-              createdAt: true,
+    replyMessages: {
+      orderBy: { id: 'desc' },
+      select: {
+        replyToMessage: {
+          select: {
+            id: true,
+            content: true,
+            editedAt: true,
+            createdAt: true,
+            attachments: {
+              select: {
+                height: true,
+                width: true,
+                path: true,
+                id: true,
+                filesize: true,
+                expireAt: true,
+                provider: true,
+                fileId: true,
+                mime: true,
+                createdAt: true,
+              },
+            },
+            createdBy: {
+              select: {
+                id: true,
+                username: true,
+                tag: true,
+                hexColor: true,
+                avatar: true,
+                badges: true,
+                bot: true,
+              },
             },
           },
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-              bot: true,
-            },
+        },
+      },
+    },
+    quotedMessages: {
+      select: {
+        id: true,
+        content: true,
+        mentions: {
+          select: {
+            id: true,
+            username: true,
+            tag: true,
+            hexColor: true,
+            avatar: true,
+          },
+        },
+        editedAt: true,
+        createdAt: true,
+        channelId: true,
+        attachments: {
+          select: {
+            height: true,
+            width: true,
+            path: true,
+            id: true,
+            provider: true,
+            filesize: true,
+            expireAt: true,
+            fileId: true,
+            mime: true,
+            createdAt: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            tag: true,
+            hexColor: true,
+            avatar: true,
+            badges: true,
+            bot: true,
           },
         },
       },
     },
-  },
-  quotedMessages: {
-    select: {
-      id: true,
-      content: true,
-      mentions: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-        },
-      },
-      editedAt: true,
-      createdAt: true,
-      channelId: true,
-      attachments: {
-        select: {
-          height: true,
-          width: true,
-          path: true,
-          id: true,
-          provider: true,
-          filesize: true,
-          expireAt: true,
-          fileId: true,
-          mime: true,
-          createdAt: true,
-        },
-      },
-      createdBy: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-          badges: true,
-          bot: true,
-        },
+    attachments: {
+      select: {
+        height: true,
+        width: true,
+        path: true,
+        id: true,
+        provider: true,
+        filesize: true,
+        expireAt: true,
+        fileId: true,
+        mime: true,
+        createdAt: true,
       },
     },
   },
-  attachments: {
-    select: {
-      height: true,
-      width: true,
-      path: true,
-      id: true,
-      provider: true,
-      filesize: true,
-      expireAt: true,
-      fileId: true,
-      mime: true,
-      createdAt: true,
-    },
-  },
-};
+}).include;
 export const editMessage = async (opts: EditMessageOptions): Promise<CustomResult<Partial<Message>, CustomError>> => {
   const messageExists = await exists(prisma.message, {
     where: { id: opts.messageId, createdById: opts.userId },

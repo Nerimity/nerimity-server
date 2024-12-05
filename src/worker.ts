@@ -23,6 +23,7 @@ import { TenorRouter } from './routes/tenor/Router';
 import { ApplicationsRouter } from './routes/applications/Router';
 import { OpenGraphRouter } from './routes/open-graph/Router';
 import helmet from 'helmet';
+import { RemindersRouter } from './routes/reminders/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -31,7 +32,6 @@ import helmet from 'helmet';
 const app = express();
 const server = http.createServer(app);
 
-// eslint-disable-next-line no-async-promise-executor
 const main = async () => {
   await connectRedis();
   Log.info('Connected to Redis');
@@ -87,3 +87,4 @@ app.use('/api', TicketsRouter);
 app.use('/api', EmojisRouter);
 app.use('/api', TenorRouter);
 app.use('/api', ApplicationsRouter);
+app.use('/api', RemindersRouter);
