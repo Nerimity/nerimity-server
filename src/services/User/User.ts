@@ -53,7 +53,7 @@ export const isIpBanned = async (ipAddress: string) => {
   if (!isExpired(ban.expireAt)) {
     return ban;
   }
-  await prisma.bannedIp.delete({ where: { ipAddress } });
+  await prisma.bannedIp.delete({ where: { ipAddress } }).catch(() => {});
   return false;
 };
 
