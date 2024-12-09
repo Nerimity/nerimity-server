@@ -378,6 +378,10 @@ model ServerRole {
 
   channelPermissions     ServerChannelPermissions[]
 
+
+  mentionedMessages      Message[]               @relation(name: "role_mentioned_messages")
+
+
 }
 
 
@@ -583,6 +587,7 @@ model Message {
   channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   createdBy   User     @relation(fields: [createdById], references: [id])
   mentions    User[]  @relation(name: "mentioned_messages")
+  roleMentions ServerRole[]  @relation(name: "role_mentioned_messages")
 
   attachments Attachment[]
   reactions   MessageReaction[]

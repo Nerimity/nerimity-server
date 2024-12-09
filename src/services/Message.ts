@@ -87,6 +87,14 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
           bot: true,
         },
       },
+      roleMentions: {
+        select: {
+          id: true,
+          name: true,
+          hexColor: true,
+          icon: true,
+        },
+      },
       mentions: {
         select: {
           id: true,
@@ -154,6 +162,14 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
               tag: true,
               hexColor: true,
               avatar: true,
+            },
+          },
+          roleMentions: {
+            select: {
+              id: true,
+              name: true,
+              hexColor: true,
+              icon: true,
             },
           },
           editedAt: true,
@@ -295,6 +311,14 @@ export const MessageInclude = Prisma.validator<Prisma.MessageDefaultArgs>()({
         avatar: true,
       },
     },
+    roleMentions: {
+      select: {
+        id: true,
+        name: true,
+        hexColor: true,
+        icon: true,
+      },
+    },
     buttons: {
       orderBy: { order: 'asc' },
       select: {
@@ -352,6 +376,14 @@ export const MessageInclude = Prisma.validator<Prisma.MessageDefaultArgs>()({
             tag: true,
             hexColor: true,
             avatar: true,
+          },
+        },
+        roleMentions: {
+          select: {
+            id: true,
+            name: true,
+            hexColor: true,
+            icon: true,
           },
         },
         editedAt: true,
@@ -463,6 +495,7 @@ interface SendMessageOptions {
   updateLastSeen?: boolean; // by default, this is true.
   attachment?: Partial<Attachment>;
   everyoneMentioned?: boolean;
+  canMentionRoles?: boolean;
   htmlEmbed?: string;
 
   replyToMessageIds?: string[];
@@ -480,6 +513,7 @@ type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
 type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
 
 const userMentionRegex = /\[@:([\d]+)]/g;
+const roleMentionRegex = /\[r:([\d]+)]/g;
 const quoteMessageRegex = /\[q:([\d]+)]/g;
 
 interface ConstructDataOpts {
@@ -500,6 +534,20 @@ async function constructData({ messageData, creatorId, update, bypassQuotesCheck
       });
       messageData.mentions = {
         ...(update ? { set: users } : { connect: users }),
+      };
+    }
+
+    if (sendMessageOpts?.canMentionRoles && sendMessageOpts.serverId) {
+      const mentionRoleIds = removeDuplicates([...messageData.content.matchAll(roleMentionRegex)].map((m) => m[1]));
+
+      const mentionedRoles = await prisma.serverRole.findMany({
+        where: {
+          id: { in: mentionRoleIds },
+        },
+        select: { id: true },
+      });
+      messageData.roleMentions = {
+        ...(update ? { set: mentionedRoles } : { connect: mentionedRoles }),
       };
     }
 
@@ -613,6 +661,14 @@ export const createMessage = async (opts: SendMessageOptions) => {
           avatar: true,
           badges: true,
           bot: true,
+        },
+      },
+      roleMentions: {
+        select: {
+          id: true,
+          name: true,
+          hexColor: true,
+          icon: true,
         },
       },
       mentions: {
@@ -764,6 +820,10 @@ export const createMessage = async (opts: SendMessageOptions) => {
       });
       mentionUserIds = serverMembers.map((member) => member.userId);
     } else {
+      if (message.mentions.length) {
+        mentionUserIds = message.mentions.map((mention) => mention.id);
+      }
+
       if (message.mentionReplies) {
         const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy.id);
         if (userIds.length) {
@@ -771,8 +831,19 @@ export const createMessage = async (opts: SendMessageOptions) => {
         }
       }
 
-      if (message.mentions.length) {
-        mentionUserIds = message.mentions.map((mention) => mention.id);
+      if (message.roleMentions.length) {
+        const users = await prisma.user.findMany({
+          where: {
+            memberInServers: {
+              some: {
+                serverId: opts.serverId,
+                roleIds: { hasSome: message.roleMentions.map((role) => role.id) },
+              },
+            },
+          },
+        });
+        const userIds = users.map((user) => user.id);
+        mentionUserIds = [...mentionUserIds, ...userIds];
       }
 
       if (message.quotedMessages.length) {

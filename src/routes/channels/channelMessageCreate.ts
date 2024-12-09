@@ -222,6 +222,8 @@ async function route(req: Request, res: Response) {
     canMentionEveryone = !!hasMentionEveryonePerm;
   }
 
+  const [canMentionRoles] = memberHasRolePermission(req, ROLE_PERMISSIONS.MENTION_ROLES);
+
   let attachment: Partial<Attachment> | undefined = undefined;
 
   if (body.nerimityCdnFileId) {
@@ -269,6 +271,7 @@ async function route(req: Request, res: Response) {
     type: MessageType.CONTENT,
     attachment,
     everyoneMentioned: canMentionEveryone,
+    canMentionRoles,
     htmlEmbed: body.htmlEmbed,
     buttons: body.buttons?.map(({ id, label, alert }) => ({ id, label, alert })),
   });

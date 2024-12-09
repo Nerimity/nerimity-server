@@ -117,13 +117,15 @@ export const ROLE_PERMISSIONS = {
     name: 'Mention Everyone',
     description: 'mentionEveryoneDescription',
     bit: 64,
-    //icon: 'mention'
   },
   NICKNAME_MEMBER: {
     name: 'Nickname Member',
     description: 'mentionEveryoneDescription',
     bit: 128,
-    //icon: 'mention'
+  },
+  MENTION_ROLES: {
+    name: 'Mention Roles',
+    bit: 256,
   },
 };
 
