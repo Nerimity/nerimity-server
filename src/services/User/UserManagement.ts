@@ -244,10 +244,10 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
     }),
     ...(opts?.deleteContent
       ? [
-          prisma.scheduleAccountContentDelete.create({
-            data: {
-              userId,
-            },
+          prisma.scheduleAccountContentDelete.upsert({
+            where: { userId },
+            create: { userId },
+            update: { userId },
           }),
         ]
       : []),
