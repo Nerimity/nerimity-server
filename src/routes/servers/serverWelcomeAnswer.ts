@@ -3,6 +3,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { addWelcomeAnswerRolesToUser } from '../../services/ServerMember';
+import { generateError } from '../../common/errorHandler';
 
 export function serverWelcomeAnswer(Router: Router) {
   Router.post(
@@ -26,6 +27,9 @@ async function route(req: Request, res: Response) {
     answerId,
     serverId: req.serverCache.id,
     userId: req.userCache.id,
+  }).catch((e) => {
+    console.error(e);
+    return [null, generateError('Something went wrong. Try again later.')];
   });
 
   if (error) {
