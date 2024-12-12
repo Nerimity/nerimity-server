@@ -7,7 +7,7 @@ import { FriendStatus } from '../../types/Friend';
 import { dateToDateTime, excludeFields, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 
-import { createPostNotification, fetchLatestPost, PostNotificationType } from '../Post';
+import { createPostNotification, fetchLatestPost, fetchPinnedPost, fetchPinnedPosts, PostNotificationType } from '../Post';
 
 import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude } from '../Message';
@@ -260,7 +260,7 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
   return ['Presence updated.', null];
 };
 
-export const getUserDetails = async (requesterId: string, recipientId: string, requesterIpAddress: string) => {
+export const getUserDetails = async (requesterId: string, recipientId: string, requesterIpAddress: string, includePinnedPosts = false) => {
   const user = await prisma.user.findFirst({
     where: { id: recipientId },
     select: {
@@ -349,6 +349,14 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
     bypassBlocked: isAdmin,
     requesterIpAddress,
   });
+  const pinnedPosts = includePinnedPosts
+    ? await fetchPinnedPosts({
+        userId: recipientId,
+        requesterUserId: requesterId,
+        bypassBlocked: isAdmin,
+        requesterIpAddress,
+      })
+    : [];
 
   const isBlocked = await isUserBlocked(requesterId, recipientId);
 
@@ -381,6 +389,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
       latestPost,
       profile: user.profile,
       ...(!isSuspensionExpired ? { suspensionExpiresAt: suspension?.expireAt } : {}),
+      ...(includePinnedPosts ? { pinnedPosts } : {}),
     },
     null,
   ];

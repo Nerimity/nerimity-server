@@ -63,6 +63,7 @@ async function route(req: Request, res: Response) {
     limit,
     afterId: query.afterId,
     beforeId: query.beforeId,
+    hidePins: true,
   });
 
   res.json(posts);

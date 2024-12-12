@@ -140,6 +140,8 @@ async function scheduleDeleteAccountContent() {
         prisma.postLike.deleteMany({ where: { postId: { in: postIds } } }),
         prisma.postPoll.deleteMany({ where: { postId: { in: postIds } } }),
         prisma.attachment.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.announcementPost.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.pinnedPost.deleteMany({ where: { postId: { in: postIds } } }),
       ]);
     }
     if (messages.length || posts.length || likedPosts.length) {

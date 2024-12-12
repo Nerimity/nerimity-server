@@ -167,11 +167,17 @@ interface FetchPostsOpts {
   skip?: number;
   cursor?: Prisma.PostWhereUniqueInput;
   requesterIpAddress: string;
+  hidePins?: boolean;
 }
 
 export async function fetchPosts(opts: FetchPostsOpts) {
   const where = {
     ...opts.where,
+    ...(opts.hidePins
+      ? {
+          OR: [{ pinned: { isNot: null }, commentToId: { not: null } }, { pinned: null }],
+        }
+      : {}),
     ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
     ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
 
@@ -201,7 +207,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
         }
       : undefined),
     deleted: null,
-  };
+  } as Prisma.PostWhereUniqueInput;
 
   const posts = await prisma.post.findMany({
     where,
@@ -468,6 +474,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
     prisma.postPoll.deleteMany({ where: { postId } }),
     prisma.attachment.deleteMany({ where: { postId } }),
     prisma.announcementPost.deleteMany({ where: { postId } }),
+    prisma.pinnedPost.deleteMany({ where: { postId } }),
   ]);
 
   return [true, null];
@@ -707,4 +714,89 @@ export async function removeAnnouncementPost(postId: string) {
       postId,
     },
   });
+}
+
+export async function pinPost(postId: string, requesterId: string) {
+  const post = await prisma.post.findUnique({
+    where: { id: postId, createdById: requesterId, deleted: null },
+  });
+  if (!post) {
+    return [null, generateError('Post not found.')] as const;
+  }
+
+  const isPinned = await prisma.pinnedPost.findUnique({
+    where: { postId, pinnedById: requesterId },
+  });
+
+  if (isPinned) {
+    return [null, generateError('Post is already pinned.')] as const;
+  }
+
+  const pinCount = await prisma.pinnedPost.count({
+    where: { pinnedById: requesterId },
+  });
+
+  if (pinCount >= 4) {
+    return [null, generateError('You can only pin up to 4 posts.')] as const;
+  }
+
+  await prisma.pinnedPost.create({
+    data: {
+      pinnedById: requesterId,
+      postId,
+    },
+  });
+
+  return [true, null] as const;
+}
+
+export async function unpinPost(postId: string, requesterId: string) {
+  const isPinned = await prisma.pinnedPost.findUnique({
+    where: { postId, pinnedById: requesterId },
+  });
+  if (!isPinned) return [null, generateError('Post is not pinned.')] as const;
+  await prisma.pinnedPost.delete({
+    where: {
+      postId,
+      pinnedById: requesterId,
+    },
+  });
+  return [true, null] as const;
+}
+
+interface fetchPinnedPostsOpts {
+  userId: string;
+  requesterUserId: string;
+  bypassBlocked?: boolean;
+  requesterIpAddress: string;
+}
+
+export async function fetchPinnedPosts(opts: fetchPinnedPostsOpts) {
+  const posts = await prisma.post.findMany({
+    orderBy: { pinned: { pinnedAt: 'desc' } },
+    where: {
+      deleted: null,
+      createdById: opts.userId,
+      pinned: {
+        pinnedById: opts.requesterUserId,
+      },
+      ...(!opts.bypassBlocked
+        ? {
+            createdBy: {
+              friends: {
+                none: {
+                  status: FriendStatus.BLOCKED,
+                  recipientId: opts.requesterUserId,
+                },
+              },
+            },
+          }
+        : undefined),
+    },
+    include: constructPostInclude(opts.requesterUserId),
+  });
+
+  updateViews(posts, opts.requesterIpAddress);
+
+  return posts;
 }
