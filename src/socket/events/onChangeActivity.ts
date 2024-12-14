@@ -14,6 +14,7 @@ interface Payload {
   imgSrc?: string;
   title?: string;
   subtitle?: string;
+  emoji?: string;
 }
 
 export async function onChangeActivity(socket: Socket, payload: Payload | null) {
@@ -34,6 +35,7 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
         imgSrc: payload.imgSrc,
         title: payload.title,
         subtitle: payload.subtitle,
+        emoji: payload.emoji,
       } as Partial<ActivityStatus> | null);
 
   if (payload) {
@@ -47,7 +49,7 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
     }
 
     // check if updatedAt is a number or undefined
-    if (payload.updatedAt && (typeof payload.updatedAt !== 'number')) {
+    if (payload.updatedAt && typeof payload.updatedAt !== 'number') {
       return;
     }
 
@@ -77,6 +79,11 @@ export async function onChangeActivity(socket: Socket, payload: Payload | null) 
     }
     // check if speed is a number or undefined and is less than 100
     if (payload.speed && (typeof payload.speed !== 'number' || payload.speed > 100)) {
+      return;
+    }
+
+    // check if emoji is a string and is less than 30 characters
+    if (payload.emoji && (typeof payload.emoji !== 'string' || payload.emoji.length > 30)) {
       return;
     }
   }
