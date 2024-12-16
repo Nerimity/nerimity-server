@@ -47,6 +47,7 @@ if (cluster.isPrimary) {
     removeIPAddressSchedule();
     schedulePostViews();
     scheduleSuspendedAccountDeletion();
+    removeExpiredBannedIpsSchedule();
   });
 
   for (let i = 0; i < cpuCount; i++) {
@@ -237,6 +238,27 @@ async function removeIPAddressSchedule() {
         },
       },
     });
+  });
+}
+
+async function removeExpiredBannedIps() {
+  await prisma.bannedIp.deleteMany({
+    where: {
+      expireAt: {
+        lte: new Date(Date.now()),
+      },
+    },
+  });
+}
+async function removeExpiredBannedIpsSchedule() {
+  await removeExpiredBannedIps();
+  // Schedule the task to run everyday at 0:00 UTC
+  const rule = new schedule.RecurrenceRule();
+  rule.hour = 0;
+  rule.minute = 0;
+
+  schedule.scheduleJob(rule, async () => {
+    await removeExpiredBannedIps();
   });
 }
 
