@@ -27,5 +27,5 @@
     "source.fixAll.eslint": "explicit"
   },
   "rpc.enabled": true,
-  "cSpell.words": ["filesize", "ITTER", "NERIMITY", "tsup", "unfollow"]
+  "cSpell.words": ["filesize", "ITTER", "NERIMITY", "repost", "Reposted", "reposts", "tsup", "unfollow"]
 }

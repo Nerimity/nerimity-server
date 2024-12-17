@@ -138,6 +138,7 @@ async function scheduleDeleteAccountContent() {
             deleted: true,
           },
         }),
+        prisma.post.deleteMany({ where: { repostId: { in: postIds } } }),
         prisma.postLike.deleteMany({ where: { postId: { in: postIds } } }),
         prisma.postPoll.deleteMany({ where: { postId: { in: postIds } } }),
         prisma.attachment.deleteMany({ where: { postId: { in: postIds } } }),

@@ -58,6 +58,7 @@ async function route(req: Request, res: Response) {
     requesterIpAddress: req.userIP,
     requesterUserId: req.userCache.id,
     limit,
+    where: { repostId: null },
 
     ...(!sort
       ? {
@@ -81,6 +82,7 @@ async function route(req: Request, res: Response) {
           ...(afterDate
             ? {
                 where: {
+                  repostId: null,
                   createdAt: {
                     gte: afterDate,
                   },

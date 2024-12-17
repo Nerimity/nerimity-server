@@ -32,12 +32,34 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
     ...(continueIter ? { commentTo: { include: constructPostInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
-      select: { likedBy: true, comments: { where: { deleted: null } } },
+      select: { likedBy: true, comments: { where: { deleted: null } }, reposts: true },
     },
     likedBy: { select: { id: true }, where: { likedById: requesterUserId } },
     attachments: {
       select: { height: true, width: true, path: true, id: true },
     },
+    reposts: {
+      where: {
+        OR: [
+          { createdById: requesterUserId },
+          {
+            createdBy: {
+              followers: {
+                some: { followedById: requesterUserId },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true, createdBy: { select: { id: true, username: true } } },
+    },
+    ...(continueIter
+      ? {
+          repost: {
+            include: constructPostInclude(requesterUserId, false),
+          },
+        }
+      : {}),
   };
 }
 
@@ -51,7 +73,7 @@ interface CreatePostOpts {
 export async function createPost(opts: CreatePostOpts) {
   if (opts.commentToId) {
     const comment = await prisma.post.findUnique({
-      where: { id: opts.commentToId },
+      where: { id: opts.commentToId, repostId: null },
     });
     if (!comment) {
       return [null, generateError('Comment not found')] as const;
@@ -110,7 +132,7 @@ export async function createPost(opts: CreatePostOpts) {
 
 export async function editPost(opts: { editById: string; postId: string; content: string }) {
   const post = await prisma.post.findFirst({
-    where: { createdById: opts.editById, deleted: null, id: opts.postId },
+    where: { createdById: opts.editById, deleted: null, id: opts.postId, repostId: null },
     select: { id: true },
   });
   if (!post) return [null, generateError('Post not found')] as const;
@@ -221,9 +243,9 @@ export async function fetchPosts(opts: FetchPostsOpts) {
 
   return posts.reverse();
 }
-async function updateViews(posts: Post[], ip?: string) {
+async function updateViews(posts: (Post & { repost?: { id: string } | null })[], ip?: string) {
   if (!ip) return;
-  const ids = [...posts.map((post) => post.id), ...posts.flatMap((post) => post.commentToId ?? [])];
+  const ids = [...posts.map((post) => post.repost?.id || post.id), ...posts.flatMap((post) => post.commentToId ?? [])];
   if (!ids.length) return;
   addPostViewsToCache(ids, ip);
 }
@@ -370,7 +392,7 @@ export async function fetchPost(opts: FetchPostOpts) {
 
 export async function likePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
   const post = await prisma.post.findFirst({
-    where: { deleted: null, id: postId },
+    where: { deleted: null, id: postId, repostId: null },
   });
   if (!post) return [null, generateError('Post not found')];
 
@@ -457,6 +479,11 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
     return [null, generateError('Post does not exist!')];
   }
 
+  if (post.repostId) {
+    await prisma.post.delete({ where: { id: post.id } });
+    return [true, null];
+  }
+
   if (post.attachments?.[0]?.path) {
     deleteFile(post.attachments[0].path);
   }
@@ -470,6 +497,7 @@ export async function deletePost(postId: string, userId: string): Promise<Custom
         estimateLikes: 0,
       },
     }),
+    prisma.post.deleteMany({ where: { repostId: postId } }),
     prisma.postLike.deleteMany({ where: { postId } }),
     prisma.postPoll.deleteMany({ where: { postId } }),
     prisma.attachment.deleteMany({ where: { postId } }),
@@ -494,6 +522,12 @@ export async function getFeed(opts: GetFeedOpts) {
     where: {
       ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
       ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
+
+      NOT: {
+        repost: {
+          deleted: { not: null },
+        },
+      },
 
       commentTo: null,
       deleted: null,
@@ -520,6 +554,7 @@ export enum PostNotificationType {
   LIKED = 0,
   REPLIED = 1,
   FOLLOWED = 2,
+  REPOSTED = 3,
 }
 
 interface CreatePostNotificationProps {
@@ -532,7 +567,7 @@ interface CreatePostNotificationProps {
 export async function createPostNotification(opts: CreatePostNotificationProps) {
   let toId = opts.toId;
 
-  if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED) {
+  if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED || opts.type === PostNotificationType.REPOSTED) {
     const post = await prisma.post.findFirst({
       where: { id: opts.postId },
       select: { createdById: true },
@@ -799,4 +834,53 @@ export async function fetchPinnedPosts(opts: fetchPinnedPostsOpts) {
   updateViews(posts, opts.requesterIpAddress);
 
   return posts;
+}
+
+interface RepostOpts {
+  userId: string;
+  postId: string;
+}
+export async function repostPost(opts: RepostOpts) {
+  const alreadyReposted = await prisma.post.findFirst({
+    where: { repostId: opts.postId, createdById: opts.userId },
+  });
+  if (alreadyReposted) {
+    return [null, generateError('You have already reposted this post.')] as const;
+  }
+
+  const postToRepost = await prisma.post.findUnique({
+    where: { id: opts.postId, repostId: null },
+  });
+  if (!postToRepost) {
+    return [null, generateError('Comment not found')] as const;
+  }
+  const blockedUserIds = await getBlockedUserIds([postToRepost.createdById], opts.userId);
+  if (blockedUserIds.length) {
+    return [null, generateError('You have been blocked by this user!')] as const;
+  }
+
+  const [, post] = await prisma.$transaction([
+    prisma.post.update({
+      where: { id: opts.postId },
+      data: { estimateReposts: { increment: 1 } },
+      select: { id: true },
+    }),
+    prisma.post.create({
+      data: {
+        id: generateId(),
+        createdById: opts.userId,
+        repostId: opts.postId,
+      },
+      include: constructPostInclude(opts.userId),
+    }),
+  ]);
+
+  createPostNotification({
+    byId: opts.userId,
+    type: PostNotificationType.REPOSTED,
+    postId: opts.postId,
+    toId: opts.userId,
+  });
+
+  return [post, null] as const;
 }

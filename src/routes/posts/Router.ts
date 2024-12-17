@@ -18,6 +18,7 @@ import { postPollVote } from './postPollVote';
 import { postsGetAnnouncement } from './postsGetAnnouncement';
 import { postPin } from './postPin';
 import { postPinDelete } from './postPinDelete';
+import { postRepost } from './postRepost';
 
 const PostsRouter = Router();
 
@@ -35,6 +36,7 @@ postsGetLiked(PostsRouter);
 postDelete(PostsRouter);
 postsGet(PostsRouter);
 postCreate(PostsRouter);
+postRepost(PostsRouter);
 postEdit(PostsRouter);
 postLike(PostsRouter);
 postUnlike(PostsRouter);

@@ -791,6 +791,11 @@ model Post {
   announcement AnnouncementPost?
 
 
+  estimateReposts Int @default(0)
+  repostId String?
+  repost   Post? @relation(fields: [repostId], references: [id], name: "repost", onDelete: Cascade) 
+
+  reposts Post[] @relation(name: "repost")
 
   commentToId  String?
   commentTo  Post? @relation(fields: [commentToId], references: [id], name: "commentTo", onDelete: SetNull)
