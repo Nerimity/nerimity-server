@@ -813,7 +813,7 @@ export async function fetchPinnedPosts(opts: fetchPinnedPostsOpts) {
       deleted: null,
       createdById: opts.userId,
       pinned: {
-        pinnedById: opts.requesterUserId,
+        pinnedById: opts.userId,
       },
       ...(!opts.bypassBlocked
         ? {
