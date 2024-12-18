@@ -1,7 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Log } from './Log';
 
-// import { withOptimize } from '@prisma/extension-optimize';
 // import env from './env';
 
 export const prisma = new PrismaClient({
@@ -21,13 +20,6 @@ prisma.$on('query', (e) => {
     Log.warn('Long Query:', e.duration, 'ms', e.query);
   }
 });
-
-// .$extends(
-//   withOptimize({
-//     apiKey: env.OPTIMIZE_API_KEY,
-
-//   })
-// );
 
 export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus', 'lastOnlineAt', 'lastOnlineStatus']);
 
