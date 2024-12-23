@@ -19,6 +19,7 @@ import { postsGetAnnouncement } from './postsGetAnnouncement';
 import { postPin } from './postPin';
 import { postPinDelete } from './postPinDelete';
 import { postRepost } from './postRepost';
+import { postGetReposts } from './postGetReposts';
 
 const PostsRouter = Router();
 
@@ -42,6 +43,7 @@ postLike(PostsRouter);
 postUnlike(PostsRouter);
 postsGetComments(PostsRouter);
 postsGetLikes(PostsRouter);
+postGetReposts(PostsRouter);
 
 postPin(PostsRouter);
 postPinDelete(PostsRouter);

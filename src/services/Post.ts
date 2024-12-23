@@ -170,6 +170,22 @@ export async function getPostLikes(postId: string) {
   return [postLikedByUsers, null];
 }
 
+export async function getPostReposts(postId: string) {
+  const post = await prisma.post.findFirst({
+    where: { deleted: null, id: postId },
+    select: { id: true },
+  });
+  if (!post) return [null, generateError('Post not found')] as const;
+
+  const reposts = await prisma.post.findMany({
+    where: { repostId: postId },
+    orderBy: { createdAt: 'desc' },
+    select: { createdBy: true, createdAt: true },
+  });
+
+  return [reposts, null];
+}
+
 interface FetchPostsOpts {
   userId?: string;
   postId?: string; // get comments
