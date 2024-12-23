@@ -14,8 +14,8 @@ export function postCreate(Router: Router) {
     authenticate(),
     rateLimit({
       name: 'create_post',
-      restrictMS: 20000,
-      requests: 5,
+      restrictMS: 180000,
+      requests: 3,
     }),
     body('content').isString().withMessage('Content must be a string!').optional(true),
     body('postId').isString().withMessage('postId must be a string!').isLength({ min: 1, max: 500 }).withMessage('Content length must be between 1 and 500 characters.').optional(true),
