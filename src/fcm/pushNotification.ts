@@ -42,20 +42,21 @@ export async function sendServerPushMessageNotification(
   channel: ChannelCache,
   server: ServerCache
 ) {
-  if (message.silent) return;
-  if (!credentials) return;
+  // if (message.silent) return;
+  // if (!credentials) return;
 
   const channelPermissions = await prisma.serverChannelPermissions.findMany({
     where: { channelId: message.channelId, serverId },
   });
 
   const defaultChannelPermission = channelPermissions.find((cp) => cp.roleId === server.defaultRoleId);
-  const isPrivateChannel = hasBit(defaultChannelPermission?.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+  const isPrivateChannel = !hasBit(defaultChannelPermission?.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
 
   const roles = isPrivateChannel ? await prisma.serverRole.findMany({ where: { serverId } }) : [];
 
   const mentionedUserIds = message.mentions.map((user) => user.id);
 
+  console.log(isPrivateChannel);
   const users = await prisma.firebaseMessagingToken.findMany({
     where: {
       account: {
@@ -125,6 +126,7 @@ export async function sendServerPushMessageNotification(
     return combined === NotificationPingMode.ALL;
   });
 
+  return;
   const tokens = filteredUsers.map((fcm) => fcm.token);
 
   if (!tokens.length) return;
