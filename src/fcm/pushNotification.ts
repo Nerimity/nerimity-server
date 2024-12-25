@@ -56,7 +56,6 @@ export async function sendServerPushMessageNotification(
 
   const mentionedUserIds = message.mentions.map((user) => user.id);
 
-  console.log(isPrivateChannel);
   const users = await prisma.firebaseMessagingToken.findMany({
     where: {
       account: {
@@ -126,7 +125,6 @@ export async function sendServerPushMessageNotification(
     return combined === NotificationPingMode.ALL;
   });
 
-  return;
   const tokens = filteredUsers.map((fcm) => fcm.token);
 
   if (!tokens.length) return;
