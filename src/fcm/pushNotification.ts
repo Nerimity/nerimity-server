@@ -2,14 +2,15 @@ import admin from 'firebase-admin';
 import { cert } from 'firebase-admin/app';
 import { prisma } from '../common/database';
 import { NotificationPingMode, removeFCMTokens } from '../services/User/User';
-import { Message } from '@prisma/client';
+import { Message, ServerChannelPermissions, ServerRole } from '@prisma/client';
 import { ChannelCache } from '../cache/ChannelCache';
 import { ServerCache } from '../cache/ServerCache';
 import { Log } from '../common/Log';
+import { addBit, CHANNEL_PERMISSIONS, hasBit, ROLE_PERMISSIONS } from '../common/Bitwise';
+import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
 
 let credentials: any;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   credentials = require('../fcm-credentials.json');
 } catch {
   Log.warn('fcm-credentials.json was not provided. Mobile push notifications will not work.');
@@ -43,6 +44,16 @@ export async function sendServerPushMessageNotification(
 ) {
   if (message.silent) return;
   if (!credentials) return;
+
+  const channelPermissions = await prisma.serverChannelPermissions.findMany({
+    where: { channelId: message.channelId, serverId },
+  });
+
+  const defaultChannelPermission = channelPermissions.find((cp) => cp.roleId === server.defaultRoleId);
+  const isPrivateChannel = hasBit(defaultChannelPermission?.permissions || 0, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+
+  const roles = isPrivateChannel ? await prisma.serverRole.findMany({ where: { serverId } }) : [];
+
   const mentionedUserIds = message.mentions.map((user) => user.id);
 
   const users = await prisma.firebaseMessagingToken.findMany({
@@ -63,6 +74,14 @@ export async function sendServerPushMessageNotification(
         select: {
           user: {
             select: {
+              ...(isPrivateChannel
+                ? {
+                    memberInServers: {
+                      where: { serverId },
+                      select: { roleIds: true },
+                    },
+                  }
+                : {}),
               id: true,
               notificationSettings: {
                 where: {
@@ -79,6 +98,19 @@ export async function sendServerPushMessageNotification(
 
   const filteredUsers = users.filter((fmt) => {
     const user = fmt.account.user;
+
+    if (
+      isPrivateChannel &&
+      !hasChannelPermission({
+        server,
+        roles: roles,
+        user: user,
+        member: user.memberInServers[0] || { roleIds: [] },
+        permissions: channelPermissions,
+      })
+    )
+      return false;
+
     if (!user.notificationSettings.length) return true;
     const channelNotificationMode = user.notificationSettings.find((n) => n.channelId)?.notificationPingMode;
     const serverNotificationMode = user.notificationSettings.find((n) => n.serverId)?.notificationPingMode;
@@ -164,4 +196,32 @@ export async function sendDmPushNotification(
 
   if (!failedTokens.length) return;
   removeFCMTokens(failedTokens);
+}
+
+interface hasChannelPermissionOpts {
+  server: ServerCache;
+  roles: ServerRole[];
+  user: { id: string };
+  member: { roleIds: string[] };
+  permissions: ServerChannelPermissions[];
+}
+function hasChannelPermission(opts: hasChannelPermissionOpts) {
+  const isServerCreator = opts.server.createdById === opts.user.id;
+  if (isServerCreator) return true;
+
+  const isAdmin = serverMemberHasPermission({
+    permission: ROLE_PERMISSIONS.ADMIN,
+    member: opts.member,
+    serverRoles: opts.roles,
+    defaultRoleId: opts.server.defaultRoleId,
+  });
+  if (isAdmin) return true;
+
+  let totalPermissions = 0;
+  for (let i = 0; i < opts.permissions.length; i++) {
+    const permission = opts.permissions[i]!;
+    if (!opts.member.roleIds.includes(permission.roleId)) continue;
+    totalPermissions = addBit(totalPermissions, permission.permissions || 0);
+  }
+  return hasBit(totalPermissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
 }
