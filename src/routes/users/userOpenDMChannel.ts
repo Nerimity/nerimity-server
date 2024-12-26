@@ -4,19 +4,19 @@ import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { openDMChannel } from '../../services/User/User';
+import { redisClient } from '../../common/redis';
+import { createQueue } from '@nerimity/mimiqueue';
+
+export const queue = createQueue({
+  name: 'openDM',
+  redisClient,
+});
 
 export function userOpenDMChannel(Router: Router) {
   Router.post(
     '/users/:userId/open-channel',
     authenticate(),
-    param('userId')
-      .not()
-      .isEmpty()
-      .withMessage('userId is required.')
-      .isString()
-      .withMessage('Invalid userId.')
-      .isLength({ min: 1, max: 320 })
-      .withMessage('userId must be between 1 and 320 characters long.'),
+    param('userId').not().isEmpty().withMessage('userId is required.').isString().withMessage('Invalid userId.').isLength({ min: 1, max: 320 }).withMessage('userId must be between 1 and 320 characters long.'),
     rateLimit({
       name: 'open_dm_channel',
       restrictMS: 10000,
@@ -27,16 +27,19 @@ export function userOpenDMChannel(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
+  await queue.add(async () => {
+    await handleRoute(req, res);
+  });
+}
+
+async function handleRoute(req: Request, res: Response) {
   const validateError = customExpressValidatorResult(req);
 
   if (validateError) {
     return res.status(400).json(validateError);
   }
 
-  const [inbox, error] = await openDMChannel(
-    req.userCache.id,
-    req.params.userId
-  );
+  const [inbox, error] = await openDMChannel(req.userCache.id, req.params.userId);
   if (error) {
     return res.status(400).json(error);
   }

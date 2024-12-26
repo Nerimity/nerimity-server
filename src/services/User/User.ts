@@ -122,6 +122,11 @@ export const closeDMChannel = async (userId: string, channelId: string) => {
 // if the recipient has not opened the channel, it will be created.
 // if the recipient has opened the channel, we will create a new inbox with the existing channel id.
 export const openDMChannel = async (userId: string, friendId: string) => {
+  const isValidFriendId = await prisma.user.findUnique({ where: { id: friendId } });
+  if (!isValidFriendId) {
+    return [null, generateError('Invalid userId')] as const;
+  }
+
   const inbox = await prisma.inbox.findFirst({
     where: {
       OR: [
