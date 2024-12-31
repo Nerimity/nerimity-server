@@ -1,14 +1,11 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { dateToDateTime, prisma } from '../../common/database';
+import { prisma } from '../../common/database';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
-import { generateId } from '../../common/flakeId';
-import { removeDuplicates } from '../../common/utils';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
-import { emitUserNoticeCreates } from '../../emits/User';
+import { warnUsersBatch } from '../../services/Moderation';
 
 export enum NoticeType {
   Warning = 0,
@@ -39,73 +36,15 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const isPasswordValid = await checkUserPassword(account.password, req.body.password);
   if (!isPasswordValid) return res.status(403).json(generateError('Invalid password.', 'password'));
 
-  if (req.body.userIds.length >= 5000) return res.status(403).json(generateError('user ids must contain less than 5000 ids.'));
-
-  const sanitizedUserIds = removeDuplicates(req.body.userIds) as string[];
-
-  const sixMonthsMS = new Date().setMonth(new Date().getMonth() + 6);
-
-  await prisma.account.updateMany({
-    where: {
-      warnExpiresAt: {
-        lt: dateToDateTime(),
-      },
-    },
-    data: {
-      warnCount: 0,
-      warnExpiresAt: null,
-    },
+  const [status, error] = await warnUsersBatch({
+    userIds: req.body.userIds,
+    reason: req.body.reason,
+    modUserId: req.userCache.id,
   });
 
-  await prisma.account.updateMany({
-    where: {
-      userId: { in: sanitizedUserIds },
-    },
-    data: {
-      warnCount: { increment: 1 },
-      warnExpiresAt: dateToDateTime(sixMonthsMS),
-    },
-  });
+  if (error) {
+    return res.status(403).json(error);
+  }
 
-  const noticeIds: string[] = [];
-
-  await prisma.userNotice.createMany({
-    data: sanitizedUserIds.map((userId) => {
-      const id = generateId();
-      noticeIds.push(id);
-
-      return {
-        id,
-        userId,
-        content: req.body.reason,
-        type: NoticeType.Warning,
-        createdById: req.userCache.id,
-      };
-    }),
-  });
-
-  const createdNotices = await prisma.userNotice.findMany({
-    where: { id: { in: noticeIds } },
-    select: { userId: true, id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } },
-  });
-
-  emitUserNoticeCreates(createdNotices);
-
-  const warnedUsers = await prisma.user.findMany({
-    where: { id: { in: sanitizedUserIds } },
-    select: { id: true, username: true },
-  });
-
-  await prisma.modAuditLog.createMany({
-    data: warnedUsers.map((user) => ({
-      id: generateId(),
-      actionType: ModAuditLogType.userWarned,
-      actionById: req.userCache.id,
-      username: user.username,
-      userId: user.id,
-      reason: req.body.reason,
-    })),
-  });
-
-  res.status(200).json({ success: true });
+  return res.status(200).json({ status });
 }
