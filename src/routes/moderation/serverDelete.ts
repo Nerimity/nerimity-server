@@ -54,6 +54,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
     userIds: [server.createdById],
     reason: `${server.name} deleted: ` + req.body.reason,
     modUserId: req.userCache.id,
+    skipAuditLog: true,
   });
 
   await prisma.modAuditLog.create({
