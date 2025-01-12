@@ -8,27 +8,19 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { updateServer } from '../../services/Server';
 import { verifyUpload } from '../../common/nerimityCDN';
+import { hasBadWord } from '../../common/badWords';
 
 export function serverUpdate(Router: Router) {
-  Router.post('/servers/:serverId',
+  Router.post(
+    '/servers/:serverId',
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
-    body('name')
-      .isString().withMessage('Name must be a string.')
-      .isLength({ min: 4, max: 35 }).withMessage('Name must be between 4 and 35 characters long.').optional({ nullable: true }),
-    body('defaultChannelId')
-      .isString().withMessage('defaultChannelId must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('defaultChannelId must be between 4 and 100 characters long.').optional({ nullable: true }),
-    body('systemChannelId')
-      .isString().withMessage('systemChannelId must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('systemChannelId must be between 4 and 100 characters long.').optional({ nullable: true }),
-    body('avatarId')
-      .isString().withMessage('avatarId must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('avatarId must be between 4 and 100 characters long.').optional({ nullable: true }),
-    body('bannerId')
-      .isString().withMessage('bannerId must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('bannerId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('name').isString().withMessage('Name must be a string.').isLength({ min: 4, max: 35 }).withMessage('Name must be between 4 and 35 characters long.').optional({ nullable: true }),
+    body('defaultChannelId').isString().withMessage('defaultChannelId must be a string.').isLength({ min: 4, max: 100 }).withMessage('defaultChannelId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('systemChannelId').isString().withMessage('systemChannelId must be a string.').isLength({ min: 4, max: 100 }).withMessage('systemChannelId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('avatarId').isString().withMessage('avatarId must be a string.').isLength({ min: 4, max: 100 }).withMessage('avatarId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('bannerId').isString().withMessage('bannerId must be a string.').isLength({ min: 4, max: 100 }).withMessage('bannerId must be between 4 and 100 characters long.').optional({ nullable: true }),
     rateLimit({
       name: 'server_update',
       restrictMS: 10000,
@@ -46,13 +38,22 @@ interface Body {
 }
 
 async function route(req: Request, res: Response) {
-
   const bodyErrors = customExpressValidatorResult(req);
   if (bodyErrors) {
     return res.status(400).json(bodyErrors);
   }
 
   const { avatarId, bannerId, ...matchedBody }: Body = matchedData(req);
+
+  if (matchedBody.name) {
+    const urlRegex = new RegExp('(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))');
+    if (urlRegex.test(matchedBody.name)) {
+      return res.status(400).json(generateError('Name cannot be a URL.', 'name'));
+    }
+    if (hasBadWord(matchedBody.name)) {
+      return res.status(400).json(generateError('Name cannot contain bad words.', 'name'));
+    }
+  }
 
   let avatar: string | undefined;
   let banner: string | undefined;
@@ -61,8 +62,8 @@ async function route(req: Request, res: Response) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: avatarId,
       type: 'AVATAR',
-      groupId: req.serverCache.id
-    })
+      groupId: req.serverCache.id,
+    });
 
     if (err) {
       return res.status(403).json(generateError(err));
@@ -75,8 +76,8 @@ async function route(req: Request, res: Response) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: bannerId,
       type: 'BANNER',
-      groupId: req.serverCache.id
-    })
+      groupId: req.serverCache.id,
+    });
 
     if (err) {
       return res.status(403).json(generateError(err));
@@ -89,11 +90,10 @@ async function route(req: Request, res: Response) {
     ...matchedBody,
     banner,
     avatar,
-    ...(req.body.systemChannelId === null ? { systemChannelId: null } : undefined)
+    ...(req.body.systemChannelId === null ? { systemChannelId: null } : undefined),
   });
   if (error) {
     return res.status(400).json(error);
   }
   res.json(updated);
-
 }

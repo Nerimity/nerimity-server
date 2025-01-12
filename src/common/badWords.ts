@@ -21,6 +21,10 @@ export const replaceBadWords = (message: string) => {
   return cleanMessage;
 };
 
+export const hasBadWord = (message: string) => {
+  return badWordsRegex.test(message);
+};
+
 const createHashes = (badWord: string) => {
   let str = '';
   for (let i = 0; i < badWord.length; i++) {
