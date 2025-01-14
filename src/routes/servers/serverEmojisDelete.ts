@@ -10,7 +10,7 @@ import { deleteServerEmoji, getServerEmojis } from '../../services/Server';
 
 export function serverEmojiDelete(Router: Router) {
   Router.delete('/servers/:serverId/emojis/:id',
-    authenticate(),
+    authenticate({allowBot: true}),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     rateLimit({
