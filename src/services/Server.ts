@@ -221,6 +221,7 @@ export const joinServer = async (
   const server = await prisma.server.findFirst({
     where: { id: serverId },
     include: {
+      scheduledForDeletion: true,
       _count: { select: { welcomeQuestions: true } },
       customEmojis: {
         select: { gif: true, id: true, name: true },
@@ -229,6 +230,10 @@ export const joinServer = async (
   });
   if (!server) {
     return [null, generateError('Server does not exist.')] as const;
+  }
+
+  if (server.scheduledForDeletion) {
+    return [null, generateError('Server is scheduled for deletion.')] as const;
   }
 
   // check if user is already in server

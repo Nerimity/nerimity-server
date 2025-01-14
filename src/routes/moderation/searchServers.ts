@@ -27,6 +27,7 @@ async function route(req: Request, res: Response) {
     take: limit,
     ...(after ? { cursor: { id: after } } : undefined),
     select: {
+      scheduledForDeletion: true,
       name: true,
       hexColor: true,
       id: true,

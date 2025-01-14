@@ -10,16 +10,17 @@ export interface ServerCache {
   hexColor: string;
   defaultRoleId: string;
   public: boolean;
+  scheduledForDeletion?: { scheduledAt: Date } | null;
 }
 
 export const getServerCache = async (serverId: string) => {
   const key = SERVER_KEY_STRING(serverId);
   const serverString = await redisClient.get(key);
-  if (serverString) return JSON.parse(serverString);
+  if (serverString) return JSON.parse(serverString) as ServerCache;
 
   const server = await prisma.server.findFirst({
     where: { id: serverId },
-    include: { PublicServer: true },
+    include: { PublicServer: true, scheduledForDeletion: { select: { scheduledAt: true } } },
   });
   if (!server) return null;
 
@@ -31,10 +32,11 @@ export const getServerCache = async (serverId: string) => {
     hexColor: server.hexColor,
     defaultRoleId: server.defaultRoleId,
     public: server.PublicServer ? true : false,
+    scheduledForDeletion: server.scheduledForDeletion,
   };
   const serverCacheString = JSON.stringify(serverCache);
   await redisClient.set(key, serverCacheString);
-  return JSON.parse(serverCacheString);
+  return JSON.parse(serverCacheString) as ServerCache;
 };
 
 export const deleteServerCache = async (serverId: string) => {
@@ -42,10 +44,7 @@ export const deleteServerCache = async (serverId: string) => {
   await redisClient.del(key);
 };
 
-export const updateServerCache = async (
-  serverId: string,
-  update: Partial<ServerCache>
-) => {
+export const updateServerCache = async (serverId: string, update: Partial<ServerCache>) => {
   const key = SERVER_KEY_STRING(serverId);
   const cache = await getServerCache(serverId);
   if (!cache) return;

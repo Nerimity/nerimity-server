@@ -5,7 +5,7 @@ import { deleteServer } from '../../services/Server';
 import { Log } from '../../common/Log';
 
 export function serverDelete(Router: Router) {
-  Router.delete('/servers/:serverId', authenticate(), serverMemberVerification(), route);
+  Router.delete('/servers/:serverId', authenticate(), serverMemberVerification({ ignoreScheduledDeletion: true }), route);
 }
 
 async function route(req: Request, res: Response) {

@@ -8,11 +8,9 @@ import { ChannelType } from '../types/Channel';
 
 interface Options {
   allowBot?: boolean;
+  ignoreScheduledDeletion?: boolean;
 }
 
-interface Options {}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function channelVerification(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const { channelId } = req.params;
@@ -28,6 +26,9 @@ export function channelVerification(opts?: Options) {
     }
 
     const isServerChannel = channel.type === ChannelType.CATEGORY || channel.type === ChannelType.SERVER_TEXT;
+    if (!opts?.ignoreScheduledDeletion && isServerChannel && channel.server.scheduledForDeletion) {
+      return res.status(403).json(generateError('This server is scheduled for deletion.'));
+    }
 
     if (isServerChannel) {
       const [memberCache, error] = await getServerMemberCache(channel.server.id, req.userCache.id);

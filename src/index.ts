@@ -13,6 +13,7 @@ import { deleteAccount, deleteAllApplications, deleteOrLeaveAllServers } from '.
 import { createHash } from 'node:crypto';
 import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { createQueueProcessor } from '@nerimity/mimiqueue';
+import { deleteServer } from './services/Server';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -47,6 +48,7 @@ if (cluster.isPrimary) {
     removeIPAddressSchedule();
     schedulePostViews();
     scheduleSuspendedAccountDeletion();
+    scheduleServerDeletion();
     removeExpiredBannedIpsSchedule();
   });
 
@@ -327,5 +329,34 @@ function scheduleSuspendedAccountDeletion() {
     }
 
     scheduleSuspendedAccountDeletion();
+  }, oneMinuteToMilliseconds);
+}
+function scheduleServerDeletion() {
+  const oneMinuteToMilliseconds = 1 * 60 * 1000;
+  const fiveDaysInThePast = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+  setTimeout(async () => {
+    const scheduleItem = await prisma.scheduleServerDelete.findFirst({
+      where: {
+        scheduledAt: {
+          lte: fiveDaysInThePast,
+        },
+      },
+      select: {
+        server: {
+          select: { name: true },
+        },
+        serverId: true,
+        scheduledByUserId: true,
+      },
+    });
+    if (scheduleItem) {
+      try {
+        await deleteServer(scheduleItem.serverId, scheduleItem.scheduledByUserId);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    scheduleServerDeletion();
   }, oneMinuteToMilliseconds);
 }

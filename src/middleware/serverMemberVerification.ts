@@ -5,20 +5,14 @@ import { generateError } from '../common/errorHandler';
 
 interface Options {
   allowBot?: boolean;
+  ignoreScheduledDeletion?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface Options {}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function serverMemberVerification(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const { serverId } = req.params;
 
-    const [memberCache, error] = await getServerMemberCache(
-      serverId,
-      req.userCache.id
-    );
+    const [memberCache, error] = await getServerMemberCache(serverId, req.userCache.id);
     if (error !== null) {
       return res.status(403).json(generateError(error));
     }
@@ -26,6 +20,10 @@ export function serverMemberVerification(opts?: Options) {
     const server = await getServerCache(serverId);
     if (server === null) {
       return res.status(403).json(generateError('Server does not exist.'));
+    }
+
+    if (!opts?.ignoreScheduledDeletion && server.scheduledForDeletion) {
+      return res.status(403).json(generateError('This server is scheduled for deletion.'));
     }
 
     req.serverMemberCache = memberCache;

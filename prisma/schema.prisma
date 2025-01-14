@@ -152,6 +152,9 @@ model User {
 
 
   pinnedPosts PinnedPost[]
+
+
+  scheduledServerDeletions ScheduleServerDelete[]
 }
 
 model UserConnection {
@@ -302,6 +305,9 @@ model Server {
   welcomeQuestions ServerWelcomeQuestion[]
 
   channelPermissions ServerChannelPermissions[]
+
+
+  scheduledForDeletion ScheduleServerDelete?
 
 
 }
@@ -665,6 +671,15 @@ model ScheduleAccountContentDelete {
   userId           String   @unique
   user              User     @relation(fields: [userId], references: [id])
   scheduledAt      DateTime @default(now())
+}
+
+// Only used when Nerimity mod deletes a server.
+model ScheduleServerDelete {
+  serverId           String   @unique
+  server              Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  scheduledByUserId   String
+  scheduledBy         User @relation(fields: [scheduledByUserId], references: [id])
+  scheduledAt       DateTime @default(now())
 }
 
 model MessageReaction {

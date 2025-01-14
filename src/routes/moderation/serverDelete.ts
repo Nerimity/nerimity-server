@@ -5,7 +5,7 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { deleteServer } from '../../services/Server';
+// import { deleteServer } from '../../services/Server';
 import { generateId } from '../../common/flakeId';
 import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
@@ -31,7 +31,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
   }
 
   const account = await prisma.account.findFirst({
-    where: { id: req.userCache.account.id },
+    where: { id: req.userCache.account!.id },
     select: { password: true },
   });
   if (!account) return res.status(404).json(generateError('Something went wrong. Try again later.'));
@@ -45,14 +45,29 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
 
   if (!server) return res.status(404).json(generateError('Server does not exist.'));
 
-  const [, error] = await deleteServer(req.params.serverId, req.userCache.id);
-  if (error) {
-    return res.status(403).json(error);
+  // const [, error] = await deleteServer(req.params.serverId, req.userCache.id);
+  // if (error) {
+  //   return res.status(403).json(error);
+  // }
+
+  const scheduledDeletion = await prisma.scheduleServerDelete
+    .create({
+      data: {
+        serverId: server.id,
+        scheduledByUserId: req.userCache.id,
+      },
+    })
+    .catch((e) => {
+      console.error(e);
+      return null;
+    });
+  if (!scheduledDeletion) {
+    return res.status(500).json(generateError('Failed to schedule server deletion.'));
   }
 
   await warnUsersBatch({
     userIds: [server.createdById],
-    reason: `${server.name} deleted: ` + req.body.reason,
+    reason: `${server.name} scheduled deletion: ${req.body.reason}`,
     modUserId: req.userCache.id,
     skipAuditLog: true,
   });
@@ -68,5 +83,5 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
     },
   });
 
-  res.status(200).json({ success: true });
+  res.status(200).json({ success: true, scheduledDeletion });
 }

@@ -23,6 +23,7 @@ async function route(req: Request, res: Response) {
       devices: { orderBy: { createdAt: 'desc' } },
       servers: {
         select: {
+          scheduledForDeletion: true,
           verified: true,
           name: true,
           hexColor: true,
