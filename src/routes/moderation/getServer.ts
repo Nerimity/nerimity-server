@@ -22,6 +22,7 @@ async function route(req: Request, res: Response) {
       id: true,
       scheduledForDeletion: true,
       createdAt: true,
+      publicServer: { select: { id: true } },
       createdBy: {
         select: {
           id: true,

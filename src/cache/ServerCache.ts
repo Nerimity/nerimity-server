@@ -20,7 +20,7 @@ export const getServerCache = async (serverId: string) => {
 
   const server = await prisma.server.findFirst({
     where: { id: serverId },
-    include: { PublicServer: true, scheduledForDeletion: { select: { scheduledAt: true } } },
+    include: { publicServer: true, scheduledForDeletion: { select: { scheduledAt: true } } },
   });
   if (!server) return null;
 
@@ -31,7 +31,7 @@ export const getServerCache = async (serverId: string) => {
     avatar: server.avatar,
     hexColor: server.hexColor,
     defaultRoleId: server.defaultRoleId,
-    public: server.PublicServer ? true : false,
+    public: server.publicServer ? true : false,
     scheduledForDeletion: server.scheduledForDeletion,
   };
   const serverCacheString = JSON.stringify(serverCache);

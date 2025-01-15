@@ -8,4 +8,5 @@ export const ModAuditLogType = {
   userSuspendUpdate: 6,
   userWarned: 7,
   ipBan: 8,
+  serverDeleteUndo: 9,
 } as const;

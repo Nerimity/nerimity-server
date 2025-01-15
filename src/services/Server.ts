@@ -153,6 +153,11 @@ export const getServers = async (userId: string) => {
     include: {
       servers: {
         include: {
+          scheduledForDeletion: {
+            select: {
+              scheduledAt: true,
+            },
+          },
           _count: { select: { welcomeQuestions: true } },
           channels: {
             where: { deleting: null },
@@ -375,9 +380,9 @@ export const deleteServer = async (serverId: string, deletedByUserId: string) =>
 };
 
 export const leaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<boolean, CustomError>> => {
-  const server = await prisma.server.findFirst({
+  const server = await prisma.server.findUnique({
     where: { id: serverId },
-    include: { channels: { select: { id: true } } },
+    include: { channels: { select: { id: true } }, scheduledForDeletion: true },
   });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -453,7 +458,7 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
 
   deleteAllInboxCache(userId);
   await removeServerIdFromAccountOrder(userId, serverId);
-  if (server.systemChannelId && leaveMessage) {
+  if (!server.scheduledForDeletion && server.systemChannelId && leaveMessage) {
     await createMessage({
       channelId: server.systemChannelId,
       type: MessageType.LEAVE_SERVER,

@@ -26,6 +26,7 @@ import { announcementPostCreate } from './announcementPostCreate';
 import { announcementPostRemove } from './announcementPostRemove';
 import { getUsersAuditLog } from './getUsersAuditLog';
 import { getMessages } from './getMessages';
+import { serverUndoDelete } from './serverUndoDelete';
 
 const ModerationRouter = Router();
 
@@ -49,6 +50,7 @@ getUsers(ModerationRouter);
 getUsersOnline(ModerationRouter);
 
 serverDelete(ModerationRouter);
+serverUndoDelete(ModerationRouter);
 getServer(ModerationRouter);
 updateServer(ModerationRouter);
 getServers(ModerationRouter);

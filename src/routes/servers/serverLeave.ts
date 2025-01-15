@@ -4,19 +4,11 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { leaveServer } from '../../services/Server';
 
 export function serverLeave(Router: Router) {
-  Router.post(
-    '/servers/:serverId/leave',
-    authenticate(),
-    serverMemberVerification(),
-    route
-  );
+  Router.post('/servers/:serverId/leave', authenticate(), serverMemberVerification({ ignoreScheduledDeletion: true }), route);
 }
 
 async function route(req: Request, res: Response) {
-  const [status, error] = await leaveServer(
-    req.userCache.id,
-    req.serverCache.id
-  );
+  const [status, error] = await leaveServer(req.userCache.id, req.serverCache.id);
   if (error) {
     return res.status(500).json(error);
   }

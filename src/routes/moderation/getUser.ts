@@ -24,6 +24,7 @@ async function route(req: Request, res: Response) {
       servers: {
         select: {
           scheduledForDeletion: true,
+          publicServer: { select: { id: true } },
           verified: true,
           name: true,
           hexColor: true,

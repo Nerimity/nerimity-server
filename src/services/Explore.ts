@@ -23,7 +23,7 @@ export const getPublicServers = async (sort: 'most_bumps' | 'most_members' | 're
   };
 
   const publicServers = await prisma.publicServer.findMany({
-    where: where(),
+    where: { AND: [where(), { server: { scheduledForDeletion: null } }] },
     orderBy: orderBy(),
     include: {
       server: { include: { _count: { select: { serverMembers: true } } } },
@@ -51,14 +51,14 @@ export const getPublicServer = async (serverId: string): Promise<CustomResult<Pu
 
 export const bumpPublicServer = async (serverId: string, bumpedByUserId: string): Promise<CustomResult<PublicServer, CustomError>> => {
   const publicServer = await prisma.publicServer.findUnique({
-    where: { serverId },
+    where: { serverId, server: { scheduledForDeletion: null } },
     include: {
       server: {
         select: {
-          systemChannelId: true
-        }
-      }
-    }
+          systemChannelId: true,
+        },
+      },
+    },
   });
 
   if (!publicServer) {

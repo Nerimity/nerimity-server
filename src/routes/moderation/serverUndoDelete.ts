@@ -5,21 +5,18 @@ import { customExpressValidatorResult, generateError } from '../../common/errorH
 
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-// import { deleteServer } from '../../services/Server';
 import { generateId } from '../../common/flakeId';
 import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
-import { warnUsersBatch } from '../../services/Moderation';
 import { deleteServerCache } from '../../cache/ServerCache';
 import { emitServerRemoveScheduleDelete, emitServerScheduleDelete } from '../../emits/Server';
 
-export function serverDelete(Router: Router) {
-  Router.delete<any>('/moderation/servers/:serverId', authenticate(), isModMiddleware, body('reason').not().isEmpty().withMessage('Reason is required.').isString().withMessage('Reason must be a string.').isLength({ min: 0, max: 500 }), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
+export function serverUndoDelete(Router: Router) {
+  Router.delete<any>('/moderation/servers/:serverId/schedule-delete', authenticate(), isModMiddleware, body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
 }
 
 interface Body {
   password: string;
-  reason?: string;
 }
 
 interface Params {
@@ -43,50 +40,37 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
 
   const server = await prisma.server.findUnique({
     where: { id: req.params.serverId },
+    include: { scheduledForDeletion: true },
   });
 
   if (!server) return res.status(404).json(generateError('Server does not exist.'));
-
-  // const [, error] = await deleteServer(req.params.serverId, req.userCache.id);
-  // if (error) {
-  //   return res.status(403).json(error);
-  // }
+  if (!server.scheduledForDeletion) return res.status(404).json(generateError('Server is already not scheduled to delete.'));
 
   const scheduledDeletion = await prisma.scheduleServerDelete
-    .create({
-      data: {
-        serverId: server.id,
-        scheduledByUserId: req.userCache.id,
-      },
+    .delete({
+      where: { serverId: server.id },
     })
     .catch((e) => {
       console.error(e);
       return null;
     });
   if (!scheduledDeletion) {
-    return res.status(500).json(generateError('Failed to schedule server deletion.'));
+    return res.status(500).json(generateError('Failed to de-schedule server deletion.'));
   }
-  await deleteServerCache(server.id);
-
-  await warnUsersBatch({
-    userIds: [server.createdById],
-    reason: `${server.name} scheduled deletion: ${req.body.reason}`,
-    modUserId: req.userCache.id,
-    skipAuditLog: true,
-  });
 
   await prisma.modAuditLog.create({
     data: {
       id: generateId(),
-      actionType: ModAuditLogType.serverDelete,
+      actionType: ModAuditLogType.serverDeleteUndo,
       actionById: req.userCache.id,
       serverName: server.name,
-      reason: req.body.reason,
       serverId: server.id,
     },
   });
 
-  emitServerScheduleDelete(server.id, scheduledDeletion.scheduledAt);
+  await deleteServerCache(server.id);
 
-  res.status(200).json({ success: true, scheduledDeletion });
+  emitServerRemoveScheduleDelete(server.id);
+
+  res.status(200).json({ success: true });
 }
