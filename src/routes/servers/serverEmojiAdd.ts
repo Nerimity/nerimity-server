@@ -12,7 +12,7 @@ import { verifyUpload } from '../../common/nerimityCDN';
 export function serverEmojiAdd(Router: Router) {
   Router.post(
     '/servers/:serverId/emojis',
-    authenticate({allowBot: true}),
+    authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     body('name')

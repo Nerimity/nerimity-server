@@ -10,7 +10,7 @@ import { addServerEmoji, updateServerEmoji } from '../../services/Server';
 
 export function serverEmojiUpdate(Router: Router) {
   Router.post('/servers/:serverId/emojis/:id',
-    authenticate({allowBot: true}),
+    authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     body('name')

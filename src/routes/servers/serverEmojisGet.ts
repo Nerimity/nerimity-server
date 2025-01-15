@@ -9,9 +9,8 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { getServerEmojis } from '../../services/Server';
 
 export function serverEmojisGet(Router: Router) {
-  Router.get(
-    '/servers/:serverId/emojis',
-    authenticate({ allowBot: true }),
+  Router.get('/servers/:serverId/emojis',
+    authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     rateLimit({
@@ -22,6 +21,8 @@ export function serverEmojisGet(Router: Router) {
     route
   );
 }
+
+
 
 async function route(req: Request, res: Response) {
   const [updated, error] = await getServerEmojis(req.serverCache.id);
