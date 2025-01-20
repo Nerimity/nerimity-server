@@ -29,32 +29,21 @@ enum color {
   BgWhite = '\x1b[47m',
 }
 
-function getTime() {
-  const date = new Date();
-
-  const hours = numberHandler(date.getHours());
-  const minutes = numberHandler(date.getMinutes());
-  const seconds = numberHandler(date.getSeconds());
-
-  return `${hours}:${minutes}:${seconds}`;
-}
-function numberHandler(value: number) {
-  return value > 9 ? value : `0${value}`;
-}
+const getDateAndTime = () => new Intl.DateTimeFormat('en-gb', { dateStyle: 'short', timeStyle: 'medium' }).format();
 
 const pid = !cluster.isPrimary ? `PID ${process.pid}` : 'Main';
 
 export const Log = {
   info(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgGreen}[INFO]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getDateAndTime()}] (${pid}) ${color.FgGreen}[INFO]:${color.Reset}`, ...args);
   },
   debug(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgBlue}[DEBUG]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getDateAndTime()}] (${pid}) ${color.FgBlue}[DEBUG]:${color.Reset}`, ...args);
   },
   warn(...args: any) {
-    console.log(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
+    console.log(`${color.FgCyan}[${getDateAndTime()}] (${pid}) ${color.FgYellow}[WARN]:${color.Reset}`, ...args);
   },
   error(...args: any) {
-    console.error(`${color.FgCyan}[${getTime()}] (${pid}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
+    console.error(`${color.FgCyan}[${getDateAndTime()}] (${pid}) ${color.FgRed}[ERROR]:${color.Reset}`, ...args);
   },
 };
