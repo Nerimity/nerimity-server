@@ -27,6 +27,7 @@ import { announcementPostRemove } from './announcementPostRemove';
 import { getUsersAuditLog } from './getUsersAuditLog';
 import { getMessages } from './getMessages';
 import { serverUndoDelete } from './serverUndoDelete';
+import { searchAuditLogs } from './searchAuditLogs';
 
 const ModerationRouter = Router();
 
@@ -36,6 +37,7 @@ userBatchWarn(ModerationRouter);
 
 getUsersAuditLog(ModerationRouter);
 getAuditLogs(ModerationRouter);
+searchAuditLogs(ModerationRouter);
 getStats(ModerationRouter);
 userBatchUnsuspend(ModerationRouter);
 userBatchSuspend(ModerationRouter);

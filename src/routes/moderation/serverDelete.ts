@@ -83,6 +83,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
       serverName: server.name,
       reason: req.body.reason,
       serverId: server.id,
+      userId: server.createdById,
     },
   });
 

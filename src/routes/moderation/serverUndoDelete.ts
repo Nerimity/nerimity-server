@@ -65,6 +65,7 @@ async function route(req: Request<Params, unknown, Body>, res: Response) {
       actionById: req.userCache.id,
       serverName: server.name,
       serverId: server.id,
+      userId: server.createdById,
     },
   });
 
