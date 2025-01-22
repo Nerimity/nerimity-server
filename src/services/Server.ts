@@ -14,9 +14,9 @@ import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
-import { deleteServerMemberCache } from '../cache/ServerMemberCache';
+import { deleteAllServerMemberCache, deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
-import { deleteServerCache } from '../cache/ServerCache';
+import { deleteServerCache, updateServerCache } from '../cache/ServerCache';
 import { getPublicServer } from './Explore';
 import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
@@ -583,6 +583,7 @@ export interface UpdateServerOptions {
   avatar?: string;
   banner?: string;
   verified?: boolean;
+  createdById?: string;
 }
 
 export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
@@ -1083,4 +1084,38 @@ export const getServerWelcomeQuestion = async (serverId: string, questionId: str
   if (!question) return [null, generateError('Question not found.')] as const;
 
   return [question, null] as const;
+};
+
+interface TransferServerOwnershipOpts {
+  newOwnerUserId: string;
+  serverId: string;
+}
+export const transferServerOwnership = async (opts: TransferServerOwnershipOpts) => {
+  const member = await prisma.serverMember.findUnique({
+    where: { userId_serverId: { userId: opts.newOwnerUserId, serverId: opts.serverId } },
+    select: {
+      id: true,
+
+      user: {
+        select: {
+          bot: true,
+          account: true,
+        },
+      },
+    },
+  });
+  if (!member) return [null, generateError('Member not found.')] as const;
+  if (member.user.bot) return [null, generateError('Cannot transfer ownership to a bot account.')] as const;
+  if (!member.user.account) return [null, generateError('Invalid user account.')] as const;
+
+  await prisma.server.update({
+    where: { id: opts.serverId },
+    data: { createdById: opts.newOwnerUserId, verified: false },
+  });
+
+  await updateServerCache(opts.serverId, { createdById: opts.newOwnerUserId });
+
+  emitServerUpdated(opts.serverId, { createdById: opts.newOwnerUserId, verified: false });
+
+  return [true, null] as const;
 };

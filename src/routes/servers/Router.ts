@@ -40,12 +40,14 @@ import { serverWelcomeAnswerRemove } from './serverWelcomeAnswerRemove';
 import { serverMemberProfileUpdate } from './serveMemberProfileUpdate';
 import { serverAuditLogsGet } from './serverAuditlogsGet';
 import { serverChannelPermissionUpdate } from './serverChannelPermissionsUpdate';
+import { serverTransferOwnership } from './serverTransferOwnership';
 
 const ServersRouter = Router();
 
 serverChannelNoticeDelete(ServersRouter);
 serverChannelNoticeUpdate(ServersRouter);
 
+serverTransferOwnership(ServersRouter);
 serverChannelUpdateOrder(ServersRouter);
 serverUpdateOrder(ServersRouter);
 serverCreate(ServersRouter);

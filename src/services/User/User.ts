@@ -16,6 +16,7 @@ import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../commo
 import { Prisma } from '@prisma/client';
 import { UserStatus } from '../../types/User';
 import { createHash } from 'node:crypto';
+import { checkUserPassword } from '../UserAuthentication';
 
 export const getBlockedUserIds = async (userIds: string[], blockedUserId: string) => {
   const blockedUsers = await prisma.friend.findMany({
@@ -656,4 +657,16 @@ export async function dismissUserNotice(noticeId: string, userId: string) {
     },
   });
   return [true, null];
+}
+
+export async function verifyPassword(accountId: string, password: string) {
+  const account = await prisma.account.findFirst({
+    where: { id: accountId },
+    select: { password: true },
+  });
+  if (!account) return [false, generateError('Account not found.')] as const;
+
+  const isPasswordValid = await checkUserPassword(account.password, password);
+  if (!isPasswordValid) return [false, generateError('Invalid Password')] as const;
+  return [true] as const;
 }
