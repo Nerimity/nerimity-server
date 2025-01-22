@@ -13,6 +13,8 @@ export function serverTransferOwnership(Router: Router) {
     authenticate({ allowBot: true }),
     serverMemberVerification(),
     body('password').isLength({ min: 0, max: 72 }).withMessage('Password must be between 0 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'),
+    body('newOwnerUserId').isString().withMessage('newOwnerUserId must be a string.').isLength({ min: 4, max: 100 }).withMessage('newOwnerUserId must be between 4 and 100 characters long.').not().isEmpty().withMessage('newOwnerUserId is required'),
+
     rateLimit({
       name: 'server_transfer_ownership',
       restrictMS: 20000,
