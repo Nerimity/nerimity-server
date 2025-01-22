@@ -64,7 +64,7 @@ export const logServerOwnershipUpdate = async (opts: ServerOwnershipUpdateOpts) 
       id: generateId(),
       actionType: AuditLogType.SERVER_OWNERSHIP_UPDATE,
       serverId: opts.serverId,
-      actionById: opts.newOwnerUserId,
+      actionById: opts.oldOwnerUserId,
       data: {
         oldOwnerUserId: opts.oldOwnerUserId,
         newOwnerUserId: opts.newOwnerUserId,
