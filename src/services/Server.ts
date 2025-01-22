@@ -22,7 +22,7 @@ import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
 import { LastOnlineStatus } from './User/User';
-import { logServerDelete, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
+import { logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
 
 const serverMemberWithLastOnlineDetails = Prisma.validator<Prisma.ServerMemberDefaultArgs>()({
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -1091,6 +1091,10 @@ interface TransferServerOwnershipOpts {
   serverId: string;
 }
 export const transferServerOwnership = async (opts: TransferServerOwnershipOpts) => {
+  const server = await prisma.server.findFirst({ where: { id: opts.serverId }, select: { createdById: true } });
+  if (!server) return [null, generateError('Server not found.')] as const;
+  if (server.createdById === opts.newOwnerUserId) return [null, generateError('Cannot transfer ownership to yourself.')] as const;
+
   const member = await prisma.serverMember.findUnique({
     where: { userId_serverId: { userId: opts.newOwnerUserId, serverId: opts.serverId } },
     select: {
@@ -1116,6 +1120,7 @@ export const transferServerOwnership = async (opts: TransferServerOwnershipOpts)
   await updateServerCache(opts.serverId, { createdById: opts.newOwnerUserId });
 
   emitServerUpdated(opts.serverId, { createdById: opts.newOwnerUserId, verified: false });
+  logServerOwnershipUpdate({ serverId: opts.serverId, newOwnerUserId: opts.newOwnerUserId, oldOwnerUserId: server.createdById });
 
   return [true, null] as const;
 };
