@@ -155,6 +155,8 @@ model User {
 
 
   scheduledServerDeletions ScheduleServerDelete[]
+
+  @@unique([username, tag])
 }
 
 model UserConnection {
