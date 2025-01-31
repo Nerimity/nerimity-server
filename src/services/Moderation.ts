@@ -1,5 +1,7 @@
-import { removeUserCacheByUserIds } from '../cache/UserCache';
+import { removeAllowedIPsCache, removeUserCacheByUserIds } from '../cache/UserCache';
+import { hasBit, USER_BADGES } from '../common/Bitwise';
 import { dateToDateTime, prisma } from '../common/database';
+import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { ModAuditLogType } from '../common/ModAuditLog';
 import { removeDuplicates } from '../common/utils';
@@ -43,6 +45,7 @@ interface WarnUsersOpts {
   userIds: string[];
   reason: string;
   modUserId: string;
+  modUsername: string;
   skipAuditLog?: boolean;
 }
 export async function warnUsersBatch(opts: WarnUsersOpts) {
@@ -63,6 +66,30 @@ export async function warnUsersBatch(opts: WarnUsersOpts) {
       warnExpiresAt: null,
     },
   });
+
+  // if a user gets 3 warnings within 6 months, they get 7 day week ban and IP ban
+  // If they get 6 warnings, we make it a month
+
+  const usersToSuspend = await prisma.account.findMany({
+    where: {
+      userId: { in: sanitizedUserIds },
+    },
+    select: {
+      userId: true,
+      warnCount: true,
+    },
+  });
+
+  const threeWarnings = usersToSuspend.filter((user) => user.warnCount >= 3 && user.warnCount < 6);
+  const sixWarnings = usersToSuspend.filter((user) => user.warnCount >= 6);
+
+  if (threeWarnings.length) {
+    await suspendUsersBatch({ userIds: threeWarnings.map((u) => u.userId), days: 7, suspendByUserId: opts.modUserId, suspendByUsername: opts.modUsername, ipBan: true, reason: 'Warned 3 times in 6 months.' });
+  }
+
+  if (sixWarnings.length) {
+    await suspendUsersBatch({ userIds: sixWarnings.map((u) => u.userId), days: 30, suspendByUserId: opts.modUserId, suspendByUsername: opts.modUsername, ipBan: true, reason: 'Warned 6 times in 6 months.' });
+  }
 
   await prisma.account.updateMany({
     where: {
@@ -112,6 +139,180 @@ export async function warnUsersBatch(opts: WarnUsersOpts) {
         userId: user.id,
         reason: opts.reason,
       })),
+    });
+  }
+
+  return [true, null] as const;
+}
+
+interface SuspendUsersOpts {
+  userIds: string[];
+  days: number;
+  reason?: string;
+  ipBan?: boolean;
+  deleteRecentMessages?: boolean;
+  suspendByUserId: string;
+  suspendByUsername: string;
+}
+
+const SUSPEND_DAY_IN_MS = 86400000;
+const expireAfter = (days: number) => {
+  const now = Date.now();
+  const expireDate = new Date(now + SUSPEND_DAY_IN_MS * days);
+  return expireDate;
+};
+
+export async function suspendUsersBatch(opts: SuspendUsersOpts) {
+  if (opts.userIds.length >= 5000) return [null, generateError('user ids must contain less than 5000 ids.')] as const;
+
+  const sanitizedUserIds = removeDuplicates(opts.userIds) as string[];
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: sanitizedUserIds } },
+    select: { badges: true },
+  });
+
+  const hasFounderBadge = users.find((u) => hasBit(u.badges, USER_BADGES.FOUNDER.bit));
+
+  if (hasFounderBadge) {
+    return [null, generateError('You are not allowed to suspend the founder.')] as const;
+  }
+
+  const expireDateTime = dateToDateTime(expireAfter(opts.days));
+
+  const suspendedUsers = await prisma.suspension.findMany({
+    where: { userId: { in: sanitizedUserIds } },
+    select: { userId: true },
+  });
+
+  const suspendedUserIds = suspendedUsers.map((suspend) => suspend.userId);
+
+  // Only increment if not suspended
+  const incrementUserIds = sanitizedUserIds.filter((id) => !suspendedUserIds.includes(id));
+
+  await prisma.account.updateMany({
+    where: {
+      userId: { in: incrementUserIds },
+    },
+    data: {
+      suspendCount: { increment: 1 },
+    },
+  });
+
+  await prisma.$transaction(
+    sanitizedUserIds.map((userId) =>
+      prisma.suspension.upsert({
+        where: { userId },
+        create: {
+          id: generateId(),
+          userId,
+          suspendedById: opts.suspendByUserId,
+          reason: opts.reason,
+          expireAt: opts.days ? expireDateTime : null,
+        },
+        update: {
+          suspendedById: opts.suspendByUserId,
+          reason: opts.reason || null,
+          expireAt: opts.days ? expireDateTime : null,
+        },
+      })
+    )
+  );
+
+  await prisma.firebaseMessagingToken.deleteMany({
+    where: { account: { userId: { in: sanitizedUserIds } } },
+  });
+
+  await disconnectUsers({
+    userIds: sanitizedUserIds,
+    clearCache: true,
+    reason: opts.reason,
+    expire: opts.days ? expireDateTime : null,
+    by: {
+      username: opts.suspendByUsername,
+    },
+  });
+
+  if (opts.ipBan) {
+    const ipExpireDateTime = dateToDateTime(expireAfter(7));
+
+    const suspendedUserDevices = await prisma.userDevice.findMany({
+      where: { userId: { in: sanitizedUserIds } },
+    });
+    const suspendedUserIps = suspendedUserDevices.map((device) => device.ipAddress);
+
+    const userDevicesWithSameIPs = await prisma.userDevice.findMany({
+      where: { ipAddress: { in: suspendedUserIps } },
+    });
+    const ips = userDevicesWithSameIPs.map((device) => device.ipAddress);
+    const userIds = userDevicesWithSameIPs.map((device) => device.userId);
+    await removeAllowedIPsCache(ips);
+
+    await prisma.$transaction(
+      ips.map((ip) =>
+        prisma.bannedIp.upsert({
+          where: { ipAddress: ip },
+          create: {
+            id: generateId(),
+            ipAddress: ip,
+            expireAt: ipExpireDateTime,
+          },
+          update: {},
+        })
+      )
+    );
+
+    await disconnectUsers({
+      userIds: userIds,
+      clearCache: true,
+      type: 'ip-ban',
+      message: 'You have been IP Banned',
+      expire: ipExpireDateTime,
+    });
+
+    if (ips.length) {
+      await prisma.modAuditLog
+        .create({
+          data: {
+            id: generateId(),
+            actionType: ModAuditLogType.ipBan,
+            actionById: opts.suspendByUserId,
+            count: removeDuplicates(ips).length,
+            expireAt: dateToDateTime(expireAfter(7)),
+          },
+        })
+        .catch(() => {});
+    }
+  }
+
+  const newSuspendedUsers = await prisma.user.findMany({
+    where: { id: { in: sanitizedUserIds } },
+    select: { id: true, username: true },
+  });
+
+  await prisma.modAuditLog.createMany({
+    data: newSuspendedUsers.map((user) => ({
+      id: generateId(),
+      actionType: ModAuditLogType.userSuspend,
+      actionById: opts.suspendByUserId,
+      username: user.username,
+      userId: user.id,
+      reason: opts.reason,
+      expireAt: opts.days ? expireDateTime : null,
+    })),
+  });
+
+  if (opts.deleteRecentMessages) {
+    const lastSevenHours = new Date();
+    lastSevenHours.setHours(lastSevenHours.getHours() + 7);
+
+    await prisma.message.deleteMany({
+      where: {
+        createdById: { in: sanitizedUserIds },
+        createdAt: {
+          lt: dateToDateTime(lastSevenHours),
+        },
+      },
     });
   }
 
