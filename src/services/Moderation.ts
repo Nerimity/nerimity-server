@@ -80,15 +80,15 @@ export async function warnUsersBatch(opts: WarnUsersOpts) {
     },
   });
 
-  const threeWarnings = usersToSuspend.filter((user) => user.warnCount >= 3 && user.warnCount < 6);
-  const sixWarnings = usersToSuspend.filter((user) => user.warnCount >= 6);
+  const twoWarnings = usersToSuspend.filter((user) => user.warnCount >= 2 && user.warnCount < 5);
+  const fiveWarnings = usersToSuspend.filter((user) => user.warnCount >= 5);
 
-  if (threeWarnings.length) {
-    await suspendUsersBatch({ userIds: threeWarnings.map((u) => u.userId), days: 7, suspendByUserId: opts.modUserId, suspendByUsername: opts.modUsername, ipBan: true, reason: 'Warned 3 times in 6 months.' });
+  if (twoWarnings.length) {
+    await suspendUsersBatch({ userIds: twoWarnings.map((u) => u.userId), days: 7, suspendByUserId: opts.modUserId, suspendByUsername: opts.modUsername, ipBan: true, reason: 'Warned 3 times in 6 months.' });
   }
 
-  if (sixWarnings.length) {
-    await suspendUsersBatch({ userIds: sixWarnings.map((u) => u.userId), days: 30, suspendByUserId: opts.modUserId, suspendByUsername: opts.modUsername, ipBan: true, reason: 'Warned 6 times in 6 months.' });
+  if (fiveWarnings.length) {
+    await suspendUsersBatch({ userIds: fiveWarnings.map((u) => u.userId), days: 30, suspendByUserId: opts.modUserId, suspendByUsername: opts.modUsername, ipBan: true, reason: 'Warned 6 times in 6 months.' });
   }
 
   await prisma.account.updateMany({
