@@ -11,7 +11,7 @@ import { hasBit, USER_BADGES } from '../../common/Bitwise';
 export function postCreate(Router: Router) {
   Router.post(
     '/posts',
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'create_post',
       restrictMS: 180000,

@@ -9,7 +9,7 @@ import { hasBit, USER_BADGES } from '../../common/Bitwise';
 export function postEdit(Router: Router) {
   Router.patch(
     '/posts/:postId',
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'edit_post',
       restrictMS: 20000,
