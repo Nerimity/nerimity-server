@@ -52,11 +52,12 @@ userOpenDMChannel(UsersRouter);
 userUpdatePresence(UsersRouter);
 userDeleteAccount(UsersRouter);
 
+userSearch(UsersRouter);
+
 userNotifications(UsersRouter);
 userDetails(UsersRouter);
 userToggleBadge(UsersRouter);
 
-userSearch(UsersRouter);
 userFollow(UsersRouter);
 userUnfollow(UsersRouter);
 userFollowers(UsersRouter);
