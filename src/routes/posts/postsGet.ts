@@ -20,7 +20,7 @@ export function postsGet(Router: Router) {
     route
   );
 
-  Router.get('/posts', authenticate(), route);
+  Router.get('/posts', authenticate({ allowBot: true }), route);
 }
 
 interface Param {

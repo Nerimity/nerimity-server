@@ -11,7 +11,7 @@ import { deletePost } from '../../services/Post';
 export function postDelete(Router: Router) {
   Router.delete(
     '/posts/:postId',
-    authenticate(),
+    authenticate({ allowBot: true }),
     param('postId')
       .isString()
       .withMessage('postId must be a string!')
