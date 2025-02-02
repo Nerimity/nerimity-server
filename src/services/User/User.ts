@@ -678,7 +678,7 @@ export async function searchUsers(requesterUserId: string, query: string) {
     where: {
       followedById: requesterUserId,
       followedTo: {
-        username: { contains: query },
+        username: { contains: query, mode: 'insensitive' },
       },
     },
     select: {
@@ -692,6 +692,9 @@ export async function searchUsers(requesterUserId: string, query: string) {
         },
       },
     },
+    orderBy: {
+      followedTo: { username: 'desc' },
+    },
     take: 10,
   });
 
@@ -702,7 +705,7 @@ export async function searchUsers(requesterUserId: string, query: string) {
   const users = await prisma.user.findMany({
     where: {
       id: { notIn: followedToId },
-      username: { contains: query },
+      username: { contains: query, mode: 'insensitive' },
       OR: [{ NOT: { account: null } }, { NOT: { application: null } }],
     },
     select: {
