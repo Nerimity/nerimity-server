@@ -670,3 +670,37 @@ export async function verifyPassword(accountId: string, password: string) {
   if (!isPasswordValid) return [false, generateError('Invalid Password')] as const;
   return [true] as const;
 }
+
+export async function searchUsers(requesterUserId: string, query: string) {
+  const q = `%${query}%`;
+  //search for a user by username. order by followers, then by username
+  const result = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT
+      u.id
+    FROM
+      "User" u
+      LEFT JOIN "Follower" f ON u.id = ${requesterUserId}
+    WHERE u.username ILIKE ${q}
+    ORDER BY
+      f DESC,
+      u.username
+      LIMIT 10;
+  `;
+  const userIds = result.map((user) => user.id);
+  const users = await prisma.user.findMany({
+    where: {
+      id: { in: userIds },
+      OR: [{ NOT: { account: null } }, { NOT: { application: null } }],
+    },
+    select: {
+      username: true,
+      tag: true,
+      avatar: true,
+      hexColor: true,
+      id: true,
+    },
+    orderBy: { joinedAt: 'desc' },
+  });
+  const orderedUsers = userIds.map((id) => users.find((user) => user.id === id)!);
+  return orderedUsers;
+}

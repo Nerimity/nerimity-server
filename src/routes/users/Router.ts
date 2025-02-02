@@ -24,6 +24,7 @@ import { userDismissNotice } from './userDismissNotice';
 import { userPasswordResetCodeSent } from './userPasswordResetCodeSend';
 import { userPasswordReset } from './userPasswordReset';
 import { userToggleBadge } from './userToggleBadge';
+import { userSearch } from './userSearch';
 
 const UsersRouter = Router();
 
@@ -55,6 +56,7 @@ userNotifications(UsersRouter);
 userDetails(UsersRouter);
 userToggleBadge(UsersRouter);
 
+userSearch(UsersRouter);
 userFollow(UsersRouter);
 userUnfollow(UsersRouter);
 userFollowers(UsersRouter);
