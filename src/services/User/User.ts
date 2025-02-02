@@ -672,24 +672,37 @@ export async function verifyPassword(accountId: string, password: string) {
 }
 
 export async function searchUsers(requesterUserId: string, query: string) {
-  const q = `%${query}%`;
   //search for a user by username. order by followers, then by username
-  const result = await prisma.$queryRaw<{ id: string }[]>`
-    SELECT
-      u.id
-    FROM
-      "User" u
-      LEFT JOIN "Follower" f ON u.id = ${requesterUserId}
-    WHERE u.username ILIKE ${q}
-    ORDER BY
-      f DESC,
-      u.username
-      LIMIT 10;
-  `;
-  const userIds = result.map((user) => user.id);
+
+  const followedTo = await prisma.follower.findMany({
+    where: {
+      followedById: requesterUserId,
+      followedTo: {
+        username: { contains: query },
+      },
+    },
+    select: {
+      followedTo: {
+        select: {
+          username: true,
+          tag: true,
+          avatar: true,
+          hexColor: true,
+          id: true,
+        },
+      },
+    },
+    take: 10,
+  });
+
+  const followedToId = followedTo.map((f) => f.followedTo.id);
+  const followedUsers = followedTo.map((f) => f.followedTo);
+  if (followedUsers.length >= 10) return followedUsers;
+
   const users = await prisma.user.findMany({
     where: {
-      id: { in: userIds },
+      id: { notIn: followedToId },
+      username: { contains: query },
       OR: [{ NOT: { account: null } }, { NOT: { application: null } }],
     },
     select: {
@@ -699,8 +712,9 @@ export async function searchUsers(requesterUserId: string, query: string) {
       hexColor: true,
       id: true,
     },
-    orderBy: { joinedAt: 'desc' },
+    orderBy: { username: 'desc' },
+    take: 10 - followedUsers.length,
   });
-  const orderedUsers = userIds.map((id) => users.find((user) => user.id === id)!);
-  return orderedUsers;
+
+  return [...followedUsers, ...users];
 }
