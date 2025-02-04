@@ -64,7 +64,7 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
         },
       },
     },
-    mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
+    mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true } },
     ...(continueIter ? { commentTo: { include: constructPostInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
