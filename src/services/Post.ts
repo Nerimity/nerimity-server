@@ -8,6 +8,41 @@ import { FriendStatus } from '../types/Friend';
 import { getBlockedUserIds, isUserBlocked } from './User/User';
 import { replaceBadWords } from '../common/badWords';
 import { addPostViewsToCache } from '../cache/PostViewsCache';
+import { removeDuplicates } from '../common/utils';
+import { emitPostMentions } from '../emits/PostEmits';
+
+const userMentionRegex = /@([^@:]+):([a-zA-Z0-9]+)/g;
+
+const formatContent = async (content: string) => {
+  const mentions = [...content.matchAll(userMentionRegex)];
+
+  if (!mentions.length) return { newContent: content, mentions: [], mentionUserIds: [] };
+
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        ...mentions.map((mention) => ({
+          AND: [{ username: mention[1] }, { tag: mention[2] }],
+        })),
+      ],
+      NOT: { AND: [{ application: null }, { account: null }] },
+    },
+    select: {
+      username: true,
+      tag: true,
+      id: true,
+    },
+  });
+
+  const newContent = content.replace(userMentionRegex, (match, username, tag) => {
+    const user = users.find((user) => user.username === username && user.tag === tag);
+    if (!user) {
+      return match;
+    }
+    return `[@:${user.id}]`;
+  });
+  return { newContent, mentionUserIds: removeDuplicates(users.map((user) => user.id)), mentions: users };
+};
 
 export function constructPostInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
@@ -29,6 +64,7 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
         },
       },
     },
+    mentions: { select: { id: true, username: true, tag: true, hexColor: true, avatar: true } },
     ...(continueIter ? { commentTo: { include: constructPostInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
@@ -84,10 +120,13 @@ export async function createPost(opts: CreatePostOpts) {
     }
   }
 
+  const formattedContent = await formatContent(opts.content?.trim() || '');
+
   const post = await prisma.post.create({
     data: {
       id: generateId(),
-      content: opts.content ? replaceBadWords(opts.content?.trim()) : undefined,
+      content: opts.content ? replaceBadWords(formattedContent.newContent) : undefined,
+      mentions: { connect: formattedContent.mentionUserIds.map((id) => ({ id })) },
       createdById: opts.userId,
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
@@ -119,6 +158,28 @@ export async function createPost(opts: CreatePostOpts) {
     include: constructPostInclude(opts.userId),
   });
 
+  if (formattedContent.mentionUserIds.length) {
+    const blockedUsers = await prisma.friend.findMany({
+      where: {
+        status: FriendStatus.BLOCKED,
+        OR: [
+          { recipientId: { in: formattedContent.mentionUserIds }, userId: opts.userId },
+          { recipientId: opts.userId, userId: { in: formattedContent.mentionUserIds } },
+        ],
+      },
+    });
+
+    const toIds = formattedContent.mentionUserIds.filter((id) => !blockedUsers.find((b) => b.userId === id || b.recipientId === id));
+
+    emitPostMentions(toIds, post);
+
+    createPostNotification({
+      byId: opts.userId,
+      postId: post.id,
+      toId: toIds,
+      type: PostNotificationType.MENTIONED,
+    });
+  }
   if (opts.commentToId) {
     createPostNotification({
       byId: opts.userId,
@@ -137,11 +198,14 @@ export async function editPost(opts: { editById: string; postId: string; content
   });
   if (!post) return [null, generateError('Post not found')] as const;
 
+  const formattedContent = await formatContent(opts.content?.trim() || '');
+
   const newPost = await prisma.post
     .update({
       where: { id: opts.postId },
       data: {
-        content: replaceBadWords(opts.content?.trim()),
+        content: replaceBadWords(formattedContent.newContent),
+        mentions: { connect: formattedContent.mentionUserIds.map((id) => ({ id })) },
 
         editedAt: dateToDateTime(),
       },
@@ -571,10 +635,11 @@ export enum PostNotificationType {
   REPLIED = 1,
   FOLLOWED = 2,
   REPOSTED = 3,
+  MENTIONED = 4,
 }
 
 interface CreatePostNotificationProps {
-  toId?: string;
+  toId?: string | string[];
   byId: string;
   postId?: string;
   type: PostNotificationType;
@@ -583,51 +648,55 @@ interface CreatePostNotificationProps {
 export async function createPostNotification(opts: CreatePostNotificationProps) {
   let toId = opts.toId;
 
-  if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED || opts.type === PostNotificationType.REPOSTED) {
-    const post = await prisma.post.findFirst({
-      where: { id: opts.postId },
-      select: { createdById: true },
+  if (!Array.isArray(toId)) {
+    if (opts.type === PostNotificationType.LIKED || opts.type === PostNotificationType.REPLIED || opts.type === PostNotificationType.REPOSTED) {
+      const post = await prisma.post.findFirst({
+        where: { id: opts.postId },
+        select: { createdById: true },
+      });
+      if (!post) return;
+      toId = post.createdById;
+    }
+
+    if (opts.type === PostNotificationType.REPLIED) {
+      const post = await prisma.post.findFirst({
+        where: { id: opts.postId },
+        select: { commentTo: { select: { createdById: true } } },
+      });
+      if (!post) return;
+      toId = post.commentTo?.createdById;
+    }
+
+    if (!toId) return;
+
+    if (toId === opts.byId) return;
+
+    const alreadyExists = await prisma.postNotification.findFirst({
+      where: {
+        byId: opts.byId,
+        toId: toId,
+        type: opts.type,
+        postId: opts.postId,
+      },
     });
-    if (!post) return;
-    toId = post.createdById;
+    if (alreadyExists) return;
   }
 
-  if (opts.type === PostNotificationType.REPLIED) {
-    const post = await prisma.post.findFirst({
-      where: { id: opts.postId },
-      select: { commentTo: { select: { createdById: true } } },
-    });
-    if (!post) return;
-    toId = post.commentTo?.createdById;
-  }
-
-  if (!toId) return;
-
-  if (toId === opts.byId) return;
-
-  const alreadyExists = await prisma.postNotification.findFirst({
-    where: {
-      byId: opts.byId,
-      toId: toId,
-      type: opts.type,
-      postId: opts.postId,
-    },
-  });
-  if (alreadyExists) return;
-
+  const toIdArray = Array.isArray(toId) ? toId : [toId].filter((toId) => toId !== opts.byId);
+  if (toIdArray.length === 0) return;
   await prisma
     .$transaction([
-      prisma.postNotification.create({
-        data: {
+      prisma.postNotification.createMany({
+        data: toIdArray.map((toId) => ({
           id: generateId(),
           byId: opts.byId,
           toId: toId,
           type: opts.type,
           postId: opts.postId,
-        },
+        })),
       }),
-      prisma.account.update({
-        where: { userId: toId },
+      prisma.account.updateMany({
+        where: { userId: { in: toIdArray } },
         data: {
           postNotificationCount: { increment: 1 },
         },

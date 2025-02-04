@@ -719,5 +719,25 @@ export async function searchUsers(requesterUserId: string, query: string) {
     take: 10 - followedUsers.length,
   });
 
-  return [...followedUsers, ...users];
+  const array = [...followedUsers, ...users];
+
+  const userIds = array.map((u) => u.id);
+
+  const blockedUsers = await prisma.friend.findMany({
+    where: {
+      status: FriendStatus.BLOCKED,
+      OR: [
+        { recipientId: { in: userIds }, userId: requesterUserId },
+        { recipientId: requesterUserId, userId: { in: userIds } },
+      ],
+    },
+  });
+
+  const filtered = array.filter((u) => {
+    if (u.id === requesterUserId) return true;
+    const blocked = blockedUsers.find((b) => b.userId === u.id || b.recipientId === u.id);
+    return !blocked;
+  });
+
+  return filtered;
 }
