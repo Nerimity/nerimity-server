@@ -670,3 +670,76 @@ export async function verifyPassword(accountId: string, password: string) {
   if (!isPasswordValid) return [false, generateError('Invalid Password')] as const;
   return [true] as const;
 }
+
+export async function searchUsers(requesterUserId: string, query: string) {
+  //search for a user by username. order by followers, then by username
+
+  const followedTo = await prisma.follower.findMany({
+    where: {
+      followedById: requesterUserId,
+      followedTo: {
+        username: { contains: query, mode: 'insensitive' },
+      },
+    },
+    select: {
+      followedTo: {
+        select: {
+          username: true,
+          tag: true,
+          avatar: true,
+          hexColor: true,
+          badges: true,
+          id: true,
+        },
+      },
+    },
+    orderBy: {
+      followedTo: { username: 'desc' },
+    },
+    take: 10,
+  });
+
+  const followedToId = followedTo.map((f) => f.followedTo.id);
+  const followedUsers = followedTo.map((f) => f.followedTo);
+  if (followedUsers.length >= 10) return followedUsers;
+
+  const users = await prisma.user.findMany({
+    where: {
+      id: { notIn: followedToId },
+      username: { contains: query, mode: 'insensitive' },
+      OR: [{ NOT: { account: null } }, { NOT: { application: null } }],
+    },
+    select: {
+      username: true,
+      tag: true,
+      avatar: true,
+      hexColor: true,
+      id: true,
+      badges: true,
+    },
+    orderBy: { username: 'desc' },
+    take: 10 - followedUsers.length,
+  });
+
+  const array = [...followedUsers, ...users];
+
+  const userIds = array.map((u) => u.id);
+
+  const blockedUsers = await prisma.friend.findMany({
+    where: {
+      status: FriendStatus.BLOCKED,
+      OR: [
+        { recipientId: { in: userIds }, userId: requesterUserId },
+        { recipientId: requesterUserId, userId: { in: userIds } },
+      ],
+    },
+  });
+
+  const filtered = array.filter((u) => {
+    if (u.id === requesterUserId) return true;
+    const blocked = blockedUsers.find((b) => b.userId === u.id || b.recipientId === u.id);
+    return !blocked;
+  });
+
+  return filtered;
+}

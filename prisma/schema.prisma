@@ -119,6 +119,8 @@ model User {
   sentPostNotifications  PostNotification[]
   mentionedMessages      Message[]               @relation(name: "mentioned_messages")
 
+  mentionedPosts    Post[]  @relation(name: "mentioned_posts")
+
   profile                UserProfile?
 
   messageNotifications         MessageNotification[]
@@ -790,6 +792,9 @@ model Post {
   content     String?
   createdAt   DateTime @default(now())
   editedAt    DateTime?
+
+
+  mentions    User[]  @relation(name: "mentioned_posts")
 
 
   quotedPostId    String?

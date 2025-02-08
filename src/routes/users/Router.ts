@@ -24,6 +24,7 @@ import { userDismissNotice } from './userDismissNotice';
 import { userPasswordResetCodeSent } from './userPasswordResetCodeSend';
 import { userPasswordReset } from './userPasswordReset';
 import { userToggleBadge } from './userToggleBadge';
+import { userSearch } from './userSearch';
 
 const UsersRouter = Router();
 
@@ -50,6 +51,8 @@ userRegisterFCM(UsersRouter);
 userOpenDMChannel(UsersRouter);
 userUpdatePresence(UsersRouter);
 userDeleteAccount(UsersRouter);
+
+userSearch(UsersRouter);
 
 userNotifications(UsersRouter);
 userDetails(UsersRouter);
