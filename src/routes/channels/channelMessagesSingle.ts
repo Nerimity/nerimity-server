@@ -15,7 +15,7 @@ export function channelMessagesSingle(Router: Router) {
     rateLimit({
       name: 'messages',
       restrictMS: 30000,
-      requests: 50,
+      requests: 30,
     }),
     param('messageId').isString().withMessage('messageId must be a string!').isLength({ min: 1, max: 100 }).withMessage('messageId length must be between 1 and 100 characters.'),
     route
