@@ -16,6 +16,7 @@ import { channelMessageButtonClick } from './channelMessageButtonClick';
 import { channelMessageButtonClickCallback } from './channelMessageButtonClickCallback';
 import { channelGet } from './channelGet';
 import { voiceGenerateCredentials } from './channelVoiceGenerateCredentials';
+import { channelMessagesSingle } from './channelMessagesSingle';
 
 const ChannelsRouter = Router();
 
@@ -27,6 +28,7 @@ channelMessageButtonClickCallback(ChannelsRouter);
 channelGet(ChannelsRouter);
 channelNoticeGet(ChannelsRouter);
 channelMessages(ChannelsRouter);
+channelMessagesSingle(ChannelsRouter);
 channelVoiceJoin(ChannelsRouter);
 channelVoiceLeave(ChannelsRouter);
 channelAttachments(ChannelsRouter);

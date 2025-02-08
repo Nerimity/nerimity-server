@@ -32,6 +32,12 @@ interface GetMessageByChannelIdOpts {
   requesterId?: string;
 }
 
+interface GetSingleMessageByChannelIdOpts {
+  requesterId?: string;
+  messageId?: string;
+  channelId?: string;
+}
+
 export const AttachmentProviders = {
   Local: 'local', // nerimity cdn
   GoogleDrive: 'google_drive',
@@ -254,6 +260,172 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
   if (opts?.afterMessageId) return modifiedMessages;
 
   return modifiedMessages.reverse();
+};
+
+export const getMessageByChannelId = async (channelId: string, opts?: GetSingleMessageByChannelIdOpts) => {
+  const messages = await prisma.message.findUnique({
+    where: {
+      channelId: channelId
+    },
+    include: {
+      createdBy: {
+        select: {
+          id: true,
+          username: true,
+          tag: true,
+          hexColor: true,
+          avatar: true,
+          badges: true,
+          bot: true,
+        },
+      },
+      roleMentions: {
+        select: {
+          id: true,
+          name: true,
+          hexColor: true,
+          icon: true,
+        },
+      },
+      mentions: {
+        select: {
+          id: true,
+          username: true,
+          tag: true,
+          hexColor: true,
+          avatar: true,
+        },
+      },
+      buttons: {
+        orderBy: { order: 'asc' },
+        select: {
+          alert: true,
+          id: true,
+          label: true,
+        },
+      },
+      replyMessages: {
+        orderBy: { id: 'desc' },
+        select: {
+          replyToMessage: {
+            select: {
+              id: true,
+              content: true,
+              editedAt: true,
+              createdAt: true,
+              attachments: {
+                select: {
+                  height: true,
+                  width: true,
+                  path: true,
+                  id: true,
+                  provider: true,
+                  fileId: true,
+                  filesize: true,
+                  expireAt: true,
+                  mime: true,
+                  createdAt: true,
+                },
+              },
+              createdBy: {
+                select: {
+                  id: true,
+                  username: true,
+                  tag: true,
+                  hexColor: true,
+                  avatar: true,
+                  badges: true,
+                  bot: true,
+                },
+              },
+            },
+          },
+        },
+      },
+
+      quotedMessages: {
+        select: {
+          id: true,
+          content: true,
+          mentions: {
+            select: {
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
+            },
+          },
+          roleMentions: {
+            select: {
+              id: true,
+              name: true,
+              hexColor: true,
+              icon: true,
+            },
+          },
+          editedAt: true,
+          createdAt: true,
+          channelId: true,
+          attachments: {
+            select: {
+              height: true,
+              width: true,
+              path: true,
+              id: true,
+              provider: true,
+              filesize: true,
+              expireAt: true,
+              fileId: true,
+              mime: true,
+              createdAt: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
+              badges: true,
+              bot: true,
+            },
+          },
+        },
+      },
+      reactions: {
+        select: {
+          ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
+          emojiId: true,
+          gif: true,
+          name: true,
+          _count: {
+            select: {
+              reactedUsers: true,
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+      },
+      attachments: {
+        select: {
+          height: true,
+          width: true,
+          path: true,
+          id: true,
+          filesize: true,
+          expireAt: true,
+          provider: true,
+          fileId: true,
+          mime: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  return messages;
 };
 
 // delete messages sent in the last 7 hours
