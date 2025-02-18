@@ -5,13 +5,15 @@ import env from '../../common/env';
 
 export function ogPost(Router: Router) {
   Router.get('/og/*', route);
+  Router.get('/og/p/:id', route);
 }
 
 async function route(req: Request, res: Response, next: NextFunction) {
   const query = req.query;
-  if (typeof query.postId !== 'string') return next();
+  const id = req.params.id;
+  if (!id || typeof query.postId !== 'string') return next();
 
-  const postId = query.postId;
+  const postId = id || query.postId;
 
   const post = await prisma.post.findUnique({
     where: {
