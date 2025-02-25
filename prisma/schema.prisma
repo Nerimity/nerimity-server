@@ -674,6 +674,9 @@ model ScheduleAccountContentDelete {
   userId           String   @unique
   user              User     @relation(fields: [userId], references: [id])
   scheduledAt      DateTime @default(now())
+
+  @@index([userId, scheduledAt])
+
 }
 
 // Only used when Nerimity mod deletes a server.
