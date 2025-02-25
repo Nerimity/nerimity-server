@@ -626,6 +626,7 @@ model Message {
 
 
   @@index([channelId])
+  @@index([createdById])
   @@index([channelId, createdAt])
 }
 
