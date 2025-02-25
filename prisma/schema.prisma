@@ -676,6 +676,7 @@ model ScheduleAccountContentDelete {
   scheduledAt      DateTime @default(now())
 
   @@index([userId, scheduledAt])
+  @@index([userId])
 
 }
 
