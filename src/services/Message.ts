@@ -267,7 +267,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
 export const getMessageByChannelId = async (channelId: string, opts?: GetSingleMessageByChannelIdOpts) => {
   const messages = await prisma.message.findUnique({
     where: {
-      channelId: channelId
+      channelId: channelId,
     },
     include: {
       createdBy: {
@@ -971,10 +971,15 @@ export const createMessage = async (opts: SendMessageOptions) => {
     data: { lastMessagedAt: messageCreatedAt },
   });
 
+  const t1 = performance.now();
+  if (opts.userId === '1289157673362825217') Log.debug('Creating Message...');
   const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]).catch((e) => {
     console.error(e);
     return [];
   });
+  const t2 = performance.now();
+
+  if (opts.userId === '1289157673362825217') Log.debug('Message created in', t2 - t1, 'ms');
 
   if (!message) {
     return [null, "Couldn't create message"] as const;
