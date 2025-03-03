@@ -444,13 +444,19 @@ export async function followUser(requesterId: string, followToId: string): Promi
     return [null, generateError('This user is blocked.')];
   }
 
-  await prisma.follower.create({
-    data: {
-      id: generateId(),
-      followedById: requesterId,
-      followedToId: followToId,
-    },
-  });
+  const res = await prisma.follower
+    .create({
+      data: {
+        id: generateId(),
+        followedById: requesterId,
+        followedToId: followToId,
+      },
+    })
+    .catch(() => null);
+
+  if (!res) {
+    return [null, generateError('Something went wrong. Try again later.')];
+  }
   createPostNotification({
     type: PostNotificationType.FOLLOWED,
     byId: requesterId,
