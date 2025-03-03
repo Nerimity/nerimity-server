@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body, param } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
 import { createPost, editPost } from '../../services/Post';
@@ -15,9 +15,7 @@ export function postEdit(Router: Router) {
       restrictMS: 20000,
       requests: 5,
     }),
-    body('content')
-      .isString()
-      .withMessage('Content must be a string!'),
+    body('content').isString().withMessage('Content must be a string!'),
     route
   );
 }
