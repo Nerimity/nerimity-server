@@ -48,7 +48,7 @@ const updateAccountConfirmCode = async (userId: string) => {
 
 export async function sendResetPasswordCode(email: string) {
   const account = await prisma.account.findFirst({
-    where: { email },
+    where: { email: { equals: email, mode: 'insensitive' } },
   });
 
   if (!account) {
