@@ -8,7 +8,15 @@ import { updateServerCache } from '../cache/ServerCache';
 import { createMessage } from './Message';
 import { MessageType } from '../types/Message';
 
-export const getPublicServers = async (sort: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped', filter: 'all' | 'verified', limit?: number): Promise<PublicServer[]> => {
+interface getPublicServersOpts {
+  sort?: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
+  filter?: 'all' | 'verified';
+  limit?: number;
+  afterId?: string;
+  search?: string;
+}
+export const getPublicServers = async (opts: getPublicServersOpts): Promise<PublicServer[]> => {
+  const { sort, filter, limit, search } = opts;
   const where = (): Prisma.PublicServerWhereInput => {
     if (filter === 'verified') return { server: { verified: true } };
     return {};
@@ -23,8 +31,9 @@ export const getPublicServers = async (sort: 'most_bumps' | 'most_members' | 're
   };
 
   const publicServers = await prisma.publicServer.findMany({
-    where: { AND: [where(), { server: { scheduledForDeletion: null } }] },
+    where: { AND: [where(), { server: { scheduledForDeletion: null } }], ...(search?.trim() ? { OR: [{ server: { name: { contains: search, mode: 'insensitive' } } }, { description: { contains: search, mode: 'insensitive' } }] } : {}) },
     orderBy: orderBy(),
+    ...(opts.afterId ? { cursor: { id: opts.afterId }, skip: 1 } : {}),
     include: {
       server: { include: { _count: { select: { serverMembers: true } } } },
     },
