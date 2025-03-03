@@ -362,6 +362,7 @@ model PublicServer {
 
   lifetimeBumpCount   Int   @default(1)
 
+  pinnedAt        DateTime?
   createdAt       DateTime   @default(now())
 }
 

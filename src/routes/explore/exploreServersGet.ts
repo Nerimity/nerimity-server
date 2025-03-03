@@ -8,8 +8,8 @@ export function exploreServersGet(Router: Router) {
 }
 
 interface Query {
-  sort?: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
-  filter?: 'all' | 'verified';
+  sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
+  filter?: 'pinned' | 'all' | 'verified';
   limit?: string;
   afterId?: string;
   search?: string;

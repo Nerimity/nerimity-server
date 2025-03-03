@@ -9,8 +9,8 @@ import { createMessage } from './Message';
 import { MessageType } from '../types/Message';
 
 interface getPublicServersOpts {
-  sort?: 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
-  filter?: 'all' | 'verified';
+  sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
+  filter?: 'pinned' | 'all' | 'verified';
   limit?: number;
   afterId?: string;
   search?: string;
@@ -19,6 +19,7 @@ export const getPublicServers = async (opts: getPublicServersOpts): Promise<Publ
   const { sort, filter, limit, search } = opts;
   const where = (): Prisma.PublicServerWhereInput => {
     if (filter === 'verified') return { server: { verified: true } };
+    if (filter === 'pinned') return { pinnedAt: { not: null } };
     return {};
   };
 
@@ -27,6 +28,7 @@ export const getPublicServers = async (opts: getPublicServersOpts): Promise<Publ
     if (sort === 'most_members') return { server: { serverMembers: { _count: 'desc' } } };
     if (sort === 'recently_added') return { createdAt: 'desc' };
     if (sort === 'recently_bumped') return { bumpedAt: 'desc' };
+    if (sort === 'pinned_at') return { pinnedAt: 'asc' };
     return {};
   };
 
