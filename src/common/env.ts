@@ -16,7 +16,8 @@ const origin = (): string | string[] => {
 
 export default {
   DEV_MODE: process.env.DEV_MODE === 'true',
-  PORT: parseInt(process.env.PORT as string),
+  API_PORT: parseInt(process.env.API_PORT as string),
+  WS_PORT: parseInt(process.env.WS_PORT as string),
   JWT_SECRET: process.env.JWT_SECRET as string,
   CONNECTIONS_SECRET: process.env.CONNECTIONS_SECRET as string,
   JWT_CONNECTIONS_SECRET: process.env.JWT_CONNECTIONS_SECRET as string,
@@ -52,4 +53,5 @@ export default {
   TENOR_API_KEY: process.env.TENOR_API_KEY as string,
   CLUSTER_INDEX: parseInt(process.env.CLUSTER_INDEX as string),
   OPTIMIZE_API_KEY: process.env.OPTIMIZE_API_KEY as string,
+  TYPE: process.argv.includes('--ws') ? 'ws' : ('api' as 'api' | 'ws'),
 };

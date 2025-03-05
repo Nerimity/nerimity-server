@@ -25,6 +25,7 @@ import { OpenGraphRouter } from './routes/open-graph/Router';
 import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
 
+console.log(env.TYPE);
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
 };
@@ -42,7 +43,7 @@ const main = async () => {
 
     if (server.listening) return;
 
-    const port = env.PORT;
+    const port = env.TYPE === 'ws' ? env.WS_PORT : env.API_PORT;
 
     server.listen(port, () => {
       Log.info('listening on *:' + port);
@@ -59,32 +60,34 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: '20MB' }));
-app.use(express.urlencoded({ extended: false, limit: '20MB' }));
+if (env.TYPE === 'api') {
+  app.use(express.json({ limit: '20MB' }));
+  app.use(express.urlencoded({ extended: false, limit: '20MB' }));
 
-app.use(userIP);
+  app.use(userIP);
 
-app.use('/api', OpenGraphRouter);
+  app.use('/api', OpenGraphRouter);
 
-app.use(
-  rateLimit({
-    name: 'global_limit',
-    useIP: true,
-    restrictMS: 30000,
-    requests: 100,
-  })
-);
+  app.use(
+    rateLimit({
+      name: 'global_limit',
+      useIP: true,
+      restrictMS: 30000,
+      requests: 100,
+    })
+  );
 
-app.use('/api', ModerationRouter);
-app.use('/api', UsersRouter);
-app.use('/api', ServersRouter);
-app.use('/api', ChannelsRouter);
-app.use('/api', FriendsRouter);
-app.use('/api', ExploreRouter);
-app.use('/api', PostsRouter);
-app.use('/api', GoogleRouter);
-app.use('/api', TicketsRouter);
-app.use('/api', EmojisRouter);
-app.use('/api', TenorRouter);
-app.use('/api', ApplicationsRouter);
-app.use('/api', RemindersRouter);
+  app.use('/api', ModerationRouter);
+  app.use('/api', UsersRouter);
+  app.use('/api', ServersRouter);
+  app.use('/api', ChannelsRouter);
+  app.use('/api', FriendsRouter);
+  app.use('/api', ExploreRouter);
+  app.use('/api', PostsRouter);
+  app.use('/api', GoogleRouter);
+  app.use('/api', TicketsRouter);
+  app.use('/api', EmojisRouter);
+  app.use('/api', TenorRouter);
+  app.use('/api', ApplicationsRouter);
+  app.use('/api', RemindersRouter);
+}

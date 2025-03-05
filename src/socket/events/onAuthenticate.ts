@@ -19,6 +19,7 @@ import { FriendStatus } from '../../types/Friend';
 import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
 import { ReminderSelect } from '../../services/Reminder';
+import env from '../../common/env';
 
 interface Payload {
   token: string;
@@ -26,6 +27,7 @@ interface Payload {
 
 export const authQueue = createQueue({
   name: 'wsAuth',
+  prefix: env.TYPE,
   redisClient,
   minTime: 10,
 });

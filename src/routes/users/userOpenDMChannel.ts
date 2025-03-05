@@ -6,9 +6,11 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { openDMChannel } from '../../services/User/User';
 import { redisClient } from '../../common/redis';
 import { createQueue } from '@nerimity/mimiqueue';
+import env from '../../common/env';
 
 export const queue = createQueue({
   name: 'openDM',
+  prefix: env.TYPE,
   redisClient,
 });
 

@@ -30,10 +30,13 @@ if (cluster.isPrimary) {
   await connectRedis();
   await customRedisFlush();
   await createQueueProcessor({
+    prefix: env.TYPE,
     redisClient,
   });
 
-  createIO();
+  if (env.TYPE === 'ws') {
+    createIO();
+  }
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');
 
@@ -41,15 +44,17 @@ if (cluster.isPrimary) {
 
     prismaConnected = true;
 
-    scheduleBumpReset();
-    vacuumSchedule();
-    scheduleDeleteMessages();
-    scheduleDeleteAccountContent();
-    removeIPAddressSchedule();
-    schedulePostViews();
-    scheduleSuspendedAccountDeletion();
-    scheduleServerDeletion();
-    removeExpiredBannedIpsSchedule();
+    if (env.TYPE === 'api') {
+      scheduleBumpReset();
+      vacuumSchedule();
+      scheduleDeleteMessages();
+      scheduleDeleteAccountContent();
+      removeIPAddressSchedule();
+      schedulePostViews();
+      scheduleSuspendedAccountDeletion();
+      scheduleServerDeletion();
+      removeExpiredBannedIpsSchedule();
+    }
   });
 
   for (let i = 0; i < cpuCount; i++) {

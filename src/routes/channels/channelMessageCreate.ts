@@ -22,6 +22,7 @@ import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
 import { checkAndUpdateRateLimit } from '../../cache/RateLimitCache';
 import { ServerMemberCache } from '../../cache/ServerMemberCache';
+import env from '../../common/env';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -96,6 +97,7 @@ export function channelMessageCreate(Router: Router) {
 
 const queue = createQueue({
   name: 'create_message',
+  prefix: env.TYPE,
   redisClient,
 });
 

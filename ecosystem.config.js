@@ -1,9 +1,16 @@
 module.exports = {
   apps: [
     {
-      name: 'nerimity-server',
+      name: 'nerimity-api',
       script: 'npm',
-      args: 'run start',
+      args: 'run start-api',
+      watch: true,
+      ignore_watch: ['node_modules', 'dist'],
+    },
+    {
+      name: 'nerimity-api',
+      script: 'npm',
+      args: 'run start-ws',
       watch: true,
       ignore_watch: ['node_modules', 'dist'],
     },
