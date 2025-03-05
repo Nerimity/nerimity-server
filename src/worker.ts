@@ -25,7 +25,6 @@ import { OpenGraphRouter } from './routes/open-graph/Router';
 import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
 
-console.log(env.TYPE);
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
 };
