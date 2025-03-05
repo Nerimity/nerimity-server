@@ -8,7 +8,7 @@ module.exports = {
       ignore_watch: ['node_modules', 'dist'],
     },
     {
-      name: 'nerimity-api',
+      name: 'nerimity-ws',
       script: 'npm',
       args: 'run start-ws',
       watch: true,
