@@ -117,7 +117,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
 
   const messageMentions = await getAllMessageMentions(userCache.id);
 
-  const inbox = await getInbox(userCache.id);
+  const inbox = !user.bot ? await getInbox(userCache.id) : [];
   const inboxChannels: Channel[] = [];
 
   const inboxResponse: Inbox[] = inbox.map((item) => {
