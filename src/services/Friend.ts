@@ -4,13 +4,7 @@ import { getUserPresences } from '../cache/UserCache';
 import { exists, prisma, publicUserExcludeFields } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import {
-  emitFriendRemoved,
-  emitFriendRequestAccept,
-  emitFriendRequestSent,
-  emitUserBlocked,
-  emitUserUnblocked,
-} from '../emits/Friend';
+import { emitFriendRemoved, emitFriendRequestAccept, emitFriendRequestSent, emitUserBlocked, emitUserUnblocked } from '../emits/Friend';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import { FriendStatus } from '../types/Friend';
 import { FriendRequestStatus } from './User/User';
@@ -42,8 +36,12 @@ export const addFriend = async (userId: string, friendId: string) => {
       friendRequestStatus: true,
     },
   });
-  const friendRequestStatus =
-    friendAccount?.friendRequestStatus || FriendRequestStatus.OPEN;
+
+  if (!friendAccount) {
+    return [null, generateError('This user does not exist.')];
+  }
+
+  const friendRequestStatus = friendAccount?.friendRequestStatus || FriendRequestStatus.OPEN;
 
   if (friendRequestStatus === FriendRequestStatus.CLOSED) {
     return [null, generateError('This user has disabled friend requests.')];
@@ -52,10 +50,7 @@ export const addFriend = async (userId: string, friendId: string) => {
   if (friendRequestStatus === FriendRequestStatus.SERVERS) {
     const doesShareServers = await prisma.server.findFirst({
       where: {
-        AND: [
-          { serverMembers: { some: { userId: friendId } } },
-          { serverMembers: { some: { userId } } },
-        ],
+        AND: [{ serverMembers: { some: { userId: friendId } } }, { serverMembers: { some: { userId } } }],
       },
     });
     if (!doesShareServers) {
@@ -141,10 +136,7 @@ export const acceptFriend = async (userId: string, friendId: string) => {
     return [null, generateError('Friend request already accepted.')];
   }
   if (friendRequest.status === FriendStatus.SENT) {
-    return [
-      null,
-      generateError('Cannot accept friend request because it is sent by you.'),
-    ];
+    return [null, generateError('Cannot accept friend request because it is sent by you.')];
   }
 
   await prisma.$transaction([
@@ -161,10 +153,7 @@ export const acceptFriend = async (userId: string, friendId: string) => {
   deleteAllInboxCache(userId);
   emitFriendRequestAccept(userId, friendId);
 
-  const [userPresence, friendPresence] = await getUserPresences([
-    userId,
-    friendId,
-  ]);
+  const [userPresence, friendPresence] = await getUserPresences([userId, friendId]);
   userPresence && emitUserPresenceUpdateTo(userId, friendPresence);
   friendPresence && emitUserPresenceUpdateTo(friendId, userPresence);
 
@@ -262,18 +251,11 @@ export async function blockUser(requesterId: string, userToBlockId: string) {
   ]);
   await deleteAllInboxCache(requesterId);
   // emit friend blocked
-  emitUserBlocked(
-    requesterId,
-    userToBlock,
-    recipientFriend && recipientFriend.status !== FriendStatus.BLOCKED
-  );
+  emitUserBlocked(requesterId, userToBlock, recipientFriend && recipientFriend.status !== FriendStatus.BLOCKED);
   return [true, null] as const;
 }
 
-export async function unblockUser(
-  requesterId: string,
-  userToUnBlockId: string
-) {
+export async function unblockUser(requesterId: string, userToUnBlockId: string) {
   const friend = await prisma.friend.findFirst({
     where: { userId: requesterId, recipientId: userToUnBlockId },
   });
