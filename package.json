@@ -4,6 +4,10 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "tsup --watch --onSuccess \"pnpm start-dist-both \"",
+    "start-dist-both": "concurrently \"pnpm start-dist-api\" \"pnpm start-dist-ws\"",
+    "start-dist-api": "node --trace-warnings --enable-source-maps dist/index.mjs --api",
+    "start-dist-ws": "node --trace-warnings --enable-source-maps dist/index.mjs --ws",
     "start-api": "tsup --onSuccess \"node --trace-warnings --enable-source-maps dist/index.mjs --api \"",
     "start-ws": "tsup --onSuccess \"node --trace-warnings --enable-source-maps dist/index.mjs --ws \"",
     "bundle": "tsup",
@@ -32,6 +36,7 @@
     "@types/pako": "^2.0.3",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
+    "concurrently": "^9.1.2",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.15.0",
