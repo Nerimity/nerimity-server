@@ -8,7 +8,7 @@ export const VOICE_USERS_KEY_HASH = (channelId: string) => `${PREFIX}VOICE_USERS
 export const VOICE_USER_CHANNEL_ID_SET = (userId: string) => `${PREFIX}VOICE_USER_CHANNEL_ID:${userId}` as const;
 export const USER_PRESENCE_KEY_STRING = (userId: string) => `${PREFIX}USER_PRESENCE:${userId}` as const;
 
-export const WS_KEYS = [CONNECTED_SOCKET_ID_KEY_SET(''), CONNECTED_USER_ID_KEY_STRING(''), VOICE_USERS_KEY_HASH(''), VOICE_USER_CHANNEL_ID_SET(''), USER_PRESENCE_KEY_STRING('')] as const;
+export const WS_KEYS = ['socket.io', CONNECTED_SOCKET_ID_KEY_SET(''), CONNECTED_USER_ID_KEY_STRING(''), VOICE_USERS_KEY_HASH(''), VOICE_USER_CHANNEL_ID_SET(''), USER_PRESENCE_KEY_STRING('')] as const;
 
 // API KEYS
 

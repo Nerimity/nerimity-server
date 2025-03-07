@@ -33,7 +33,7 @@ export async function customRedisFlush() {
   if (env.TYPE === 'ws') {
     keys = keys.filter((key) => WS_KEYS.find((k) => key.startsWith(k)));
   } else {
-    keys = keys.filter((key) => WS_KEYS.find((k) => !key.startsWith(k)));
+    keys = keys.filter((key) => !WS_KEYS.find((k) => key.startsWith(k)));
   }
 
   if (!keys.length) return;
