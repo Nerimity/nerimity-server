@@ -17,7 +17,7 @@ export const queue = createQueue({
 export function userOpenDMChannel(Router: Router) {
   Router.post(
     '/users/:userId/open-channel',
-    authenticate(),
+    authenticate({ allowBot: true }),
     param('userId').not().isEmpty().withMessage('userId is required.').isString().withMessage('Invalid userId.').isLength({ min: 1, max: 320 }).withMessage('userId must be between 1 and 320 characters long.'),
     rateLimit({
       name: 'open_dm_channel',
