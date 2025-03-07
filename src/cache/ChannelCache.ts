@@ -43,6 +43,7 @@ export interface InboxCache {
   recipientId: string;
   createdById: string;
   canMessage: boolean;
+  recipient: { bot: boolean | null };
 }
 
 const setServerChannelMemberPermissions = async (serverId: string, channelId: string, userId: string) => {
@@ -286,6 +287,7 @@ const getInboxCache = async (channelId: string, userId: string) => {
       },
       recipient: {
         select: {
+          bot: true,
           account: {
             select: {
               dmStatus: true,
@@ -342,7 +344,7 @@ const getInboxCache = async (channelId: string, userId: string) => {
   const stringifiedInbox = JSON.stringify({
     ...inbox,
     canMessage,
-    recipient: undefined,
+    recipient: { bot: inbox.recipient.bot },
   });
   await redisClient.set(INBOX_KEY_STRING(channelId, userId), stringifiedInbox);
 

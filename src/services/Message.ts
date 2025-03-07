@@ -1049,7 +1049,9 @@ export const createMessage = async (opts: SendMessageOptions) => {
     // For DM channels, mentions are notifications for everything.
     // For Server channels, mentions are notifications for @mentions.
     // Don't send notifications for saved notes
-    if (channel?.type === ChannelType.DM_TEXT && channel.inbox.recipientId !== channel.inbox.createdById) {
+    const isSavedNotes = channel.inbox.recipientId === channel.inbox.createdById;
+    const isMessagingBot = channel.inbox?.recipient.bot;
+    if (channel?.type === ChannelType.DM_TEXT && !isSavedNotes && !isMessagingBot) {
       const upsertResult = await prisma.messageMention
         .upsert({
           where: {
@@ -1467,6 +1469,7 @@ async function addMention(userIds: string[], serverId: string, channelId: string
       id: { in: filteredUserIds, not: requesterId },
       servers: { some: { id: serverId } },
       friends: { none: { recipientId: requesterId, status: FriendStatus.BLOCKED } },
+      bot: null,
     },
     select: {
       id: true,
