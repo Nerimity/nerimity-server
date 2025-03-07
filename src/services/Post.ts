@@ -682,8 +682,17 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
     if (alreadyExists) return;
   }
 
-  const toIdArray = Array.isArray(toId) ? toId : [toId].filter((toId) => toId !== opts.byId);
+  let toIdArray = Array.isArray(toId) ? toId : [toId].filter((toId) => toId !== opts.byId);
   if (toIdArray.length === 0) return;
+
+  const nonBotUsers = await prisma.user.findMany({
+    where: { bot: null, id: { in: toIdArray } },
+    select: { id: true },
+  });
+
+  toIdArray = nonBotUsers.map((user) => user.id);
+  if (toIdArray.length === 0) return;
+
   await prisma
     .$transaction([
       prisma.postNotification.createMany({
