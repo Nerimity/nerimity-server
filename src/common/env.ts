@@ -53,5 +53,5 @@ export default {
   TENOR_API_KEY: process.env.TENOR_API_KEY as string,
   CLUSTER_INDEX: parseInt(process.env.CLUSTER_INDEX as string),
   OPTIMIZE_API_KEY: process.env.OPTIMIZE_API_KEY as string,
-  TYPE: process.argv.includes('--ws') ? 'ws' : ('api' as 'api' | 'ws'),
+  TYPE: (process.argv.includes('--ws') ? 'ws' : 'api') as 'api' | 'ws',
 };

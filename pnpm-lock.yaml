@@ -15,8 +15,8 @@ importers:
         specifier: ^1.1.14
         version: 1.1.14
       '@nerimity/mimiqueue':
-        specifier: ^2.1.1
-        version: 2.1.1(redis@4.7.0)
+        specifier: ^2.1.2
+        version: 2.1.2(redis@4.7.0)
       '@prisma/client':
         specifier: ^6.4.1
         version: 6.4.1(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2)
@@ -468,8 +468,8 @@ packages:
   '@nerimity/html-embed@1.1.14':
     resolution: {integrity: sha512-GYSvqfcSHZqirSpcxUqu4DO7iItp+62wX8KQ1mQ6HNwrTCUh6oYPFAZ9Or1POtgT8PH1Nu5egjARYkvuN9VQDA==}
 
-  '@nerimity/mimiqueue@2.1.1':
-    resolution: {integrity: sha512-yC+4ewJJMO5BVo7OkpdPIZGgOvwyKT/3NGEfDa4+RDwofKCQCCv3SQAdTuqwlhpEHCjsOPD7RC24+tiH56L85w==}
+  '@nerimity/mimiqueue@2.1.2':
+    resolution: {integrity: sha512-ztMVHvNa4i3/tMsEchYDsR5Ev50ZGLhCKpBeCcjz88zF3obRqeUSMjiy+TVpOcSJgXapFhr74GG6rGWqYqFlqQ==}
     peerDependencies:
       redis: ^4.7.0
 
@@ -2770,7 +2770,7 @@ snapshots:
       csstree-validator: 4.0.1
       htm: 3.1.1
 
-  '@nerimity/mimiqueue@2.1.1(redis@4.7.0)':
+  '@nerimity/mimiqueue@2.1.2(redis@4.7.0)':
     dependencies:
       async-await-queue: 2.1.4
       redis: 4.7.0
