@@ -5,12 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 
 export function searchUsers(Router: Router) {
-  Router.get(
-    '/moderation/users/search',
-    authenticate(),
-    isModMiddleware,
-    route
-  );
+  Router.get('/moderation/users/search', authenticate(), isModMiddleware, route);
 }
 
 async function route(req: Request, res: Response) {
@@ -24,14 +19,7 @@ async function route(req: Request, res: Response) {
 
   let users = await prisma.user.findMany({
     where: {
-      OR: [
-        { username: { contains: search, mode: 'insensitive' } },
-        { tag: { contains: search, mode: 'insensitive' } },
-        { id: search },
-        { servers: { some: { id: search } } },
-        { devices: { some: { ipAddress: { contains: search } } } },
-        { account: { email: { contains: search, mode: 'insensitive' } } },
-      ],
+      OR: [{ username: { contains: search, mode: 'insensitive' } }, { tag: { contains: search, mode: 'insensitive' } }, { id: search }, { servers: { some: { id: search } } }, { devices: { some: { ipAddress: { contains: search } } } }, { account: { email: { contains: search, mode: 'insensitive' } } }],
     },
     orderBy: {
       joinedAt: 'desc',
@@ -47,6 +35,7 @@ async function route(req: Request, res: Response) {
       hexColor: true,
       avatar: true,
       badges: true,
+      shadowBan: true,
       suspension: true,
     },
   });

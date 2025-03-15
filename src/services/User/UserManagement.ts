@@ -11,6 +11,9 @@ import env from '../../common/env';
 import { deleteServer, leaveServer } from '../Server';
 import { setTimeout as setPromiseTimeout } from 'timers/promises';
 import { deleteApplication } from '../Application';
+import { createHash } from 'crypto';
+import { generateId } from '../../common/flakeId';
+import { ShadowBan } from '@prisma/client';
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
 
@@ -189,8 +192,9 @@ export async function deleteAccount(userId: string, opts?: DeleteAccountOptions)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      shadowBan: true,
       account: {
-        select: { id: true, _count: { select: { applications: true } } },
+        select: { id: true, email: true, _count: { select: { applications: true } } },
       },
       application: { select: { id: true } },
       _count: { select: { servers: true } },
@@ -214,7 +218,7 @@ export async function deleteAccount(userId: string, opts?: DeleteAccountOptions)
     }
   }
 
-  await deleteAccountFromDatabase(userId, opts);
+  await deleteAccountFromDatabase(userId, { ...opts, shadowBan: user?.shadowBan, email: user?.account?.email });
 
   await removeUserCacheByUserIds([userId]);
 
@@ -223,7 +227,7 @@ export async function deleteAccount(userId: string, opts?: DeleteAccountOptions)
   return [true, null] as const;
 }
 
-const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOptions) => {
+const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOptions & { shadowBan?: ShadowBan; email?: string }) => {
   await prisma.$transaction([
     prisma.follower.deleteMany({
       where: {
@@ -258,6 +262,20 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
     prisma.userConnection.deleteMany({ where: { userId } }),
     prisma.chatNotice.deleteMany({ where: { userId } }),
     prisma.userNotice.deleteMany({ where: { userId } }),
+    ...(opts?.shadowBan && opts?.email
+      ? [
+          prisma.shadowBan.deleteMany({ where: { id: opts.shadowBan.id } }),
+          prisma.suspension.create({
+            data: {
+              userId,
+              userDeleted: true,
+              emailHash: createHash('sha256').update(opts.email).digest('hex'),
+              id: generateId(),
+              suspendedById: opts.shadowBan.bannedById,
+            },
+          }),
+        ]
+      : []),
   ]);
 };
 

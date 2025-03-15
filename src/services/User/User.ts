@@ -87,6 +87,7 @@ export const getUserWithAccount = async (userId: string) => {
   return await prisma.user.findUnique({
     where: { id: userId },
     include: {
+      shadowBan: { select: { bannedAt: true } },
       account: {
         select: excludeFields('Account', ['password']),
       },

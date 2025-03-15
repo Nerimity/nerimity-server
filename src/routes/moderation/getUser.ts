@@ -54,6 +54,7 @@ async function route(req: Request, res: Response) {
           },
         },
       },
+      shadowBan: true,
       account: {
         select: {
           suspendCount: true,

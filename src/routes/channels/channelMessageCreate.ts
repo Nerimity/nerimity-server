@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response, Router } from 'express';
-import { body } from 'express-validator';
+import { body, header } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, USER_BADGES, hasBit, isUserAdmin } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
@@ -23,6 +23,7 @@ import { redisClient } from '../../common/redis';
 import { checkAndUpdateRateLimit } from '../../cache/RateLimitCache';
 import { ServerMemberCache } from '../../cache/ServerMemberCache';
 import env from '../../common/env';
+import { generateId } from '../../common/flakeId';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -257,6 +258,27 @@ async function route(req: Request, res: Response) {
       provider: AttachmentProviders.GoogleDrive,
       createdAt: dateToDateTime() as unknown as Date,
     };
+  }
+
+  if (req.userCache.shadowBanned) {
+    return res.json({
+      id: generateId(),
+      ...body,
+      createdBy: {
+        id: req.userCache.id,
+        username: req.userCache.username,
+        avatar: req.userCache.avatar,
+        tag: req.userCache.tag,
+        hexColor: req.userCache.hexColor,
+        badges: req.userCache.badges,
+      },
+      channelId: req.channelCache.id,
+      createdAt: Date.now(),
+      reactions: [],
+      roleMentions: [],
+      quotedMessages: [],
+      type: MessageType.CONTENT,
+    });
   }
 
   const [message, error] = await createMessage({

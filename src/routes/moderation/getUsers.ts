@@ -24,6 +24,7 @@ async function route(req: Request, res: Response) {
     take: limit,
     ...(after ? { cursor: { id: after } } : undefined),
     select: {
+      shadowBan: true,
       id: true,
       username: true,
       joinedAt: true,

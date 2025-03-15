@@ -10,7 +10,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelTypingIndicator(Router: Router) {
   Router.post(
     '/channels/:channelId/typing',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     channelVerification(),
     channelPermissions({
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
@@ -27,6 +27,9 @@ export function channelTypingIndicator(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
+  if (req.userCache.shadowBanned) {
+    return res.status(204).end();
+  }
   const server = req.serverCache;
   const channel = req.channelCache;
   const typingUser = req.userCache;

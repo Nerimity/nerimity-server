@@ -4,27 +4,16 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { authenticate } from '../../middleware/authenticate';
 import { TicketCategory, createTicket } from '../../services/Ticket';
 import { body } from 'express-validator';
-import {
-  customExpressValidatorResult,
-  generateError,
-} from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 
 export function ticketsCreate(Router: Router) {
   Router.post(
     '/tickets',
     authenticate(),
 
-    body('body')
-      .isString()
-      .withMessage('Body must be a string!')
-      .isLength({ min: 1, max: 2000 })
-      .withMessage('Body length must be between 1 and 2000 characters.'),
+    body('body').isString().withMessage('Body must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Body length must be between 1 and 2000 characters.'),
 
-    body('title')
-      .isString()
-      .withMessage('Title must be a string!')
-      .isLength({ min: 1, max: 200 })
-      .withMessage('Title length must be between 1 and 200 characters.'),
+    body('title').isString().withMessage('Title must be a string!').isLength({ min: 1, max: 200 }).withMessage('Title length must be between 1 and 200 characters.'),
 
     body('category').isInt().withMessage('Category must be a number!'),
 
@@ -44,6 +33,9 @@ interface Body {
 }
 
 async function route(req: Request, res: Response) {
+  if (req.userCache.shadowBanned) {
+    return res.status(403).json(generateError('Something went wrong. Try again later.'));
+  }
   const body = req.body as Body;
 
   const validateError = customExpressValidatorResult(req);

@@ -158,6 +158,9 @@ model User {
 
   scheduledServerDeletions ScheduleServerDelete[]
 
+  shadowBan ShadowBan?
+  shadowBannedUsers ShadowBan[] @relation(name: "shadow_banned_users")
+
   @@unique([username, tag])
 }
 
@@ -249,6 +252,17 @@ model Follower {
 }
 
 
+model ShadowBan {
+  id            String   @id
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+
+  bannedAt      DateTime @default(now())
+  reason        String?
+
+  bannedById      String
+  bannedBy      User     @relation(fields: [bannedById], references: [id], name: "shadow_banned_users")
+}
 
 model Suspension {
   id            String    @id

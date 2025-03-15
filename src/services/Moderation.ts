@@ -318,3 +318,105 @@ export async function suspendUsersBatch(opts: SuspendUsersOpts) {
 
   return [true, null] as const;
 }
+
+interface ShadowBanUsersOpts {
+  userIds: string[];
+  reason: string;
+  modUserId: string;
+  modUsername: string;
+}
+export async function shadowBanUsersBatch(opts: ShadowBanUsersOpts) {
+  if (opts.userIds.length >= 5000) return [null, 'user ids must contain less than 5000 ids.'] as const;
+
+  let sanitizedUserIds = removeDuplicates(opts.userIds) as string[];
+
+  const alreadyShadowBanned = await prisma.shadowBan.findMany({
+    where: { userId: { in: sanitizedUserIds } },
+  });
+
+  if (alreadyShadowBanned.length) {
+    sanitizedUserIds = sanitizedUserIds.filter((id) => !alreadyShadowBanned.find((shadowBan) => shadowBan.userId === id));
+  }
+  if (!sanitizedUserIds.length) return [true, null] as const;
+
+  const shadowBans = await prisma.shadowBan.createManyAndReturn({
+    data: sanitizedUserIds.map((userId) => ({
+      id: generateId(),
+      userId,
+      reason: opts.reason,
+      bannedById: opts.modUserId,
+    })),
+    select: {
+      user: {
+        select: {
+          username: true,
+          id: true,
+        },
+      },
+    },
+  });
+  await removeUserCacheByUserIds(sanitizedUserIds);
+
+  const lastSevenHours = new Date();
+  lastSevenHours.setHours(lastSevenHours.getHours() + 7);
+
+  await prisma.message.deleteMany({
+    where: {
+      createdById: { in: sanitizedUserIds },
+      createdAt: {
+        lt: dateToDateTime(lastSevenHours),
+      },
+    },
+  });
+
+  await prisma.modAuditLog.createMany({
+    data: shadowBans.map((shadowBan) => ({
+      id: generateId(),
+      actionType: ModAuditLogType.userShadowBanned,
+      actionById: opts.modUserId,
+      username: shadowBan.user.username,
+      userId: shadowBan.user.id,
+      reason: opts.reason,
+    })),
+  });
+
+  return [true, null] as const;
+}
+
+interface UndoShadowBanUsersOpts {
+  userIds: string[];
+  modUserId: string;
+  modUsername: string;
+}
+export async function undoShadowBanUsersBatch(opts: UndoShadowBanUsersOpts) {
+  if (opts.userIds.length >= 5000) return [null, 'user ids must contain less than 5000 ids.'] as const;
+
+  const sanitizedUserIds = removeDuplicates(opts.userIds) as string[];
+
+  if (!sanitizedUserIds.length) return [true, null] as const;
+
+  await prisma.shadowBan.deleteMany({
+    where: {
+      userId: { in: sanitizedUserIds },
+    },
+  });
+
+  await removeUserCacheByUserIds(sanitizedUserIds);
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: sanitizedUserIds } },
+    select: { username: true, id: true },
+  });
+
+  await prisma.modAuditLog.createMany({
+    data: users.map((user) => ({
+      id: generateId(),
+      actionType: ModAuditLogType.undoUserShadowBanned,
+      actionById: opts.modUserId,
+      username: user.username,
+      userId: user.id,
+    })),
+  });
+
+  return [true, null] as const;
+}

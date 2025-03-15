@@ -8,6 +8,7 @@ import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
+import { addToObjectIfExists } from '../common/addToObjectIfExists';
 
 export interface ActivityStatus {
   socketId: string;
@@ -133,6 +134,7 @@ export interface UserCache {
   application?: ApplicationCache;
 
   ip?: string;
+  shadowBanned?: boolean;
 }
 
 export interface AccountCache {
@@ -184,6 +186,7 @@ export async function getUserCache(userId: string, beforeCache?: (user: UserCach
             botTokenVersion: user.application!.botTokenVersion,
           },
         }),
+    ...(user.shadowBan ? { shadowBanned: true } : {}),
     id: user.id,
     username: user.username,
     badges: user.badges,

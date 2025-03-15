@@ -7,6 +7,7 @@ import { createPost } from '../../services/Post';
 import { verifyUpload } from '../../common/nerimityCDN';
 import { UserCache } from '../../cache/UserCache';
 import { hasBit, USER_BADGES } from '../../common/Bitwise';
+import { generateId } from '../../common/flakeId';
 
 export function postCreate(Router: Router) {
   Router.post(
@@ -83,6 +84,27 @@ async function route(req: Request, res: Response) {
     };
   }
 
+  if (req.userCache.shadowBanned) {
+    return res.json({
+      ...body,
+      id: generateId(),
+      createdAt: Date.now(),
+      views: 0,
+      _count: {
+        likedBy: 0,
+        comments: 0,
+        reposts: 0,
+      },
+      createdBy: {
+        id: req.userCache.id,
+        username: req.userCache.username,
+        avatar: req.userCache.avatar,
+        tag: req.userCache.tag,
+        hexColor: req.userCache.hexColor,
+        badges: req.userCache.badges,
+      },
+    });
+  }
   const [post, error] = await createPost({
     content: body.content,
     userId: req.userCache.id,
