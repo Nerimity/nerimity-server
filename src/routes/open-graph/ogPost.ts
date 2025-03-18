@@ -10,10 +10,8 @@ export function ogPost(Router: Router) {
 
 async function route(req: Request, res: Response, next: NextFunction) {
   const query = req.query;
-  const id = req.params.id;
-  if (!id || typeof query.postId !== 'string') return next();
-
-  const postId = id || query.postId;
+  const postId = req.params.id || (typeof query.postId === 'string' ? query.postId : null);
+  if (!postId) return next();
 
   const post = await prisma.post.findUnique({
     where: {
