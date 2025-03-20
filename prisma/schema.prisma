@@ -853,6 +853,7 @@ model Post {
 
 
   reminders Reminder[]
+  embed Json?
 
   @@index([createdById, createdAt])
 

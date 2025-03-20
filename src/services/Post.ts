@@ -10,6 +10,7 @@ import { replaceBadWords } from '../common/badWords';
 import { addPostViewsToCache } from '../cache/PostViewsCache';
 import { removeDuplicates } from '../common/utils';
 import { emitPostMentions } from '../emits/PostEmits';
+import { getOGTags } from '../common/OGTags';
 
 const userMentionRegex = /@([^@:]+):([a-zA-Z0-9]+)/g;
 
@@ -99,6 +100,8 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
   };
 }
 
+const urlRegex = new RegExp('(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))');
+
 interface CreatePostOpts {
   userId: string;
   content?: string;
@@ -122,12 +125,16 @@ export async function createPost(opts: CreatePostOpts) {
 
   const formattedContent = await formatContent(opts.content?.trim() || '');
 
+  const url = opts.content?.match(urlRegex)?.[0].trim();
+  const OGTags = url ? await getOGTags(url).catch(() => {}) : undefined;
+
   const post = await prisma.post.create({
     data: {
       id: generateId(),
       content: opts.content ? replaceBadWords(formattedContent.newContent) : undefined,
       mentions: { connect: formattedContent.mentionUserIds.map((id) => ({ id })) },
       createdById: opts.userId,
+      ...(OGTags ? { embed: OGTags } : {}),
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
         ? {
