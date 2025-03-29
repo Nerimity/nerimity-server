@@ -1689,19 +1689,23 @@ export async function markMessageUnread(opts: { channelId: string; messageId: st
         where: {
           mentionedById_mentionedToId_channelId: {
             channelId: channel.id,
-            mentionedById: opts.userId,
-            mentionedToId: channel.inbox.recipientId,
+            mentionedById: channel.inbox.recipientId,
+            mentionedToId: opts.userId,
           },
         },
         update: {
-          count: { increment: 1 },
+          count: 1,
+          channelId: channel.id,
+          mentionedById: channel.inbox.recipientId,
+          mentionedToId: opts.userId,
+          createdAt: dateToDateTime((message.createdAt as unknown as number) - 1),
         },
         create: {
           id: generateId(),
           count: 1,
           channelId: channel.id,
-          mentionedById: opts.userId,
-          mentionedToId: channel.inbox.recipientId,
+          mentionedById: channel.inbox.recipientId,
+          mentionedToId: opts.userId,
           createdAt: dateToDateTime((message.createdAt as unknown as number) - 1),
         },
       })
