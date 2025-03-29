@@ -101,7 +101,7 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
       return [null, generateError('Cannot hide default role.')];
     }
   }
-  if (role.hexColor && !isValidHex(role.hexColor)) {
+  if (update.hexColor && !isValidHex(update.hexColor)) {
     return [null, generateError('Invalid hex color.')];
   }
 
