@@ -1,5 +1,5 @@
 import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
-import { emitButtonClick, emitButtonClickCallback, emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated } from '../emits/Channel';
+import { emitButtonClick, emitButtonClickCallback, emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
 import { dismissChannelNotification } from './Channel';
@@ -1639,5 +1639,78 @@ export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
     },
   });
 
+  return [true, null] as const;
+}
+
+export async function markMessageUnread(opts: { channelId: string; messageId: string; userId: string }) {
+  const [channel, error] = await getChannelCache(opts.channelId, opts.userId);
+  if (error) {
+    return [false, error] as const;
+  }
+  const message = await prisma.message.findUnique({
+    where: { id: opts.messageId, channelId: opts.channelId },
+    select: {
+      channelId: true,
+      createdAt: true,
+      channel: { select: { serverId: true } },
+    },
+  });
+  if (!message) {
+    return [false, generateError('Message not found')] as const;
+  }
+
+  if (!message.channel) {
+    return [false, generateError('Channel not found')] as const;
+  }
+
+  if (message.channel.serverId) {
+    await prisma.serverChannelLastSeen.upsert({
+      where: {
+        channelId_userId_serverId: {
+          userId: opts.userId,
+          serverId: message.channel.serverId,
+          channelId: opts.channelId,
+        },
+      },
+      create: {
+        id: generateId(),
+        userId: opts.userId,
+        serverId: message.channel.serverId,
+        channelId: opts.channelId,
+        lastSeen: dateToDateTime((message.createdAt as unknown as number) - 1),
+      },
+      update: {
+        lastSeen: dateToDateTime((message.createdAt as unknown as number) - 1),
+      },
+    });
+  } else if (channel.type === ChannelType.DM_TEXT) {
+    const upsertResult = await prisma.messageMention
+      .upsert({
+        where: {
+          mentionedById_mentionedToId_channelId: {
+            channelId: channel.id,
+            mentionedById: opts.userId,
+            mentionedToId: channel.inbox.recipientId,
+          },
+        },
+        update: {
+          count: { increment: 1 },
+        },
+        create: {
+          id: generateId(),
+          count: 1,
+          channelId: channel.id,
+          mentionedById: opts.userId,
+          mentionedToId: channel.inbox.recipientId,
+          createdAt: dateToDateTime((message.createdAt as unknown as number) - 1),
+        },
+      })
+      .catch(console.error);
+
+    if (!upsertResult) {
+      return [false, generateError('Something went wrong. Try again later.')] as const;
+    }
+  }
+  emitMessageMarkUnread(opts.userId, opts.channelId, (message.createdAt as unknown as number) - 1);
   return [true, null] as const;
 }

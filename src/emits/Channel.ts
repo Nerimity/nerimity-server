@@ -1,7 +1,7 @@
 import { Channel, Message, User } from '@prisma/client';
 import { BaseChannelCache, ChannelCache, DMChannelCache, InboxCache } from '../cache/ChannelCache';
 import { UserCache } from '../cache/UserCache';
-import { CHANNEL_TYPING, MESSAGE_BUTTON_CLICKED, MESSAGE_BUTTON_CLICKED_CALLBACK, MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
+import { CHANNEL_TYPING, MESSAGE_BUTTON_CLICKED, MESSAGE_BUTTON_CLICKED_CALLBACK, MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_MARK_UNREAD, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';
 import { UpdateServerChannelOptions } from '../services/Channel';
 import { getIO } from '../socket/socket';
 
@@ -30,6 +30,16 @@ export const emitDMMessageUpdated = (channel: BaseChannelCache & DMChannelCache,
     updated,
   });
 };
+
+export const emitMessageMarkUnread = (userId: string, channelId: string, at: number) => {
+  const io = getIO();
+
+  io.in(userId).emit(MESSAGE_MARK_UNREAD, {
+    channelId,
+    at,
+  });
+};
+
 export const emitDMMessageReactionAdded = (channel: BaseChannelCache & DMChannelCache, reaction: any) => {
   const io = getIO();
 

@@ -56,6 +56,7 @@ export const MESSAGE_DELETED = 'message:deleted';
 export const MESSAGE_DELETED_BATCH = 'message:deleted_batch';
 export const MESSAGE_REACTION_ADDED = 'message:reaction_added';
 export const MESSAGE_REACTION_REMOVED = 'message:reaction_removed';
+export const MESSAGE_MARK_UNREAD = 'message:mark_unread';
 
 export const MESSAGE_BUTTON_CLICKED = 'message:button_clicked';
 export const MESSAGE_BUTTON_CLICKED_CALLBACK = 'message:button_clicked_callback';
