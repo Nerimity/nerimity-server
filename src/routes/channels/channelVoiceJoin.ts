@@ -22,14 +22,7 @@ export function channelVoiceJoin(Router: Router) {
       restrictMS: 20000,
       requests: 10,
     }),
-    body('socketId')
-      .not()
-      .isEmpty()
-      .withMessage('socketId is required')
-      .isString()
-      .withMessage('socketId must be a string')
-      .isLength({ min: 3, max: 320 })
-      .withMessage('socketId must be between 3 and 320 characters long.'),
+    body('socketId').not().isEmpty().withMessage('socketId is required').isString().withMessage('socketId must be a string').isLength({ min: 3, max: 320 }).withMessage('socketId must be between 3 and 320 characters long.'),
     route
   );
 }
@@ -40,14 +33,14 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  if (req.userCache.shadowBanned) {
+    res.json({ success: true });
+    return;
+  }
+
   const socketId = req.body.socketId as string;
 
-  const [result, error] = await joinVoiceChannel(
-    req.userCache.id,
-    socketId,
-    req.channelCache.id,
-    req.channelCache.serverId
-  );
+  const [result, error] = await joinVoiceChannel(req.userCache.id, socketId, req.channelCache.id, req.channelCache.serverId);
 
   if (error) {
     return res.status(403).json(error);
