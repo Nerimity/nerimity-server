@@ -2,7 +2,7 @@ import admin from 'firebase-admin';
 import { cert } from 'firebase-admin/app';
 import { prisma } from '../common/database';
 import { NotificationPingMode, removeFCMTokens } from '../services/User/User';
-import { Message, ServerChannelPermissions, ServerRole } from '@prisma/client';
+import { Message, ServerChannelPermissions, ServerRole, User } from '@prisma/client';
 import { ChannelCache } from '../cache/ChannelCache';
 import { ServerCache } from '../cache/ServerCache';
 import { Log } from '../common/Log';
@@ -129,7 +129,12 @@ export async function sendServerPushMessageNotification(
 
   if (!tokens.length) return;
 
-  const content = message?.content?.substring(0, 100);
+  let content = message.content as string | undefined;
+
+  if (content) {
+    content = formatMessage(message as any)!;
+    content = content.substring(0, 100);
+  }
 
   const batchResponse = await admin.messaging().sendEachForMulticast({
     tokens,
@@ -176,8 +181,12 @@ export async function sendDmPushNotification(
   ).map((fcm) => fcm.token);
   if (!tokens.length) return;
 
-  const content = message?.content?.substring(0, 100);
+  let content = message.content as string | undefined;
 
+  if (content) {
+    content = formatMessage(message as any)!;
+    content = content.substring(0, 100);
+  }
   const batchResponse = await admin.messaging().sendEachForMulticast({
     tokens,
     android: { priority: 'high' },
@@ -224,4 +233,24 @@ function hasChannelPermission(opts: hasChannelPermissionOpts) {
     totalPermissions = addBit(totalPermissions, permission.permissions || 0);
   }
   return hasBit(totalPermissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+}
+
+const UserMentionRegex = /\[@:(.*?)\]/g;
+const RoleMentionRegex = /\[r:(.*?)\]/g;
+
+function formatMessage(message: { mentions: User[]; content?: string; roleMentions: ServerRole[] }) {
+  const content = message.content;
+  if (!content) return;
+
+  const mentionReplace = content.replace(UserMentionRegex, (_, id) => {
+    const user = message.mentions?.find((m) => m.id === id);
+    return user ? `@${user.username}` : _;
+  });
+
+  const roleReplace = mentionReplace.replace(RoleMentionRegex, (_, id) => {
+    const role = message.roleMentions?.find((m) => m.id === id);
+    return role ? `@${role.name}` : _;
+  });
+
+  return roleReplace;
 }
