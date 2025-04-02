@@ -304,13 +304,13 @@ export async function suspendUsersBatch(opts: SuspendUsersOpts) {
 
   if (opts.deleteRecentMessages) {
     const lastSevenHours = new Date();
-    lastSevenHours.setHours(lastSevenHours.getHours() + 7);
+    lastSevenHours.setHours(lastSevenHours.getHours() - 7);
 
     await prisma.message.deleteMany({
       where: {
         createdById: { in: sanitizedUserIds },
         createdAt: {
-          lt: dateToDateTime(lastSevenHours),
+          gt: dateToDateTime(lastSevenHours),
         },
       },
     });
@@ -358,13 +358,13 @@ export async function shadowBanUsersBatch(opts: ShadowBanUsersOpts) {
   await removeUserCacheByUserIds(sanitizedUserIds);
 
   const lastSevenHours = new Date();
-  lastSevenHours.setHours(lastSevenHours.getHours() + 7);
+  lastSevenHours.setHours(lastSevenHours.getHours() - 7);
 
   await prisma.message.deleteMany({
     where: {
       createdById: { in: sanitizedUserIds },
       createdAt: {
-        lt: dateToDateTime(lastSevenHours),
+        gt: dateToDateTime(lastSevenHours),
       },
     },
   });

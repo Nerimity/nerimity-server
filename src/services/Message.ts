@@ -434,14 +434,14 @@ export const getMessageByChannelId = async (channelId: string, opts?: GetSingleM
 export const deleteRecentUserServerMessages = async (userId: string, serverId: string) => {
   const fromTime = new Date();
   const toTime = new Date();
-  toTime.setHours(toTime.getHours() + 7);
+  toTime.setHours(toTime.getHours() - 7);
 
   await prisma.message.deleteMany({
     where: {
       createdById: userId,
       channel: { serverId },
       createdAt: {
-        lt: dateToDateTime(toTime),
+        gt: dateToDateTime(toTime),
       },
     },
   });
