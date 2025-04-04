@@ -10,6 +10,7 @@ import { emitUserUpdated } from '../emits/User';
 import { generateToken } from '../common/JWT';
 import { deleteAccount, disconnectSockets } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
+import { BotCommand } from '@prisma/client';
 
 export async function createApplication(requesterAccountId: string) {
   const count = await prisma.application.count({
@@ -138,14 +139,14 @@ export async function getApplicationBot(appId: string, opts?: { includeCreator?:
           ...publicUserExcludeFields,
           ...(opts?.includeCreator
             ? {
-              application: {
-                select: {
-                  creatorAccount: {
-                    select: { user: { select: publicUserExcludeFields } },
+                application: {
+                  select: {
+                    creatorAccount: {
+                      select: { user: { select: publicUserExcludeFields } },
+                    },
                   },
                 },
-              },
-            }
+              }
             : {}),
         },
       },
@@ -261,13 +262,13 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
 
       ...(opts.profile
         ? {
-          profile: {
-            upsert: {
-              create: opts.profile,
-              update: opts.profile,
+            profile: {
+              upsert: {
+                create: opts.profile,
+                update: opts.profile,
+              },
             },
-          },
-        }
+          }
         : undefined),
     },
     include: { profile: { select: { bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } },
@@ -296,4 +297,67 @@ export async function refreshBotToken(requesterAccountId: string, appId: string)
   disconnectSockets(application.botUserId);
 
   return [true, null] as const;
+}
+
+interface UpdateBotCommandsOpts {
+  applicationId: string;
+  commands: {
+    name: string;
+    description?: string;
+    args?: string;
+  }[];
+}
+
+export async function updateBotCommands(opts: UpdateBotCommandsOpts) {
+  const application = await prisma.application.findUnique({
+    where: { id: opts.applicationId },
+    select: { botUserId: true },
+  });
+
+  if (!application) {
+    return [null, generateError('Application not found!')] as const;
+  }
+  if (!application.botUserId) {
+    return [null, generateError('Application does not have a bot!')] as const;
+  }
+
+  await prisma.$transaction([
+    prisma.botCommand.deleteMany({ where: { applicationId: opts.applicationId } }),
+    prisma.botCommand.createMany({
+      data: opts.commands.map((c) => ({
+        id: generateId(),
+        applicationId: opts.applicationId,
+        botUserId: application.botUserId!,
+        name: c.name,
+        description: c.description,
+        args: c.args,
+      })),
+      skipDuplicates: true,
+    }),
+  ]);
+  return [true, null] as const;
+}
+
+export async function getServerBotCommands(serverId: string) {
+  const commands = await prisma.botCommand.findMany({
+    select: {
+      botUserId: true,
+      name: true,
+      description: true,
+      args: true,
+    },
+    where: {
+      application: {
+        botUser: {
+          memberInServers: {
+            some: {
+              serverId,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return commands;
 }

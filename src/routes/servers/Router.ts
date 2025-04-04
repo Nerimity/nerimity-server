@@ -41,8 +41,11 @@ import { serverMemberProfileUpdate } from './serveMemberProfileUpdate';
 import { serverAuditLogsGet } from './serverAuditlogsGet';
 import { serverChannelPermissionUpdate } from './serverChannelPermissionsUpdate';
 import { serverTransferOwnership } from './serverTransferOwnership';
+import { serverBotCommandsGet } from './serverBotCommandsGet';
 
 const ServersRouter = Router();
+
+serverBotCommandsGet(ServersRouter);
 
 serverChannelNoticeDelete(ServersRouter);
 serverChannelNoticeUpdate(ServersRouter);

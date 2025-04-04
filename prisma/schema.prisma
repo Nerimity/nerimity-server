@@ -54,8 +54,7 @@ model Application {
   creatorAccountId   String
   creatorAccount     Account  @relation(fields: [creatorAccountId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
-
-
+  botCommands BotCommand[]
 }
 
 
@@ -161,7 +160,29 @@ model User {
   shadowBan ShadowBan?
   shadowBannedUsers ShadowBan[] @relation(name: "shadow_banned_users")
 
+  botCommands BotCommand[]
+
+
   @@unique([username, tag])
+}
+
+model BotCommand {
+  id String @id
+  
+  botUserId String
+  botUser User @relation(fields: [botUserId], references: [id], onDelete: Cascade)
+
+  applicationId String
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  
+  name String
+  description String?
+  args String?
+
+  @@index([applicationId, name])
+  @@index([botUserId, name])
+  @@unique([applicationId, name])
 }
 
 model UserConnection {
