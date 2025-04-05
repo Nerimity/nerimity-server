@@ -7,7 +7,7 @@ import { body } from 'express-validator';
 
 export function applicationBotSetCommands(Router: Router) {
   Router.post(
-    '/applications/:id/bot/commands',
+    '/applications/:id?/bot/commands',
     body('commands')
       .isArray()
       .withMessage('Commands must be an array!')
@@ -42,7 +42,8 @@ interface Body {
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
-  const id = req.params.id;
+  const id = req.userCache.application?.id || req.params.id;
+
   if (!id) {
     return res.status(400).json(generateError('Missing application id!'));
   }
