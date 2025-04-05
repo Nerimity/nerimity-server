@@ -22,7 +22,7 @@ export function applicationBotSetCommands(Router: Router) {
 
     body('commands.*.args').isString().withMessage('Command args must be a string!').isLength({ min: 0, max: 100 }).withMessage('Command args length must be less than or equal to 100 characters').optional(true),
 
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'add-bot-commands',
       restrictMS: 60000,
