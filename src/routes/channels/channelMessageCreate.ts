@@ -215,7 +215,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('You cannot send messages in this channel.'));
   }
 
-  if (!body.content?.trim() && !body.nerimityCdnFileId && !body.googleDriveAttachment) {
+  if (!body.content?.trim() && !body.nerimityCdnFileId && !body.googleDriveAttachment && !body.htmlEmbed) {
     return res.status(400).json(generateError('content or attachment is required.'));
   }
 
