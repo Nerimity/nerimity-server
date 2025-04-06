@@ -402,7 +402,10 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
     return [null, generateError('Channel does not exist.')];
   }
 
+  const isCategoryChannel = channel.type === ChannelType.CATEGORY;
+
   await prisma.$transaction([
+    ...(isCategoryChannel ? [prisma.channel.updateMany({ where: { categoryId: channel.id }, data: { categoryId: null } })] : []),
     prisma.channel.update({
       where: { id: channelId },
       data: { deleting: true },
