@@ -46,15 +46,6 @@ async function route(req: Request, res: Response) {
       avatar: true,
       suspension: true,
       bot: true,
-      _count: {
-        select: {
-          devices: {
-            where: {
-              ipBanned: { isNot: null },
-            },
-          },
-        },
-      },
     },
   });
 

@@ -31,15 +31,6 @@ async function route(req: Request, res: Response) {
       bot: true,
       avatar: true,
       badges: true,
-      _count: {
-        select: {
-          devices: {
-            where: {
-              ipBanned: { isNot: null },
-            },
-          },
-        },
-      },
     },
   });
 
