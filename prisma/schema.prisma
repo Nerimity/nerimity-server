@@ -63,6 +63,8 @@ model BannedIp {
   id String @id
   ipAddress String @unique
   expireAt  DateTime
+
+  bannedDevices UserDevice[]
 }
 
 model FirebaseMessagingToken {
@@ -203,11 +205,15 @@ model UserDevice {
   userId      String
   ipAddress   String
 
+  ipBanned BannedIp? @relation(fields: [ipAddress], references: [ipAddress], onDelete: Cascade)
+
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   lastSeenAt  DateTime @default(now())
 
   @@index([userId, ipAddress])
+  @@unique([userId, ipAddress])
+
 }
 
 

@@ -24,6 +24,15 @@ async function route(req: Request, res: Response) {
     take: limit,
     ...(after ? { cursor: { id: after } } : undefined),
     select: {
+      _count: {
+        select: {
+          devices: {
+            where: {
+              ipBanned: { isNot: null },
+            },
+          },
+        },
+      },
       shadowBan: true,
       id: true,
       username: true,

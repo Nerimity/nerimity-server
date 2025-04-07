@@ -263,6 +263,8 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
 
   if (!isIpAllowed || userCache.ip !== ipAddress) {
     const ipBanned = await isIpBanned(ipAddress);
+    await addDevice(userCache.id, ipAddress);
+
     if (ipBanned && !isFounder) {
       return [
         null,
@@ -277,30 +279,18 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
     }
     await addAllowedIPCache(ipAddress);
     await updateUserCache(userCache.id, { ip: ipAddress });
-    await addDevice(userCache.id, ipAddress);
   }
 
   return [userCache, null];
 }
 
 async function addDevice(userId: string, ipAddress: string) {
-  const device = await prisma.userDevice.findFirst({
-    where: { userId, ipAddress },
+  // cache this request as well to reduce database calls
+  await prisma.userDevice.upsert({
+    where: { userId_ipAddress: { userId, ipAddress } },
+    update: { lastSeenAt: dateToDateTime() },
+    create: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime() },
   });
-
-  if (device) {
-    await prisma.userDevice.update({
-      where: { id: device.id },
-      data: { lastSeenAt: dateToDateTime() },
-    });
-    return;
-  }
-
-  await prisma.userDevice
-    .create({
-      data: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime() },
-    })
-    .catch(console.error);
 }
 
 // Moderators Only

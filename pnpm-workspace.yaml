@@ -1,0 +1,10 @@
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - bufferutil
+  - esbuild
+  - prisma
+  - protobufjs
+  - utf-8-validate

@@ -47,7 +47,7 @@ export const isExpired = (expireDate: Date) => {
 };
 
 export const isIpBanned = async (ipAddress: string) => {
-  const ban = await prisma.bannedIp.findFirst({ where: { ipAddress } });
+  const ban = await prisma.bannedIp.findUnique({ where: { ipAddress } });
   if (!ban) return false;
   if (!ban.expireAt) return ban;
 

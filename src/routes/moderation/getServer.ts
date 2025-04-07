@@ -32,6 +32,15 @@ async function route(req: Request, res: Response) {
           hexColor: true,
           avatar: true,
           suspension: true,
+          _count: {
+            select: {
+              devices: {
+                where: {
+                  ipBanned: { isNot: null },
+                },
+              },
+            },
+          },
           shadowBan: true,
           badges: true,
         },

@@ -20,6 +20,15 @@ async function route(req: Request, res: Response) {
         },
       },
       profile: true,
+      _count: {
+        select: {
+          devices: {
+            where: {
+              ipBanned: { isNot: null },
+            },
+          },
+        },
+      },
       devices: { orderBy: { createdAt: 'desc' } },
       servers: {
         select: {
