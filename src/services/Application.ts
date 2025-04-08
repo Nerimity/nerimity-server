@@ -346,6 +346,7 @@ export async function getServerBotCommands(serverId: string) {
       description: true,
       args: true,
     },
+    orderBy: { name: 'asc' },
     where: {
       application: {
         botUser: {

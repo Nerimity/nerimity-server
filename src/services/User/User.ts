@@ -274,7 +274,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
       ...publicUserExcludeFields,
       application: {
         select: {
-          ...(includeBotCommands ? { botCommands: { select: { name: true, description: true, args: true } } } : {}),
+          ...(includeBotCommands ? { botCommands: { orderBy: { name: 'asc' }, select: { name: true, description: true, args: true } } } : {}),
           creatorAccount: {
             select: {
               user: {
