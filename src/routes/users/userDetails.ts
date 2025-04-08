@@ -18,8 +18,9 @@ async function route(req: Request, res: Response) {
   const recipientId = req.params.userId || requesterId;
 
   const includePinnedPosts = req.query.includePinnedPosts === 'true';
+  const includeBotCommands = req.query.includeBotCommands === 'true';
 
-  const [details, error] = await getUserDetails(requesterId || '123', recipientId, req.userIP, includePinnedPosts);
+  const [details, error] = await getUserDetails(requesterId || '123', recipientId, req.userIP, includePinnedPosts, includeBotCommands);
   if (error) {
     return res.status(400).json(error);
   }

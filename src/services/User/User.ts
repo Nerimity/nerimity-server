@@ -267,13 +267,14 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
   return ['Presence updated.', null];
 };
 
-export const getUserDetails = async (requesterId: string, recipientId: string, requesterIpAddress: string, includePinnedPosts = false) => {
+export const getUserDetails = async (requesterId: string, recipientId: string, requesterIpAddress: string, includePinnedPosts = false, includeBotCommands = false) => {
   const user = await prisma.user.findFirst({
     where: { id: recipientId },
     select: {
       ...publicUserExcludeFields,
       application: {
         select: {
+          ...(includeBotCommands ? { botCommands: { select: { name: true, description: true, args: true } } } : {}),
           creatorAccount: {
             select: {
               user: {
