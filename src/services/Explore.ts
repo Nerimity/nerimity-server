@@ -37,7 +37,7 @@ export const getPublicServers = async (opts: getPublicServersOpts): Promise<Publ
     orderBy: orderBy(),
     ...(opts.afterId ? { cursor: { id: opts.afterId }, skip: 1 } : {}),
     include: {
-      server: { include: { _count: { select: { serverMembers: true } } } },
+      server: { include: { createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
     },
     ...(limit ? { take: limit } : {}),
   });
