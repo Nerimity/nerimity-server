@@ -34,9 +34,7 @@ if (cluster.isPrimary) {
     redisClient,
   });
 
-  if (env.TYPE === 'ws') {
-    createIO();
-  }
+  createIO();
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');
 
