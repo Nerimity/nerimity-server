@@ -30,7 +30,7 @@ export interface Presence {
   activity?: ActivityStatus | null;
 }
 
-export async function getUserPresences(userIds: string[], includeSocketId = false): Promise<Presence[]> {
+export async function getUserPresences(userIds: string[], includeSocketId = false, hideOffline = true): Promise<Presence[]> {
   const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
     const userId = userIds[i]!;
@@ -45,6 +45,7 @@ export async function getUserPresences(userIds: string[], includeSocketId = fals
     const result = results[i] as string;
     if (!result) continue;
     const presence = JSON.parse(result);
+    if (hideOffline && presence.status === UserStatus.OFFLINE) continue;
     if (!includeSocketId && presence.activity) {
       delete presence.activity.socketId;
     }
@@ -59,7 +60,7 @@ export async function updateCachePresence(
   presence: Partial<Presence> & {
     userId: string;
   }
-): Promise<boolean> {
+): Promise<boolean | Presence> {
   const key = USER_PRESENCE_KEY_STRING(userId);
   const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
 
@@ -67,19 +68,16 @@ export async function updateCachePresence(
 
   if (connectedCount === 0) return false;
 
-  if (presence.status === UserStatus.OFFLINE) {
-    await redisClient.del(key);
-    return true;
-  }
+  const currentStatus = await getUserPresences([userId], true, false);
 
-  const currentStatus = await getUserPresences([userId], true);
-  if (!currentStatus?.[0] && !presence.status) return false;
+  const isOffline = !currentStatus?.[0]?.status && !presence.status;
 
   if (presence.custom === null) presence.custom = undefined;
   if (presence.activity === null) presence.activity = undefined;
 
   await redisClient.set(key, JSON.stringify({ ...currentStatus[0], ...presence }));
-  return true;
+
+  return !isOffline;
 }
 
 // returns true if the first user is connected.
@@ -93,9 +91,10 @@ export async function addSocketUser(userId: string, socketId: string, presence: 
   const multi = redisClient.multi();
   multi.sAdd(socketIdsKey, socketId);
   multi.set(userIdKey, userId);
-  if (!count && presence.status !== UserStatus.OFFLINE) {
+  if (!count) {
     multi.set(presenceKey, JSON.stringify(presence));
   }
+
   await multi.exec();
 
   return count === 0;

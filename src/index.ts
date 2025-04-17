@@ -34,6 +34,10 @@ if (cluster.isPrimary) {
     redisClient,
   });
 
+  // await redisClient.hSet('testKey', { test1: 'lol', test2: 'lol2' });
+
+  // console.log(await redisClient.hGetAll('testKey'));
+
   createIO();
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');

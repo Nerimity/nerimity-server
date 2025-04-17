@@ -2,7 +2,7 @@ import { CustomError, generateError } from '../../common/errorHandler';
 import { CustomResult } from '../../common/CustomResult';
 import { emitInboxClosed, emitInboxOpened, emitUserPresenceUpdate, emitUserNotificationSettingsUpdate } from '../../emits/User';
 import { ChannelType } from '../../types/Channel';
-import { Presence, removeUserCacheByUserIds, updateCachePresence } from '../../cache/UserCache';
+import { getUserPresences, Presence, removeUserCacheByUserIds, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
 import { dateToDateTime, excludeFields, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
@@ -251,12 +251,13 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
 
   let emitPayload: (PresencePayload & { userId: string }) | undefined;
 
+  const currentPresence = await getUserPresences([user.id], false, false).then((result) => result[0]!);
+
   if (!user.status && presence.status) {
     // emit everything when going from offline to online
     emitPayload = {
-      custom: newUser.customStatus || undefined,
-      status: newUser.status,
-      userId: user.id,
+      ...currentPresence,
+      ...presence,
     };
   } else {
     emitPayload = { ...presence, userId: user.id };
