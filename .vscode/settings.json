@@ -27,5 +27,13 @@
     "source.fixAll.eslint": "explicit"
   },
   "rpc.enabled": true,
-  "cSpell.words": ["filesize", "ITTER", "NERIMITY", "repost", "Reposted", "reposts", "tsup", "unfollow"]
+  "cSpell.words": ["filesize", "ITTER", "NERIMITY", "repost", "Reposted", "reposts", "tsup", "unfollow"],
+
+  // ArkType
+  // allow autocomplete for ArkType expressions like "string | num"
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  // prioritize ArkType's "type" for autoimports
+  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^(node:)?os$"]
 }

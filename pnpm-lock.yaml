@@ -26,6 +26,9 @@ importers:
       '@socket.io/redis-streams-adapter':
         specifier: ^0.2.2
         version: 0.2.2(socket.io-adapter@2.5.5(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+      arktype:
+        specifier: ^2.1.20
+        version: 2.1.20
       bcrypt:
         specifier: ^5.1.1
         version: 5.1.1
@@ -80,13 +83,6 @@ importers:
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1(bufferutil@4.0.9)(utf-8-validate@6.0.5)
-    optionalDependencies:
-      bufferutil:
-        specifier: ^4.0.9
-        version: 4.0.9
-      utf-8-validate:
-        specifier: ^6.0.5
-        version: 6.0.5
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.0
@@ -154,8 +150,21 @@ importers:
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
+    optionalDependencies:
+      bufferutil:
+        specifier: ^4.0.9
+        version: 4.0.9
+      utf-8-validate:
+        specifier: ^6.0.5
+        version: 6.0.5
 
 packages:
+
+  '@ark/schema@0.46.0':
+    resolution: {integrity: sha512-c2UQdKgP2eqqDArfBqQIJppxJHvNNXuQPeuSPlDML4rjw+f1cu0qAlzOG4b8ujgm9ctIDWwhpyw6gjG5ledIVQ==}
+
+  '@ark/util@0.46.0':
+    resolution: {integrity: sha512-JPy/NGWn/lvf1WmGCPw2VGpBg5utZraE84I7wli18EDF3p3zc/e9WolT35tINeZO3l7C77SjqRJeAUoT0CvMRg==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -905,6 +914,9 @@ packages:
 
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+
+  arktype@2.1.20:
+    resolution: {integrity: sha512-IZCEEXaJ8g+Ijd59WtSYwtjnqXiwM8sWQ5EjGamcto7+HVN9eK0C4p0zDlCuAwWhpqr6fIBkxPuYDl4/Mcj/+Q==}
 
   array-flatten@1.1.1:
     resolution: {integrity: sha512-PCVAQswWemu6UdxsDFFX/+gVeYqKAod3D3UVm91jHwynguOwAvYPhx8nNlM++NqRcK6CxxpUafjmhIdKiHibqg==}
@@ -2491,6 +2503,12 @@ packages:
 
 snapshots:
 
+  '@ark/schema@0.46.0':
+    dependencies:
+      '@ark/util': 0.46.0
+
+  '@ark/util@0.46.0': {}
+
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
@@ -3224,6 +3242,11 @@ snapshots:
   arg@4.1.3: {}
 
   argparse@2.0.1: {}
+
+  arktype@2.1.20:
+    dependencies:
+      '@ark/schema': 0.46.0
+      '@ark/util': 0.46.0
 
   array-flatten@1.1.1: {}
 
