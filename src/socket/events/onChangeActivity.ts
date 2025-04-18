@@ -35,10 +35,6 @@ export async function onChangeActivity(socket: Socket, payload: Activity | null)
     return;
   }
 
-  const activity = {
-    ...(out?.speed && out.speed > -100 ? { speed: out.speed } : {}),
-  } as Partial<ActivityStatus> | null;
-
   if (out.action) {
     out.action = truncate(out.action, 20, false);
   }
@@ -67,15 +63,15 @@ export async function onChangeActivity(socket: Socket, payload: Activity | null)
     out.emoji = undefined;
   }
 
-  if (out.speed && out.speed > 100) {
-    out.speed = undefined;
-  }
-
   if (out.speed && out.speed < -100) {
     out.speed = undefined;
   }
 
-  updateAndEmitActivity(userId, { ...activity, socketId: socket.id });
+  if (out.speed && out.speed > 100) {
+    out.speed = undefined;
+  }
+
+  updateAndEmitActivity(userId, { ...out, socketId: socket.id });
 }
 
 async function updateAndEmitActivity(userId: string, activity: any) {
