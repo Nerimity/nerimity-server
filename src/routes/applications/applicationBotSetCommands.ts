@@ -16,7 +16,7 @@ export function applicationBotSetCommands(Router: Router) {
       })
       .withMessage('Commands length must be less than  100 strings.'),
 
-    body('commands.*.name').isString().withMessage('Command name must be a string!').notEmpty().withMessage('Command name is required!').isLength({ min: 1, max: 15 }).withMessage('Command name length must be between 1 and 15 characters.').isAlpha().withMessage('Command name must only contain letters.'),
+    body('commands.*.name').isString().withMessage('Command name must be a string!').notEmpty().withMessage('Command name is required!').isLength({ min: 1, max: 25 }).withMessage('Command name length must be between 1 and 25 characters.').isAlpha().withMessage('Command name must only contain letters.'),
 
     body('commands.*.description').isString().withMessage('Command description must be a string!').isLength({ min: 0, max: 60 }).withMessage('Command description length must be less than or equal to 60 characters').optional(true),
 
