@@ -46,6 +46,10 @@ async function route(req: Request, res: Response) {
     return res.status(403).json('Name is required!');
   }
 
+  if (!req.userCache.application && !req.userCache.account?.emailConfirmed) {
+    return res.status(400).json(generateError('You must confirm your email to react to messages.'));
+  }
+
   const [response, err] = await addMessageReaction({
     serverId: req.serverCache?.id,
     channel: req.channelCache,
