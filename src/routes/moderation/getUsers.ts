@@ -37,9 +37,9 @@ async function route(req: Request, res: Response) {
       // [orderBy]: order,
       joinedAt: 'desc',
     },
-    where: {
-      OR: validFilters.map((filter) => ({ [filter]: true })),
-    },
+    // where: {
+    //   OR: validFilters.map((filter) => ({ [filter]: true })),
+    // },
     ...(after ? { skip: 1 } : undefined),
     take: limit,
     ...(after ? { cursor: { id: after } } : undefined),
