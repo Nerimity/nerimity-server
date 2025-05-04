@@ -39,7 +39,7 @@ async function route(req: Request, res: Response) {
     where: {
       ...(validFilters.length
         ? {
-            OR: validFilters.map((filter) => ({ [filter]: true })),
+            OR: validFilters.map((filter) => ({ NOT: { [filter]: null } })),
           }
         : undefined),
     },
