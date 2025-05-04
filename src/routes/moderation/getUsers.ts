@@ -34,7 +34,8 @@ async function route(req: Request, res: Response) {
 
   let users = await prisma.user.findMany({
     orderBy: {
-      [orderBy]: order,
+      // [orderBy]: order,
+      joinedAt: 'desc',
     },
     where: {
       OR: validFilters.map((filter) => ({ [filter]: true })),
