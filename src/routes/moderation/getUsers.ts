@@ -28,7 +28,7 @@ async function route(req: Request, res: Response) {
     orderBy = req.query.orderBy as (typeof ValidOrderBy)[number];
   }
 
-  const filters: string[] = queryAsArray(req.query.filtersOn);
+  const filters: string[] = queryAsArray(req.query.filters);
 
   const validFilters = filters.filter((filter) => ValidFilters.includes(filter as any)) as (typeof ValidFilters)[number][];
 
@@ -37,9 +37,11 @@ async function route(req: Request, res: Response) {
       [orderBy]: order,
     },
     where: {
-      ...(validFilters.length ? {
-        OR: validFilters.map((filter) => ({ [filter]: true })),
-      } : undefined)
+      ...(validFilters.length
+        ? {
+            OR: validFilters.map((filter) => ({ [filter]: true })),
+          }
+        : undefined),
     },
     ...(after ? { skip: 1 } : undefined),
     take: limit,
