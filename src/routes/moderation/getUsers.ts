@@ -16,10 +16,7 @@ const ValidFilters = ['shadowBan', 'bot', 'suspension'] as const;
 const customFilters = {
   suspension: {
     suspension: {
-      AND: {
-        isNot: null,
-        OR: [{ userDeleted: null }, { userDeleted: false }],
-      },
+      OR: [{ userDeleted: null }, { userDeleted: false }],
     },
   } as Prisma.UserWhereInput,
   bot: null,
