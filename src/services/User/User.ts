@@ -166,54 +166,57 @@ export const openDMChannel = async (userId: string, friendId: string) => {
     }
   }
 
-  const newChannel = inbox
-    ? { id: inbox?.channelId }
-    : await prisma.channel.create({
+  const newInbox = await prisma
+    .$transaction(async (tx) => {
+      const newChannel = inbox
+        ? { id: inbox?.channelId }
+        : await tx.channel.create({
+            data: {
+              id: generateId(),
+              type: ChannelType.DM_TEXT,
+              createdById: userId,
+            },
+          });
+
+      const newInbox = await tx.inbox.create({
         data: {
           id: generateId(),
-          type: ChannelType.DM_TEXT,
+          channelId: newChannel.id,
           createdById: userId,
+          recipientId: friendId,
+          closed: false,
+        },
+        include: {
+          channel: { include: { _count: { select: { attachments: true } } } },
+          recipient: { select: publicUserExcludeFields },
         },
       });
 
-  const newInbox = await prisma.inbox
-    .create({
-      data: {
-        id: generateId(),
-        channelId: newChannel.id,
-        createdById: userId,
-        recipientId: friendId,
-        closed: false,
-      },
-      include: {
-        channel: { include: { _count: { select: { attachments: true } } } },
-        recipient: { select: publicUserExcludeFields },
-      },
-    })
+      const recipientInbox = await tx.inbox.findFirst({
+        where: {
+          createdById: friendId,
+          recipientId: userId,
+        },
+      });
+      if (!recipientInbox) {
+        // also create a closed inbox for recipient
+        await tx.inbox.create({
+          data: {
+            id: generateId(),
+            channelId: newChannel.id,
+            createdById: friendId,
+            recipientId: userId,
+            closed: true,
+          },
+        });
+      }
 
-    .catch(() => {});
+      return newInbox;
+    })
+    .catch(() => null);
 
   if (!newInbox) {
     return [null, generateError('Something went wrong.')] as const;
-  }
-
-  const recipientInbox = await prisma.inbox.findFirst({
-    where: {
-      createdById: friendId,
-      recipientId: userId,
-    },
-  });
-  if (!recipientInbox) {
-    // also create a closed inbox for recipient
-    await prisma.inbox.create({
-      data: {
-        id: generateId(),
-        channelId: newChannel.id,
-        createdById: friendId,
-        recipientId: userId,
-        closed: true,
-      },
-    });
   }
 
   emitInboxOpened(userId, newInbox);
