@@ -4,6 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 import { queryAsArray } from '../../common/queryAsArray';
+import { Prisma } from '@prisma/client';
 
 export function getUsers(Router: Router) {
   Router.get('/moderation/users', authenticate(), isModMiddleware, route);
@@ -11,6 +12,19 @@ export function getUsers(Router: Router) {
 
 const ValidOrderBy = ['joinedAt', 'username'] as const;
 const ValidFilters = ['shadowBan', 'bot', 'suspension'] as const;
+
+const customFilters = {
+  suspension: {
+    suspension: {
+      AND: {
+        isNot: null,
+        OR: [{ userDeleted: null }, { userDeleted: false }],
+      },
+    },
+  } as Prisma.UserWhereInput,
+  bot: null,
+  shadowBan: null,
+} as const;
 
 async function route(req: Request, res: Response) {
   const after = req.query.after as string | undefined;
@@ -39,7 +53,7 @@ async function route(req: Request, res: Response) {
     where: {
       ...(validFilters.length
         ? {
-            OR: validFilters.map((filter) => ({ NOT: { [filter]: null } })),
+            OR: validFilters.map((filter) => customFilters[filter] || { NOT: { [filter]: null } }),
           }
         : undefined),
     },

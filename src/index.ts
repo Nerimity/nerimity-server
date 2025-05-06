@@ -6,6 +6,7 @@ import { deleteChannelAttachmentBatch, deleteImageBatch } from './common/nerimit
 import env from './common/env';
 import { connectRedis, customRedisFlush, redisClient } from './common/redis';
 import { getAndRemovePostViewsCache } from './cache/PostViewsCache';
+import timers from 'timers/promises';
 
 import cluster from 'node:cluster';
 import { createIO } from './socket/socket';
@@ -56,6 +57,7 @@ if (cluster.isPrimary) {
       scheduleSuspendedAccountDeletion();
       scheduleServerDeletion();
       removeExpiredBannedIpsSchedule();
+      removeExpiredSuspensions();
     }
   });
 
@@ -251,6 +253,23 @@ async function removeIPAddressSchedule() {
   });
 }
 
+async function removeExpiredSuspensions() {
+  await prisma.suspension
+    .deleteMany({
+      limit: 100,
+      where: {
+        expireAt: {
+          not: null,
+          lte: new Date(Date.now()),
+        },
+      },
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+  await timers.setTimeout(60000); // 1 minute
+  removeExpiredSuspensions();
+}
 async function removeExpiredBannedIps() {
   await prisma.bannedIp.deleteMany({
     where: {
@@ -260,6 +279,7 @@ async function removeExpiredBannedIps() {
     },
   });
 }
+
 async function removeExpiredBannedIpsSchedule() {
   await removeExpiredBannedIps();
   // Schedule the task to run everyday at 0:00 UTC
