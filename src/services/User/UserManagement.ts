@@ -14,6 +14,8 @@ import { deleteApplication } from '../Application';
 import { createHash } from 'crypto';
 import { generateId } from '../../common/flakeId';
 import { ShadowBan } from '@prisma/client';
+import { encrypt } from '../../common/encryption';
+encrypt;
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
 
@@ -420,6 +422,7 @@ export const getExternalEmbed = async (opts: { id: string }) => {
           verified: true,
           serverMembers: {
             select: {
+              nickname: true,
               user: {
                 select: {
                   id: true,
@@ -451,10 +454,16 @@ export const getExternalEmbed = async (opts: { id: string }) => {
       },
       onlineUsers: externalEmbed.server.serverMembers
         .filter((member) => presence.find((presence) => presence.userId === member.user.id))
-        .map((m) => {
+        .slice(0, 20)
+        .map((m, i) => {
           const p = presence.find((presence) => presence.userId === m.user.id)!;
           return {
-            ...m.user,
+            ...{
+              avatar: m.user.avatar ? encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET) : null,
+              banner: m.user.banner ? encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET) : null,
+              username: m.nickname || m.user.username,
+              id: i,
+            },
             presence: {
               custom: p.custom,
               status: p.status,
@@ -468,8 +477,7 @@ export const getExternalEmbed = async (opts: { id: string }) => {
                 : null,
             },
           };
-        })
-        .slice(0, 20),
+        }),
     };
     return [data, null] as const;
   }
