@@ -42,8 +42,15 @@ import { serverAuditLogsGet } from './serverAuditlogsGet';
 import { serverChannelPermissionUpdate } from './serverChannelPermissionsUpdate';
 import { serverTransferOwnership } from './serverTransferOwnership';
 import { serverBotCommandsGet } from './serverBotCommandsGet';
+import { serverExternalEmbedGet } from './serverExternalEmbedGet';
+import { serverExternalEmbedCreate } from './serverExternalEmbedCreate';
+import { serverExternalEmbedDelete } from './serverExternalEmbedDelete';
 
 const ServersRouter = Router();
+
+serverExternalEmbedGet(ServersRouter);
+serverExternalEmbedCreate(ServersRouter);
+serverExternalEmbedDelete(ServersRouter);
 
 serverBotCommandsGet(ServersRouter);
 

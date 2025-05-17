@@ -162,6 +162,7 @@ model User {
 
   botCommands BotCommand[]
 
+  externalEmbed ExternalEmbed?
 
   @@unique([username, tag])
 }
@@ -350,6 +351,9 @@ model Server {
   scheduledForDeletion ScheduleServerDelete?
 
 
+  externalEmbed ExternalEmbed?
+
+
 }
 
 // Personal settings for joined servers
@@ -484,7 +488,7 @@ model AnsweredServerWelcomeQuestion {
 
 model ServerInvite {
   id          String   @id
-  code        String
+  code        String   @unique
   isCustom    Boolean
   uses        Int      @default(0)
   serverId    String
@@ -492,6 +496,8 @@ model ServerInvite {
   createdAt   DateTime @default(now())
   createdBy   User     @relation(fields: [createdById], references: [id])
   server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  externalEmbed ExternalEmbed?
 }
 
 model ServerMember {
@@ -1032,4 +1038,19 @@ model Reminder {
   channelId String?
   channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
 
+}
+
+model ExternalEmbed {
+  id          String   @id
+
+  type        Int
+
+  serverId String? @unique
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  serverInviteCode String? @unique
+  serverInvite ServerInvite? @relation(fields: [serverInviteCode], references: [code], onDelete: SetNull)
+
+  userId String? @unique
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -330,3 +330,99 @@ export const resetPassword = async (opts: { userId: string; code: string; newPas
 
   return [newToken, null] as const;
 };
+
+export const ExternalEmbedType = {
+  SERVER: 0,
+  USER: 1,
+} as const;
+
+interface CreateExternalEmbedProps {
+  type: (typeof ExternalEmbedType)[keyof typeof ExternalEmbedType];
+  serverId?: string;
+  serverInviteId?: string;
+  userId?: string;
+}
+
+export const createExternalEmbed = async (opts: CreateExternalEmbedProps) => {
+  if (opts.serverId && opts.userId) {
+    return [null, generateError('Only one of serverId or userId can be provided.')] as const;
+  }
+
+  if (opts.type === ExternalEmbedType.SERVER) {
+    if (!opts.serverId) {
+      return [null, generateError('serverId is required.')] as const;
+    }
+    if (!opts.serverInviteId) {
+      return [null, generateError('serverInviteId is required.')] as const;
+    }
+    const invite = await prisma.serverInvite.findUnique({
+      where: { code: opts.serverInviteId, serverId: opts.serverId },
+    });
+    if (!invite) {
+      return [null, generateError('Invalid invite code.')] as const;
+    }
+  }
+  if (opts.type === ExternalEmbedType.USER && !opts.userId) {
+    return [null, generateError('UserId is required.')] as const;
+  }
+
+  const externalEmbed = await prisma.externalEmbed.create({
+    data: {
+      id: generateId(),
+      type: opts.type,
+      serverId: opts.serverId!,
+      serverInviteCode: opts.serverInviteId,
+      userId: opts.userId,
+    },
+  });
+
+  return [externalEmbed, null] as const;
+};
+
+export const deleteExternalEmbed = async (opts: { userId?: string; serverId?: string }) => {
+  const externalEmbed = await prisma.externalEmbed.delete({
+    where: {
+      serverId: opts.serverId,
+      userId: opts.userId,
+    },
+  });
+  if (!externalEmbed) {
+    return [null, generateError('Embed not found.')] as const;
+  }
+
+  return [true, null] as const;
+};
+
+export const getExternalEmbed = async (opts: { id: string }) => {
+  const externalEmbed = await prisma.externalEmbed.findUnique({
+    where: {
+      id: opts.id,
+    },
+    select: {
+      id: true,
+      type: true,
+      userId: true,
+      server: {
+        select: {
+          avatar: true,
+          hexColor: true,
+          banner: true,
+          verified: true,
+          channels: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              icon: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!externalEmbed) {
+    return [null, generateError('Embed not found.')] as const;
+  }
+
+  return [externalEmbed, null] as const;
+};

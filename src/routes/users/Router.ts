@@ -25,8 +25,15 @@ import { userPasswordResetCodeSent } from './userPasswordResetCodeSend';
 import { userPasswordReset } from './userPasswordReset';
 import { userToggleBadge } from './userToggleBadge';
 import { userSearch } from './userSearch';
+import { userExternalEmbedCreate } from './userExternalEmbedCreate';
+import { userExternalEmbedDelete } from './userExternalEmbedDelete';
+import { userExternalEmbedGet } from './userExternalEmbedGet';
 
 const UsersRouter = Router();
+
+userExternalEmbedCreate(UsersRouter);
+userExternalEmbedDelete(UsersRouter);
+userExternalEmbedGet(UsersRouter);
 
 userDismissNotice(UsersRouter);
 
