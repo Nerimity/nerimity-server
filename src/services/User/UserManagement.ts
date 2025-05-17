@@ -449,18 +449,20 @@ export const getExternalEmbed = async (opts: { id: string }) => {
         ...externalEmbed.server,
         serverMembers: null,
       },
-      presences: presence.map((p) => ({
-        custom: p.custom,
-        status: p.status,
-        activity: p.activity
-          ? {
-              name: p.activity.name,
-              title: p.activity.title,
-              action: p.activity.action,
-              imgSrc: p.activity.imgSrc,
-            }
-          : null,
-      })),
+      presences: presence
+        .map((p) => ({
+          custom: p.custom,
+          status: p.status,
+          activity: p.activity
+            ? {
+                name: p.activity.name,
+                title: p.activity.title,
+                action: p.activity.action,
+                imgSrc: p.activity.imgSrc,
+              }
+            : null,
+        }))
+        .slice(0, 20),
     };
     return [data, presence] as const;
   }
