@@ -2,7 +2,7 @@ import { dateToDateTime, prisma } from '../../common/database';
 import { generateError } from '../../common/errorHandler';
 import { sendConfirmCodeMail, sendResetPasswordMail } from '../../common/mailer';
 import { generateEmailConfirmCode, generateSecureCode, generateTag } from '../../common/random';
-import { removeUserCacheByUserIds } from '../../cache/UserCache';
+import { getUserPresences, removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 import bcrypt from 'bcrypt';
@@ -418,20 +418,51 @@ export const getExternalEmbed = async (opts: { id: string }) => {
           hexColor: true,
           banner: true,
           verified: true,
-          channels: {
+          serverMembers: {
             select: {
-              id: true,
-              name: true,
-              type: true,
-              icon: true,
+              user: {
+                select: {
+                  id: true,
+                  hexColor: true,
+                  username: true,
+                  avatar: true,
+                  banner: true,
+                },
+              },
             },
           },
         },
       },
     },
   });
+
   if (!externalEmbed) {
     return [null, generateError('Embed not found.')] as const;
+  }
+
+  if (externalEmbed.server) {
+    const presence = await getUserPresences(externalEmbed.server.serverMembers.map((member) => member.user.id));
+    const data = {
+      ...externalEmbed,
+      onlineMembersCount: presence.length,
+      server: {
+        ...externalEmbed.server,
+        serverMembers: null,
+      },
+      presences: presence.map((p) => ({
+        custom: p.custom,
+        status: p.status,
+        activity: p.activity
+          ? {
+              name: p.activity.name,
+              title: p.activity.title,
+              action: p.activity.action,
+              imgSrc: p.activity.imgSrc,
+            }
+          : null,
+      })),
+    };
+    return [data, presence] as const;
   }
 
   return [externalEmbed, null] as const;

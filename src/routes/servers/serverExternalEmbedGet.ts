@@ -5,7 +5,7 @@ import { generateError } from '../../common/errorHandler';
 
 export function serverExternalEmbedGet(Router: Router) {
   Router.get(
-    '/servers/external-embed/:id',
+    '/servers/external-embed/:id.json',
     rateLimit({
       name: 'external_embed_get',
       restrictMS: 60000,
