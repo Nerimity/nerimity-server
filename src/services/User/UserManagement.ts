@@ -464,7 +464,7 @@ export const getExternalEmbed = async (opts: { id: string }) => {
         }))
         .slice(0, 20),
     };
-    return [data, presence] as const;
+    return [data, null] as const;
   }
 
   return [externalEmbed, null] as const;
