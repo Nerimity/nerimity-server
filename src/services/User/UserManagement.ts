@@ -15,7 +15,7 @@ import { createHash } from 'crypto';
 import { generateId } from '../../common/flakeId';
 import { ShadowBan } from '@prisma/client';
 import { encrypt } from '../../common/encryption';
-encrypt;
+
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
 
@@ -404,14 +404,14 @@ export const deleteExternalEmbed = async (opts: { userId?: string; serverId?: st
   return [true, null] as const;
 };
 
-export const getExternalEmbed = async (opts: { id: string }) => {
+export const getExternalEmbed = async (opts: { serverId?: string, userId?: string}) => {
   const externalEmbed = await prisma.externalEmbed.findUnique({
     where: {
-      id: opts.id,
+      serverId: opts.serverId,
+      userId: opts.userId
     },
     select: {
       id: true,
-      type: true,
       userId: true,
       serverInviteCode: true,
       server: {

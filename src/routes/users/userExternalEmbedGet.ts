@@ -5,7 +5,7 @@ import { generateError } from '../../common/errorHandler';
 
 export function userExternalEmbedGet(Router: Router) {
   Router.get(
-    '/users/external-embed/:id.json',
+    '/users/:userId/external-embed.json',
     rateLimit({
       name: 'external_embed_get',
       restrictMS: 60000,
@@ -16,10 +16,10 @@ export function userExternalEmbedGet(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const id = req.params.id as string;
+  const id = req.params.userId;
 
   const [result, error] = await getExternalEmbed({
-    id,
+    userId: id 
   }).catch((err) => {
     console.error(err);
     return [null, generateError('Something went wrong. Try again later.')] as const;
