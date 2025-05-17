@@ -355,7 +355,7 @@ export const createExternalEmbed = async (opts: CreateExternalEmbedProps) => {
     if (!opts.serverInviteId) {
       return [null, generateError('serverInviteId is required.')] as const;
     }
-    const invite = await prisma.serverInvite.findUnique({
+    const invite = await prisma.serverInvite.findFirst({
       where: { code: opts.serverInviteId, serverId: opts.serverId },
     });
     if (!invite) {
@@ -402,6 +402,7 @@ export const getExternalEmbed = async (opts: { id: string }) => {
       id: true,
       type: true,
       userId: true,
+      serverInviteCode: true,
       server: {
         select: {
           avatar: true,
