@@ -29,9 +29,5 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(error);
   }
 
-  if (result.type !== ExternalEmbedType.USER) {
-    return res.status(400).json(generateError('Invalid external embed!'));
-  }
-
   res.json(result);
 }
