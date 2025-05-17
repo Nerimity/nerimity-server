@@ -366,6 +366,15 @@ export const createExternalEmbed = async (opts: CreateExternalEmbedProps) => {
     return [null, generateError('UserId is required.')] as const;
   }
 
+  const existingEmbed = await prisma.externalEmbed.findFirst({
+    where: {
+      OR: [{ serverId: opts.serverId }, { userId: opts.userId }],
+    },
+  });
+  if (existingEmbed) {
+    return [null, generateError('Embed already exists.')] as const;
+  }
+
   const externalEmbed = await prisma.externalEmbed.create({
     data: {
       id: generateId(),
