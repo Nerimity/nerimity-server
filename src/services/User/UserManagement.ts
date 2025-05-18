@@ -465,7 +465,7 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
             ...{
               avatar: m.user.avatar ? encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET) + avatarEtxName : null,
               banner: m.user.banner ? encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET) + bannerExtName : null,
-              hexColor: m.user.avatar,
+              hexColor: m.user.hexColor,
               username: m.nickname || m.user.username,
               id: i,
             },
