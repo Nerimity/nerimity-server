@@ -420,6 +420,7 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
           avatar: true,
           hexColor: true,
           banner: true,
+          name: true,
           verified: true,
           serverMembers: {
             orderBy: [{ nickname: 'asc' }, { user: { username: 'asc' } }],
