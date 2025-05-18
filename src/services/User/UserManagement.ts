@@ -15,6 +15,7 @@ import { createHash } from 'crypto';
 import { generateId } from '../../common/flakeId';
 import { ShadowBan } from '@prisma/client';
 import { encrypt } from '../../common/encryption';
+import path from 'path';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -404,11 +405,11 @@ export const deleteExternalEmbed = async (opts: { userId?: string; serverId?: st
   return [true, null] as const;
 };
 
-export const getExternalEmbed = async (opts: { serverId?: string, userId?: string}) => {
+export const getExternalEmbed = async (opts: { serverId?: string; userId?: string }) => {
   const externalEmbed = await prisma.externalEmbed.findUnique({
     where: {
       serverId: opts.serverId,
-      userId: opts.userId
+      userId: opts.userId,
     },
     select: {
       id: true,
@@ -421,10 +422,7 @@ export const getExternalEmbed = async (opts: { serverId?: string, userId?: strin
           banner: true,
           verified: true,
           serverMembers: {
-            orderBy: [
-              {nickname: "asc"},
-              {user: {username: "asc"}}
-            ],
+            orderBy: [{ nickname: 'asc' }, { user: { username: 'asc' } }],
             select: {
               nickname: true,
               user: {
@@ -461,10 +459,12 @@ export const getExternalEmbed = async (opts: { serverId?: string, userId?: strin
         .slice(0, 20)
         .map((m, i) => {
           const p = presence.find((presence) => presence.userId === m.user.id)!;
+          const bannerExtName = m.user.banner ? path.extname(m.user.banner) : undefined;
+          const avatarEtxName = m.user.avatar ? path.extname(m.user.avatar) : undefined;
           return {
             ...{
-              avatar: m.user.avatar ? encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET) : null,
-              banner: m.user.banner ? encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET) : null,
+              avatar: m.user.avatar ? encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET) + avatarEtxName : null,
+              banner: m.user.banner ? encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET) + bannerExtName : null,
               username: m.nickname || m.user.username,
               id: i,
             },
