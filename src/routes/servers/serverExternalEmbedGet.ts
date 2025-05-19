@@ -14,12 +14,13 @@ export function serverExternalEmbedGet(Router: Router) {
     route
   );
 }
+const thirtyMinutesInSeconds = 30 * 60;
 
 async function route(req: Request, res: Response) {
   const id = req.params.serverId;
 
   const [result, error] = await getExternalEmbed({
-    serverId: id
+    serverId: id,
   }).catch((err) => {
     console.error(err);
     return [null, generateError('Something went wrong. Try again later.')] as const;
@@ -28,5 +29,7 @@ async function route(req: Request, res: Response) {
   if (error) {
     return res.status(400).json(error);
   }
+
+  res.setHeader('Cache-Control', `public, max-age=${thirtyMinutesInSeconds}`);
   res.json(result);
 }
