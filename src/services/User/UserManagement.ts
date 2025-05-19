@@ -481,8 +481,10 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
           const avatarEtxName = m.user.avatar ? path.extname(m.user.avatar) : undefined;
           return {
             ...{
-              avatar: m.user.avatar ? encodeURIComponent(encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET)) + '/avatar' + avatarEtxName : null,
-              banner: m.user.banner ? encodeURIComponent(encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET)) + '/banner' + bannerExtName : null,
+              // avatar: m.user.avatar ? encodeURIComponent(encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET)) + '/avatar' + avatarEtxName : null,
+              // banner: m.user.banner ? encodeURIComponent(encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET)) + '/banner' + bannerExtName : null,
+              avatar: m.user.avatar,
+              banner: m.user.banner,
               hexColor: m.user.hexColor,
               username: m.nickname || m.user.username,
               id: i,
