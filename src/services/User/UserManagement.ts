@@ -456,8 +456,25 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
         serverMembers: null,
       },
       onlineUsers: externalEmbed.server.serverMembers
-        .filter((member) => presence.find((presence) => presence.userId === member.user.id))
-        .slice(0, 20)
+        .sort((a, b) => {
+          const presenceA = presence.find((presence) => presence.userId === a.user.id)!;
+          const presenceB = presence.find((presence) => presence.userId === b.user.id)!;
+
+          if (presenceA && presenceB) {
+            return 0;
+          }
+
+          if (presenceA) {
+            return -1;
+          }
+
+          if (presenceB) {
+            return 1;
+          }
+
+          return 0;
+        })
+        .slice(0, 50)
         .map((m, i) => {
           const p = presence.find((presence) => presence.userId === m.user.id)!;
           const bannerExtName = m.user.banner ? path.extname(m.user.banner) : undefined;
