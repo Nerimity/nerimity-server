@@ -446,6 +446,7 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
                   hexColor: true,
                   username: true,
                   avatar: true,
+                  bot: true,
                   banner: true,
                 },
               },
@@ -470,6 +471,7 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
         serverMembers: null,
       },
       users: externalEmbed.server.serverMembers
+        .filter((member) => !member.user.bot)
         .sort((a, b) => {
           const presenceA = presence.find((presence) => presence.userId === a.user.id)!;
           const presenceB = presence.find((presence) => presence.userId === b.user.id)!;
