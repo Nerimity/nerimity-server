@@ -6,6 +6,8 @@ const KEY_LENGTH = 32; // Key length in bytes (256 bits for AES-256)
 const IV_LENGTH = 16; // Initialization Vector length in bytes (128 bits for AES)
 const TAG_LENGTH = 16; // Authentication Tag length in bytes (for GCM)
 
+const FIXED_IV = Buffer.from('ThisIsAFixedIV16', 'utf8'); // A fixed 16-byte Buffer
+
 /**
  * Converts a string key to a Buffer of the required KEY_LENGTH.
  *
@@ -50,7 +52,7 @@ export function encrypt(plaintext: string, keyString: string): string {
   const key = stringKeyToBuffer(keyString);
 
   // Generate a random Initialization Vector (IV)
-  const iv = crypto.randomBytes(IV_LENGTH);
+  const iv = FIXED_IV;
 
   // Create the cipher instance
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
