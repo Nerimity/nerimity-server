@@ -1,11 +1,11 @@
 import { Request, Response, Router } from 'express';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getExternalEmbed } from '../../services/User/UserManagement';
+import { getRawExternalEmbed } from '../../services/User/UserManagement';
 import { generateError } from '../../common/errorHandler';
 
-export function serverExternalEmbedGet(Router: Router) {
+export function serverExternalEmbedRawGet(Router: Router) {
   Router.get(
-    '/servers/:serverId/external-embed.json',
+    '/servers/:serverId/external-embed',
     rateLimit({
       name: 'external_embed_get',
       restrictMS: 60000,
@@ -14,12 +14,11 @@ export function serverExternalEmbedGet(Router: Router) {
     route
   );
 }
-const thirtyMinutesInSeconds = 30 * 60;
 
 async function route(req: Request, res: Response) {
   const id = req.params.serverId;
 
-  const [result, error] = await getExternalEmbed({
+  const [result, error] = await getRawExternalEmbed({
     serverId: id,
   }).catch((err) => {
     console.error(err);
@@ -30,8 +29,5 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(error);
   }
 
-  res.setHeader('Cache-Control', `public, max-age=${thirtyMinutesInSeconds}`);
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.write(JSON.stringify(result));
-  res.end();
+  res.json(result);
 }

@@ -28,12 +28,14 @@ import { userSearch } from './userSearch';
 import { userExternalEmbedCreate } from './userExternalEmbedCreate';
 import { userExternalEmbedDelete } from './userExternalEmbedDelete';
 import { userExternalEmbedGet } from './userExternalEmbedGet';
+import { userExternalEmbedRawGet } from './userExternalEmbedRawGet';
 
 const UsersRouter = Router();
 
 userExternalEmbedCreate(UsersRouter);
 userExternalEmbedDelete(UsersRouter);
 userExternalEmbedGet(UsersRouter);
+userExternalEmbedRawGet(UsersRouter);
 
 userDismissNotice(UsersRouter);
 

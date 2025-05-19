@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { rateLimit } from '../../middleware/rateLimit';
-import { ExternalEmbedType, getExternalEmbed } from '../../services/User/UserManagement';
+import { getExternalEmbed } from '../../services/User/UserManagement';
 import { generateError } from '../../common/errorHandler';
 
 export function userExternalEmbedGet(Router: Router) {
@@ -19,7 +19,7 @@ async function route(req: Request, res: Response) {
   const id = req.params.userId;
 
   const [result, error] = await getExternalEmbed({
-    userId: id 
+    userId: id,
   }).catch((err) => {
     console.error(err);
     return [null, generateError('Something went wrong. Try again later.')] as const;

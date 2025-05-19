@@ -405,6 +405,20 @@ export const deleteExternalEmbed = async (opts: { userId?: string; serverId?: st
   return [true, null] as const;
 };
 
+export const getRawExternalEmbed = async (opts: { serverId?: string; userId?: string }) => {
+  const externalEmbed = await prisma.externalEmbed.findUnique({
+    where: {
+      serverId: opts.serverId,
+      userId: opts.userId,
+    },
+  });
+  if (!externalEmbed) {
+    return [null, generateError('Embed not found.')] as const;
+  }
+
+  return [externalEmbed, null] as const;
+};
+
 export const getExternalEmbed = async (opts: { serverId?: string; userId?: string }) => {
   const externalEmbed = await prisma.externalEmbed.findUnique({
     where: {

@@ -45,10 +45,12 @@ import { serverBotCommandsGet } from './serverBotCommandsGet';
 import { serverExternalEmbedGet } from './serverExternalEmbedGet';
 import { serverExternalEmbedCreate } from './serverExternalEmbedCreate';
 import { serverExternalEmbedDelete } from './serverExternalEmbedDelete';
+import { serverExternalEmbedRawGet } from './serverExternalEmbedRawGet ';
 
 const ServersRouter = Router();
 
 serverExternalEmbedGet(ServersRouter);
+serverExternalEmbedRawGet(ServersRouter);
 serverExternalEmbedCreate(ServersRouter);
 serverExternalEmbedDelete(ServersRouter);
 
