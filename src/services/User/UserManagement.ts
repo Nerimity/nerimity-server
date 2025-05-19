@@ -455,7 +455,7 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
         ...externalEmbed.server,
         serverMembers: null,
       },
-      onlineUsers: externalEmbed.server.serverMembers
+      users: externalEmbed.server.serverMembers
         .sort((a, b) => {
           const presenceA = presence.find((presence) => presence.userId === a.user.id)!;
           const presenceB = presence.find((presence) => presence.userId === b.user.id)!;
