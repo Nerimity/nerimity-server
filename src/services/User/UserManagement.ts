@@ -477,12 +477,11 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
         .slice(0, 50)
         .map((m, i) => {
           const p = presence.find((presence) => presence.userId === m.user.id)!;
-          const bannerExtName = m.user.banner ? path.extname(m.user.banner) : undefined;
-          const avatarEtxName = m.user.avatar ? path.extname(m.user.avatar) : undefined;
+
           return {
             ...{
-              avatar2: m.user.avatar ? encodeURIComponent(encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET)) + avatarEtxName : null,
-              banner2: m.user.banner ? encodeURIComponent(encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET)) + bannerExtName : null,
+              avatar2: m.user.avatar ? encodeURIComponent(encrypt(m.user.avatar, env.EXTERNAL_EMBED_SECRET)) : null,
+              banner2: m.user.banner ? encodeURIComponent(encrypt(m.user.banner, env.EXTERNAL_EMBED_SECRET)) : null,
               avatar: m.user.avatar,
               banner: m.user.banner,
               hexColor: m.user.hexColor,
