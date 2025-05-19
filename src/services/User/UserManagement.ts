@@ -487,18 +487,20 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
               username: m.nickname || m.user.username,
               id: i,
             },
-            presence: {
-              custom: p.custom,
-              status: p.status,
-              activity: p.activity
-                ? {
-                    name: p.activity.name,
-                    title: p.activity.title,
-                    action: p.activity.action,
-                    imgSrc: p.activity.imgSrc,
-                  }
-                : null,
-            },
+            presence: !p
+              ? null
+              : {
+                  custom: p.custom,
+                  status: p.status,
+                  activity: p.activity
+                    ? {
+                        name: p.activity.name,
+                        title: p.activity.title,
+                        action: p.activity.action,
+                        imgSrc: p.activity.imgSrc,
+                      }
+                    : null,
+                },
           };
         }),
     };
