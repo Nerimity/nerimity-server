@@ -31,5 +31,7 @@ async function route(req: Request, res: Response) {
   }
 
   res.setHeader('Cache-Control', `public, max-age=${thirtyMinutesInSeconds}`);
-  res.json(result);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.write(JSON.stringify(result));
+  res.end();
 }
