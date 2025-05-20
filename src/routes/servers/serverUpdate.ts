@@ -45,6 +45,12 @@ async function route(req: Request, res: Response) {
 
   const { avatarId, bannerId, ...matchedBody }: Body = matchedData(req);
 
+  if (avatarId || bannerId) {
+    if (!req.userCache.account?.emailConfirmed) {
+      return res.status(400).json(generateError('You must confirm your email before choosing an avatar or banner.'));
+    }
+  }
+
   if (matchedBody.name) {
     const urlRegex = new RegExp('(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))');
     if (urlRegex.test(matchedBody.name)) {

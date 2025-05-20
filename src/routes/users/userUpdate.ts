@@ -33,12 +33,8 @@ export function userUpdate(Router: Router) {
     body('friendRequestStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
     body('lastOnlineStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
 
-    body('avatarId')
-      .isString().withMessage('avatarId must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('avatarId must be between 4 and 100 characters long.').optional({ nullable: true }),
-    body('bannerId')
-      .isString().withMessage('bannerId must be a string.')
-      .isLength({ min: 4, max: 100 }).withMessage('bannerId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('avatarId').isString().withMessage('avatarId must be a string.').isLength({ min: 4, max: 100 }).withMessage('avatarId must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('bannerId').isString().withMessage('bannerId must be a string.').isLength({ min: 4, max: 100 }).withMessage('bannerId must be between 4 and 100 characters long.').optional({ nullable: true }),
 
     body('hideFollowing').isBoolean().withMessage('hideFollowing must be a boolean.').optional({ nullable: true }),
     body('hideFollowers').isBoolean().withMessage('hideFollowers must be a boolean.').optional({ nullable: true }),
@@ -78,6 +74,11 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  if (body.avatarId || body.bannerId) {
+    if (!req.userCache.application && !req.userCache.account?.emailConfirmed) {
+      return res.status(400).json(generateError('You must confirm your email before choosing an avatar or banner.'));
+    }
+  }
   const profile = {
     ...(body.bio !== undefined ? { bio: body.bio } : {}),
     ...(body.bgColorOne !== undefined ? { bgColorOne: body.bgColorOne } : {}),
@@ -92,8 +93,8 @@ async function route(req: Request, res: Response) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: body.avatarId,
       type: 'AVATAR',
-      groupId: req.userCache.id
-    })
+      groupId: req.userCache.id,
+    });
 
     if (err) {
       return res.status(403).json(generateError(err));
@@ -106,8 +107,8 @@ async function route(req: Request, res: Response) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: body.bannerId,
       type: 'BANNER',
-      groupId: req.userCache.id
-    })
+      groupId: req.userCache.id,
+    });
 
     if (err) {
       return res.status(403).json(generateError(err));
@@ -124,8 +125,8 @@ async function route(req: Request, res: Response) {
       userId: req.userCache.id,
       ...(Object.keys(profile).length
         ? {
-          profile,
-        }
+            profile,
+          }
         : {}),
     });
 
@@ -153,8 +154,8 @@ async function route(req: Request, res: Response) {
     ...addToObjectIfExists('lastOnlineStatus', body.lastOnlineStatus),
     ...(Object.keys(profile).length
       ? {
-        profile,
-      }
+          profile,
+        }
       : {}),
   });
 
