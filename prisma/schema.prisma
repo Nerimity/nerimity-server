@@ -9,6 +9,8 @@ datasource db {
 }
 
 model Account {
+  @@map("accounts")
+  
   id              String  @id
   email           String  @unique
   password        String

@@ -66,7 +66,7 @@ export function removeRoleIdFromServerMembers(roleId: string) {
 export function removeServerIdFromAccountOrder(userId: string, serverId: string) {
   return prisma.$executeRaw(
     Prisma.sql`
-    UPDATE "Account"
+    UPDATE "accounts"
       SET "serverOrderIds"=(array_remove("serverOrderIds", ${serverId})) 
       WHERE ${serverId} = ANY("serverOrderIds") AND "userId" = ${userId};
       `
