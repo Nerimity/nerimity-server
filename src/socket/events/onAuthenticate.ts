@@ -35,23 +35,26 @@ export const authQueue = createQueue({
 export async function onAuthenticate(socket: Socket, payload: Payload) {
   const queueId = await authQueue.genId();
 
+  let queueEmitPositionIntervalId: NodeJS.Timeout | undefined;
+
   if (socket.connected) {
-    const setTimeout = setInterval(async () => {
+    queueEmitPositionIntervalId = setInterval(async () => {
       const pos = await authQueue.getQueuePosition(queueId);
       const actualPos = pos === null ? 0 : pos + 1;
       socket.emit(USER_AUTH_QUEUE_POSITION, { pos: actualPos });
       if (!actualPos) {
-        clearInterval(setTimeout);
+        clearInterval(queueEmitPositionIntervalId);
         return;
       }
       if (!socket.connected) {
-        clearInterval(setTimeout);
+        clearInterval(queueEmitPositionIntervalId);
       }
     }, 5000);
   }
 
   authQueue.add(
     async () => {
+      clearInterval(queueEmitPositionIntervalId);
       await handleAuthenticate(socket, payload).catch((err) => {
         console.error(err);
       });
