@@ -42,6 +42,7 @@ model Account {
 }
 
 model Application {
+  @@map("applications")
   id          String   @id
   name        String
   description String?
