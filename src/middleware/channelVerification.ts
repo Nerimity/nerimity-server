@@ -15,6 +15,8 @@ export function channelVerification(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const { channelId } = req.params;
 
+    const t1 = performance.now();
+
     if (!channelId) {
       return res.status(403).json(generateError('Channel ID is required.'));
     }
@@ -58,6 +60,7 @@ export function channelVerification(opts?: Options) {
         return res.status(403).json(generateError('You are not a member of this channel.'));
       }
     }
+    res.setHeader('chn-vfy-took', (performance.now() - t1).toFixed(2) + 'ms');
 
     req.channelCache = channel;
     channelPermissions({

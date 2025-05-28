@@ -25,6 +25,7 @@ if (env.DEV_MODE) {
 
 export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
+    const t1 = performance.now();
     if (env.DEV_MODE) {
       return next();
     }
@@ -58,12 +59,15 @@ export function rateLimit(opts: Options) {
 
     if (ttl && opts.nextIfRatedLimited) {
       req.rateLimited = ttl as number;
+      res.setHeader('r-limit-took', (performance.now() - t1).toFixed(2) + 'ms');
+
       return next();
     }
 
     if (ttl) {
       return res.status(429).json({ ...generateError(opts.message || 'Slow down!'), ttl });
     }
+    res.setHeader('r-limit-took', (performance.now() - t1).toFixed(2) + 'ms');
 
     next();
   };

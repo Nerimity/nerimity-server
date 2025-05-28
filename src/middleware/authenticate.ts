@@ -9,6 +9,7 @@ interface Options {
 
 export function authenticate(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
+    const t1 = performance.now();
     const token = req.header('Authorization');
     if (!token) {
       if (opts?.allowNoToken) {
@@ -25,6 +26,7 @@ export function authenticate(opts?: Options) {
       return res.status(401).json(generateError('Bots are not allowed to use this route.'));
     }
     req.userCache = cachedUser;
+    res.setHeader('auth-took', (performance.now() - t1).toFixed(2) + 'ms');
     next();
   };
 }
