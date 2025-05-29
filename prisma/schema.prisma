@@ -61,20 +61,23 @@ model Application {
 }
 
 
-// make a model to store all the ips that have been banned. it will also have an expire date
+// store all the ips that have been banned. it will also have an expire date
 model BannedIp {
+  @@map("banned_ips")
   id String @id
   ipAddress String @unique
   expireAt  DateTime
 }
 
 model FirebaseMessagingToken {
+  @@map("fcm_tokens")
   token String @unique
   accountId String
   account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 }
 
 model User {
+  @@map("users")
   id                     String                  @id
   badges                 Int                     @default(0)
   username               String
@@ -171,6 +174,7 @@ model User {
 }
 
 model BotCommand {
+  @@map("bot_commands")
   id String @id
   
   botUserId String
@@ -190,6 +194,7 @@ model BotCommand {
 }
 
 model UserConnection {
+  @@map("user_connections")
   id String @id
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -203,6 +208,7 @@ model UserConnection {
 // Used for ip banning.
 // In the future, account owners to see whos logged in to your account.
 model UserDevice {
+  @@map("user_devices")
   id          String    @id
   userId      String
   ipAddress   String
@@ -218,6 +224,7 @@ model UserDevice {
 
 
 model MessageNotification {
+  @@map("message_notifications")
   id             String @id
   userId         String
 
@@ -236,6 +243,7 @@ model MessageNotification {
 
 
 model UserNotice {
+  @@map("user_notices")
   id             String @id
 
   type           Int
@@ -258,6 +266,7 @@ model UserNotice {
 }
 
 model UserProfile {
+  @@map("user_profiles")
   userId    String   @id
   user      User @relation(fields: [userId], references: [id])
   bio       String?
@@ -269,6 +278,7 @@ model UserProfile {
 }
 
 model Follower {
+  @@map("followers")
   id            String   @id
   followedById  String
   followedBy    User     @relation(fields: [followedById], references: [id], name: "following")
@@ -280,6 +290,7 @@ model Follower {
 
 
 model ShadowBan {
+  @@map("shadow_bans")
   id            String   @id
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id])
@@ -292,6 +303,7 @@ model ShadowBan {
 }
 
 model Suspension {
+  @@map("suspensions")
   id            String    @id
   suspendedAt   DateTime  @default(now())
   expireAt      DateTime?
@@ -309,6 +321,7 @@ model Suspension {
 }
 
 model Server {
+  @@map("servers")
   id                     String                  @id
   name                   String
   avatar                 String?
@@ -361,6 +374,7 @@ model Server {
 
 // Personal settings for joined servers
 model UserNotificationSettings {
+  @@map("user_notification_settings")
   id String @id
 
   serverId String?
@@ -383,6 +397,7 @@ model UserNotificationSettings {
 
 
 model CustomEmoji {
+  @@map("custom_emojis")
   id           String  @id
   name         String
   gif          Boolean
@@ -396,6 +411,7 @@ model CustomEmoji {
 
 
 model PublicServer {
+  @@map("public_servers")
   id              String    @id
   serverId        String    @unique
   server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade) 
@@ -411,6 +427,7 @@ model PublicServer {
 }
 
 model ServerRole {
+  @@map("server_roles")
   id                     String                  @id
   name                   String
   icon                   String?
@@ -442,6 +459,7 @@ model ServerRole {
 
 
 model ServerWelcomeQuestion {
+  @@map("server_welcome_questions")
   id          String   @id
   createdAt   DateTime @default(now())
 
@@ -457,6 +475,7 @@ model ServerWelcomeQuestion {
 }
 
 model ServerWelcomeAnswer {
+  @@map("server_welcome_answers")
   id          String   @id
   createdAt   DateTime @default(now())
 
@@ -470,6 +489,7 @@ model ServerWelcomeAnswer {
 }
 
 model AnsweredServerWelcomeQuestion {
+  @@map("answered_server_welcome_questions")
   id          String   @id
   answeredAt  DateTime @default(now())
 
@@ -490,6 +510,7 @@ model AnsweredServerWelcomeQuestion {
 
 
 model ServerInvite {
+  @@map("server_invites")
   id          String   @id
   code        String   @unique
   isCustom    Boolean
@@ -504,6 +525,7 @@ model ServerInvite {
 }
 
 model ServerMember {
+  @@map("server_members")
   id       String   @id
   serverId String
   userId   String
@@ -525,6 +547,7 @@ model ServerMember {
 
 
 model BannedServerMember {
+  @@map("banned_server_members")
   id       String  @id
   userId   String
   serverId String
@@ -533,6 +556,7 @@ model BannedServerMember {
 }
 
 model Friend {
+  @@map("friends")
   id          String   @id
   status      Int
   userId      String 
@@ -545,6 +569,7 @@ model Friend {
 }
 
 model Channel {
+  @@map("channels")
   id                     String                  @id
   name                   String?
   icon                   String?
@@ -586,6 +611,7 @@ model Channel {
 }
 
 model ServerChannelPermissions {
+  @@map("server_channel_permissions")
 
   permissions     Int?
 
@@ -604,6 +630,7 @@ model ServerChannelPermissions {
 }
 
 model Ticket {
+  @@map("tickets")
   id          Int   @id @default(autoincrement())
   title       String
   category    Int
@@ -620,6 +647,7 @@ model Ticket {
 }
 
 model Inbox {
+  @@map("inboxes")
   id          String   @id
   createdById String
   recipientId String
@@ -635,6 +663,7 @@ model Inbox {
 }
 
 model Message {
+  @@map("messages")
   id          String   @id
   content     String
   type        Int
@@ -679,6 +708,7 @@ model Message {
 
 
 model MessageButton {
+  @@map("message_buttons")
   order Int @default(autoincrement())
 
   messageId String
@@ -694,6 +724,7 @@ model MessageButton {
 }
 
 model ReplyMessages {
+  @@map("reply_messages")
   id       String @id
   messageId String
 
@@ -712,6 +743,7 @@ model ReplyMessages {
 // When deleting a channel or a server, we will delete 1000 messages every 1 minute
 // To not cause strain to the server.
 model ScheduleMessageDelete {
+  @@map("schedule_message_delete")
   channelId           String   @id
   deletingMessages    Boolean  @default(true)
   deletingAttachments Boolean  @default(true)
@@ -719,6 +751,7 @@ model ScheduleMessageDelete {
 }
 
 model ScheduleAccountContentDelete {
+  @@map("schedule_account_content_delete")
   userId           String   @unique
   user              User     @relation(fields: [userId], references: [id])
   scheduledAt      DateTime @default(now())
@@ -730,6 +763,7 @@ model ScheduleAccountContentDelete {
 
 // Only used when Nerimity mod deletes a server.
 model ScheduleServerDelete {
+  @@map("schedule_server_delete")
   serverId           String   @unique
   server              Server     @relation(fields: [serverId], references: [id], onDelete: Cascade)
   scheduledByUserId   String
@@ -738,6 +772,7 @@ model ScheduleServerDelete {
 }
 
 model MessageReaction {
+  @@map("message_reactions")
   id  String   @id
   name  String
   emojiId String?
@@ -754,6 +789,7 @@ model MessageReaction {
 }
 
 model ReactedMessageUser {
+  @@map("reacted_message_users")
   reactionId String
   userId String
 
@@ -767,6 +803,7 @@ model ReactedMessageUser {
 
 
 model MessageMention {
+  @@map("message_mentions")
   id            String   @id
   mentionedById String
   mentionedToId String
@@ -785,6 +822,7 @@ model MessageMention {
 }
 
 model Attachment {
+  @@map("attachments")
   id          String @id
   
   provider    String @default("local")
@@ -818,6 +856,7 @@ model Attachment {
 }
 
 model ServerChannelLastSeen {
+  @@map("server_channel_last_seen")
   id        String   @id
   userId    String
   serverId  String
@@ -831,6 +870,7 @@ model ServerChannelLastSeen {
 }
 
 model AnnouncementPost {
+  @@map("announcement_posts")
   postId String @id
 
   createdAt DateTime @default(now())
@@ -838,6 +878,7 @@ model AnnouncementPost {
 }
 
 model Post {
+  @@map("posts")
   id          String   @id
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
@@ -892,6 +933,7 @@ model Post {
 }
 
 model PinnedPost {
+  @@map("pinned_posts")
   postId String @id
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 
@@ -903,6 +945,7 @@ model PinnedPost {
 }
 
 model PostPoll {
+  @@map("post_polls")
   id          String   @id
 
   postId String @unique
@@ -913,6 +956,7 @@ model PostPoll {
 }
 
 model PostPollChoice {
+  @@map("post_poll_choices")
   id          String   @id
 
   pollId String
@@ -924,6 +968,7 @@ model PostPollChoice {
 }
 
 model PostPollVotedUser {
+  @@map("post_poll_voted_users")
   id          String   @id
 
   pollId String
@@ -938,6 +983,7 @@ model PostPollVotedUser {
 }
 
 model PostNotification {
+  @@map("post_notifications")
   id          String   @id
   createdAt   DateTime @default(now())
   type        Int
@@ -954,6 +1000,7 @@ model PostNotification {
 
 
 model PostLike {
+  @@map("post_likes")
   id            String   @id
   
   postId        String
@@ -967,6 +1014,7 @@ model PostLike {
 }
 
 model ChatNotice {
+  @@map("chat_notices")
   id          String   @id
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
@@ -984,6 +1032,7 @@ model ChatNotice {
 
 
 model ModAuditLog {
+  @@map("mod_audit_logs")
   id          String   @id
   createdAt   DateTime @default(now())
 
@@ -1009,6 +1058,7 @@ model ModAuditLog {
 
 
 model AuditLog {
+  @@map("audit_logs")
   id          String   @id
   createdAt   DateTime @default(now())
   actionType   String
@@ -1025,6 +1075,7 @@ model AuditLog {
 
 
 model Reminder {
+  @@map("reminders")
   id          String   @id
   createdAt   DateTime @default(now())
 
@@ -1044,6 +1095,7 @@ model Reminder {
 }
 
 model ExternalEmbed {
+  @@map("external_embeds")
   id          String   @id
 
   type        Int
