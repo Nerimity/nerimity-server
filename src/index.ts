@@ -199,11 +199,11 @@ function scheduleDeleteMessages() {
     if (!details.deletingMessages) return;
 
     const deletedCount = await prisma.$executeRaw`
-      DELETE FROM "Message"
+      DELETE FROM "messages"
       WHERE id IN 
       (
           SELECT id 
-          FROM "Message"
+          FROM "messages"
           WHERE "channelId"=${details.channelId}
           ORDER BY "createdAt" DESC
           LIMIT 300       
@@ -230,7 +230,7 @@ async function vacuumSchedule() {
   rule.minute = 0;
 
   schedule.scheduleJob(rule, async () => {
-    const res = await prisma.$queryRaw`VACUUM VERBOSE ANALYZE "Message"`;
+    const res = await prisma.$queryRaw`VACUUM VERBOSE ANALYZE "messages"`;
     console.log('VACUUM RESULT', res);
   });
 }
