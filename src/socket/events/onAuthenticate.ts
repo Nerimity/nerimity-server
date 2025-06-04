@@ -23,6 +23,7 @@ import env from '../../common/env';
 
 interface Payload {
   token: string;
+  includeCurrentUserServerMembersOnly?: boolean;
 }
 
 export const authQueue = createQueue({
@@ -115,7 +116,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id);
+  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id, payload.includeCurrentUserServerMembersOnly);
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(userCache.id);
 
