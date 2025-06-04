@@ -1,9 +1,9 @@
-import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_DELETED_BATCH, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_CHANNEL_PERMISSIONS_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_REMOVE_SCHEDULE_DELETE, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_SCHEDULE_DELETE, SERVER_UPDATED } from '../common/ClientEventNames';
+import { MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_DELETED_BATCH, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_ORDER_UPDATED, SERVER_CHANNEL_PERMISSIONS_UPDATED, SERVER_EMOJI_ADD, SERVER_EMOJI_REMOVE, SERVER_EMOJI_UPDATE, SERVER_FOLDER_CREATED, SERVER_FOLDER_UPDATED, SERVER_JOINED, SERVER_LEFT, SERVER_MEMBER_JOINED, SERVER_MEMBER_LEFT, SERVER_MEMBER_UPDATED, SERVER_ORDER_UPDATED, SERVER_REMOVE_SCHEDULE_DELETE, SERVER_ROLE_CREATED, SERVER_ROLE_DELETED, SERVER_ROLE_ORDER_UPDATED, SERVER_ROLE_UPDATED, SERVER_SCHEDULE_DELETE, SERVER_UPDATED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
-import { Channel, CustomEmoji, Message, Server, ServerChannelPermissions, ServerMember, ServerRole, User } from '@prisma/client';
+import { Channel, CustomEmoji, Message, Server, ServerChannelPermissions, ServerFolder, ServerMember, ServerRole, User } from '@prisma/client';
 import { UpdateServerRoleOptions } from '../services/ServerRole';
 import { UpdateServerMember } from '../services/ServerMember';
 import { VoiceCacheFormatted } from '../cache/VoiceCache';
@@ -233,6 +233,16 @@ export const emitServerOrderUpdated = (userId: string, serverIds: string[]) => {
   const io = getIO();
 
   io.in(userId).emit(SERVER_ORDER_UPDATED, { serverIds });
+};
+export const emitServerFolderCreated = (userId: string, folder: Partial<ServerFolder>) => {
+  const io = getIO();
+
+  io.in(userId).emit(SERVER_FOLDER_CREATED, { folder });
+};
+export const emitServerFolderUpdated = (userId: string, folder: Partial<ServerFolder>) => {
+  const io = getIO();
+
+  io.in(userId).emit(SERVER_FOLDER_UPDATED, { folder });
 };
 
 export const emitServerRoleDeleted = (serverId: string, roleId: string) => {

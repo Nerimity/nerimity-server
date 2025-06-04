@@ -46,6 +46,8 @@ import { serverExternalEmbedGet } from './serverExternalEmbedGet';
 import { serverExternalEmbedCreate } from './serverExternalEmbedCreate';
 import { serverExternalEmbedDelete } from './serverExternalEmbedDelete';
 import { serverExternalEmbedRawGet } from './serverExternalEmbedRawGet ';
+import { serverFolderCreate } from './serverFolderCreate';
+import { serverFolderUpdate } from './serverFolderUpdate';
 
 const ServersRouter = Router();
 
@@ -62,6 +64,8 @@ serverChannelNoticeUpdate(ServersRouter);
 serverTransferOwnership(ServersRouter);
 serverChannelUpdateOrder(ServersRouter);
 serverUpdateOrder(ServersRouter);
+serverFolderCreate(ServersRouter);
+serverFolderUpdate(ServersRouter);
 serverCreate(ServersRouter);
 serverDelete(ServersRouter);
 serverLeave(ServersRouter);

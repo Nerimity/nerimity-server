@@ -63,15 +63,38 @@ export function removeRoleIdFromServerMembers(roleId: string) {
   );
 }
 
-export function removeServerIdFromAccountOrder(userId: string, serverId: string) {
-  return prisma.$executeRaw(
-    Prisma.sql`
+export function removeServerIdFromAccountOrder(accountId: string, serverId: string) {
+  return prisma.$transaction([
+    prisma.$executeRaw(
+      Prisma.sql`
     UPDATE "accounts"
       SET "serverOrderIds"=(array_remove("serverOrderIds", ${serverId})) 
-      WHERE ${serverId} = ANY("serverOrderIds") AND "userId" = ${userId};
+      WHERE ${serverId} = ANY("serverOrderIds") AND "id" = ${accountId};
+      `
+    ),
+    removeServerIdFromFolders(accountId, serverId),
+  ]);
+}
+
+export function removeServerIdFromFolders(accountId: string, serverId: string) {
+  return prisma.$executeRaw(
+    Prisma.sql`
+    UPDATE "server_folders"
+      SET "serverIds"=(array_remove("serverIds", ${serverId})) 
+      WHERE ${serverId} = ANY("serverIds") AND "accountId" = ${accountId};
       `
   );
 }
+
+// export function removeServerIdsFromFolders(accountId: string, serverIds: string[]) {
+//   return prisma.$executeRaw(
+//     Prisma.sql`
+//     UPDATE "server_folders"
+//       SET "serverIds"=(array_remove("serverIds", ${serverIds}))
+//       WHERE ${serverIds} = ANY("serverIds") AND "accountId" = ${accountId};
+//       `
+//   );
+// }
 
 export function dateToDateTime(date?: Date | number) {
   if (!date) {

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "server_folders" ADD COLUMN     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

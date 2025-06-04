@@ -1,7 +1,7 @@
-import { dateToDateTime, prisma } from '../../common/database';
+import { dateToDateTime, prisma, removeServerIdFromFolders } from '../../common/database';
 import { generateError } from '../../common/errorHandler';
 import { sendConfirmCodeMail, sendResetPasswordMail } from '../../common/mailer';
-import { generateEmailConfirmCode, generateSecureCode, generateTag } from '../../common/random';
+import { generateEmailConfirmCode, generateHexColor, generateSecureCode, generateTag } from '../../common/random';
 import { getUserPresences, removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
@@ -16,6 +16,7 @@ import { generateId } from '../../common/flakeId';
 import { ShadowBan } from '@prisma/client';
 import { encrypt } from '../../common/encryption';
 import path from 'path';
+import { emitServerFolderCreated, emitServerFolderUpdated, emitServerOrderUpdated } from '../../emits/Server';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -524,4 +525,91 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
   }
 
   return [externalEmbed, null] as const;
+};
+
+export const createServerFolder = async (opts: { name: string; accountId: string; userId: string; serverIds: string[] }) => {
+  const areServerIdsValid = (await prisma.server.count({ where: { id: { in: opts.serverIds }, serverMembers: { some: { userId: opts.userId } } } })) === opts.serverIds.length;
+
+  if (!areServerIdsValid) {
+    return [null, generateError('Invalid server ids.')] as const;
+  }
+
+  const account = await prisma.account.findUnique({ where: { id: opts.accountId }, select: { serverOrderIds: true } });
+  if (!account) {
+    return [null, generateError('Invalid account id.')] as const;
+  }
+
+  const serverOrderIds = account.serverOrderIds;
+
+  const folderFirstServerId = opts.serverIds[0];
+
+  const indexOfFirstServer = serverOrderIds.indexOf(folderFirstServerId!);
+  if (indexOfFirstServer === -1) {
+    return [null, generateError('Invalid server ids.')] as const;
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const folder = await tx.serverFolder.create({
+      data: {
+        id: generateId(),
+        name: opts.name,
+        accountId: opts.accountId,
+        color: generateHexColor(),
+        serverIds: opts.serverIds,
+      },
+      select: {
+        id: true,
+        name: true,
+        color: true,
+        serverIds: true,
+      },
+    });
+
+    // add folder above first folder server id
+    serverOrderIds.splice(indexOfFirstServer, 0, folder.id);
+
+    await tx.account.update({ where: { id: opts.accountId }, data: { serverOrderIds: serverOrderIds } });
+
+    emitServerOrderUpdated(opts.userId, serverOrderIds);
+    emitServerFolderCreated(opts.userId, folder);
+
+    return [folder, null] as const;
+  });
+};
+
+interface UpdateServerFolderOptions {
+  userId: string;
+  name?: string;
+  color?: string;
+  serverIds?: string[];
+}
+
+export const updateServerFolder = async (folderId: string, opts: UpdateServerFolderOptions) => {
+  const { userId, ...updateFolder } = opts;
+
+  if (opts.serverIds?.length) {
+    const areServerIdsValid = (await prisma.server.count({ where: { id: { in: opts.serverIds }, serverMembers: { some: { userId } } } })) === opts.serverIds.length;
+
+    if (!areServerIdsValid) {
+      return [null, generateError('Invalid server ids.')] as const;
+    }
+  }
+
+  if (opts.serverIds && !opts.serverIds.length) {
+    const folder = await prisma.serverFolder.delete({ where: { id: folderId }, select: { id: true, name: true, color: true, serverIds: true } }).catch(() => undefined);
+
+    if (!folder) return [null, generateError('Invalid folder id.')] as const;
+
+    emitServerFolderUpdated(userId, { ...folder, serverIds: [] });
+
+    return [folder, null] as const;
+  }
+
+  const updatedFolder = await prisma.serverFolder.update({ where: { id: folderId, account: { userId: opts.userId } }, data: updateFolder, select: { id: true, name: true, color: true, serverIds: true } }).catch(() => undefined);
+
+  if (!updatedFolder) return [null, generateError('Invalid folder id.')] as const;
+
+  emitServerFolderUpdated(userId, updatedFolder);
+
+  return [updatedFolder, null] as const;
 };

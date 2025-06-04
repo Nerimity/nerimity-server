@@ -397,7 +397,7 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
   // check if user is in the server
   const member = await prisma.serverMember.findUnique({
     where: { userId_serverId: { serverId, userId } },
-    include: { user: { select: { bot: true } } },
+    include: { user: { select: { bot: true, account: { select: { id: true } } } } },
   });
   if (!member && !ban) {
     return [null, generateError('You are not in this server.')];
@@ -457,7 +457,9 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
   await prisma.$transaction(transactions);
 
   deleteAllInboxCache(userId);
-  await removeServerIdFromAccountOrder(userId, serverId);
+  if (member?.user.account?.id) {
+    await removeServerIdFromAccountOrder(member.user.account.id, serverId);
+  }
   if (!server.scheduledForDeletion && server.systemChannelId && leaveMessage) {
     await createMessage({
       channelId: server.systemChannelId,
@@ -672,35 +674,43 @@ export const getServerEmojis = async (serverId: string) => {
   return [server.customEmojis, null] as const;
 };
 
-export const updateServerOrder = async (userId: string, orderedServerIds: string[]) => {
+export const updateServerOrder = async (userId: string, _orderedServerIds: string[]) => {
   const user = await prisma.user.findFirst({
     where: { id: userId },
-    select: { servers: { select: { id: true } } },
+    select: { servers: { select: { id: true } }, account: { select: { serverFolders: { select: { id: true } } } } },
   });
 
-  if (!user) {
+  if (!user || !user.account) {
     return [null, generateError('User does not exist.')];
   }
 
+  const newOrderedServerIds = removeDuplicates(_orderedServerIds);
+
+  if (newOrderedServerIds.length !== _orderedServerIds.length) {
+    return [null, generateError('Duplicate server ids.')];
+  }
   const joinedServerIds = user.servers.map((server) => server.id);
-  if (joinedServerIds.length !== orderedServerIds.length) {
+  const folderIds = user.account.serverFolders.map((folder) => folder.id);
+
+  if (joinedServerIds.length + folderIds.length !== newOrderedServerIds.length) {
     return [null, generateError('Server order length does not match.')];
   }
 
-  const doesNotExist = joinedServerIds.find((id) => !orderedServerIds.includes(id));
+  const doesNotExistServer = joinedServerIds.filter((id) => !newOrderedServerIds.includes(id));
+  const doesNotExistFolder = doesNotExistServer.filter((id) => !newOrderedServerIds.includes(id));
 
-  if (doesNotExist) {
+  if (doesNotExistFolder.length) {
     return [null, generateError('Invalid server ids.')];
   }
 
   await prisma.account.update({
     where: { userId },
     data: {
-      serverOrderIds: orderedServerIds,
+      serverOrderIds: newOrderedServerIds,
     },
   });
 
-  emitServerOrderUpdated(userId, orderedServerIds);
+  emitServerOrderUpdated(userId, newOrderedServerIds);
 
   return [{ success: true }, null];
 };

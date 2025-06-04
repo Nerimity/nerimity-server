@@ -39,6 +39,23 @@ model Account {
 
   hideFollowers Boolean @default(false)
   hideFollowing Boolean @default(false)
+
+  serverFolders ServerFolder[]
+}
+
+
+model ServerFolder {
+  @@map("server_folders")
+  id String @id
+  color String
+  name String
+  serverIds String[]
+
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+
+  createdAt DateTime @default(now())
 }
 
 model Application {
