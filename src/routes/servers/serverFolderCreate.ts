@@ -32,7 +32,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [folder, error] = await createServerFolder({
-    name: 'owo',
+    name: 'Folder',
     accountId: req.userCache.account!.id!,
     serverIds: body.serverIds,
     userId: req.userCache.id,
