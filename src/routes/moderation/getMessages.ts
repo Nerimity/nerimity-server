@@ -13,14 +13,12 @@ async function route(req: Request, res: Response) {
   const aroundId = req.query.aroundId as string;
   const channelId = req.params.channelId as string;
 
-  const threadMessageId = (req.query.threadMessageId as string) || undefined;
-
   if (limit > 50) {
     limit = 50;
   }
 
   const channel = await prisma.channel.findUnique({ where: { id: channelId }, select: { name: true, id: true, server: { select: { id: true, name: true, avatar: true } } } });
-  const messages = await getMessagesByChannelId(channelId, { aroundMessageId: aroundId, limit, requesterId: req.userCache.id, threadMessageId });
+  const messages = await getMessagesByChannelId(channelId, { aroundMessageId: aroundId, limit, requesterId: req.userCache.id });
 
   res.json({ messages, channel });
 }
