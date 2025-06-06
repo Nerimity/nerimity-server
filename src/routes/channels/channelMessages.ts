@@ -9,7 +9,7 @@ import { ChannelType } from '../../types/Channel';
 export function channelMessages(Router: Router) {
   Router.get(
     '/channels/:channelId/messages',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     channelVerification(),
     rateLimit({
       name: 'messages',
@@ -26,10 +26,10 @@ async function route(req: Request, res: Response) {
   const before = (req.query.before as string) || undefined;
   const around = (req.query.around as string) || undefined;
 
+  const threadMessageId = (req.query.threadMessageId as string) || undefined;
+
   if (req.channelCache.type === ChannelType.CATEGORY) {
-    return res
-      .status(400)
-      .json(generateError('Cannot get messages from a category channel'));
+    return res.status(400).json(generateError('Cannot get messages from a category channel'));
   }
 
   const messages = await getMessagesByChannelId(req.channelCache.id, {
@@ -38,6 +38,7 @@ async function route(req: Request, res: Response) {
     beforeMessageId: before,
     aroundMessageId: around,
     requesterId: req.userCache.id,
+    threadMessageId,
   });
   res.json(messages);
 }

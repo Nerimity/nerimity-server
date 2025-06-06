@@ -717,10 +717,19 @@ model Message {
   reminders Reminder[]
 
 
+  threadMessageId String?
+
+  threadMessage  Message? @relation(fields: [threadMessageId], references: [id], onDelete: SetNull, name: "thread_messages")
+  threadMessages Message[] @relation(name: "thread_messages")
+
+
 
   @@index([channelId])
   @@index([createdById])
   @@index([channelId, createdAt])
+
+  @@index([threadMessageId])
+  
 }
 
 

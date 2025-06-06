@@ -1,4 +1,4 @@
-import { ChannelCache, getChannelCache } from '../cache/ChannelCache';
+import { ChannelCache, getChannelCache, getChannelIdFromThreadMessageId } from '../cache/ChannelCache';
 import { emitButtonClick, emitButtonClickCallback, emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../emits/Channel';
 import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../emits/Server';
 import { MessageType } from '../types/Message';
@@ -30,6 +30,7 @@ interface GetMessageByChannelIdOpts {
   aroundMessageId?: string;
   afterMessageId?: string;
   requesterId?: string;
+  threadMessageId?: string;
 }
 
 interface GetSingleMessageByChannelIdOpts {
@@ -80,6 +81,7 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
             id: { gt: opts.afterMessageId },
           }
         : undefined),
+      ...(opts?.threadMessageId ? { threadMessageId: opts.threadMessageId } : undefined),
     },
     include: {
       createdBy: {
@@ -157,7 +159,17 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
           },
         },
       },
-
+      threadMessages: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 1,
+      },
+      _count: {
+        select: {
+          threadMessages: true,
+        },
+      },
       quotedMessages: {
         select: {
           id: true,
@@ -660,6 +672,7 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
   return [message, null];
 };
 interface SendMessageOptions {
+  threadMessageId?: string;
   userId: string;
   channelId: string;
   channel?: ChannelCache | null;
@@ -768,8 +781,15 @@ export const createMessage = async (opts: SendMessageOptions) => {
   if (!channel) {
     [channel] = await getChannelCache(opts.channelId, opts.userId);
   }
-
   const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
+
+  if (opts.threadMessageId && !isServerOrDMChannel) return [null, generateError('Invalid message channel type for thread message')];
+
+  if (opts.threadMessageId) {
+    const [threadMessageChanelId, err] = await getChannelIdFromThreadMessageId(opts.threadMessageId);
+    if (err) return [null, err] as const;
+    if (threadMessageChanelId !== opts.channelId) return [null, generateError('Invalid thread message')];
+  }
 
   let htmlEmbed = undefined;
   if (opts.htmlEmbed) {
@@ -791,6 +811,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
   const createMessageQuery = prisma.message.create({
     data: await constructData({
       messageData: {
+        threadMessageId: opts.threadMessageId,
         silent: opts.silent,
         id: generateId(),
         content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',

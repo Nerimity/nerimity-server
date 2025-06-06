@@ -1,11 +1,12 @@
 import { addBit, CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { prisma } from '../common/database';
+import { generateError } from '../common/errorHandler';
 import { redisClient } from '../common/redis';
 import { TicketStatus } from '../services/Ticket';
 import { DmStatus } from '../services/User/User';
 import { ChannelType } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
-import { DM_CHANNEL_KEY_STRING, INBOX_KEY_STRING, SERVER_CHANNEL_KEY_STRING, SERVER_CHANNEL_PERMISSION_KEY_HASH, TICKET_CHANNEL_KEY_STRING } from './CacheKeys';
+import { DM_CHANNEL_KEY_STRING, INBOX_KEY_STRING, MESSAGE_THREAD_CHANNEL_KEY, SERVER_CHANNEL_KEY_STRING, SERVER_CHANNEL_PERMISSION_KEY_HASH, TICKET_CHANNEL_KEY_STRING } from './CacheKeys';
 import { getServerCache, ServerCache } from './ServerCache';
 
 export interface ServerChannelCache {
@@ -378,4 +379,23 @@ export const deleteAllInboxCacheInServer = async (serverId: string) => {
     multi.del(INBOX_KEY_STRING(inbox.channelId, inbox.recipientId));
   }
   await multi.exec();
+};
+
+export const getChannelIdFromThreadMessageId = async (messageId: string) => {
+  const key = MESSAGE_THREAD_CHANNEL_KEY(messageId);
+
+  // check in cache first
+  const channelId = await redisClient.get(key);
+  if (channelId) return [channelId, null] as const;
+
+  // check in db
+  const message = await prisma.message.findUnique({ where: { id: messageId, threadMessageId: null }, select: { channelId: true } });
+  if (!message) return [null, generateError('Message not found.')] as const;
+
+  const multi = redisClient.multi();
+  multi.set(key, message.channelId);
+  multi.expire(key, 60 * 60); // 1 hour
+  await multi.exec();
+
+  return message.channelId;
 };

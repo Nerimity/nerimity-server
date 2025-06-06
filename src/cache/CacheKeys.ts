@@ -35,3 +35,5 @@ export const RATE_LIMIT_ITTER_KEY_STRING = (id: string) => `${PREFIX}RATE_LIMIT_
 export const ALLOWED_IP_KEY_SET = () => `${PREFIX}ALLOWED_IP` as const;
 
 export const POST_VIEWS_KEY = (postId: string) => `${PREFIX}POST_VIEWS:${postId}`;
+
+export const MESSAGE_THREAD_CHANNEL_KEY = (messageId: string) => `${PREFIX}MESSAGE_THREAD_CHANNEL:${messageId}`;
