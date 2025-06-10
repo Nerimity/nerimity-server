@@ -451,12 +451,10 @@ interface FetchPostOpts {
 }
 
 export async function fetchPost(opts: FetchPostOpts) {
-  const post = await prisma.post.findFirst({
+  const post = await prisma.post.findUnique({
     where: {
       id: opts.postId,
     },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
     include: constructPostInclude(opts.requesterUserId),
   });
   if (!post) return null;
