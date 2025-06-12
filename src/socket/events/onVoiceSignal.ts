@@ -14,7 +14,7 @@ interface Payload {
 }
 
 export const queue = createQueue({
-  name: 'joinVoice',
+  name: 'voiceSignal',
   prefix: env.TYPE,
   redisClient: redisClient,
 });
