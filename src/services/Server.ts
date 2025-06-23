@@ -724,10 +724,15 @@ export const updateServerEmoji = async (serverId: string, emojiId: string, newNa
 
   newName = newName.trim().replace(/[^0-9a-zA-Z]/g, '_');
 
-  const newEmoji = await prisma.customEmoji.update({
-    where: { id: emojiId },
-    data: { name: newName },
-  });
+  const newEmoji = await prisma.customEmoji
+    .update({
+      where: { id: emojiId },
+      data: { name: newName },
+    })
+    .catch(() => null);
+
+  if (!newEmoji) return [null, 'Emoji not found.'] as const;
+
   emitServerEmojiUpdate(serverId, emojiId, newName);
   return [newEmoji, null] as const;
 };
