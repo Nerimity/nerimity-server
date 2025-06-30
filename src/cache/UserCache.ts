@@ -153,6 +153,7 @@ export async function getUserIdBySocketId(socketId: string) {
 }
 
 export async function getUserIdsBySocketIds(socketIds: string[]): Promise<string[]> {
+  if (!socketIds.length) return [];
   const userIds = await redisClient.mGet(socketIds.map((socketId) => CONNECTED_USER_ID_KEY_STRING(socketId)));
   return removeDuplicates(userIds.filter((id) => id) as string[]);
 }
