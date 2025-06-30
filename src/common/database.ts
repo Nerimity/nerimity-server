@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { Log } from './Log';
+import { logger } from './pino';
 
 // import env from './env';
 
@@ -16,8 +16,8 @@ export const prisma = new PrismaClient({
 });
 
 prisma.$on('query', (e) => {
-  if (e.duration >= 3000) {
-    Log.warn('Long Query:', e.duration, 'ms', e.query);
+  if (e.duration >= 200) {
+    logger.warn('Long Query:', e.duration, 'ms', e.query);
   }
 });
 

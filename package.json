@@ -70,6 +70,8 @@
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.10.0",
     "pako": "^2.1.0",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
     "redis": "^4.7.0",
     "socket.io": "^4.8.1"
   },
