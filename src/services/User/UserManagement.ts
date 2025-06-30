@@ -5,7 +5,7 @@ import { generateEmailConfirmCode, generateHexColor, generateSecureCode, generat
 import { getUserPresences, removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
-import bcrypt from 'bcrypt';
+import bcrypt from '../../common/bcrypt';
 import { generateToken } from '../../common/JWT';
 import env from '../../common/env';
 import { deleteServer, leaveServer } from '../Server';

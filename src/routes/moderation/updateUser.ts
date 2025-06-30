@@ -5,7 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { USER_BADGES, hasBit } from '../../common/Bitwise';
-import bcrypt from 'bcrypt';
+import bcrypt from '../../common/bcrypt';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';

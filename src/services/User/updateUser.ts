@@ -2,7 +2,7 @@ import { DmStatus, FriendRequestStatus, LastOnlineStatus } from './User';
 import { checkUserPassword } from '../UserAuthentication';
 import * as nerimityCDN from '../../common/nerimityCDN';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
-import bcrypt from 'bcrypt';
+import bcrypt from '../../common/bcrypt';
 import { deleteAllInboxCache } from '../../cache/ChannelCache';
 import { emitUserUpdatedSelf, emitUserUpdated } from '../../emits/User';
 import { generateToken } from '../../common/JWT';
@@ -177,9 +177,9 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
       ...addToObjectIfExists('hideFollowing', opts.hideFollowing),
       ...(opts.newPassword?.trim()
         ? {
-          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-          passwordVersion: { increment: 1 },
-        }
+            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+            passwordVersion: { increment: 1 },
+          }
         : undefined),
 
       ...(opts.email && opts.email !== email ? { emailConfirmed: false } : undefined),
@@ -195,13 +195,13 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
           ...(opts.lastOnlineStatus === LastOnlineStatus.HIDDEN ? { lastOnlineAt: null } : undefined),
           ...(opts.profile
             ? {
-              profile: {
-                upsert: {
-                  create: opts.profile,
-                  update: opts.profile,
+                profile: {
+                  upsert: {
+                    create: opts.profile,
+                    update: opts.profile,
+                  },
                 },
-              },
-            }
+              }
             : undefined),
         },
       },

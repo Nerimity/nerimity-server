@@ -20,59 +20,63 @@ import { deleteServer } from './services/Server';
   return this.getTime();
 };
 
-if (cluster.isPrimary) {
-  let cpuCount = cpus().length;
+async function main() {
+  if (cluster.isPrimary) {
+    let cpuCount = cpus().length;
 
-  if (env.DEV_MODE) {
-    cpuCount = 1;
-  }
-  let prismaConnected = false;
-
-  await connectRedis();
-  await customRedisFlush();
-  await createQueueProcessor({
-    prefix: env.TYPE,
-    redisClient,
-  });
-
-  // await redisClient.hSet('testKey', { test1: 'lol', test2: 'lol2' });
-
-  // console.log(await redisClient.hGetAll('testKey'));
-
-  createIO();
-  prisma.$connect().then(() => {
-    Log.info('Connected to PostgreSQL');
-
-    if (prismaConnected) return;
-
-    prismaConnected = true;
-
-    if (env.TYPE === 'api') {
-      scheduleBumpReset();
-      vacuumSchedule();
-      scheduleDeleteMessages();
-      scheduleDeleteAccountContent();
-      removeIPAddressSchedule();
-      schedulePostViews();
-      scheduleSuspendedAccountDeletion();
-      scheduleServerDeletion();
-      removeExpiredBannedIpsSchedule();
-      removeExpiredSuspensions();
+    if (env.DEV_MODE) {
+      cpuCount = 1;
     }
-  });
+    let prismaConnected = false;
 
-  for (let i = 0; i < cpuCount; i++) {
-    cluster.fork({ CLUSTER_INDEX: i });
+    await connectRedis();
+    await customRedisFlush();
+    await createQueueProcessor({
+      prefix: env.TYPE,
+      redisClient,
+    });
+
+    // await redisClient.hSet('testKey', { test1: 'lol', test2: 'lol2' });
+
+    // console.log(await redisClient.hGetAll('testKey'));
+
+    createIO();
+    prisma.$connect().then(() => {
+      Log.info('Connected to PostgreSQL');
+
+      if (prismaConnected) return;
+
+      prismaConnected = true;
+
+      if (env.TYPE === 'api') {
+        scheduleBumpReset();
+        vacuumSchedule();
+        scheduleDeleteMessages();
+        scheduleDeleteAccountContent();
+        removeIPAddressSchedule();
+        schedulePostViews();
+        scheduleSuspendedAccountDeletion();
+        scheduleServerDeletion();
+        removeExpiredBannedIpsSchedule();
+        removeExpiredSuspensions();
+      }
+    });
+
+    for (let i = 0; i < cpuCount; i++) {
+      cluster.fork({ CLUSTER_INDEX: i });
+    }
+
+    cluster.on('exit', (worker, code, signal) => {
+      console.error(`Worker process ${worker.process.pid} died.`);
+      // have to just restart all clusters because of redis cache issues with socket.io online users.
+      process.exit(code);
+    });
+  } else {
+    import('./worker');
   }
-
-  cluster.on('exit', (worker, code, signal) => {
-    console.error(`Worker process ${worker.process.pid} died.`);
-    // have to just restart all clusters because of redis cache issues with socket.io online users.
-    process.exit(code);
-  });
-} else {
-  import('./worker');
 }
+
+main();
 
 function scheduleBumpReset() {
   // Schedule the task to run every Monday at 0:00 UTC

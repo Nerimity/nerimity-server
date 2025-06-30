@@ -17,7 +17,9 @@
     "prisma:create": "prisma migrate dev --name",
     "prisma:migrate_dev": "prisma migrate dev",
     "prisma:migrate_deploy": "prisma migrate deploy",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "bun:build-linux": "bun build src/index.ts --target=bun-linux-x64 --sourcemap  --outfile ./out --target bun --compile",
+    "bun:start-api-linux": "out --api"
   },
   "keywords": [],
   "author": "",

@@ -128,3 +128,4 @@ dist
 dist/
 src/fcm-credentials.json
 pnpm-workspace.yaml
+out.exe
