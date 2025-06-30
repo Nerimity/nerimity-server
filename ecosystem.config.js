@@ -1,18 +1,16 @@
 module.exports = {
   apps: [
     {
-      name: 'neri-api',
-      script: 'npm',
-      args: 'run start-api',
+      name: 'neri-api-bun',
+      script: 'bun',
+      args: 'run bun:start-api-linux',
       watch: false,
-      ignore_watch: ['node_modules', 'dist'],
     },
     {
-      name: 'neri-ws',
-      script: 'npm',
-      args: 'run start-ws',
+      name: 'neri-ws-bun',
+      script: 'bun',
+      args: 'run bun:start-ws-linux',
       watch: false,
-      ignore_watch: ['node_modules', 'dist'],
     },
   ],
 };
