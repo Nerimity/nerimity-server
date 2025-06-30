@@ -17,7 +17,7 @@ export const prisma = new PrismaClient({
 
 prisma.$on('query', (e) => {
   if (e.duration >= 200) {
-    logger.warn('Long Query:', e.duration, 'ms', e.query);
+    logger.warn('Long Query: ' + e.duration + 'ms ' + e.query);
   }
 });
 
