@@ -936,7 +936,7 @@ model Post {
 
 
   notifications PostNotification[]
-  deleted Boolean?
+  deleted Boolean @default(false)
 
   poll PostPoll?
 

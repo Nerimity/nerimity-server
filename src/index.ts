@@ -127,7 +127,7 @@ async function scheduleDeleteAccountContent() {
       },
       select: { id: true, attachments: { select: { path: true } } },
       where: {
-        deleted: null,
+        deleted: false,
         createdBy: {
           scheduledForContentDeletion: { isNot: null },
         },

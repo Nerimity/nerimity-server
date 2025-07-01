@@ -69,7 +69,7 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
     ...(continueIter ? { commentTo: { include: constructPostInclude(requesterUserId, false) } } : undefined),
     createdBy: { select: publicUserExcludeFields },
     _count: {
-      select: { likedBy: true, comments: { where: { deleted: null } }, reposts: true },
+      select: { likedBy: true, comments: { where: { deleted: false } }, reposts: true },
     },
     likedBy: { select: { id: true }, where: { likedById: requesterUserId } },
     attachments: {
@@ -200,7 +200,7 @@ export async function createPost(opts: CreatePostOpts) {
 
 export async function editPost(opts: { editById: string; postId: string; content: string }) {
   const post = await prisma.post.findFirst({
-    where: { createdById: opts.editById, deleted: null, id: opts.postId, repostId: null },
+    where: { createdById: opts.editById, deleted: false, id: opts.postId, repostId: null },
     select: { id: true },
   });
   if (!post) return [null, generateError('Post not found')] as const;
@@ -227,7 +227,7 @@ export async function editPost(opts: { editById: string; postId: string; content
 
 export async function getPostLikes(postId: string) {
   const post = await prisma.post.findFirst({
-    where: { deleted: null, id: postId },
+    where: { deleted: false, id: postId },
     select: { id: true },
   });
   if (!post) return [null, generateError('Post not found')] as const;
@@ -243,7 +243,7 @@ export async function getPostLikes(postId: string) {
 
 export async function getPostReposts(postId: string) {
   const post = await prisma.post.findFirst({
-    where: { deleted: null, id: postId },
+    where: { deleted: false, id: postId },
     select: { id: true },
   });
   if (!post) return [null, generateError('Post not found')] as const;
@@ -315,7 +315,7 @@ export async function fetchPosts(opts: FetchPostsOpts) {
           },
         }
       : undefined),
-    deleted: null,
+    deleted: false,
   } as Prisma.PostWhereUniqueInput;
 
   const posts = await prisma.post.findMany({
@@ -386,7 +386,7 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
   const post = await prisma.post.findFirst({
     orderBy: { createdAt: 'desc' },
     where: {
-      deleted: null,
+      deleted: false,
       commentToId: null,
       createdById: opts.userId,
       ...(!opts.bypassBlocked
@@ -477,7 +477,7 @@ export async function fetchPost(opts: FetchPostOpts) {
 
 export async function likePost(userId: string, postId: string): Promise<CustomResult<Post, CustomError>> {
   const post = await prisma.post.findFirst({
-    where: { deleted: null, id: postId, repostId: null },
+    where: { deleted: false, id: postId, repostId: null },
   });
   if (!post) return [null, generateError('Post not found')];
 
@@ -610,12 +610,12 @@ export async function getFeed(opts: GetFeedOpts) {
 
       NOT: {
         repost: {
-          deleted: { not: null },
+          deleted: { not: false },
         },
       },
 
       commentTo: null,
-      deleted: null,
+      deleted: false,
       OR: [
         { createdById: opts.userId },
         {
@@ -852,7 +852,7 @@ export async function removeAnnouncementPost(postId: string) {
 
 export async function pinPost(postId: string, requesterId: string) {
   const post = await prisma.post.findUnique({
-    where: { id: postId, createdById: requesterId, deleted: null },
+    where: { id: postId, createdById: requesterId, deleted: false },
   });
   if (!post) {
     return [null, generateError('Post not found.')] as const;
@@ -909,7 +909,7 @@ export async function fetchPinnedPosts(opts: fetchPinnedPostsOpts) {
   const posts = await prisma.post.findMany({
     orderBy: { pinned: { pinnedAt: 'desc' } },
     where: {
-      deleted: null,
+      deleted: false,
       createdById: opts.userId,
       pinned: {
         pinnedById: opts.userId,

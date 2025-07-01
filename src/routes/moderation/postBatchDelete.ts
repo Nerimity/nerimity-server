@@ -47,7 +47,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const sanitizedPostIds = removeDuplicates(req.body.postIds) as string[];
 
   const posts = await prisma.post.findMany({
-    where: { id: { in: sanitizedPostIds }, deleted: null },
+    where: { id: { in: sanitizedPostIds }, deleted: false },
     select: { id: true, createdBy: { select: { id: true, username: true } }, attachments: { select: { path: true } } },
   });
   const validPostIds = posts.map((post) => post.id);

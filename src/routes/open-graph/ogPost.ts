@@ -16,7 +16,7 @@ async function route(req: Request, res: Response, next: NextFunction) {
   const post = await prisma.post.findUnique({
     where: {
       id: postId,
-      deleted: null,
+      deleted: false,
     },
     select: {
       content: true,

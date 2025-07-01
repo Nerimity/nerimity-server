@@ -309,7 +309,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
           followers: true,
           following: true,
           likedPosts: true,
-          posts: { where: { deleted: null } },
+          posts: { where: { deleted: false } },
         },
       },
       account: {
