@@ -303,6 +303,7 @@ model Follower {
   followedToId  String
   followedTo    User     @relation(fields: [followedToId], references: [id])
   @@unique([followedById, followedToId])
+  @@index([followedById, followedToId])
 }
 
 
@@ -948,6 +949,10 @@ model Post {
   @@index([createdById, createdAt])
 
   @@index([estimateLikes, createdAt])
+  @@index([commentToId, deleted, createdAt, createdById])
+
+  @@index([commentToId, deleted])
+  @@index([repostId])
 
 }
 
