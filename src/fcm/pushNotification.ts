@@ -42,8 +42,8 @@ export async function sendServerPushMessageNotification(
   channel: ChannelCache,
   server: ServerCache
 ) {
-  // if (message.silent) return;
-  // if (!credentials) return;
+  if (message.silent) return;
+  if (!credentials) return;
 
   const channelPermissions = await prisma.serverChannelPermissions.findMany({
     where: { channelId: message.channelId, serverId },
