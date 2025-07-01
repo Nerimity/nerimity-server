@@ -946,12 +946,15 @@ model Post {
   reminders Reminder[]
   embed Json?
 
-  @@index([createdById, createdAt])
 
-  @@index([estimateLikes, createdAt])
-  @@index([commentToId, deleted, createdAt, createdById])
+  @@index([commentToId, deleted, createdAt(sort: Desc), createdById])
+  @@index([createdById, createdAt(sort: Desc)])
 
   @@index([commentToId, deleted])
+
+
+  @@index([estimateLikes(sort: Desc), createdAt])
+
   @@index([repostId])
 
 }
