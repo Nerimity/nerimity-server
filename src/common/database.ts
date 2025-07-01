@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from './pino';
+import { Log } from './Log';
 
 // import env from './env';
 
@@ -15,10 +16,29 @@ export const prisma = new PrismaClient({
   ],
 });
 
-prisma.$on('query', (e) => {
-  if (e.duration >= 200) {
-    logger.warn('Long Query: ' + e.duration + 'ms ' + e.query);
-  }
+prisma.$on('query', async (e) => {
+  // Exclude EXPLAIN, BEGIN, ROLLBACK, COMMIT and any internal Prisma queries
+  if (e.query.startsWith('PREPARE')) return;
+  if (e.query.startsWith('EXPLAIN')) return;
+  if (e.query.startsWith('DEALLOCATE')) return;
+  if (e.query.startsWith('BEGIN')) return;
+  if (e.query.startsWith('ROLLBACK')) return;
+  if (e.query.startsWith('COMMIT')) return;
+  if (e.query.startsWith('SET')) return; // Prisma often sets session variables
+  if (e.query.startsWith('SAVEPOINT')) return; // For nested transactions
+
+  // console.log(e.duration);
+  if (e.duration < 200) return;
+
+  await prisma
+    .$transaction(async (tx) => {
+      const params = JSON.parse(e.params);
+      const res = await tx.$queryRawUnsafe('EXPLAIN ANALYZE ' + e.query, ...params).catch(() => {});
+      logger.info('\n' + e.duration + 'ms: ' + e.query + '\n\n' + res.map((r) => r['QUERY PLAN']).join('\n') + '\n\n\n\n\n\n');
+
+      throw new Error('Query explanation complete');
+    })
+    .catch(() => {});
 });
 
 export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus', 'lastOnlineAt', 'lastOnlineStatus']);

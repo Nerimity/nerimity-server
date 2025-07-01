@@ -947,6 +947,8 @@ model Post {
 
   @@index([createdById, createdAt])
 
+  @@index([estimateLikes, createdAt])
+
 }
 
 model PinnedPost {
@@ -1026,6 +1028,8 @@ model PostLike {
   likedById     String
   likedBy       User @relation(fields: [likedById], references: [id])
   createdAt   DateTime @default(now())
+
+  @@index([postId])
 
   @@unique([postId, likedById])
 }
