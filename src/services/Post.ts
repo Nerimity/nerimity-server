@@ -77,16 +77,16 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
     },
     reposts: {
       where: {
-        OR: [
-          { createdById: requesterUserId },
-          {
-            createdBy: {
+        createdBy: {
+          OR: [
+            { id: requesterUserId },
+            {
               followers: {
                 some: { followedById: requesterUserId },
               },
             },
-          },
-        ],
+          ],
+        },
       },
       select: { id: true, createdBy: { select: { id: true, username: true } } },
     },
@@ -616,16 +616,16 @@ export async function getFeed(opts: GetFeedOpts) {
 
       commentTo: null,
       deleted: false,
-      OR: [
-        { createdById: opts.userId },
-        {
-          createdBy: {
+      createdBy: {
+        OR: [
+          { id: opts.userId },
+          {
             followers: {
               some: { followedById: opts.userId },
             },
           },
-        },
-      ],
+        ],
+      },
     },
     include: constructPostInclude(opts.userId),
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
