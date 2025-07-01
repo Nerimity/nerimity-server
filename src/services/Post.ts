@@ -602,6 +602,8 @@ interface GetFeedOpts {
 }
 
 export async function getFeed(opts: GetFeedOpts) {
+  const following = await prisma.follower.findMany({ where: { followedById: opts.userId }, select: { followedToId: true } });
+
   const feedPosts = await prisma.post.findMany({
     orderBy: { createdAt: 'desc' },
     where: {
@@ -616,16 +618,19 @@ export async function getFeed(opts: GetFeedOpts) {
 
       commentTo: null,
       deleted: false,
-      createdBy: {
-        OR: [
-          { id: opts.userId },
-          {
-            followers: {
-              some: { followedById: opts.userId },
-            },
-          },
-        ],
+      createdById: {
+        in: [opts.userId, ...following.map((f) => f.followedToId)],
       },
+      // createdBy: {
+      //   OR: [
+      //     { id: opts.userId },
+      //     {
+      //       followers: {
+      //         some: { followedById: opts.userId },
+      //       },
+      //     },
+      //   ],
+      // },
     },
     include: constructPostInclude(opts.userId),
     take: opts.limit ? (opts.limit > 30 ? 30 : opts.limit) : 30,
