@@ -946,6 +946,8 @@ model Post {
   reminders Reminder[]
   embed Json?
 
+  @@index([createdAt(sot: Desc), commentToId, deleted])
+
   @@index([createdAt(sort: Desc), createdById, commentToId, deleted])
 
   @@index([commentToId, deleted, createdAt(sort: Desc), createdById])
