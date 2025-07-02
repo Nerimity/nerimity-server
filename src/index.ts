@@ -1,5 +1,5 @@
 import { cpus } from 'node:os';
-import { prisma } from './common/database';
+import { getPostLikesFromDeletedUsers, prisma } from './common/database';
 import { Log } from './common/Log';
 import schedule from 'node-schedule';
 import { deleteChannelAttachmentBatch, deleteImageBatch } from './common/nerimityCDN';
@@ -15,6 +15,7 @@ import { createHash } from 'node:crypto';
 import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { createQueueProcessor } from '@nerimity/mimiqueue';
 import { deleteServer } from './services/Server';
+import { Prisma } from '@prisma/client';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -89,16 +90,7 @@ function scheduleBumpReset() {
 
 async function scheduleDeleteAccountContent() {
   setInterval(async () => {
-    const likedPosts = await prisma.postLike.findMany({
-      take: 300,
-      where: {
-        likedBy: {
-          account: null,
-          application: null,
-        },
-      },
-      select: { id: true },
-    });
+    const likedPosts = await getPostLikesFromDeletedUsers();
 
     if (likedPosts.length) {
       const ids = likedPosts.map((p) => p.id);

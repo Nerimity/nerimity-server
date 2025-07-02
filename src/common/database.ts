@@ -108,6 +108,26 @@ export function removeServerIdFromFolders(accountId: string, serverId: string) {
   );
 }
 
+export const getPostLikesFromDeletedUsers = () => {
+  return prisma.$queryRaw<{ id: string }[]>(
+    Prisma.sql`
+    SELECT "id"
+    FROM "public"."post_likes"
+    WHERE
+      NOT EXISTS (
+        SELECT 1 FROM "public"."accounts"
+        WHERE "public"."accounts"."userId" = "public"."post_likes"."likedById"
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM "public"."applications"
+        WHERE "public"."applications"."botUserId" = "public"."post_likes"."likedById"
+      )
+    ORDER BY "id" ASC
+    LIMIT 300;
+  `
+  );
+};
+
 // export function removeServerIdsFromFolders(accountId: string, serverIds: string[]) {
 //   return prisma.$executeRaw(
 //     Prisma.sql`
