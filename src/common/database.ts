@@ -27,7 +27,9 @@ prisma.$on('query', async (e) => {
   if (e.query.startsWith('SET')) return; // Prisma often sets session variables
   if (e.query.startsWith('SAVEPOINT')) return; // For nested transactions
 
-  // console.log(e.duration);
+  if (e.duration < 200) {
+    logger.info(`${e.duration}ms: ${e.query} ${e.params}`);
+  }
   if (e.duration < 200) return;
 
   await prisma
