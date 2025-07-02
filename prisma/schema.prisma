@@ -874,6 +874,9 @@ model Attachment {
 
   @@index([messageId, createdAt])
 
+  @@index([postId])
+
+
 }
 
 model ServerChannelLastSeen {
@@ -962,6 +965,9 @@ model Post {
   @@index([estimateLikes(sort: Desc), createdAt])
 
   @@index([repostId])
+
+  @@index([createdById, deleted, commentToId, createdAt(sort: Desc)])
+
 
 }
 
