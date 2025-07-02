@@ -34,17 +34,17 @@ const app = express();
 const server = http.createServer(app);
 
 // Middleware to log request duration
-app.use((req, res, next) => {
-  const start = process.hrtime(); // High-resolution time
+// app.use((req, res, next) => {
+//   const start = process.hrtime(); // High-resolution time
 
-  res.on('finish', () => {
-    const end = process.hrtime(start);
-    const durationInMilliseconds = end[0] * 1000 + end[1] / 1e6;
-    logger.info(`${req.method} ${req.originalUrl} - ${durationInMilliseconds.toFixed(3)}ms`);
-  });
+//   res.on('finish', () => {
+//     const end = process.hrtime(start);
+//     const durationInMilliseconds = end[0] * 1000 + end[1] / 1e6;
+//     logger.info(`${req.method} ${req.originalUrl} - ${durationInMilliseconds.toFixed(3)}ms`);
+//   });
 
-  next();
-});
+//   next();
+// });
 
 const main = async () => {
   await connectRedis();
