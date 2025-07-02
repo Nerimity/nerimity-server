@@ -60,7 +60,7 @@ export function channelVerification(opts?: Options) {
         return res.status(403).json(generateError('You are not a member of this channel.'));
       }
     }
-    res.setHeader('chn-vfy-took', (performance.now() - t1).toFixed(2) + 'ms');
+    res.setHeader('T-chn-vfy-took', (performance.now() - t1).toFixed(2) + 'ms');
 
     req.channelCache = channel;
     channelPermissions({

@@ -26,7 +26,7 @@ export function authenticate(opts?: Options) {
       return res.status(401).json(generateError('Bots are not allowed to use this route.'));
     }
     req.userCache = cachedUser;
-    res.setHeader('auth-took', (performance.now() - t1).toFixed(2) + 'ms');
+    res.setHeader('T-auth-took', (performance.now() - t1).toFixed(2) + 'ms');
     next();
   };
 }

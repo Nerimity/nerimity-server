@@ -59,7 +59,7 @@ export function rateLimit(opts: Options) {
 
     if (ttl && opts.nextIfRatedLimited) {
       req.rateLimited = ttl as number;
-      res.setHeader('r-limit-took', (performance.now() - t1).toFixed(2) + 'ms');
+      res.setHeader('T-r-limit-took', (performance.now() - t1).toFixed(2) + 'ms');
 
       return next();
     }
@@ -67,7 +67,7 @@ export function rateLimit(opts: Options) {
     if (ttl) {
       return res.status(429).json({ ...generateError(opts.message || 'Slow down!'), ttl });
     }
-    res.setHeader('r-limit-took', (performance.now() - t1).toFixed(2) + 'ms');
+    res.setHeader('T-r-limit-took', (performance.now() - t1).toFixed(2) + 'ms');
 
     next();
   };
