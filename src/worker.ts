@@ -24,6 +24,7 @@ import { ApplicationsRouter } from './routes/applications/Router';
 import { OpenGraphRouter } from './routes/open-graph/Router';
 import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
+import { logger } from './common/pino';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -31,6 +32,19 @@ import { RemindersRouter } from './routes/reminders/Router';
 
 const app = express();
 const server = http.createServer(app);
+
+// Middleware to log request duration
+app.use((req, res, next) => {
+  const start = process.hrtime(); // High-resolution time
+
+  res.on('finish', () => {
+    const end = process.hrtime(start);
+    const durationInMilliseconds = end[0] * 1000 + end[1] / 1e6;
+    logger.info(`${req.method} ${req.originalUrl} - ${durationInMilliseconds.toFixed(3)}ms`);
+  });
+
+  next();
+});
 
 const main = async () => {
   await connectRedis();
