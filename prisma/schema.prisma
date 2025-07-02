@@ -41,6 +41,8 @@ model Account {
   hideFollowing Boolean @default(false)
 
   serverFolders ServerFolder[]
+
+  @@index([userId])
 }
 
 
@@ -1042,6 +1044,7 @@ model PostLike {
   createdAt   DateTime @default(now())
 
   @@index([postId])
+  @@index([likedById])
 
   @@unique([postId, likedById])
 }
