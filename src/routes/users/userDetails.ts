@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { param } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { getUserDetails } from '../../services/User/User';
 
@@ -16,6 +16,10 @@ async function route(req: Request, res: Response) {
   }
   const requesterId = req.userCache?.id;
   const recipientId = req.params.userId || requesterId;
+
+  if (!recipientId) {
+    return res.status(400).json(generateError('Invalid userId.'));
+  }
 
   const includePinnedPosts = req.query.includePinnedPosts === 'true';
   const includeBotCommands = req.query.includeBotCommands === 'true';
