@@ -817,6 +817,7 @@ model ReactedMessageUser {
   reactedAt DateTime @default(now())
 
   @@unique([reactionId, userId])
+  @@index([reactionId])
 }
 
 
