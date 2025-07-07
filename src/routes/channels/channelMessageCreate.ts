@@ -233,9 +233,8 @@ async function route(req: Request, res: Response) {
     if (error === 'NOT_FRIENDS_AND_SERVERS_RECIPIENT') {
       errorMessage = 'This users privacy settings does not allow you to message this user because you are not friends with them and you do not share a server with them.';
     }
-    if (error === 'UNKNOWN') {
-      errorMessage = 'You cannot message this user.';
-    }
+
+    errorMessage = 'You cannot message this user.';
 
     return res.status(400).json(generateError(errorMessage, undefined, error));
   }
