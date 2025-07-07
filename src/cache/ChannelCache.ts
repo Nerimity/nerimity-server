@@ -325,12 +325,12 @@ const fetchCanMssage = async ({ userId, inbox }: FetchCanMessageOpts): Promise<[
     if (requesterDmStatus >= 1 && recipientDmStatus >= 1) {
       return [true, null] as const;
     }
-    if (requesterDmStatus === DmStatus.FRIENDS) {
-      return [false, 'NOT_FRIENDS_REQUESTER'] as const;
-    }
-    if (recipientDmStatus === DmStatus.FRIENDS) {
-      return [false, 'NOT_FRIENDS_RECIPIENT'] as const;
-    }
+  }
+  if (requesterDmStatus === DmStatus.FRIENDS) {
+    return [false, 'NOT_FRIENDS_REQUESTER'] as const;
+  }
+  if (recipientDmStatus === DmStatus.FRIENDS) {
+    return [false, 'NOT_FRIENDS_RECIPIENT'] as const;
   }
 
   if (requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS || recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS) {
@@ -342,13 +342,12 @@ const fetchCanMssage = async ({ userId, inbox }: FetchCanMessageOpts): Promise<[
     if (doesShareServers) {
       return [true, null] as const;
     }
-
-    if (requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS) {
-      return [false, 'NOT_FRIENDS_AND_SERVERS_REQUESTER'] as const;
-    }
-    if (recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS) {
-      return [false, 'NOT_FRIENDS_AND_SERVERS_RECIPIENT'] as const;
-    }
+  }
+  if (requesterDmStatus === DmStatus.FRIENDS_AND_SERVERS) {
+    return [false, 'NOT_FRIENDS_AND_SERVERS_REQUESTER'] as const;
+  }
+  if (recipientDmStatus === DmStatus.FRIENDS_AND_SERVERS) {
+    return [false, 'NOT_FRIENDS_AND_SERVERS_RECIPIENT'] as const;
   }
   return [false, 'UNKNOWN'] as const;
 };
