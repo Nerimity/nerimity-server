@@ -4,10 +4,11 @@ import env from './env';
 
 export type CustomError = { message: string; path: string | null };
 
-export function generateError<A extends string, B extends string>(message: A, path?: B) {
+export function generateError<A extends string, B extends string, C = string>(message: A, path?: B, code?: C) {
   return {
     message,
     path: path || null,
+    ...(code ? { code } : {}),
   } as const;
 }
 
