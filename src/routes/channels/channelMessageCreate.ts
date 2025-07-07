@@ -219,19 +219,19 @@ async function route(req: Request, res: Response) {
     }
 
     if (error === 'NOT_FRIENDS_REQUESTER') {
-      errorMessage = 'Your privacy settings do not allow you to message this user because you are not friends with this user.';
+      errorMessage = 'Your privacy settings does not allow you to message this user because you are not friends with this user.';
     }
 
     if (error === 'NOT_FRIENDS_RECIPIENT') {
-      errorMessage = "This user's privacy settings do not allow them to message you because you are not friends with this user.";
+      errorMessage = "This user's privacy settings does not allow them to message you because you are not friends with this user.";
     }
 
     if (error === 'NOT_FRIENDS_AND_SERVERS_REQUESTER') {
-      errorMessage = 'Your privacy settings do not allow you to message this user because you are not friends with this user and you do not share a server with this user.';
+      errorMessage = 'Your privacy settings does not allow you to message this user because you are not friends with this user and you do not share a server with this user.';
     }
 
     if (error === 'NOT_FRIENDS_AND_SERVERS_RECIPIENT') {
-      errorMessage = "This user's privacy settings do not allow them to message you because you are not friends with this user and you do not share a server with this user.";
+      errorMessage = "This user's privacy settings does not allow them to message you because you are not friends with this user and you do not share a server with this user.";
     }
     if (error === 'UNKNOWN') {
       errorMessage = 'You cannot message this user.';
