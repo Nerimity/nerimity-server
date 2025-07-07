@@ -208,30 +208,30 @@ async function route(req: Request, res: Response) {
   }
 
   if (req.channelCache.type === ChannelType.DM_TEXT && !req.channelCache.inbox.canMessage) {
-    const error = req.channelCache.inbox.canMessageError;
+    let error = req.channelCache.inbox.canMessageError;
     let errorMessage = '';
     if (error === 'BLOCKED_BY_REQUESTER') {
       errorMessage = 'You have blocked this user.';
     }
 
     if (error === 'BLOCKED_BY_RECIPIENT') {
-      errorMessage = 'This user has blocked you.';
+      error = 'UNKNOWN';
     }
 
     if (error === 'NOT_FRIENDS_REQUESTER') {
-      errorMessage = 'Your privacy settings does not allow you to message this user because you are not friends with this user.';
+      errorMessage = 'Your privacy settings does not allow you to message this user because you are not friends with them.';
     }
 
     if (error === 'NOT_FRIENDS_RECIPIENT') {
-      errorMessage = "This user's privacy settings does not allow them to message you because you are not friends with this user.";
+      errorMessage = 'This users privacy settings does not allow you to message this user because you are not friends with them.';
     }
 
     if (error === 'NOT_FRIENDS_AND_SERVERS_REQUESTER') {
-      errorMessage = 'Your privacy settings does not allow you to message this user because you are not friends with this user and you do not share a server with this user.';
+      errorMessage = 'Your privacy settings does not allow you to message this user because you are not friends with them and you do not share a server with them.';
     }
 
     if (error === 'NOT_FRIENDS_AND_SERVERS_RECIPIENT') {
-      errorMessage = "This user's privacy settings does not allow them to message you because you are not friends with this user and you do not share a server with this user.";
+      errorMessage = 'This users privacy settings does not allow you to message this user because you are not friends with them and you do not share a server with them.';
     }
     if (error === 'UNKNOWN') {
       errorMessage = 'You cannot message this user.';
