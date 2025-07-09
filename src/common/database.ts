@@ -27,20 +27,20 @@ prisma.$on('query', async (e) => {
   if (e.query.startsWith('SET')) return; // Prisma often sets session variables
   if (e.query.startsWith('SAVEPOINT')) return; // For nested transactions
 
-  if (e.duration > 30) {
+  if (e.duration > 50) {
     logger.info(`${e.duration}ms: ${e.query} ${e.params}`);
   }
-  if (e.duration < 200) return;
+  // if (e.duration < 200) return;
 
-  await prisma
-    .$transaction(async (tx) => {
-      const params = JSON.parse(e.params);
-      const res = await tx.$queryRawUnsafe('EXPLAIN ANALYZE ' + e.query, ...params).catch(() => {});
-      logger.info('\n' + e.duration + 'ms: ' + e.query + '\n\n' + res.map((r) => r['QUERY PLAN']).join('\n') + '\n\n\n\n\n\n');
+  // await prisma
+  //   .$transaction(async (tx) => {
+  //     const params = JSON.parse(e.params);
+  //     const res = await tx.$queryRawUnsafe('EXPLAIN ANALYZE ' + e.query, ...params).catch(() => {});
+  //     logger.info('\n' + e.duration + 'ms: ' + e.query + '\n\n' + res.map((r) => r['QUERY PLAN']).join('\n') + '\n\n\n\n\n\n');
 
-      throw new Error('Query explanation complete');
-    })
-    .catch(() => {});
+  //     throw new Error('Query explanation complete');
+  //   })
+  //   .catch(() => {});
 });
 
 export const publicUserExcludeFields = excludeFields('User', ['status', 'customStatus', 'lastOnlineAt', 'lastOnlineStatus']);
