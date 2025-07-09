@@ -93,6 +93,7 @@ model FirebaseMessagingToken {
   token String @unique
   accountId String
   account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@index([accountId])
 }
 
 model User {
@@ -306,6 +307,7 @@ model Follower {
   followedTo    User     @relation(fields: [followedToId], references: [id])
   @@unique([followedById, followedToId])
   @@index([followedById, followedToId])
+  @@index([followedToId])
 }
 
 
@@ -427,6 +429,8 @@ model CustomEmoji {
 
   uploadedById String 
   uploadedBy   User    @relation(fields: [uploadedById], references: [id], onDelete: Cascade) 
+
+  @@index([serverId])
 }
 
 
@@ -474,6 +478,7 @@ model ServerRole {
 
   mentionedMessages      Message[]               @relation(name: "role_mentioned_messages")
 
+  @@index([serverId])
 
 }
 
@@ -562,7 +567,7 @@ model ServerMember {
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
 
   @@unique([userId, serverId])
-
+  @@index([serverId])
 }
 
 
@@ -647,6 +652,9 @@ model ServerChannelPermissions {
   createdAt DateTime @default(now())
 
   @@id([roleId, channelId])
+
+  @@index([channelId])
+
 }
 
 model Ticket {
@@ -839,7 +847,7 @@ model MessageMention {
 
 
   @@unique([mentionedById, mentionedToId, channelId])
-
+  @@index([mentionedToId])
 }
 
 model Attachment {
@@ -872,10 +880,10 @@ model Attachment {
 
   createdAt   DateTime @default(now())
 
+
   @@index([messageId, createdAt])
-
+  @@index([channelId])
   @@index([postId])
-
 
 }
 
@@ -891,6 +899,7 @@ model ServerChannelLastSeen {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([channelId, userId, serverId])
+  @@index([userId])
 }
 
 model AnnouncementPost {
@@ -953,19 +962,12 @@ model Post {
   embed Json?
 
   @@index([createdAt(sot: Desc), commentToId, deleted])
-
   @@index([createdAt(sort: Desc), createdById, commentToId, deleted])
-
   @@index([commentToId, deleted, createdAt(sort: Desc), createdById])
   @@index([createdById, createdAt(sort: Desc)])
-
   @@index([commentToId, deleted])
-
-
   @@index([estimateLikes(sort: Desc), createdAt])
-
   @@index([repostId])
-
   @@index([createdById, deleted, commentToId, createdAt(sort: Desc)])
 
 
