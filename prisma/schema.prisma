@@ -191,6 +191,8 @@ model User {
   externalEmbed ExternalEmbed?
 
   @@unique([username, tag])
+
+  @@index([tag])
 }
 
 model BotCommand {
@@ -259,6 +261,7 @@ model MessageNotification {
   createdAt               DateTime                @default(now())
 
   @@index([messageId, createdAt])
+  @@index([userId, createdAt])
 }
 
 
@@ -547,6 +550,8 @@ model ServerInvite {
   server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   externalEmbed ExternalEmbed?
+
+  @@index([serverId])
 }
 
 model ServerMember {
@@ -633,6 +638,10 @@ model Channel {
   permissions ServerChannelPermissions[]
 
   reminders             Reminder[]
+
+
+  @@index([serverId])
+
 }
 
 model ServerChannelPermissions {
@@ -828,6 +837,7 @@ model ReactedMessageUser {
 
   @@unique([reactionId, userId])
   @@index([reactionId])
+  @@index([userId])
 }
 
 
@@ -1037,6 +1047,10 @@ model PostNotification {
 
   postId      String?
   post        Post?     @relation(fields: [postId], references: [id])
+
+  @@index([postId]) 
+  @@index([toId, createdAt])
+
 }
 
 
