@@ -17,6 +17,7 @@ export interface ServerChannelCache {
   server: ServerCache;
   slowModeSeconds?: number;
   canBePublic?: boolean; // Check if a channel can be public. (Using Customize page.)
+  external?: boolean;
 }
 
 export interface DMChannelCache {

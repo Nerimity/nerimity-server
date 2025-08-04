@@ -23,6 +23,7 @@ import { htmlToJson } from '@nerimity/html-embed';
 import { zip } from '../common/zip';
 import { FriendStatus } from '../types/Friend';
 import { getIO } from '../socket/socket';
+import { fetchFromExternalIo } from '../external-server-channel-socket/externalServerChannelSocket';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -786,6 +787,188 @@ export const createMessage = async (opts: SendMessageOptions) => {
     if (uniqueButtons.length !== ids.length) {
       return [null, generateError('Button IDs must be unique', 'buttons')];
     }
+  }
+
+  if (channel?.type === ChannelType.SERVER_TEXT && channel) {
+    fetchFromExternalIo(channel.id, {
+      type: 'create_message',
+      payload: {
+        data: await constructData({
+          messageData: {
+            silent: opts.silent,
+            id: generateId(),
+            content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
+            createdById: opts.userId,
+            channelId: opts.channelId,
+            type: opts.type,
+            createdAt: messageCreatedAt,
+
+            ...(opts.buttons?.length
+              ? {
+                  buttons: {
+                    createMany: {
+                      data: opts.buttons,
+                    },
+                  },
+                }
+              : undefined),
+
+            ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
+            ...(opts.attachment
+              ? {
+                  attachments: {
+                    create: {
+                      ...opts.attachment,
+                      id: generateId(),
+                      channelId: opts.channelId,
+                      serverId: opts.serverId,
+                    },
+                  },
+                }
+              : undefined),
+          },
+          creatorId: opts.userId,
+          bypassQuotesCheck: channel?.type === ChannelType.TICKET,
+          sendMessageOpts: opts,
+        }),
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
+              badges: true,
+              bot: true,
+            },
+          },
+          roleMentions: {
+            select: {
+              id: true,
+              name: true,
+              hexColor: true,
+              icon: true,
+            },
+          },
+          mentions: {
+            select: {
+              id: true,
+              username: true,
+              tag: true,
+              hexColor: true,
+              avatar: true,
+              badges: true,
+            },
+          },
+          replyMessages: {
+            orderBy: { id: 'desc' },
+            select: {
+              replyToMessage: {
+                select: {
+                  id: true,
+                  content: true,
+                  editedAt: true,
+                  createdAt: true,
+                  attachments: {
+                    select: {
+                      height: true,
+                      width: true,
+                      path: true,
+                      id: true,
+                      provider: true,
+                      filesize: true,
+                      expireAt: true,
+                      fileId: true,
+                      mime: true,
+                      createdAt: true,
+                    },
+                  },
+                  createdBy: {
+                    select: {
+                      id: true,
+                      username: true,
+                      tag: true,
+                      hexColor: true,
+                      avatar: true,
+                      badges: true,
+                      bot: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          buttons: {
+            orderBy: { order: 'asc' },
+            select: {
+              alert: true,
+              id: true,
+              label: true,
+            },
+          },
+          quotedMessages: {
+            select: {
+              id: true,
+              content: true,
+              mentions: {
+                select: {
+                  id: true,
+                  username: true,
+                  tag: true,
+                  hexColor: true,
+                  avatar: true,
+                  badges: true,
+                },
+              },
+              editedAt: true,
+              createdAt: true,
+              channelId: true,
+              attachments: {
+                select: {
+                  height: true,
+                  width: true,
+                  path: true,
+                  id: true,
+                  provider: true,
+                  filesize: true,
+                  expireAt: true,
+                  fileId: true,
+                  mime: true,
+                  createdAt: true,
+                },
+              },
+              createdBy: {
+                select: {
+                  id: true,
+                  username: true,
+                  tag: true,
+                  hexColor: true,
+                  avatar: true,
+                  badges: true,
+                  bot: true,
+                },
+              },
+            },
+          },
+          attachments: {
+            select: {
+              height: true,
+              width: true,
+              path: true,
+              id: true,
+              filesize: true,
+              expireAt: true,
+              provider: true,
+              fileId: true,
+              mime: true,
+              createdAt: true,
+            },
+          },
+          reactions: true,
+        },
+      },
+    });
   }
 
   const createMessageQuery = prisma.message.create({

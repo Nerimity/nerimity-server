@@ -130,6 +130,10 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
   if (!server?.defaultRoleId) {
     return [null, generateError('Something went wrong. Please try again! (default role not found)')];
   }
+
+  if (opts.external && opts.channelType !== ChannelType.SERVER_TEXT) {
+    return [null, generateError('External channels can only be created as text channels.')];
+  }
   const channel = await prisma.channel.create({
     data: {
       id: generateId(),
