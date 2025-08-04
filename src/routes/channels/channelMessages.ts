@@ -40,7 +40,7 @@ async function route(req: Request, res: Response) {
     requesterId: req.userCache.id,
   });
 
-  const resp = await fetchFromExternalIo(req.channelCache.id, { name: 'get_messages' });
+  const resp = await fetchFromExternalIo(req.channelCache.id, { name: 'get_messages', limit, after, before, around });
 
   console.log(resp);
 

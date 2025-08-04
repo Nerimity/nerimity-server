@@ -6,8 +6,9 @@ import { getExternalServerChannel } from '../services/ExternalServerChannel';
 
 interface GetMessagesPayload {
   name: 'get_messages';
-  before?: number;
-  after?: number;
+  before?: string;
+  after?: string;
+  around?: string;
   limit?: number;
 }
 
