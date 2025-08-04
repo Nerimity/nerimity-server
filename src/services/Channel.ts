@@ -115,6 +115,7 @@ interface CreateServerChannelOpts {
   channelName: string;
   creatorId: string;
   channelType?: ChannelType;
+  external?: boolean;
 }
 
 export const createServerChannel = async (opts: CreateServerChannelOpts): Promise<CustomResult<Channel, CustomError>> => {
@@ -145,6 +146,18 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
       },
       createdById: opts.creatorId,
       order: channelCount + 1,
+      ...(opts.external
+        ? {
+            external: true,
+            externalServerChannel: {
+              create: {
+                serverId: opts.serverId,
+                id: generateId(),
+                passwordVersion: 1,
+              },
+            },
+          }
+        : {}),
     },
     include: {
       permissions: {

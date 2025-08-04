@@ -25,6 +25,7 @@ import { OpenGraphRouter } from './routes/open-graph/Router';
 import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
 import { logger } from './common/pino';
+import { createExternalServerClientIo } from './external-server-channel-socket/externalServerChannelSocket';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -50,6 +51,7 @@ const main = async () => {
   await connectRedis();
   Log.info('Connected to Redis');
   createIO(server);
+  createExternalServerClientIo();
 
   prisma.$connect().then(() => {
     Log.info('Connected to PostgreSQL');

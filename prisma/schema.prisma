@@ -395,6 +395,9 @@ model Server {
   externalEmbed ExternalEmbed?
 
 
+    externalServerChannels ExternalServerChannel[]
+
+
 }
 
 // Personal settings for joined servers
@@ -639,9 +642,28 @@ model Channel {
 
   reminders             Reminder[]
 
+  externalServerChannel ExternalServerChannel?
+  external Boolean?
+
 
   @@index([serverId])
 
+}
+
+model ExternalServerChannel {
+  @@map("external_server_channels")
+  id          String   @id
+  serverId    String
+  channelId   String @unique
+
+
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  passwordVersion Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([serverId, channelId])
 }
 
 model ServerChannelPermissions {

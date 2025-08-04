@@ -20,6 +20,7 @@ export default {
   WS_PORT: parseInt(process.env.WS_PORT as string),
   JWT_SECRET: process.env.JWT_SECRET as string,
   CONNECTIONS_SECRET: process.env.CONNECTIONS_SECRET as string,
+  JWT_EXTERNAL_SERVER_CHANNEL_SECRET: process.env.JWT_EXTERNAL_SERVER_CHANNEL_SECRET as string,
   JWT_CONNECTIONS_SECRET: process.env.JWT_CONNECTIONS_SECRET as string,
   DATABASE_URL: process.env.DATABASE_URL as string,
   REDIS_HOST: process.env.REDIS_HOST as string,

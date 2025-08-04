@@ -5,6 +5,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { getMessagesByChannelId } from '../../services/Message';
 import { generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
+import { fetchFromExternalIo } from '../../external-server-channel-socket/externalServerChannelSocket';
 
 export function channelMessages(Router: Router) {
   Router.get(
@@ -38,6 +39,10 @@ async function route(req: Request, res: Response) {
     aroundMessageId: around,
     requesterId: req.userCache.id,
   });
+
+  const resp = await fetchFromExternalIo(req.channelCache.id, { name: 'get_messages' });
+
+  console.log(resp);
 
   res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
   res.json(messages);
