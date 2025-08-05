@@ -208,14 +208,11 @@ async function route(req: Request, res: Response) {
   }
 
   if (req.channelCache.type === ChannelType.DM_TEXT && !req.channelCache.inbox.canMessage) {
-    let error = req.channelCache.inbox.canMessageError;
-    let errorMessage = '';
+    const error = req.channelCache.inbox.canMessageError;
+    let errorMessage = 'You cannot message this user.';
+
     if (error === 'BLOCKED_BY_REQUESTER') {
       errorMessage = 'You have blocked this user.';
-    }
-
-    if (error === 'BLOCKED_BY_RECIPIENT') {
-      error = 'UNKNOWN';
     }
 
     if (error === 'NOT_FRIENDS_REQUESTER') {
@@ -233,8 +230,6 @@ async function route(req: Request, res: Response) {
     if (error === 'NOT_FRIENDS_AND_SERVERS_RECIPIENT') {
       errorMessage = 'This users privacy settings does not allow you to message this user because you are not friends with them and you do not share a server with them.';
     }
-
-    errorMessage = 'You cannot message this user.';
 
     return res.status(400).json(generateError(errorMessage, undefined, error));
   }
