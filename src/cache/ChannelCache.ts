@@ -322,9 +322,7 @@ const fetchCanMssage = async ({ userId, inbox }: FetchCanMessageOpts): Promise<[
   });
 
   if (areFriends) {
-    if (requesterDmStatus >= 1 && recipientDmStatus >= 1) {
-      return [true, null] as const;
-    }
+    return [true, null] as const;
   }
   if (requesterDmStatus === DmStatus.FRIENDS) {
     return [false, 'NOT_FRIENDS_REQUESTER'] as const;
