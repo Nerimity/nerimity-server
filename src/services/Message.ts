@@ -23,7 +23,8 @@ import { htmlToJson } from '@nerimity/html-embed';
 import { zip } from '../common/zip';
 import { FriendStatus } from '../types/Friend';
 import { getIO } from '../socket/socket';
-import { fetchFromExternalIo } from '../external-server-channel-socket/externalServerChannelSocket';
+import { ExternalMessage, fetchFromExternalIo } from '../external-server-channel-socket/externalServerChannelSocket';
+import { type } from 'arktype';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -789,10 +790,12 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
   }
 
+  let message: any;
+
   if (channel?.type === ChannelType.SERVER_TEXT && channel) {
-    fetchFromExternalIo(channel.id, {
-      type: 'create_message',
-      payload: {
+    const [res, err] = await fetchFromExternalIo(channel.id, {
+      name: 'create_message',
+      data: {
         data: await constructData({
           messageData: {
             silent: opts.silent,
@@ -827,40 +830,11 @@ export const createMessage = async (opts: SendMessageOptions) => {
                 }
               : undefined),
           },
+
           creatorId: opts.userId,
-          bypassQuotesCheck: channel?.type === ChannelType.TICKET,
           sendMessageOpts: opts,
         }),
         include: {
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-              bot: true,
-            },
-          },
-          roleMentions: {
-            select: {
-              id: true,
-              name: true,
-              hexColor: true,
-              icon: true,
-            },
-          },
-          mentions: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-            },
-          },
           replyMessages: {
             orderBy: { id: 'desc' },
             select: {
@@ -884,17 +858,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
                       createdAt: true,
                     },
                   },
-                  createdBy: {
-                    select: {
-                      id: true,
-                      username: true,
-                      tag: true,
-                      hexColor: true,
-                      avatar: true,
-                      badges: true,
-                      bot: true,
-                    },
-                  },
+                  createdById: true,
                 },
               },
             },
@@ -911,19 +875,11 @@ export const createMessage = async (opts: SendMessageOptions) => {
             select: {
               id: true,
               content: true,
-              mentions: {
-                select: {
-                  id: true,
-                  username: true,
-                  tag: true,
-                  hexColor: true,
-                  avatar: true,
-                  badges: true,
-                },
-              },
+              mentions: true,
               editedAt: true,
               createdAt: true,
               channelId: true,
+              createdById: true,
               attachments: {
                 select: {
                   height: true,
@@ -936,17 +892,6 @@ export const createMessage = async (opts: SendMessageOptions) => {
                   fileId: true,
                   mime: true,
                   createdAt: true,
-                },
-              },
-              createdBy: {
-                select: {
-                  id: true,
-                  username: true,
-                  tag: true,
-                  hexColor: true,
-                  avatar: true,
-                  badges: true,
-                  bot: true,
                 },
               },
             },
@@ -969,184 +914,28 @@ export const createMessage = async (opts: SendMessageOptions) => {
         },
       },
     });
+
+    if (err) {
+      console.log(err);
+      return [null, 'Failed to create message.'];
+    }
+
+    // validate
+    message = ExternalMessage(res);
+    if (message instanceof type.errors) {
+      return [null, 'Failed to verify message.\n**This message still might be sent. Reload the page to see it.**'];
+    }
+
+    const userIds = [message.createdById, ...message.mentions];
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true, bot: true },
+    });
+
+    message.createdBy = users.find((u) => u.id === message.createdById);
+    message.mentions = message.mentions.map((id) => users.find((u) => u.id === id));
   }
-
-  const createMessageQuery = prisma.message.create({
-    data: await constructData({
-      messageData: {
-        silent: opts.silent,
-        id: generateId(),
-        content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
-        createdById: opts.userId,
-        channelId: opts.channelId,
-        type: opts.type,
-        createdAt: messageCreatedAt,
-
-        ...(opts.buttons?.length
-          ? {
-              buttons: {
-                createMany: {
-                  data: opts.buttons,
-                },
-              },
-            }
-          : undefined),
-
-        ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
-        ...(opts.attachment
-          ? {
-              attachments: {
-                create: {
-                  ...opts.attachment,
-                  id: generateId(),
-                  channelId: opts.channelId,
-                  serverId: opts.serverId,
-                },
-              },
-            }
-          : undefined),
-      },
-      creatorId: opts.userId,
-      bypassQuotesCheck: channel?.type === ChannelType.TICKET,
-      sendMessageOpts: opts,
-    }),
-    include: {
-      createdBy: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-          badges: true,
-          bot: true,
-        },
-      },
-      roleMentions: {
-        select: {
-          id: true,
-          name: true,
-          hexColor: true,
-          icon: true,
-        },
-      },
-      mentions: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-          badges: true,
-        },
-      },
-      replyMessages: {
-        orderBy: { id: 'desc' },
-        select: {
-          replyToMessage: {
-            select: {
-              id: true,
-              content: true,
-              editedAt: true,
-              createdAt: true,
-              attachments: {
-                select: {
-                  height: true,
-                  width: true,
-                  path: true,
-                  id: true,
-                  provider: true,
-                  filesize: true,
-                  expireAt: true,
-                  fileId: true,
-                  mime: true,
-                  createdAt: true,
-                },
-              },
-              createdBy: {
-                select: {
-                  id: true,
-                  username: true,
-                  tag: true,
-                  hexColor: true,
-                  avatar: true,
-                  badges: true,
-                  bot: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      buttons: {
-        orderBy: { order: 'asc' },
-        select: {
-          alert: true,
-          id: true,
-          label: true,
-        },
-      },
-      quotedMessages: {
-        select: {
-          id: true,
-          content: true,
-          mentions: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-            },
-          },
-          editedAt: true,
-          createdAt: true,
-          channelId: true,
-          attachments: {
-            select: {
-              height: true,
-              width: true,
-              path: true,
-              id: true,
-              provider: true,
-              filesize: true,
-              expireAt: true,
-              fileId: true,
-              mime: true,
-              createdAt: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-              bot: true,
-            },
-          },
-        },
-      },
-      attachments: {
-        select: {
-          height: true,
-          width: true,
-          path: true,
-          id: true,
-          filesize: true,
-          expireAt: true,
-          provider: true,
-          fileId: true,
-          mime: true,
-          createdAt: true,
-        },
-      },
-      reactions: true,
-    },
-  });
 
   // update channel last message
   const updateLastMessageQuery = prisma.channel.update({
@@ -1154,10 +943,190 @@ export const createMessage = async (opts: SendMessageOptions) => {
     data: { lastMessagedAt: messageCreatedAt },
   });
 
-  const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]).catch((e) => {
-    console.error(e);
-    return [];
-  });
+  if (!message) {
+    const createMessageQuery = prisma.message.create({
+      data: await constructData({
+        messageData: {
+          silent: opts.silent,
+          id: generateId(),
+          content: isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
+          createdById: opts.userId,
+          channelId: opts.channelId,
+          type: opts.type,
+          createdAt: messageCreatedAt,
+
+          ...(opts.buttons?.length
+            ? {
+                buttons: {
+                  createMany: {
+                    data: opts.buttons,
+                  },
+                },
+              }
+            : undefined),
+
+          ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
+          ...(opts.attachment
+            ? {
+                attachments: {
+                  create: {
+                    ...opts.attachment,
+                    id: generateId(),
+                    channelId: opts.channelId,
+                    serverId: opts.serverId,
+                  },
+                },
+              }
+            : undefined),
+        },
+        creatorId: opts.userId,
+        bypassQuotesCheck: channel?.type === ChannelType.TICKET,
+        sendMessageOpts: opts,
+      }),
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            tag: true,
+            hexColor: true,
+            avatar: true,
+            badges: true,
+            bot: true,
+          },
+        },
+        roleMentions: {
+          select: {
+            id: true,
+            name: true,
+            hexColor: true,
+            icon: true,
+          },
+        },
+        mentions: {
+          select: {
+            id: true,
+            username: true,
+            tag: true,
+            hexColor: true,
+            avatar: true,
+            badges: true,
+          },
+        },
+        replyMessages: {
+          orderBy: { id: 'desc' },
+          select: {
+            replyToMessage: {
+              select: {
+                id: true,
+                content: true,
+                editedAt: true,
+                createdAt: true,
+                attachments: {
+                  select: {
+                    height: true,
+                    width: true,
+                    path: true,
+                    id: true,
+                    provider: true,
+                    filesize: true,
+                    expireAt: true,
+                    fileId: true,
+                    mime: true,
+                    createdAt: true,
+                  },
+                },
+                createdBy: {
+                  select: {
+                    id: true,
+                    username: true,
+                    tag: true,
+                    hexColor: true,
+                    avatar: true,
+                    badges: true,
+                    bot: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        buttons: {
+          orderBy: { order: 'asc' },
+          select: {
+            alert: true,
+            id: true,
+            label: true,
+          },
+        },
+        quotedMessages: {
+          select: {
+            id: true,
+            content: true,
+            mentions: {
+              select: {
+                id: true,
+                username: true,
+                tag: true,
+                hexColor: true,
+                avatar: true,
+                badges: true,
+              },
+            },
+            editedAt: true,
+            createdAt: true,
+            channelId: true,
+            attachments: {
+              select: {
+                height: true,
+                width: true,
+                path: true,
+                id: true,
+                provider: true,
+                filesize: true,
+                expireAt: true,
+                fileId: true,
+                mime: true,
+                createdAt: true,
+              },
+            },
+            createdBy: {
+              select: {
+                id: true,
+                username: true,
+                tag: true,
+                hexColor: true,
+                avatar: true,
+                badges: true,
+                bot: true,
+              },
+            },
+          },
+        },
+        attachments: {
+          select: {
+            height: true,
+            width: true,
+            path: true,
+            id: true,
+            filesize: true,
+            expireAt: true,
+            provider: true,
+            fileId: true,
+            mime: true,
+            createdAt: true,
+          },
+        },
+        reactions: true,
+      },
+    });
+    const [messageRes] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]).catch((e) => {
+      console.error(e);
+      return [];
+    });
+
+    message = messageRes;
+  }
 
   if (!message) {
     return [null, "Couldn't create message"] as const;
