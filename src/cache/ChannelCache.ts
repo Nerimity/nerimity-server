@@ -326,9 +326,21 @@ const fetchCanMssage = async ({ userId, inbox }: FetchCanMessageOpts): Promise<[
     return [true, null] as const;
   }
   if (requesterDmStatus === DmStatus.FRIENDS) {
+    console.log({
+      what: 'NOT_FRIENDS_REQUESTER',
+      recipientId: inbox.recipientId,
+      requesterId: userId,
+      areFriends,
+    });
     return [false, 'NOT_FRIENDS_REQUESTER'] as const;
   }
   if (recipientDmStatus === DmStatus.FRIENDS) {
+    console.log({
+      what: 'NOT_FRIENDS_RECIPIENT',
+      recipientId: inbox.recipientId,
+      requesterId: userId,
+      areFriends,
+    });
     return [false, 'NOT_FRIENDS_RECIPIENT'] as const;
   }
 
