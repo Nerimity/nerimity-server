@@ -311,12 +311,13 @@ const fetchCanMssage = async ({ userId, inbox }: FetchCanMessageOpts): Promise<[
   }
   if (!requesterDmStatus && !recipientDmStatus) return [true, null] as const;
 
-  const areFriends = await prisma.friend.findUnique({
+  const areFriends = await prisma.friend.findFirst({
     where: {
-      userId_recipientId: {
-        recipientId: inbox.recipientId,
-        userId,
-      },
+      OR: [
+        { userId, recipientId: inbox.recipientId },
+        { userId: inbox.recipientId, recipientId: userId },
+      ],
+
       status: FriendStatus.FRIENDS,
     },
   });
