@@ -120,6 +120,26 @@ const types = scope({
     label: 'string < 100',
     'alert?': 'boolean',
   },
+
+  ReplyMessage: {
+    replyToMessage: {
+      id: 'string < 100',
+      createdById: 'string < 100',
+      createdAt: 'number < 999999999999999999',
+      editedAt: 'number < 999999999999999999 | null',
+      content: 'string < 2000',
+      attachments: 'Attachment[] < 20',
+    },
+  },
+  QuotedMessage: {
+    id: 'string < 100',
+    content: 'string < 2000',
+    editedAt: 'number < 999999999999999999 | null',
+    createdById: 'string < 100',
+    createdAt: 'number < 999999999999999999',
+    channelId: 'string < 100',
+    attachments: 'Attachment[] < 20',
+  },
   ExternalMessage: {
     id: 'string',
     'content?': 'string < 2000',
@@ -133,9 +153,9 @@ const types = scope({
     htmlEmbed: 'string < 5000 | null',
     mentionReplies: 'boolean | null',
     silent: 'boolean | null',
-    replyMessages: 'object[] < 20',
+    replyMessages: 'ReplyMessage[] < 20',
     buttons: 'Button[] < 20',
-    quotedMessages: 'ExternalMessage[] < 20', // Use the name of the type from the scope
+    quotedMessages: 'QuotedMessage[] < 20', // Use the name of the type from the scope
     attachments: 'Attachment[] < 20', // Use the name of the type from the scope
     reactions: 'Reaction[] < 20', // Use the name of the type from the scope
     mentions: 'string < 100 [] < 20',

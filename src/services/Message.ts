@@ -23,7 +23,7 @@ import { htmlToJson } from '@nerimity/html-embed';
 import { zip } from '../common/zip';
 import { FriendStatus } from '../types/Friend';
 import { getIO } from '../socket/socket';
-import { ExternalMessage, fetchFromExternalIo } from '../external-server-channel-socket/externalServerChannelSocket';
+import { ExternalMessage, ExternalMessages, fetchFromExternalIo } from '../external-server-channel-socket/externalServerChannelSocket';
 import { type } from 'arktype';
 
 interface GetMessageByChannelIdOpts {
@@ -700,8 +700,9 @@ interface ConstructDataOpts {
   update?: boolean;
   bypassQuotesCheck?: boolean;
   sendMessageOpts?: SendMessageOptions;
+  externalChannel?: boolean;
 }
-async function constructData({ messageData, creatorId, update, bypassQuotesCheck, sendMessageOpts }: ConstructDataOpts) {
+async function constructData({ messageData, creatorId, update, bypassQuotesCheck, sendMessageOpts, externalChannel }: ConstructDataOpts) {
   if (typeof messageData.content === 'string') {
     const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1]));
 
@@ -732,9 +733,11 @@ async function constructData({ messageData, creatorId, update, bypassQuotesCheck
     if (!update && sendMessageOpts?.replyToMessageIds?.length) {
       const replyToMessageIds = removeDuplicates(sendMessageOpts.replyToMessageIds);
 
-      const validReplyToMessages = await prisma.message.findMany({
-        where: { id: { in: replyToMessageIds }, channelId: sendMessageOpts?.channelId },
-      });
+      const validReplyToMessages = externalChannel
+        ? replyToMessageIds.map((id) => ({ id }))
+        : await prisma.message.findMany({
+            where: { id: { in: replyToMessageIds }, channelId: sendMessageOpts?.channelId },
+          });
       const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
 
       if (validReplyToMessageIds.length) {
@@ -752,13 +755,35 @@ async function constructData({ messageData, creatorId, update, bypassQuotesCheck
 
     const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1])).slice(0, 8);
     if (quotedMessageIds.length) {
-      const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
-      messageData.quotedMessages = {
-        ...(update ? { set: messages } : { connect: messages }),
-      };
+      if (externalChannel) {
+        messageData.quotedMessages = {
+          connect: quotedMessageIds.map((id) => ({ id })),
+        };
+      } else {
+        const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
+        messageData.quotedMessages = {
+          ...(update ? { set: messages } : { connect: messages }),
+        };
+      }
     }
   }
   return messageData;
+}
+
+export async function mapExternalMessages(messages: typeof ExternalMessages.infer) {
+  const userIds = removeDuplicates([...messages.map((m) => m.createdById), ...messages.map((m) => m.mentions).flat(), ...messages.map((m) => m.replyMessages.map((r) => r.replyToMessage.createdById)).flat(), ...messages.map((m) => m.quotedMessages.map((qm) => qm.createdById)).flat()]).filter(Boolean);
+
+  const users = await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true, bot: true } });
+
+  const newMessages = messages.map((m) => ({
+    ...m,
+    createdBy: users.find((u) => m.createdById === u.id),
+    mentions: users.filter((u) => m.mentions.includes(u.id)),
+    replyMessages: m.replyMessages.map((r) => ({ replyToMessage: { ...r.replyToMessage, createdBy: users.find((u) => r.replyToMessage.createdById === u.id) } })),
+    quotedMessages: m.quotedMessages.map((qm) => ({ ...qm, createdBy: users.find((u) => qm.createdById === u.id) })),
+  }));
+
+  return newMessages;
 }
 
 export const createMessage = async (opts: SendMessageOptions) => {
@@ -790,13 +815,19 @@ export const createMessage = async (opts: SendMessageOptions) => {
     }
   }
 
+  // update channel last message
+  const updateLastMessageQuery = prisma.channel.update({
+    where: { id: opts.channelId },
+    data: { lastMessagedAt: messageCreatedAt },
+  });
   let message: any;
 
-  if (channel?.type === ChannelType.SERVER_TEXT && channel) {
+  if (channel?.type === ChannelType.SERVER_TEXT && channel.external) {
     const [res, err] = await fetchFromExternalIo(channel.id, {
       name: 'create_message',
       data: {
         data: await constructData({
+          externalChannel: true,
           messageData: {
             silent: opts.silent,
             id: generateId(),
@@ -920,28 +951,16 @@ export const createMessage = async (opts: SendMessageOptions) => {
       return [null, 'Failed to create message.'];
     }
 
+    await updateLastMessageQuery;
+
     // validate
     message = ExternalMessage(res);
     if (message instanceof type.errors) {
       return [null, 'Failed to verify message.\n**This message still might be sent. Reload the page to see it.**'];
     }
 
-    const userIds = [message.createdById, ...message.mentions];
-
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true, bot: true },
-    });
-
-    message.createdBy = users.find((u) => u.id === message.createdById);
-    message.mentions = message.mentions.map((id) => users.find((u) => u.id === id));
+    message = (await mapExternalMessages([message]))[0];
   }
-
-  // update channel last message
-  const updateLastMessageQuery = prisma.channel.update({
-    where: { id: opts.channelId },
-    data: { lastMessagedAt: messageCreatedAt },
-  });
 
   if (!message) {
     const createMessageQuery = prisma.message.create({
@@ -1155,7 +1174,7 @@ export const createMessage = async (opts: SendMessageOptions) => {
       }
 
       if (message.mentionReplies) {
-        const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy.id);
+        const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy?.id || message.replyToMessage?.createdById);
         if (userIds.length) {
           mentionUserIds = [...mentionUserIds, ...userIds];
         }
@@ -1644,22 +1663,28 @@ async function addMention(userIds: string[], serverId: string, channelId: string
     return combined !== NotificationPingMode.MUTE;
   });
 
-  await prisma.$transaction([
-    prisma.messageNotification.createMany({
-      data: filteredMentionedUsers.map((user) => ({
-        id: generateId(),
-        userId: user.id,
-        messageId: message.id,
-        serverId,
-      })),
-    }),
-    ...filteredMentionedUsers.map((user) =>
-      prisma.messageMention.upsert({
+  prisma.$transaction(async (tx) => {
+    const isExternalServerChannel = channel.type === ChannelType.SERVER_TEXT && channel.external;
+
+    if (!isExternalServerChannel) {
+      await tx.messageNotification.createMany({
+        data: filteredMentionedUsers.map((user) => ({
+          id: generateId(),
+          userId: user.id,
+          messageId: message.id,
+          serverId,
+        })),
+      });
+    }
+
+    for (let i = 0; i < filteredMentionedUsers.length; i++) {
+      const user = filteredMentionedUsers[i];
+      await tx.messageMention.upsert({
         where: {
           mentionedById_mentionedToId_channelId: {
             channelId: channelId,
             mentionedById: requesterId,
-            mentionedToId: user.id,
+            mentionedToId: user!.id,
           },
         },
         update: {
@@ -1670,13 +1695,13 @@ async function addMention(userIds: string[], serverId: string, channelId: string
           count: 1,
           channelId: channelId,
           mentionedById: requesterId,
-          mentionedToId: user.id,
+          mentionedToId: user!.id,
           serverId: serverId,
           createdAt: dateToDateTime(message.createdAt),
         },
-      })
-    ),
-  ]);
+      });
+    }
+  });
 }
 
 export async function buttonClick(opts: { channelId: string; messageId: string; buttonId: string; clickedUserId: string }) {

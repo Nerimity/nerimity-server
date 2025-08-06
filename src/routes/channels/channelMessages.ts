@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getMessagesByChannelId } from '../../services/Message';
+import { getMessagesByChannelId, mapExternalMessages } from '../../services/Message';
 import { generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
 import { ExternalMessage, ExternalMessages, fetchFromExternalIo } from '../../external-server-channel-socket/externalServerChannelSocket';
@@ -37,31 +37,8 @@ async function route(req: Request, res: Response) {
   const t1 = performance.now();
 
   if (req.channelCache.type === ChannelType.SERVER_TEXT && req.channelCache.external) {
-    const [result, err] = await fetchFromExternalIo(req.channelCache.id, { name: 'get_messages', limit, after, before, around });
-    if (err) {
-      console.log(err);
-      return res.status(400).json(generateError("Couldn't fetch messages from external server."));
-    }
-
-    const messages = ExternalMessages(result);
-
-    if (messages instanceof type.errors) {
-      console.log(result);
-      console.log(messages.summary);
-      return res.status(400).json(generateError('Invalid messages from external server.'));
-    }
-
-    const userIds = removeDuplicates([...messages.map((m) => m.createdById), ...messages.map((m) => m.mentions).flat()]);
-
-    const users = await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, username: true, tag: true, hexColor: true, avatar: true, badges: true, bot: true } });
-
-    const newMessages = messages.map((m) => ({
-      ...m,
-      createdBy: users.find((u) => m.createdById === u.id),
-      mentions: users.filter((u) => m.mentions.includes(u.id)),
-    }));
-
-    return res.json(newMessages);
+    getExternalChannelMessage({ req, res, limit, after, before, around });
+    return;
   }
 
   const messages = await getMessagesByChannelId(req.channelCache.id, {
@@ -74,4 +51,25 @@ async function route(req: Request, res: Response) {
 
   res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
   res.json(messages);
+}
+
+async function getExternalChannelMessage(opts: { req: Request; res: Response; limit?: number; after?: string; before?: string; around?: string }) {
+  const { req, res, limit, after, before, around } = opts;
+  const [result, err] = await fetchFromExternalIo(req.channelCache.id, { name: 'get_messages', limit, after, before, around });
+  if (err) {
+    console.log(err);
+    return res.status(400).json(generateError("Couldn't fetch messages from external server."));
+  }
+
+  const messages = ExternalMessages(result);
+
+  if (messages instanceof type.errors) {
+    console.log(JSON.stringify(result, null, 2));
+    console.log(messages.summary);
+    return res.status(400).json(generateError('Invalid messages from external server.'));
+  }
+
+  const newMessages = await mapExternalMessages(messages);
+
+  return res.json(newMessages);
 }
