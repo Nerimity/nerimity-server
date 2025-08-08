@@ -3,9 +3,7 @@ import { decryptToken } from '../common/JWT';
 import env from '../common/env';
 import { getIO } from '../socket/socket';
 import { getExternalServerChannel } from '../services/ExternalServerChannel';
-import { scope, type } from 'arktype';
-import { string } from 'arktype/internal/keywords/string.ts';
-import { number } from 'arktype/internal/keywords/number.ts';
+import { scope } from 'arktype';
 
 interface GetMessagesPayload {
   name: 'get_messages';
@@ -74,9 +72,7 @@ async function onAuthenticate(socket: socketIO.Socket, payload: { version: strin
   // check if already connected
   const connectedSockets = await externalServerChannelIo.in(externalServerChannel.channelId).fetchSockets();
   if (connectedSockets.length > 0) {
-    socket.emit('authenticateError', { message: 'Already connected' });
-    socket.disconnect();
-    return;
+    externalServerChannelIo.in(externalServerChannel.channelId).except(socket.id).disconnectSockets();
   }
 
   authenticated = true;

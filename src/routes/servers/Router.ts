@@ -48,7 +48,7 @@ import { serverExternalEmbedDelete } from './serverExternalEmbedDelete';
 import { serverExternalEmbedRawGet } from './serverExternalEmbedRawGet ';
 import { serverFolderCreate } from './serverFolderCreate';
 import { serverFolderUpdate } from './serverFolderUpdate';
-import { serverExternalChannelGenerateToken } from './ServerExternalChannelGenerateToken';
+import { serverExternalChannelGenerateToken } from './serverExternalChannelGenerateToken';
 
 const ServersRouter = Router();
 
