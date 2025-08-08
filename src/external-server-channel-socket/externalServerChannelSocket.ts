@@ -97,6 +97,10 @@ export async function fetchFromExternalIo(channelId: string, payload: Payload): 
     .catch(() => [null, 'Host is offline.']);
 }
 
+export async function disconnectExternalServerChannelHost(channelId: string) {
+  externalServerChannelIo.in(channelId).disconnectSockets();
+}
+
 const types = scope({
   Attachment: {
     id: 'string',
