@@ -10,7 +10,7 @@ import { generateId } from '../../common/flakeId';
 import { createPostNotification, fetchLatestPost, fetchPinnedPost, fetchPinnedPosts, PostNotificationType } from '../Post';
 
 import { leaveVoiceChannel } from '../Voice';
-import { MessageInclude } from '../Message';
+import { MessageInclude } from '../Message/Message';
 import { removeDuplicates } from '../../common/utils';
 import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
 import { Prisma } from '@prisma/client';

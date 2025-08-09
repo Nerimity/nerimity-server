@@ -22,3 +22,7 @@ export function omitFromObject<T extends object, K extends keyof T>(object: T, k
 
 const hexRegex = /^#(([0-9A-Fa-f]{2}){3,4}|[0-9A-Fa-f]{3})$/;
 export const isValidHex = (hex: string) => hexRegex.test(hex);
+
+export function isString(value: any): value is string {
+  return typeof value === 'string' || value instanceof String;
+}

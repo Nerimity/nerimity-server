@@ -5,7 +5,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { joinServer } from './Server';
 import { updateServerCache } from '../cache/ServerCache';
-import { createMessage } from './Message';
+import { createMessage } from './Message/Message';
 import { MessageType } from '../types/Message';
 
 interface getPublicServersOpts {

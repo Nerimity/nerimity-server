@@ -6,7 +6,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
 import { MessageType } from '../../types/Message';
-import { AttachmentProviders, createMessage } from '../../services/Message';
+import { AttachmentProviders, createMessage } from '../../services/Message/Message';
 import { memberHasRolePermission, memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { deleteFile, verifyUpload } from '../../common/nerimityCDN';

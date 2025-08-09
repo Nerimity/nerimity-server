@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { buttonClick } from '../../services/Message';
+import { buttonClick } from '../../services/Message/Message';
 
 export function channelMessageButtonClick(Router: Router) {
   Router.post(

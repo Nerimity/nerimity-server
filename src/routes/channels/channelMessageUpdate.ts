@@ -5,24 +5,20 @@ import { CHANNEL_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
 import { channelVerification } from '../../middleware/channelVerification';
-import { editMessage } from '../../services/Message';
+import { editMessage } from '../../services/Message/Message';
 import { rateLimit } from '../../middleware/rateLimit';
 import { ChannelType } from '../../types/Channel';
 
 export function channelMessageUpdate(Router: Router) {
   Router.patch(
     '/channels/:channelId/messages/:messageId',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     channelVerification(),
     channelPermissions({
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
       message: 'You are not allowed to edit messages in this channel.',
     }),
-    body('content')
-      .isString()
-      .withMessage('Content must be a string!')
-      .isLength({ min: 1, max: 2000 })
-      .withMessage('Content length must be between 1 and 2000 characters.'),
+    body('content').isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
     rateLimit({
       name: 'update_message',
       restrictMS: 20000,

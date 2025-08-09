@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
-import { removeMessageReaction } from '../../services/Message';
+import { removeMessageReaction } from '../../services/Message/Message';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
@@ -9,22 +9,10 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelMessageReactionsRemove(Router: Router) {
   Router.post(
     '/channels/:channelId/messages/:messageId/reactions/remove',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     channelVerification(),
-    body('name')
-      .not()
-      .isEmpty()
-      .withMessage('name is required!')
-      .isString()
-      .withMessage('name must be a string!')
-      .isLength({ min: 1, max: 20 })
-      .withMessage('name length must be between 1 and 20 characters.'),
-    body('emojiId')
-      .optional({ values: 'falsy' })
-      .isString()
-      .withMessage('emojiId must be a string!')
-      .isLength({ min: 1, max: 20 })
-      .withMessage('emojiId length must be between 1 and 20 characters.'),
+    body('name').not().isEmpty().withMessage('name is required!').isString().withMessage('name must be a string!').isLength({ min: 1, max: 20 }).withMessage('name length must be between 1 and 20 characters.'),
+    body('emojiId').optional({ values: 'falsy' }).isString().withMessage('emojiId must be a string!').isLength({ min: 1, max: 20 }).withMessage('emojiId length must be between 1 and 20 characters.'),
     rateLimit({
       name: 'reaction_add',
       restrictMS: 20000,

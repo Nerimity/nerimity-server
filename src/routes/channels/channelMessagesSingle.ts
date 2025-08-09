@@ -3,14 +3,14 @@ import { param } from 'express-validator';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getMessageByChannelId } from '../../services/Message';
+import { getMessageByChannelId } from '../../services/Message/Message';
 import { generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
 
 export function channelMessagesSingle(Router: Router) {
   Router.get(
     '/channels/:channelId/messages/:messageId',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     channelVerification(),
     rateLimit({
       name: 'messages',
@@ -30,9 +30,7 @@ async function route(req: Request, res: Response) {
   const params = req.params as unknown as Param;
 
   if (req.channelCache.type === ChannelType.CATEGORY) {
-    return res
-      .status(400)
-      .json(generateError('Cannot get messages from a category channel'));
+    return res.status(400).json(generateError('Cannot get messages from a category channel'));
   }
 
   const messages = await getMessageByChannelId(req.channelCache.id, {

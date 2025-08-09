@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { MessageInclude } from './Message';
+import { MessageInclude } from './Message/Message';
 import { constructPostInclude } from './Post';
 import { emitReminderAdd, emitReminderRemove } from '../emits/Reminder';
 import { getChannelCache } from '../cache/ChannelCache';

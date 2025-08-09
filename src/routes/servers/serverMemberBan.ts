@@ -5,7 +5,7 @@ import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRol
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { banServerMember } from '../../services/Server';
-import { deleteRecentMessages } from '../../services/Message';
+import { deleteRecentMessages } from '../../services/Message/Message';
 
 export function serverMemberBan(Router: Router) {
   // Router.delete('/servers/:serverId/members/:userId/ban',

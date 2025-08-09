@@ -3,7 +3,7 @@ import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { ChannelType } from '../types/Channel';
 import { MessageType } from '../types/Message';
-import { createMessage } from './Message';
+import { createMessage } from './Message/Message';
 
 export enum TicketCategory {
   QUESTION = 0,
@@ -20,10 +20,7 @@ export enum TicketStatus {
   CLOSED_AS_INVALID = 3,
 }
 
-export const CloseTicketStatuses = [
-  TicketStatus.CLOSED_AS_DONE,
-  TicketStatus.CLOSED_AS_INVALID,
-];
+export const CloseTicketStatuses = [TicketStatus.CLOSED_AS_DONE, TicketStatus.CLOSED_AS_INVALID];
 
 interface CreateTicketOpts {
   title: string;
@@ -67,10 +64,7 @@ export const createTicket = async (opts: CreateTicketOpts) => {
   return [newChannel.ticket, null] as const;
 };
 
-export const getOwnTickets = async (
-  userId: string,
-  opts?: { status?: TicketStatus; limit?: number; seen?: boolean }
-) => {
+export const getOwnTickets = async (userId: string, opts?: { status?: TicketStatus; limit?: number; seen?: boolean }) => {
   const tickets = await prisma.ticket.findMany({
     where: {
       openedById: userId,
@@ -93,11 +87,7 @@ export const getOwnTickets = async (
   return tickets;
 };
 
-export const updateTicketStatus = async (opts: {
-  ticketId: number;
-  status: TicketStatus;
-  userId?: string;
-}) => {
+export const updateTicketStatus = async (opts: { ticketId: number; status: TicketStatus; userId?: string }) => {
   const ticket = await prisma.ticket.findUnique({
     where: { id: opts.ticketId },
     select: {

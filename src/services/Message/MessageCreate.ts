@@ -1,0 +1,288 @@
+import { Attachment } from '@prisma/client';
+import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
+import { getServerCache, ServerCache } from '../../cache/ServerCache';
+import { dateToDateTime, prisma } from '../../common/database';
+import { MessageType } from '../../types/Message';
+import { ChannelType } from '../../types/Channel';
+import { htmlToJson } from '@nerimity/html-embed';
+import { generateError } from '../../common/errorHandler';
+import { isString, removeDuplicates } from '../../common/utils';
+import { dismissChannelNotification } from '../Channel';
+import { addMention, addMessageEmbed, constructData, MessageInclude, PublicMessage } from './Message';
+import { emitServerMessageCreated } from '../../emits/Server';
+import { sendDmPushNotification, sendServerPushMessageNotification } from '../../fcm/pushNotification';
+import { generateId } from '../../common/flakeId';
+import { emitDMMessageCreated } from '../../emits/Channel';
+import { replaceBadWords } from '../../common/badWords';
+import { zip } from '../../common/zip';
+
+interface SendMessageOptions {
+  userId: string;
+  channelId: string;
+  channel?: ChannelCache | null;
+  server?: ServerCache | null;
+  serverId?: string;
+  socketId?: string;
+  content?: string;
+  type: MessageType;
+  updateLastSeen?: boolean; // by default, this is true.
+  attachment?: Partial<Attachment>;
+  everyoneMentioned?: boolean;
+  canMentionRoles?: boolean;
+  htmlEmbed?: string;
+
+  replyToMessageIds?: string[];
+  mentionReplies?: boolean;
+  silent?: boolean;
+
+  buttons?: {
+    label: string;
+    id: string;
+    alert?: boolean;
+  }[];
+}
+
+const validateMessageOptions = async (opts: SendMessageOptions) => {
+  const messageCreatedAt = dateToDateTime();
+
+  let channel = opts.channel;
+  let server = opts.server;
+
+  if (!channel) {
+    [channel] = await getChannelCache(opts.channelId, opts.userId);
+  }
+
+  const isServerTextOrDMTextChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
+  const isServerChannel = channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
+
+  let htmlEmbed = undefined;
+  if (opts.htmlEmbed) {
+    try {
+      htmlEmbed = htmlToJson(opts.htmlEmbed);
+    } catch (err: any) {
+      return [null, generateError(err.message, 'htmlEmbed')] as const;
+    }
+  }
+
+  if (opts.buttons) {
+    const ids = opts.buttons.map((b) => b.id);
+    const uniqueButtons = removeDuplicates(ids);
+    if (uniqueButtons.length !== ids.length) {
+      return [null, generateError('Button IDs must be unique', 'buttons')] as const;
+    }
+  }
+
+  if (!server && opts.serverId && isServerChannel) {
+    server = await getServerCache(opts.serverId);
+    if (!server) {
+      return [null, generateError('Server not found.')] as const;
+    }
+  }
+
+  const data = {
+    messageCreatedAt,
+    server,
+    channel,
+    isServerTextOrDMTextChannel,
+    htmlEmbed,
+  };
+  return [data, null] as const;
+};
+
+type ValidationResult = NonNullable<Awaited<ReturnType<typeof validateMessageOptions>>[0]>;
+
+const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validatedResult: ValidationResult) => {
+  const { channel, isServerTextOrDMTextChannel, htmlEmbed, messageCreatedAt } = validatedResult;
+  const createMessageQuery = prisma.message.create({
+    data: await constructData({
+      messageData: {
+        silent: opts.silent,
+        id: generateId(),
+        content: isServerTextOrDMTextChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
+        createdById: opts.userId,
+        channelId: opts.channelId,
+        type: opts.type,
+        createdAt: messageCreatedAt,
+
+        ...(opts.buttons?.length
+          ? {
+              buttons: {
+                createMany: {
+                  data: opts.buttons,
+                },
+              },
+            }
+          : undefined),
+
+        ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
+        ...(opts.attachment
+          ? {
+              attachments: {
+                create: {
+                  ...opts.attachment,
+                  id: generateId(),
+                  channelId: opts.channelId,
+                  serverId: opts.serverId,
+                },
+              },
+            }
+          : undefined),
+      },
+      creatorId: opts.userId,
+      bypassQuotesCheck: channel?.type === ChannelType.TICKET,
+      sendMessageOpts: opts,
+    }),
+    include: MessageInclude,
+  });
+
+  // update channel last message
+  const updateLastMessageQuery = prisma.channel.update({
+    where: { id: opts.channelId },
+    data: { lastMessagedAt: messageCreatedAt },
+  });
+
+  const [message] = await prisma.$transaction([createMessageQuery, updateLastMessageQuery]).catch((e) => {
+    console.error(e);
+    return [];
+  });
+
+  if (!message) {
+    return [null, "Couldn't create message"] as const;
+  }
+
+  return [message, null] as const;
+};
+
+const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessageOptions, validatedResult: ValidationResult) => {
+  const { channel, server } = validatedResult;
+  // update sender last seen
+  if (opts.updateLastSeen !== false) {
+    await dismissChannelNotification(opts.userId, opts.channelId, false);
+  }
+
+  const isServerChannel = channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
+
+  if (opts.serverId && isServerChannel) {
+    let mentionUserIds: string[] = [];
+
+    if (opts.everyoneMentioned) {
+      const serverMembers = await prisma.serverMember.findMany({
+        where: { serverId: opts.serverId, NOT: { userId: opts.userId } },
+        select: { userId: true },
+      });
+      mentionUserIds = serverMembers.map((member) => member.userId);
+    } else {
+      if (message.mentions.length) {
+        mentionUserIds = message.mentions.map((mention) => mention.id);
+      }
+
+      if (message.mentionReplies) {
+        const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy.id).filter(isString);
+        if (userIds.length) {
+          mentionUserIds = [...mentionUserIds, ...userIds];
+        }
+      }
+
+      if (message.roleMentions.length) {
+        const users = await prisma.user.findMany({
+          where: {
+            memberInServers: {
+              some: {
+                serverId: opts.serverId,
+                roleIds: { hasSome: message.roleMentions.map((role) => role.id) },
+              },
+            },
+          },
+        });
+        const userIds = users.map((user) => user.id);
+        mentionUserIds = [...mentionUserIds, ...userIds];
+      }
+
+      if (message.quotedMessages.length) {
+        const userIds = message.quotedMessages.map((message) => message.createdBy.id);
+        mentionUserIds = [...mentionUserIds, ...userIds];
+      }
+    }
+
+    if (mentionUserIds.length) {
+      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message, channel!, server!);
+    }
+  }
+
+  // emit
+  if (opts.serverId && isServerChannel) {
+    emitServerMessageCreated(message, opts.socketId);
+    sendServerPushMessageNotification(opts.serverId, message, channel!, server!);
+  }
+
+  if (channel?.type === ChannelType.DM_TEXT) {
+    if (!channel?.inbox?.recipientId) {
+      return [null, 'Channel not found!'] as const;
+    }
+
+    // For DM channels, mentions are notifications for everything.
+    // For Server channels, mentions are notifications for @mentions.
+    // Don't send notifications for saved notes
+    const isSavedNotes = channel.inbox.recipientId === channel.inbox.createdById;
+    const isMessagingBot = channel.inbox?.recipient.bot;
+    if (channel?.type === ChannelType.DM_TEXT && !isSavedNotes && !isMessagingBot) {
+      const upsertResult = await prisma.messageMention
+        .upsert({
+          where: {
+            mentionedById_mentionedToId_channelId: {
+              channelId: channel.id,
+              mentionedById: opts.userId,
+              mentionedToId: channel.inbox.recipientId,
+            },
+          },
+          update: {
+            count: { increment: 1 },
+          },
+          create: {
+            id: generateId(),
+            count: 1,
+            channelId: channel.id,
+            mentionedById: opts.userId,
+            mentionedToId: channel.inbox.recipientId,
+            createdAt: dateToDateTime(message.createdAt),
+          },
+        })
+        .catch(console.error);
+      if (!upsertResult) {
+        return [null, "Couldn't create message mention"] as const;
+      }
+    }
+
+    emitDMMessageCreated(channel, message, opts.socketId);
+
+    sendDmPushNotification(message, channel!);
+  }
+
+  if (message.type === MessageType.CONTENT) {
+    addMessageEmbed(message, { channel, serverId: opts.serverId });
+  }
+
+  return [true, null] as const;
+};
+
+export const createMessageV2 = async (opts: SendMessageOptions) => {
+  const [validationResult, validationError] = await validateMessageOptions(opts);
+
+  if (validationError) {
+    return [null, validationError] as const;
+  }
+
+  const [message, createMessageError] = await createMessageAndChannelUpdate(opts, validationResult);
+
+  if (createMessageError) {
+    return [null, createMessageError] as const;
+  }
+
+  const [, messageSideEffectsError] = await handleMessageSideEffects(message, opts, validationResult);
+
+  if (messageSideEffectsError) {
+    return [null, messageSideEffectsError] as const;
+  }
+
+  return [message, null] as const;
+};

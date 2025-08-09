@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { buttonClick, buttonClickCallback } from '../../services/Message';
+import { buttonClick, buttonClickCallback } from '../../services/Message/Message';
 import { body, oneOf } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 

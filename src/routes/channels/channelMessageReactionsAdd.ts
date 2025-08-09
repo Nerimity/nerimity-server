@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
-import { addMessageReaction } from '../../services/Message';
+import { addMessageReaction } from '../../services/Message/Message';
 import { body } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';

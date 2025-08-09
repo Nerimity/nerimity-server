@@ -1,12 +1,6 @@
 import { getChannelCache } from '../cache/ChannelCache';
 import { getUserIdBySocketId } from '../cache/UserCache';
-import {
-  addUserToVoice,
-  countVoiceUsersInChannel,
-  getVoiceUserByUserId,
-  isUserInVoice,
-  removeVoiceUserByUserId,
-} from '../cache/VoiceCache';
+import { addUserToVoice, countVoiceUsersInChannel, getVoiceUserByUserId, isUserInVoice, removeVoiceUserByUserId } from '../cache/VoiceCache';
 import { prisma } from '../common/database';
 import env from '../common/env';
 import { generateError } from '../common/errorHandler';
@@ -14,7 +8,7 @@ import { emitServerVoiceUserLeft, emitServerVoiceUserJoined, emitDMVoiceUserLeft
 import { ChannelType, TextChannelTypes } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
 import { MessageType } from '../types/Message';
-import { createMessage } from './Message';
+import { createMessage } from './Message/Message';
 
 export const generateTurnCredentials = async () => {
   const res = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${env.CLOUDFLARE_CALLS_ID}/credentials/generate`, {
@@ -24,30 +18,22 @@ export const generateTurnCredentials = async () => {
       Authorization: `Bearer ${env.CLOUDFLARE_CALLS_TOKEN}`,
     },
     body: JSON.stringify({
-      ttl: 86400
-    })
+      ttl: 86400,
+    }),
   });
 
   if (!res.ok) {
     return null;
   }
 
-  return (await res.json() as any).iceServers;
-}
+  return ((await res.json()) as any).iceServers;
+};
 
-export const joinVoiceChannel = async (
-  userId: string,
-  socketId: string,
-  channelId: string,
-  serverId?: string
-) => {
+export const joinVoiceChannel = async (userId: string, socketId: string, channelId: string, serverId?: string) => {
   const socketUserId = await getUserIdBySocketId(socketId);
 
   if (socketUserId !== userId) {
-    return [
-      null,
-      generateError('Invalid socketId or not connected to WebSocket.'),
-    ] as const;
+    return [null, generateError('Invalid socketId or not connected to WebSocket.')] as const;
   }
 
   const isAlreadyInVoice = await isUserInVoice(userId);
@@ -58,17 +44,11 @@ export const joinVoiceChannel = async (
   const [channelCache] = await getChannelCache(channelId, userId);
 
   if (!channelCache) {
-    return [
-      null,
-      generateError(`Channel does not exist.`)
-    ]
+    return [null, generateError(`Channel does not exist.`)];
   }
 
   if (!TextChannelTypes.includes(channelCache.type)) {
-    return [
-      null,
-      generateError(`Cannot join voice channel.`)
-    ]
+    return [null, generateError(`Cannot join voice channel.`)];
   }
 
   if (channelCache.type === ChannelType.DM_TEXT) {
@@ -78,12 +58,12 @@ export const joinVoiceChannel = async (
         OR: [
           { userId: userId, recipientId: channelCache.inbox.recipientId },
           { userId: channelCache.inbox.recipientId, recipientId: userId },
-        ]
-      }
-    })
+        ],
+      },
+    });
 
     if (isBlocked) {
-      return [null, generateError('Cannot join voice channel.')]
+      return [null, generateError('Cannot join voice channel.')];
     }
   }
 
@@ -94,8 +74,8 @@ export const joinVoiceChannel = async (
       type: MessageType.CALL_STARTED,
       channelId,
       userId,
-      serverId
-    })
+      serverId,
+    });
   }
 
   const voice = await addUserToVoice(channelId, userId, {
@@ -114,19 +94,15 @@ export const joinVoiceChannel = async (
 
 export const leaveVoiceChannel = async (userId: string, channelId?: string) => {
   const voiceUser = await getVoiceUserByUserId(userId);
-  if (!voiceUser)
-    return [null, generateError("You're not in a call.")] as const;
+  if (!voiceUser) return [null, generateError("You're not in a call.")] as const;
 
   if (channelId && voiceUser.channelId !== channelId) {
-    return [null, generateError("You are not in this channel.")] as const;
+    return [null, generateError('You are not in this channel.')] as const;
   }
   const [channelCache] = await getChannelCache(voiceUser.channelId, userId);
 
   if (!channelCache) {
-    return [
-      null,
-      generateError(`Channel does not exist.`)
-    ]
+    return [null, generateError(`Channel does not exist.`)];
   }
   await removeVoiceUserByUserId(userId);
 

@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
-import { getMessageReactedUsers } from '../../services/Message';
+import { getMessageReactedUsers } from '../../services/Message/Message';
 import { query } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
@@ -9,22 +9,10 @@ import { rateLimit } from '../../middleware/rateLimit';
 export function channelMessageReactedUsers(Router: Router) {
   Router.get(
     '/channels/:channelId/messages/:messageId/reactions/users',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     channelVerification(),
-    query('name')
-      .not()
-      .isEmpty()
-      .withMessage('name is required!')
-      .isString()
-      .withMessage('name must be a string!')
-      .isLength({ min: 1, max: 20 })
-      .withMessage('name length must be between 1 and 20 characters.'),
-    query('emojiId')
-      .optional({ values: 'falsy' })
-      .isString()
-      .withMessage('emojiId must be a string!')
-      .isLength({ min: 1, max: 20 })
-      .withMessage('emojiId length must be between 1 and 20 characters.'),
+    query('name').not().isEmpty().withMessage('name is required!').isString().withMessage('name must be a string!').isLength({ min: 1, max: 20 }).withMessage('name length must be between 1 and 20 characters.'),
+    query('emojiId').optional({ values: 'falsy' }).isString().withMessage('emojiId must be a string!').isLength({ min: 1, max: 20 }).withMessage('emojiId length must be between 1 and 20 characters.'),
     rateLimit({
       name: 'reaction_get',
       restrictMS: 20000,
@@ -44,7 +32,7 @@ async function route(req: Request, res: Response) {
   const { messageId } = req.params;
   const query = req.query as unknown as Query;
   let limit = parseInt(query.limit?.toString() || '5');
-  if (!limit ||  limit < 0) limit = 5;
+  if (!limit || limit < 0) limit = 5;
   if (limit > 50) limit = 50;
 
   const validateError = customExpressValidatorResult(req);

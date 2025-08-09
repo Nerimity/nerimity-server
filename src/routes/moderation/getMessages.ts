@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
-import { getMessagesByChannelId } from '../../services/Message';
+import { getMessagesByChannelId } from '../../services/Message/Message';
 import { prisma } from '../../common/database';
 
 export function getMessages(Router: Router) {

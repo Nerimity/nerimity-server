@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getMessagesByChannelId } from '../../services/Message';
+import { getMessagesByChannelId } from '../../services/Message/Message';
 import { generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
 

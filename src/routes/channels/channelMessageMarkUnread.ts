@@ -3,7 +3,7 @@ import { param } from 'express-validator';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getMessageByChannelId, markMessageUnread } from '../../services/Message';
+import { getMessageByChannelId, markMessageUnread } from '../../services/Message/Message';
 import { generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
 

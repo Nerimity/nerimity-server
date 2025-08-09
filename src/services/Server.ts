@@ -9,7 +9,7 @@ import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common
 import { generateHexColor } from '../common/random';
 import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
-import { createMessage, deleteRecentUserServerMessages } from './Message';
+import { createMessage, deleteRecentUserServerMessages } from './Message/Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches } from '../cache/ChannelCache';
