@@ -147,7 +147,7 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
   });
 
   if (!message) {
-    return [null, "Couldn't create message"] as const;
+    return [null, generateError("Couldn't create message")] as const;
   }
 
   return [message, null] as const;
@@ -217,7 +217,7 @@ const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessag
 
   if (channel?.type === ChannelType.DM_TEXT) {
     if (!channel?.inbox?.recipientId) {
-      return [null, 'Channel not found!'] as const;
+      return [null, generateError('Channel not found!')] as const;
     }
 
     // For DM channels, mentions are notifications for everything.
@@ -249,7 +249,7 @@ const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessag
         })
         .catch(console.error);
       if (!upsertResult) {
-        return [null, "Couldn't create message mention"] as const;
+        return [null, generateError("Couldn't create message mention")] as const;
       }
     }
 
@@ -278,11 +278,9 @@ export const createMessageV2 = async (opts: SendMessageOptions) => {
     return [null, createMessageError] as const;
   }
 
-  const [, messageSideEffectsError] = await handleMessageSideEffects(message, opts, validationResult);
-
-  if (messageSideEffectsError) {
-    return [null, messageSideEffectsError] as const;
-  }
+  handleMessageSideEffects(message, opts, validationResult).then(([, error]) => {
+    if (error) console.error(error.message);
+  });
 
   return [message, null] as const;
 };
