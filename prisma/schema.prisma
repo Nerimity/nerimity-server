@@ -190,10 +190,17 @@ model User {
 
   externalEmbed ExternalEmbed?
 
+  webhooks               Webhook[]
+
+
   @@unique([username, tag])
 
   @@index([tag])
 }
+
+
+
+
 
 model BotCommand {
   @@map("bot_commands")
@@ -393,6 +400,9 @@ model Server {
 
 
   externalEmbed ExternalEmbed?
+
+  webhooks               Webhook[]
+
 
 
 }
@@ -640,8 +650,33 @@ model Channel {
   reminders             Reminder[]
 
 
+  webhooks               Webhook[]
+
   @@index([serverId])
 
+}
+
+model Webhook {
+  @@map("webhooks")
+  id String @id
+  
+
+  name String
+  hexColor String?
+  avatar String?
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  serverId String?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+
+  createdAt DateTime @default(now())
 }
 
 model ServerChannelPermissions {

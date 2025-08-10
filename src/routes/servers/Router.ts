@@ -48,8 +48,17 @@ import { serverExternalEmbedDelete } from './serverExternalEmbedDelete';
 import { serverExternalEmbedRawGet } from './serverExternalEmbedRawGet ';
 import { serverFolderCreate } from './serverFolderCreate';
 import { serverFolderUpdate } from './serverFolderUpdate';
+import { serverChannelWebhookGet } from './serverChannelWebhookGet';
+import { serverChannelWebhookToken } from './serverChannelWebhookGetToken';
+import { serverChannelWebhookCreate } from './serverChannelWebhookCreate';
+import { serverChannelWebhookDelete } from './serverChannelWebhookDelete';
 
 const ServersRouter = Router();
+
+serverChannelWebhookGet(ServersRouter);
+serverChannelWebhookCreate(ServersRouter);
+serverChannelWebhookToken(ServersRouter);
+serverChannelWebhookDelete(ServersRouter);
 
 serverExternalEmbedGet(ServersRouter);
 serverExternalEmbedRawGet(ServersRouter);
