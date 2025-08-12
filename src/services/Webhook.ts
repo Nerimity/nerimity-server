@@ -31,12 +31,12 @@ export const createWebhook = async (opts: CreateWebhookOpts) => {
 
   if (!channel) return [null, generateError('Channel not found.')] as const;
 
-  const webhook = await prisma.webhook.create({ data: { hexColor: generateHexColor(), id: generateId(), serverId: opts.serverId, channelId: opts.channelId, name: 'Webhook', createdById: opts.createdById } });
+  const webhook = await prisma.webhook.create({ data: { hexColor: generateHexColor(), id: generateId(), serverId: opts.serverId, channelId: opts.channelId, name: 'Webhook ' + existingCount, createdById: opts.createdById } });
 
   return [webhook, null] as const;
 };
 
-export const getWebhooks = async (serverId: string, channelId: string) => prisma.webhook.findMany({ where: { serverId, channelId } });
+export const getWebhooks = async (serverId: string, channelId: string) => prisma.webhook.findMany({ where: { serverId, channelId }, orderBy: { createdAt: 'desc' } });
 export const getWebhook = async (id: string) => prisma.webhook.findUnique({ where: { id } });
 
 export const getWebhookForCache = async (id: string) => prisma.webhook.findUnique({ where: { id }, include: { channel: { select: { type: true } } } });
