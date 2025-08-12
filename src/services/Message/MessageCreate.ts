@@ -8,7 +8,7 @@ import { htmlToJson } from '@nerimity/html-embed';
 import { generateError } from '../../common/errorHandler';
 import { isString, removeDuplicates } from '../../common/utils';
 import { dismissChannelNotification } from '../Channel';
-import { addMention, addMessageEmbed, constructData, MessageInclude, PublicMessage } from './Message';
+import { addMention, addMessageEmbed, constructData, MessageInclude, TransformedMessage, transformMessage } from './Message';
 import { emitServerMessageCreated } from '../../emits/Server';
 import { sendDmPushNotification, sendServerPushMessageNotification } from '../../fcm/pushNotification';
 import { generateId } from '../../common/flakeId';
@@ -84,6 +84,7 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
     messageCreatedAt,
     server,
     channel,
+    isServerChannel,
     isServerTextOrDMTextChannel,
     htmlEmbed,
   };
@@ -101,6 +102,7 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
         id: generateId(),
         content: isServerTextOrDMTextChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
         createdById: opts.userId,
+        webhookId: opts.webhookId,
         channelId: opts.channelId,
         type: opts.type,
         createdAt: messageCreatedAt,
@@ -133,7 +135,23 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
       bypassQuotesCheck: channel?.type === ChannelType.TICKET,
       sendMessageOpts: opts,
     }),
-    include: MessageInclude,
+    include: {
+      ...MessageInclude,
+      reactions: {
+        select: {
+          ...(opts?.userId ? { reactedUsers: { where: { userId: opts.userId } } } : undefined),
+          emojiId: true,
+          gif: true,
+          name: true,
+          _count: {
+            select: {
+              reactedUsers: true,
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+      },
+    },
   });
 
   // update channel last message
@@ -151,29 +169,17 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     return [null, generateError("Couldn't create message")] as const;
   }
 
-  if (message.webhook) {
-    message.createdBy = {
-      id: message.webhookId!,
-      badges: 0,
-      bot: true,
-      tag: '0000',
-      username: message.webhook.name,
-      avatar: message.webhook.avatar,
-      hexColor: message.webhook.hexColor,
-    };
-  }
+  const transformedMessage = transformMessage(message);
 
-  return [message, null] as const;
+  return [transformedMessage, null] as const;
 };
 
-const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessageOptions, validatedResult: ValidationResult) => {
-  const { channel, server } = validatedResult;
+const handleMessageSideEffects = async (message: TransformedMessage, opts: SendMessageOptions, validatedResult: ValidationResult) => {
+  const { channel, server, isServerChannel } = validatedResult;
   // update sender last seen
   if (opts.userId && opts.updateLastSeen !== false) {
     await dismissChannelNotification(opts.userId, opts.channelId, false);
   }
-
-  const isServerChannel = channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
 
   if (opts.serverId && isServerChannel) {
     let mentionUserIds: string[] = [];
@@ -224,7 +230,6 @@ const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessag
         channelId: opts.channelId,
         requesterId: opts.userId,
         message,
-        channel,
         server: server!,
       });
     }

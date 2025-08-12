@@ -7,12 +7,14 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { rateLimit } from '../../middleware/rateLimit';
 import { deleteWebhook } from '../../services/Webhook';
 import { BaseChannelCache, ServerChannelCache } from '../../cache/ChannelCache';
+import { channelVerification } from '../../middleware/channelVerification';
 
 export function serverChannelWebhookDelete(Router: Router) {
   Router.delete(
     '/servers/:serverId/channels/:channelId/webhooks/:webhookId',
     authenticate({ allowBot: true }),
     serverMemberVerification(),
+    channelVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     rateLimit({
       name: 'server_channel_wh_delete',

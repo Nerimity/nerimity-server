@@ -7,12 +7,14 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { rateLimit } from '../../middleware/rateLimit';
 import { getWebhooks } from '../../services/Webhook';
 import { BaseChannelCache, ServerChannelCache } from '../../cache/ChannelCache';
+import { channelVerification } from '../../middleware/channelVerification';
 
 export function serverChannelWebhookGet(Router: Router) {
   Router.get(
     '/servers/:serverId/channels/:channelId/webhooks',
     authenticate({ allowBot: true }),
     serverMemberVerification(),
+    channelVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     rateLimit({
       name: 'server_channel_wh_get',

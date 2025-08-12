@@ -1,28 +1,22 @@
 import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
-import { emitButtonClick, emitButtonClickCallback, emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../../emits/Channel';
-import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../../emits/Server';
+import { emitButtonClick, emitButtonClickCallback, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../../emits/Channel';
+import { emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../../emits/Server';
 import { MessageType } from '../../types/Message';
-import { dismissChannelNotification } from '../Channel';
 import { dateToDateTime, exists, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 import { CustomError, generateError } from '../../common/errorHandler';
 import { CustomResult } from '../../common/CustomResult';
-import { Attachment, Message, Prisma } from '@prisma/client';
-import { isString, removeDuplicates, removeDuplicates } from '../../common/utils';
+import { Message, Prisma } from '@prisma/client';
+import { isString, removeDuplicates } from '../../common/utils';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { deleteFile } from '../../common/nerimityCDN';
 import { getOGTags } from '../../common/OGTags';
-import { sendDmPushNotification, sendServerPushMessageNotification } from '../../fcm/pushNotification';
-import { ServerCache, getServerCache } from '../../cache/ServerCache';
+import { ServerCache } from '../../cache/ServerCache';
 import { NotificationPingMode } from '../User/User';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../../common/Bitwise';
 import { ChannelType } from '../../types/Channel';
-import { Log } from '../../common/Log';
 import { replaceBadWords } from '../../common/badWords';
-import { htmlToJson } from '@nerimity/html-embed';
-import { zip } from '../../common/zip';
 import { FriendStatus } from '../../types/Friend';
-import { getIO } from '../../socket/socket';
 import { createMessageV2, SendMessageOptions } from './MessageCreate';
 
 interface GetMessageByChannelIdOpts {
@@ -60,7 +54,9 @@ type TransformMessage = Omit<PublicMessage, 'reactions'> & {
   }>[];
 };
 
-function transformMessage(message: TransformMessage) {
+export type TransformedMessage = ReturnType<typeof transformMessage>;
+
+export function transformMessage(message: TransformMessage) {
   const newMessage = {
     ...message,
     reactions: message.reactions.map((reaction) => ({
@@ -70,17 +66,58 @@ function transformMessage(message: TransformMessage) {
       reactedUsers: undefined,
       _count: undefined,
     })),
+
+    quotedMessages: message.quotedMessages.map((quote) => {
+      if (quote.webhook) {
+        quote.createdBy = {
+          id: quote.webhookId!,
+          badges: 0,
+          bot: true,
+          tag: '0000',
+          username: quote.webhook.name,
+          avatar: quote.webhook.avatar,
+          hexColor: quote.webhook.hexColor,
+        };
+      }
+      return {
+        ...quote,
+        webhook: undefined,
+      };
+    }),
+
+    messageReplies: message.replyMessages.map((reply) => {
+      if (reply.replyToMessage?.webhook) {
+        reply.replyToMessage.createdBy = {
+          id: reply.replyToMessage.webhookId!,
+          badges: 0,
+          bot: true,
+          tag: '0000',
+          username: reply.replyToMessage.webhook.name,
+          avatar: reply.replyToMessage.webhook.avatar,
+          hexColor: reply.replyToMessage.webhook.hexColor,
+        };
+      }
+
+      return {
+        replyToMessage: {
+          ...reply.replyToMessage,
+          webhook: undefined,
+        },
+      };
+    }),
+
+    webhook: undefined,
   };
 
-  if (newMessage.webhook) {
+  if (message.webhook) {
     newMessage.createdBy = {
       id: message.webhookId!,
       badges: 0,
       bot: true,
       tag: '0000',
-      username: newMessage.webhook.name,
-      avatar: newMessage.webhook.avatar,
-      hexColor: newMessage.webhook.hexColor,
+      username: message.webhook.name,
+      avatar: message.webhook.avatar,
+      hexColor: message.webhook.hexColor,
     };
   }
 
@@ -285,6 +322,14 @@ export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
                 createdAt: true,
               },
             },
+            webhookId: true,
+            webhook: {
+              select: {
+                avatar: true,
+                name: true,
+                hexColor: true,
+              },
+            },
             createdBy: {
               select: {
                 id: true,
@@ -337,6 +382,14 @@ export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
             fileId: true,
             mime: true,
             createdAt: true,
+          },
+        },
+        webhookId: true,
+        webhook: {
+          select: {
+            avatar: true,
+            name: true,
+            hexColor: true,
           },
         },
         createdBy: {
@@ -839,12 +892,11 @@ interface AddMentionOpts {
   requesterId?: string;
   webhookId?: string;
   message: Message;
-  channel: ChannelCache;
   server: ServerCache;
 }
 
 export async function addMention(opts: AddMentionOpts) {
-  const { userIds, serverId, channelId, requesterId, message, channel, server, webhookId } = opts;
+  const { userIds, serverId, channelId, requesterId, message, server, webhookId } = opts;
 
   if (!webhookId && !requesterId) {
     return;
