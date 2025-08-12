@@ -16,8 +16,9 @@ import { emitDMMessageCreated } from '../../emits/Channel';
 import { replaceBadWords } from '../../common/badWords';
 import { zip } from '../../common/zip';
 
-interface SendMessageOptions {
-  userId: string;
+export interface SendMessageOptions {
+  userId?: string;
+  webhookId?: string;
   channelId: string;
   channel?: ChannelCache | null;
   server?: ServerCache | null;
@@ -48,12 +49,12 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
   let channel = opts.channel;
   let server = opts.server;
 
-  if (!channel) {
+  if (!channel && opts.userId) {
     [channel] = await getChannelCache(opts.channelId, opts.userId);
   }
 
-  const isServerTextOrDMTextChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
-  const isServerChannel = channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
+  const isServerTextOrDMTextChannel = opts.webhookId ? true : channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
+  const isServerChannel = opts.webhookId ? true : channel?.type === ChannelType.SERVER_TEXT || channel?.type === ChannelType.CATEGORY;
 
   let htmlEmbed = undefined;
   if (opts.htmlEmbed) {
@@ -150,13 +151,25 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     return [null, generateError("Couldn't create message")] as const;
   }
 
+  if (message.webhook) {
+    message.createdBy = {
+      id: message.webhookId!,
+      badges: 0,
+      bot: true,
+      tag: '0000',
+      username: message.webhook.name,
+      avatar: message.webhook.avatar,
+      hexColor: message.webhook.hexColor,
+    };
+  }
+
   return [message, null] as const;
 };
 
 const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessageOptions, validatedResult: ValidationResult) => {
   const { channel, server } = validatedResult;
   // update sender last seen
-  if (opts.updateLastSeen !== false) {
+  if (opts.userId && opts.updateLastSeen !== false) {
     await dismissChannelNotification(opts.userId, opts.channelId, false);
   }
 
@@ -177,7 +190,7 @@ const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessag
       }
 
       if (message.mentionReplies) {
-        const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy.id).filter(isString);
+        const userIds = message.replyMessages.map((message) => message.replyToMessage?.createdBy?.id).filter(isString);
         if (userIds.length) {
           mentionUserIds = [...mentionUserIds, ...userIds];
         }
@@ -199,13 +212,21 @@ const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessag
       }
 
       if (message.quotedMessages.length) {
-        const userIds = message.quotedMessages.map((message) => message.createdBy.id);
+        const userIds = message.quotedMessages.map((message) => message.createdBy?.id).filter(isString);
         mentionUserIds = [...mentionUserIds, ...userIds];
       }
     }
 
     if (mentionUserIds.length) {
-      await addMention(removeDuplicates(mentionUserIds), opts.serverId, opts.channelId, opts.userId, message, channel!, server!);
+      await addMention({
+        userIds: removeDuplicates(mentionUserIds),
+        serverId: opts.serverId,
+        channelId: opts.channelId,
+        requesterId: opts.userId,
+        message,
+        channel,
+        server: server!,
+      });
     }
   }
 
@@ -229,11 +250,21 @@ const handleMessageSideEffects = async (message: PublicMessage, opts: SendMessag
       const upsertResult = await prisma.messageMention
         .upsert({
           where: {
-            mentionedById_mentionedToId_channelId: {
-              channelId: channel.id,
-              mentionedById: opts.userId,
-              mentionedToId: channel.inbox.recipientId,
-            },
+            ...(opts.userId
+              ? {
+                  mentionedById_mentionedToId_channelId: {
+                    channelId: channel.id,
+                    mentionedById: opts.userId,
+                    mentionedToId: channel.inbox.recipientId,
+                  },
+                }
+              : {
+                  mentionedByWebhookId_mentionedToId_channelId: {
+                    channelId: channel.id,
+                    mentionedToId: channel.inbox.recipientId,
+                    mentionedByWebhookId: opts.webhookId!,
+                  },
+                }),
           },
           update: {
             count: { increment: 1 },
