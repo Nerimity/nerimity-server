@@ -14,7 +14,7 @@ interface CreateWebhookOpts {
 }
 
 export const getWebhookToken = async (serverId: string, webhookId: string) => {
-  const webhook = await prisma.webhook.findUnique({ where: { id: webhookId, serverId } });
+  const webhook = await prisma.webhook.findUnique({ where: { id: webhookId, serverId, deleting: null } });
 
   if (!webhook) return [null, generateError('Webhook not found.')] as const;
 
@@ -31,22 +31,22 @@ export const createWebhook = async (opts: CreateWebhookOpts) => {
 
   if (!channel) return [null, generateError('Channel not found.')] as const;
 
-  const webhook = await prisma.webhook.create({ data: { hexColor: generateHexColor(), id: generateId(), serverId: opts.serverId, channelId: opts.channelId, name: 'Webhook ' + existingCount, createdById: opts.createdById } });
+  const webhook = await prisma.webhook.create({ data: { hexColor: generateHexColor(), id: generateId(), serverId: opts.serverId, channelId: opts.channelId, name: 'Webhook ' + (existingCount + 1), createdById: opts.createdById } });
 
   return [webhook, null] as const;
 };
 
-export const getWebhooks = async (serverId: string, channelId: string) => prisma.webhook.findMany({ where: { serverId, channelId }, orderBy: { createdAt: 'desc' } });
-export const getWebhook = async (id: string) => prisma.webhook.findUnique({ where: { id } });
+export const getWebhooks = async (serverId: string, channelId: string) => prisma.webhook.findMany({ where: { serverId, channelId, deleting: null }, orderBy: { createdAt: 'desc' } });
+export const getWebhook = async (id: string) => prisma.webhook.findUnique({ where: { id, deleting: null } });
 
-export const getWebhookForCache = async (id: string) => prisma.webhook.findUnique({ where: { id }, include: { channel: { select: { type: true } } } });
+export const getWebhookForCache = async (id: string) => prisma.webhook.findUnique({ where: { id, deleting: null }, include: { channel: { select: { type: true } } } });
 
 export const deleteWebhook = async (serverId: string, channelId: string, webhookId: string) => {
   const webhook = await prisma.webhook.findUnique({ where: { id: webhookId, serverId, channelId } });
 
   if (!webhook) return [null, generateError('Webhook not found.')] as const;
 
-  await prisma.webhook.delete({ where: { id: webhookId } });
+  await prisma.webhook.update({ where: { id: webhookId, avatar: null }, data: { deleting: true } });
 
   await removeWebhookCache(webhookId);
 

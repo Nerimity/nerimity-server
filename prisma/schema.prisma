@@ -660,6 +660,7 @@ model Webhook {
   @@map("webhooks")
   id String @id
   
+  deleting Boolean?
 
   name String
   hexColor String

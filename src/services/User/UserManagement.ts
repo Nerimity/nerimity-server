@@ -240,6 +240,7 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
     }),
     prisma.userProfile.deleteMany({ where: { userId } }),
     prisma.serverChannelLastSeen.deleteMany({ where: { userId } }),
+    prisma.webhook.updateMany({ where: { createdById: userId, avatar: null }, data: { deleting: true } }),
     prisma.user.update({
       where: { id: userId },
       data: {
