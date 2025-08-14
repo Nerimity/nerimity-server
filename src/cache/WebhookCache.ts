@@ -44,5 +44,6 @@ export const removeWebhookCache = async (id: string) => {
 };
 
 export const removeManyWebhookCache = async (ids: string[]) => {
+  if (!ids.length) return;
   await redisClient.del(ids.map((id) => WEBHOOK_CACHE_KEY_STRING(id)));
 };
