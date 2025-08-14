@@ -22,7 +22,7 @@ const rateLimitCheck = async (channelId: string) => {
   return ttl;
 };
 
-async function route(req: Request<{ webhookId: string; token: string }, unknown, EmitterWebhookEvent>, res: Response) {
+async function route(req: Request<{ webhookId: string; token: string }, unknown, EmitterWebhookEvent['payload']>, res: Response) {
   const webhookId = req.params.webhookId;
   const token = req.params.token;
 
@@ -34,18 +34,23 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
   if (ttl) return res.status(429).json(generateError('Rate limit exceeded.'));
 
-  const payload = req.body.payload;
+  const body = {
+    name: (req.headers['x-github-event'] as string) || '',
+    payload: req.body,
+  } as EmitterWebhookEvent;
+
+  const payload = body.payload;
 
   const user = payload.sender ? payload.sender.login : 'Someone';
 
   let content = '';
 
-  if (req.body.name === 'pull_request') {
-    const payload = req.body.payload;
+  if (body.name === 'pull_request') {
+    const payload = body.payload;
     content = `${user} just a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
   }
-  if (req.body.name === 'push') {
-    const payload = req.body.payload;
+  if (body.name === 'push') {
+    const payload = body.payload;
     content = `${user} just pushed to **${payload.ref}** branch.\n${payload.commits.map((commit) => commit.message).join('\n')}`;
   }
   if (!content) {
