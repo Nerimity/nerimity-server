@@ -51,7 +51,7 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
   }
   if (body.name === 'push') {
     const payload = body.payload;
-    content = `${user} just pushed to **${payload.ref}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
+    content = `${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
   }
   if (!content) {
     res.status(200).end();
