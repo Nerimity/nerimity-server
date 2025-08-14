@@ -24,7 +24,7 @@ export const getWebhookToken = async (serverId: string, webhookId: string) => {
 };
 
 export const createWebhook = async (opts: CreateWebhookOpts) => {
-  const existingCount = await prisma.webhook.count({ where: { serverId: opts.serverId, channelId: opts.channelId } });
+  const existingCount = await prisma.webhook.count({ where: { serverId: opts.serverId, channelId: opts.channelId, deleting: null } });
   if (existingCount >= 4) return [null, generateError('You have already created the maximum amount of webhooks for this channel.')] as const;
 
   const channel = await prisma.channel.findUnique({ where: { id: opts.channelId, serverId: opts.serverId, type: ChannelType.SERVER_TEXT } });
@@ -42,7 +42,7 @@ export const getWebhook = async (serverId: string, id: string) => prisma.webhook
 export const getWebhookForCache = async (id: string) => prisma.webhook.findUnique({ where: { id, deleting: null }, include: { channel: { select: { type: true } } } });
 
 export const deleteWebhook = async (serverId: string, channelId: string, webhookId: string) => {
-  const webhook = await prisma.webhook.findUnique({ where: { id: webhookId, serverId, channelId } });
+  const webhook = await prisma.webhook.findUnique({ where: { id: webhookId, serverId, channelId, deleting: null } });
 
   if (!webhook) return [null, generateError('Webhook not found.')] as const;
 
