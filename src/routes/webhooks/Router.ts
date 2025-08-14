@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { webhookkExecute } from './webhookExecute';
-import { webhookkExecuteGitHub } from './webhookExecuteGithub';
+import { webhookkExecuteGitHub } from './webhookExecuteGitHub';
 
 const WebhooksRouter = Router();
 
