@@ -52,9 +52,13 @@ import { serverChannelWebhookGet } from './serverChannelWebhookGet';
 import { serverChannelWebhookToken } from './serverChannelWebhookGetToken';
 import { serverChannelWebhookCreate } from './serverChannelWebhookCreate';
 import { serverChannelWebhookDelete } from './serverChannelWebhookDelete';
+import { serverChannelWebhookGetSingle } from './serverChannelWebhookGetSingle';
+import { serverChannelWebhookUpdate } from './serverChannelWebhookUpdate';
 
 const ServersRouter = Router();
 
+serverChannelWebhookUpdate(ServersRouter);
+serverChannelWebhookGetSingle(ServersRouter);
 serverChannelWebhookGet(ServersRouter);
 serverChannelWebhookCreate(ServersRouter);
 serverChannelWebhookToken(ServersRouter);

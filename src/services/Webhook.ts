@@ -37,7 +37,7 @@ export const createWebhook = async (opts: CreateWebhookOpts) => {
 };
 
 export const getWebhooks = async (serverId: string, channelId: string) => prisma.webhook.findMany({ where: { serverId, channelId, deleting: null }, orderBy: { createdAt: 'desc' } });
-export const getWebhook = async (id: string) => prisma.webhook.findUnique({ where: { id, deleting: null } });
+export const getWebhook = async (serverId: string, id: string) => prisma.webhook.findUnique({ where: { id, serverId, deleting: null } });
 
 export const getWebhookForCache = async (id: string) => prisma.webhook.findUnique({ where: { id, deleting: null }, include: { channel: { select: { type: true } } } });
 
@@ -51,4 +51,17 @@ export const deleteWebhook = async (serverId: string, channelId: string, webhook
   await removeWebhookCache(webhookId);
 
   return [true, null] as const;
+};
+
+export const updateWebhook = async (id: string, serverId: string, data: { name: string }) => {
+  const res = await prisma.webhook
+    .update({
+      where: { id, serverId, deleting: null },
+      data: {
+        name: data.name,
+      },
+    })
+    .catch(() => null);
+  if (!res) return [null, generateError('Webhook not found.')] as const;
+  return [res, null] as const;
 };
