@@ -129,12 +129,12 @@ const getServerChannelMemberPermissions = async (serverId: string, channelId: st
   return setServerChannelMemberPermissions(serverId, channelId, userId);
 };
 
-export const getChannelCache = async (channelId: string, userId: string) => {
+export const getChannelCache = async (channelId: string, userId?: string) => {
   // Check server channel in cache.
   const serverChannel = await getServerChannelCache(channelId);
   if (serverChannel) {
     const server = await getServerCache(serverChannel.serverId as string);
-    const [permissions, error] = await getServerChannelMemberPermissions(serverChannel.serverId as string, channelId, userId);
+    const [permissions, error] = !userId ? [0, null] : await getServerChannelMemberPermissions(serverChannel.serverId as string, channelId, userId);
     if (error) return [null, error] as const;
 
     return [{ ...serverChannel, server, permissions } as ChannelCache, null] as const;
@@ -143,6 +143,7 @@ export const getChannelCache = async (channelId: string, userId: string) => {
   // Check DM channel in cache.
   const dmChannel = await getDMChannelCache(channelId);
   if (dmChannel) {
+    if (!userId) return [null, 'User not found.'] as const;
     const inbox = await getInboxCache(channelId, userId);
     if (!inbox) return [null, 'Inbox not found.'] as const;
     return [{ ...dmChannel, inbox } as ChannelCache, null] as const;
@@ -157,7 +158,7 @@ export const getChannelCache = async (channelId: string, userId: string) => {
   return await addChannelToCache(channelId, userId);
 };
 
-const addChannelToCache = async (channelId: string, userId: string) => {
+const addChannelToCache = async (channelId: string, userId?: string) => {
   // If not in cache, fetch from database.
   const channel = await prisma.channel.findUnique({
     where: { id: channelId, deleting: null },
@@ -176,6 +177,7 @@ const addChannelToCache = async (channelId: string, userId: string) => {
 
   if (channel.serverId) {
     const server = await getServerCache(channel.serverId);
+    if (!server) return [null, 'Server does not exist.'] as const;
 
     const defaultRoleId = server?.defaultRoleId;
     const defaultPerm = channel.permissions.find((p) => p.roleId === defaultRoleId);
@@ -198,7 +200,7 @@ const addChannelToCache = async (channelId: string, userId: string) => {
     const stringifiedChannel = JSON.stringify({ ...channel, canBePublic });
     await redisClient.set(SERVER_CHANNEL_KEY_STRING(channelId), stringifiedChannel);
 
-    const [permissions, error] = await getServerChannelMemberPermissions(channel.serverId as string, channelId, userId);
+    const [permissions, error] = !userId ? [0, null] : await getServerChannelMemberPermissions(channel.serverId as string, channelId, userId);
     if (error) return [null, error] as const;
 
     return [
