@@ -49,7 +49,7 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
   let channel = opts.channel;
   let server = opts.server;
 
-  if (!channel && opts.userId) {
+  if (!channel) {
     [channel] = await getChannelCache(opts.channelId, opts.userId);
   }
 
