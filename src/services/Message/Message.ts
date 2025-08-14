@@ -1,29 +1,23 @@
 import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
-import { emitButtonClick, emitButtonClickCallback, emitDMMessageCreated, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../../emits/Channel';
-import { emitServerMessageCreated, emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../../emits/Server';
+import { emitButtonClick, emitButtonClickCallback, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../../emits/Channel';
+import { emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../../emits/Server';
 import { MessageType } from '../../types/Message';
-import { dismissChannelNotification } from '../Channel';
 import { dateToDateTime, exists, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 import { CustomError, generateError } from '../../common/errorHandler';
 import { CustomResult } from '../../common/CustomResult';
-import { Attachment, Message, Prisma } from '@prisma/client';
-import { isString, removeDuplicates, removeDuplicates } from '../../common/utils';
+import { Message, Prisma } from '@prisma/client';
+import { isString, removeDuplicates } from '../../common/utils';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { deleteFile } from '../../common/nerimityCDN';
 import { getOGTags } from '../../common/OGTags';
-import { sendDmPushNotification, sendServerPushMessageNotification } from '../../fcm/pushNotification';
-import { ServerCache, getServerCache } from '../../cache/ServerCache';
+import { ServerCache } from '../../cache/ServerCache';
 import { NotificationPingMode } from '../User/User';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../../common/Bitwise';
 import { ChannelType } from '../../types/Channel';
-import { Log } from '../../common/Log';
 import { replaceBadWords } from '../../common/badWords';
-import { htmlToJson } from '@nerimity/html-embed';
-import { zip } from '../../common/zip';
 import { FriendStatus } from '../../types/Friend';
-import { getIO } from '../../socket/socket';
-import { createMessageV2 } from './MessageCreate';
+import { createMessageV2, SendMessageOptions } from './MessageCreate';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -35,14 +29,100 @@ interface GetMessageByChannelIdOpts {
 
 interface GetSingleMessageByChannelIdOpts {
   requesterId?: string;
-  messageId?: string;
-  channelId?: string;
+  messageId: string;
+  channelId: string;
 }
 
 export const AttachmentProviders = {
   Local: 'local', // nerimity cdn
   GoogleDrive: 'google_drive',
 } as const;
+
+type TransformMessage = Omit<PublicMessage, 'reactions'> & {
+  reactions: Prisma.MessageReactionGetPayload<{
+    select: {
+      reactedUsers: true;
+      emojiId: true;
+      gif: true;
+      name: true;
+      _count: {
+        select: {
+          reactedUsers: true;
+        };
+      };
+    };
+  }>[];
+};
+
+export type TransformedMessage = ReturnType<typeof transformMessage>;
+
+export function transformMessage(message: TransformMessage) {
+  const newMessage = {
+    ...message,
+    reactions: message.reactions.map((reaction) => ({
+      ...reaction,
+      reacted: !!reaction.reactedUsers?.length,
+      count: reaction._count.reactedUsers,
+      reactedUsers: undefined,
+      _count: undefined,
+    })),
+
+    quotedMessages: message.quotedMessages.map((quote) => {
+      if (quote.webhook) {
+        quote.createdBy = {
+          id: quote.webhookId!,
+          badges: 0,
+          bot: true,
+          tag: '0000',
+          username: quote.webhook.name,
+          avatar: quote.webhook.avatar,
+          hexColor: quote.webhook.hexColor,
+        };
+      }
+      return {
+        ...quote,
+        webhook: undefined,
+      };
+    }),
+
+    messageReplies: message.replyMessages.map((reply) => {
+      if (reply.replyToMessage?.webhook) {
+        reply.replyToMessage.createdBy = {
+          id: reply.replyToMessage.webhookId!,
+          badges: 0,
+          bot: true,
+          tag: '0000',
+          username: reply.replyToMessage.webhook.name,
+          avatar: reply.replyToMessage.webhook.avatar,
+          hexColor: reply.replyToMessage.webhook.hexColor,
+        };
+      }
+
+      return {
+        replyToMessage: {
+          ...reply.replyToMessage,
+          webhook: undefined,
+        },
+      };
+    }),
+
+    webhook: undefined,
+  };
+
+  if (message.webhook) {
+    newMessage.createdBy = {
+      id: message.webhookId!,
+      badges: 0,
+      bot: true,
+      tag: '0000',
+      username: message.webhook.name,
+      avatar: message.webhook.avatar,
+      hexColor: message.webhook.hexColor,
+    };
+  }
+
+  return newMessage;
+}
 
 export const getMessagesByChannelId = async (channelId: string, opts?: GetMessageByChannelIdOpts) => {
   const limit = opts?.limit || 50;
@@ -83,134 +163,8 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
         : undefined),
     },
     include: {
-      createdBy: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-          badges: true,
-          bot: true,
-        },
-      },
-      roleMentions: {
-        select: {
-          id: true,
-          name: true,
-          hexColor: true,
-          icon: true,
-        },
-      },
-      mentions: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          badges: true,
-          avatar: true,
-        },
-      },
-      buttons: {
-        orderBy: { order: 'asc' },
-        select: {
-          alert: true,
-          id: true,
-          label: true,
-        },
-      },
-      replyMessages: {
-        orderBy: { id: 'desc' },
-        select: {
-          replyToMessage: {
-            select: {
-              id: true,
-              content: true,
-              editedAt: true,
-              createdAt: true,
-              attachments: {
-                select: {
-                  height: true,
-                  width: true,
-                  path: true,
-                  id: true,
-                  provider: true,
-                  fileId: true,
-                  filesize: true,
-                  expireAt: true,
-                  mime: true,
-                  createdAt: true,
-                },
-              },
-              createdBy: {
-                select: {
-                  id: true,
-                  username: true,
-                  tag: true,
-                  hexColor: true,
-                  avatar: true,
-                  badges: true,
-                  bot: true,
-                },
-              },
-            },
-          },
-        },
-      },
+      ...MessageInclude,
 
-      quotedMessages: {
-        select: {
-          id: true,
-          content: true,
-          mentions: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              badges: true,
-              avatar: true,
-            },
-          },
-          roleMentions: {
-            select: {
-              id: true,
-              name: true,
-              hexColor: true,
-              icon: true,
-            },
-          },
-          editedAt: true,
-          createdAt: true,
-          channelId: true,
-          attachments: {
-            select: {
-              height: true,
-              width: true,
-              path: true,
-              id: true,
-              provider: true,
-              filesize: true,
-              expireAt: true,
-              fileId: true,
-              mime: true,
-              createdAt: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-              bot: true,
-            },
-          },
-        },
-      },
       reactions: {
         select: {
           ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
@@ -224,20 +178,6 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
           },
         },
         orderBy: { id: 'asc' },
-      },
-      attachments: {
-        select: {
-          height: true,
-          width: true,
-          path: true,
-          id: true,
-          filesize: true,
-          expireAt: true,
-          provider: true,
-          fileId: true,
-          mime: true,
-          createdAt: true,
-        },
       },
     },
     take: limit,
@@ -249,186 +189,35 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       : undefined),
   });
 
-  const modifiedMessages = messages.map((message) => {
-    (message.reactions as any) = message.reactions.map((reaction) => ({
-      ...reaction,
-      reacted: !!reaction.reactedUsers?.length,
-      count: reaction._count.reactedUsers,
-      reactedUsers: undefined,
-      _count: undefined,
-    }));
-    return message;
-  });
+  const modifiedMessages = messages.map(transformMessage);
 
   if (opts?.afterMessageId) return modifiedMessages;
 
   return modifiedMessages.reverse();
 };
 
-export const getMessageByChannelId = async (channelId: string, opts?: GetSingleMessageByChannelIdOpts) => {
-  const messages = await prisma.message.findUnique({
+export const getMessageByChannelId = async (opts: GetSingleMessageByChannelIdOpts) => {
+  const message = await prisma.message.findUnique({
     where: {
-      channelId: channelId,
+      id: opts.messageId,
+      channelId: opts.channelId,
     },
-    include: {
-      createdBy: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-          badges: true,
-          bot: true,
-        },
-      },
-      roleMentions: {
-        select: {
-          id: true,
-          name: true,
-          hexColor: true,
-          icon: true,
-        },
-      },
-      mentions: {
-        select: {
-          id: true,
-          username: true,
-          tag: true,
-          hexColor: true,
-          avatar: true,
-        },
-      },
-      buttons: {
-        orderBy: { order: 'asc' },
-        select: {
-          alert: true,
-          id: true,
-          label: true,
-        },
-      },
-      replyMessages: {
-        orderBy: { id: 'desc' },
-        select: {
-          replyToMessage: {
-            select: {
-              id: true,
-              content: true,
-              editedAt: true,
-              createdAt: true,
-              attachments: {
-                select: {
-                  height: true,
-                  width: true,
-                  path: true,
-                  id: true,
-                  provider: true,
-                  fileId: true,
-                  filesize: true,
-                  expireAt: true,
-                  mime: true,
-                  createdAt: true,
-                },
-              },
-              createdBy: {
-                select: {
-                  id: true,
-                  username: true,
-                  tag: true,
-                  hexColor: true,
-                  avatar: true,
-                  badges: true,
-                  bot: true,
-                },
-              },
-            },
-          },
-        },
-      },
-
-      quotedMessages: {
-        select: {
-          id: true,
-          content: true,
-          mentions: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-            },
-          },
-          roleMentions: {
-            select: {
-              id: true,
-              name: true,
-              hexColor: true,
-              icon: true,
-            },
-          },
-          editedAt: true,
-          createdAt: true,
-          channelId: true,
-          attachments: {
-            select: {
-              height: true,
-              width: true,
-              path: true,
-              id: true,
-              provider: true,
-              filesize: true,
-              expireAt: true,
-              fileId: true,
-              mime: true,
-              createdAt: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              tag: true,
-              hexColor: true,
-              avatar: true,
-              badges: true,
-              bot: true,
-            },
-          },
-        },
-      },
-      reactions: {
-        select: {
-          ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
-          emojiId: true,
-          gif: true,
-          name: true,
-          _count: {
-            select: {
-              reactedUsers: true,
-            },
-          },
-        },
-        orderBy: { id: 'asc' },
-      },
-      attachments: {
-        select: {
-          height: true,
-          width: true,
-          path: true,
-          id: true,
-          filesize: true,
-          expireAt: true,
-          provider: true,
-          fileId: true,
-          mime: true,
-          createdAt: true,
-        },
-      },
-    },
+    include: MessageInclude,
   });
 
-  return messages;
+  if (message?.webhook) {
+    message.createdBy = {
+      id: message.webhookId!,
+      badges: 0,
+      bot: true,
+      tag: '0000',
+      username: message.webhook.name,
+      avatar: message.webhook.avatar,
+      hexColor: message.webhook.hexColor,
+    };
+  }
+
+  return message;
 };
 
 // delete messages sent in the last 7 hours
@@ -466,6 +255,13 @@ interface EditMessageOptions {
 
 export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
   include: {
+    webhook: {
+      select: {
+        avatar: true,
+        name: true,
+        hexColor: true,
+      },
+    },
     createdBy: {
       select: {
         id: true,
@@ -526,6 +322,14 @@ export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
                 createdAt: true,
               },
             },
+            webhookId: true,
+            webhook: {
+              select: {
+                avatar: true,
+                name: true,
+                hexColor: true,
+              },
+            },
             createdBy: {
               select: {
                 id: true,
@@ -578,6 +382,14 @@ export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
             fileId: true,
             mime: true,
             createdAt: true,
+          },
+        },
+        webhookId: true,
+        webhook: {
+          select: {
+            avatar: true,
+            name: true,
+            hexColor: true,
           },
         },
         createdBy: {
@@ -648,7 +460,7 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
       creatorId: opts.userId,
       update: true,
     }),
-    include: MessageInclude,
+    include: { ...MessageInclude, reactions: false },
   });
 
   // emit
@@ -666,31 +478,6 @@ export const editMessage = async (opts: EditMessageOptions): Promise<CustomResul
 
   return [message, null];
 };
-interface SendMessageOptions {
-  userId: string;
-  channelId: string;
-  channel?: ChannelCache | null;
-  server?: ServerCache | null;
-  serverId?: string;
-  socketId?: string;
-  content?: string;
-  type: MessageType;
-  updateLastSeen?: boolean; // by default, this is true.
-  attachment?: Partial<Attachment>;
-  everyoneMentioned?: boolean;
-  canMentionRoles?: boolean;
-  htmlEmbed?: string;
-
-  replyToMessageIds?: string[];
-  mentionReplies?: boolean;
-  silent?: boolean;
-
-  buttons?: {
-    label: string;
-    id: string;
-    alert?: boolean;
-  }[];
-}
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
 type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
@@ -701,7 +488,7 @@ const quoteMessageRegex = /\[q:([\d]+)]/g;
 
 interface ConstructDataOpts<T extends MessageDataCreate | MessageDataUpdate> {
   messageData: T;
-  creatorId: string;
+  creatorId?: string;
   update?: boolean;
   bypassQuotesCheck?: boolean;
   sendMessageOpts?: SendMessageOptions;
@@ -758,7 +545,7 @@ export async function constructData<T extends MessageDataCreate | MessageDataUpd
     const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1]))
       .filter(isString)
       .slice(0, 8);
-    if (quotedMessageIds.length) {
+    if (creatorId && quotedMessageIds.length) {
       const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
       messageData.quotedMessages = {
         ...(update ? { set: messages } : { connect: messages }),
@@ -1098,7 +885,23 @@ async function quotableMessages(quotedMessageIds: string[], creatorId: string, b
   return messages;
 }
 
-export async function addMention(userIds: string[], serverId: string, channelId: string, requesterId: string, message: Message, channel: ChannelCache, server: ServerCache) {
+interface AddMentionOpts {
+  userIds: string[];
+  serverId: string;
+  channelId: string;
+  requesterId?: string;
+  webhookId?: string;
+  message: Message;
+  server: ServerCache;
+}
+
+export async function addMention(opts: AddMentionOpts) {
+  const { userIds, serverId, channelId, requesterId, message, server, webhookId } = opts;
+
+  if (!webhookId && !requesterId) {
+    return;
+  }
+
   let filteredUserIds = [...userIds];
 
   const channelPermissions = await prisma.serverChannelPermissions.findMany({
@@ -1185,11 +988,21 @@ export async function addMention(userIds: string[], serverId: string, channelId:
     ...filteredMentionedUsers.map((user) =>
       prisma.messageMention.upsert({
         where: {
-          mentionedById_mentionedToId_channelId: {
-            channelId: channelId,
-            mentionedById: requesterId,
-            mentionedToId: user.id,
-          },
+          ...(requesterId
+            ? {
+                mentionedById_mentionedToId_channelId: {
+                  channelId: channelId,
+                  mentionedById: requesterId,
+                  mentionedToId: user.id,
+                },
+              }
+            : {
+                mentionedByWebhookId_mentionedToId_channelId: {
+                  channelId: channelId,
+                  mentionedToId: user.id,
+                  mentionedByWebhookId: webhookId!,
+                },
+              }),
         },
         update: {
           count: { increment: 1 },

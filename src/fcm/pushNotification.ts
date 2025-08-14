@@ -25,7 +25,7 @@ if (credentials) {
 export async function sendServerPushMessageNotification(
   serverId: string,
   message: Message & {
-    createdBy: {
+    createdBy?: null | {
       id: string;
       username: string;
       avatar?: string | null;
@@ -146,8 +146,8 @@ export async function sendServerPushMessageNotification(
       serverName: server.name,
       channelId: message.channelId,
       serverId,
-      cUserId: message.createdBy.id,
-      cName: message.createdBy.username,
+      cUserId: message.createdBy!.id,
+      cName: message.createdBy!.username,
       ...(server.avatar ? { sAvatar: server.avatar } : undefined),
       ...(server.hexColor ? { sHexColor: server.hexColor } : undefined),
     },
@@ -161,7 +161,7 @@ export async function sendServerPushMessageNotification(
 
 export async function sendDmPushNotification(
   message: Message & {
-    createdBy: {
+    createdBy: null | {
       id: string;
       username: string;
       avatar?: string | null;
@@ -194,10 +194,10 @@ export async function sendDmPushNotification(
       ...(content ? { content } : undefined),
       type: message.type.toString(),
       channelId: message.channelId,
-      cUserId: message.createdBy.id,
-      cName: message.createdBy.username,
-      ...(message.createdBy.avatar ? { uAvatar: message.createdBy.avatar } : undefined),
-      ...(message.createdBy.hexColor ? { uHexColor: message.createdBy.hexColor } : undefined),
+      cUserId: message.createdBy!.id,
+      cName: message.createdBy!.username,
+      ...(message.createdBy!.avatar ? { uAvatar: message.createdBy!.avatar } : undefined),
+      ...(message.createdBy!.hexColor ? { uHexColor: message.createdBy!.hexColor } : undefined),
     },
   });
 

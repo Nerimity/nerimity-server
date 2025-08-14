@@ -5,7 +5,7 @@ import { CHANNEL_TYPING, MESSAGE_BUTTON_CLICKED, MESSAGE_BUTTON_CLICKED_CALLBACK
 import { UpdateServerChannelOptions } from '../services/Channel';
 import { getIO } from '../socket/socket';
 
-export const emitDMMessageCreated = (channel: BaseChannelCache & DMChannelCache, message: Message & { createdBy: Partial<UserCache | User> }, socketId?: string) => {
+export const emitDMMessageCreated = (channel: BaseChannelCache & DMChannelCache, message: Message & { createdBy: null | Partial<UserCache | User> }, socketId?: string) => {
   const io = getIO();
 
   const userIds = [channel.inbox?.recipientId as string, channel.inbox?.createdById as string];

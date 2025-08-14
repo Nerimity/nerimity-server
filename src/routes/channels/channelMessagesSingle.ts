@@ -13,7 +13,7 @@ export function channelMessagesSingle(Router: Router) {
     authenticate({ allowBot: true }),
     channelVerification(),
     rateLimit({
-      name: 'messages',
+      name: 'messageSingle',
       restrictMS: 30000,
       requests: 30,
     }),
@@ -30,12 +30,13 @@ async function route(req: Request, res: Response) {
   const params = req.params as unknown as Param;
 
   if (req.channelCache.type === ChannelType.CATEGORY) {
-    return res.status(400).json(generateError('Cannot get messages from a category channel'));
+    return res.status(400).json(generateError('Cannot get message from a category channel'));
   }
 
-  const messages = await getMessageByChannelId(req.channelCache.id, {
+  const message = await getMessageByChannelId({
+    channelId: req.channelCache.id,
     messageId: params.messageId,
     requesterId: req.userCache.id,
   });
-  res.json(messages);
+  res.json(message);
 }

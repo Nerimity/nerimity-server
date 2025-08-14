@@ -190,10 +190,17 @@ model User {
 
   externalEmbed ExternalEmbed?
 
+  webhooks               Webhook[]
+
+
   @@unique([username, tag])
 
   @@index([tag])
 }
+
+
+
+
 
 model BotCommand {
   @@map("bot_commands")
@@ -393,6 +400,9 @@ model Server {
 
 
   externalEmbed ExternalEmbed?
+
+  webhooks               Webhook[]
+
 
 
 }
@@ -640,8 +650,38 @@ model Channel {
   reminders             Reminder[]
 
 
+  webhooks               Webhook[]
+
   @@index([serverId])
 
+}
+
+model Webhook {
+  @@map("webhooks")
+  id String @id
+  
+  deleting Boolean?
+
+  name String
+  hexColor String
+  avatar String?
+
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  serverId String?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
+
+
+  createdById String
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  mentions MessageMention[]
+
+
+  createdAt DateTime @default(now())
 }
 
 model ServerChannelPermissions {
@@ -705,13 +745,18 @@ model Message {
   content     String
   type        Int
   channelId   String
-  createdById String
+  createdById String?
   editedAt    DateTime?
   createdAt   DateTime @default(now())
   channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User?     @relation(fields: [createdById], references: [id])
   mentions    User[]  @relation(name: "mentioned_messages")
   roleMentions ServerRole[]  @relation(name: "role_mentioned_messages")
+
+
+  webhookId String?
+  webhook Webhook? @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
 
   attachments Attachment[]
   reactions   MessageReaction[]
@@ -844,19 +889,25 @@ model ReactedMessageUser {
 model MessageMention {
   @@map("message_mentions")
   id            String   @id
-  mentionedById String
+  mentionedById String?
+  mentionedByWebhookId String?
   mentionedToId String
   channelId     String
   serverId      String?
   count         Int      @default(0)
   createdAt     DateTime @default(now())
   channel       Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  mentionedBy   User     @relation("sent_message_mentions", fields: [mentionedById], references: [id])
+  mentionedBy   User?     @relation("sent_message_mentions", fields: [mentionedById], references: [id])
   mentionedTo   User     @relation("message_mentions", fields: [mentionedToId], references: [id])
   server        Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
+  webhook       Webhook? @relation(fields: [mentionedByWebhookId], references: [id], onDelete: SetNull)
+
+
+
 
   @@unique([mentionedById, mentionedToId, channelId])
+  @@unique([mentionedByWebhookId, mentionedToId, channelId])
   @@index([mentionedToId])
 }
 

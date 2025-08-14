@@ -16,6 +16,7 @@ import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { createQueueProcessor } from '@nerimity/mimiqueue';
 import { deleteServer } from './services/Server';
 import { Prisma } from '@prisma/client';
+import { isString } from './common/utils';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -59,6 +60,7 @@ if (cluster.isPrimary) {
       scheduleServerDeletion();
       removeExpiredBannedIpsSchedule();
       removeExpiredSuspensions();
+      scheduleWebhookMessagesDelete();
     }
   });
 
@@ -86,6 +88,55 @@ function scheduleBumpReset() {
     await prisma.publicServer.updateMany({ data: { bumpCount: 0 } });
     Log.info('All public server bumps have been reset to 0.');
   });
+}
+
+async function scheduleWebhookMessagesDelete() {
+  setInterval(async () => {
+    const webhook = await prisma.webhook.findFirst({
+      where: {
+        deleting: true,
+      },
+      select: {
+        id: true,
+        messages: {
+          take: 300,
+          orderBy: {
+            createdAt: 'desc',
+          },
+          select: {
+            id: true,
+            attachments: {
+              select: {
+                path: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!webhook) return;
+
+    const messages = webhook.messages;
+
+    if (!messages.length) {
+      await prisma.webhook.delete({ where: { id: webhook.id } });
+      return;
+    }
+    const attachments = messages
+      .filter((m) => m.attachments.length)
+      .map((m) => m.attachments[0]?.path)
+      .filter(isString);
+    const messageIds = messages.map((m) => m.id);
+
+    await prisma.message.deleteMany({
+      where: { id: { in: messageIds } },
+    });
+
+    if (attachments.length) {
+      deleteImageBatch(attachments);
+    }
+  }, 60000);
 }
 
 async function scheduleDeleteAccountContent() {

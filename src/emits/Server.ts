@@ -122,7 +122,7 @@ export const emitServerLeft = (opts: { userId?: string; serverId: string; server
   });
 };
 
-export const emitServerMessageCreated = (message: Message & { createdBy: Partial<UserCache | User> }, socketId?: string) => {
+export const emitServerMessageCreated = (message: Message & { createdBy?: null | Partial<UserCache | User> }, socketId?: string) => {
   const io = getIO();
 
   const channelId = message.channelId;
