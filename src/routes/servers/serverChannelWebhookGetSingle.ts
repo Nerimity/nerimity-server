@@ -33,7 +33,7 @@ async function route(req: Request, res: Response) {
 
   const channelCache = req.channelCache as ServerChannelCache & BaseChannelCache;
 
-  const webhook = await getWebhook(channelCache.serverId, channelCache.id);
+  const webhook = await getWebhook(channelCache.serverId, req.params.webhookId!);
 
   if (!webhook) {
     return res.status(404).json(generateError('Webhook not found.'));

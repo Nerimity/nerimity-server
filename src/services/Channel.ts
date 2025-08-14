@@ -17,6 +17,7 @@ import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
 import { omit } from '../common/omit';
 import { Interface } from 'readline';
 import { emitServerChannelPermissionsUpdated } from '../emits/Server';
+import { removeManyWebhookCache } from '../cache/WebhookCache';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -397,6 +398,7 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
   // Delete the channel
   const channel = await prisma.channel.findFirst({
     where: { id: channelId, serverId: serverId, deleting: null },
+    include: { webhooks: { select: { id: true } } },
   });
   if (!channel) {
     return [null, generateError('Channel does not exist.')];
@@ -404,7 +406,9 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
 
   const isCategoryChannel = channel.type === ChannelType.CATEGORY;
 
+  await removeManyWebhookCache(channel.webhooks.map((webhook) => webhook.id));
   await prisma.$transaction([
+    prisma.webhook.updateMany({ where: { channelId }, data: { deleting: true } }),
     ...(isCategoryChannel ? [prisma.channel.updateMany({ where: { categoryId: channel.id }, data: { categoryId: null } })] : []),
     prisma.channel.update({
       where: { id: channelId },

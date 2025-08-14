@@ -23,6 +23,7 @@ import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
 import { LastOnlineStatus } from './User/User';
 import { logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
+import { removeManyWebhookCache } from '../cache/WebhookCache';
 
 const serverMemberWithLastOnlineDetails = Prisma.validator<Prisma.ServerMemberDefaultArgs>()({
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -338,15 +339,18 @@ export const joinServer = async (
 export const deleteServer = async (serverId: string, deletedByUserId: string) => {
   const server = await prisma.server.findFirst({
     where: { id: serverId },
-    include: { channels: { select: { id: true } } },
+    include: { channels: { select: { id: true } }, webhooks: { select: { id: true } } },
   });
 
   if (!server) {
     return [null, generateError('Server does not exist.')] as const;
   }
 
+  await removeManyWebhookCache(server.webhooks.map((webhook) => webhook.id));
+
   await deleteAllInboxCacheInServer(serverId);
   await prisma.$transaction([
+    prisma.webhook.updateMany({ where: { serverId }, data: { deleting: true } }),
     prisma.server.delete({ where: { id: serverId } }),
     prisma.channel.updateMany({
       where: { serverId },

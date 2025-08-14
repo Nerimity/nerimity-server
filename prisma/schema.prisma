@@ -666,11 +666,11 @@ model Webhook {
   hexColor String
   avatar String?
 
-  channelId String
-  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
 
   serverId String?
-  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
 
   createdById String
