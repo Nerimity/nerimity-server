@@ -1,6 +1,5 @@
 import { HTMLElement, parse } from 'node-html-parser';
 import { proxyUrlImageDimensions } from './nerimityCDN';
-import { readFile } from 'fs/promises';
 
 const mapper = new Map(
   Object.entries({
@@ -25,8 +24,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
 
   const res = await fetch(updatedUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
-
-  }).catch(() => { });
+  }).catch(() => {});
   if (!res) return false;
 
   const isImage = res.headers.get('content-type')?.startsWith('image/');
@@ -37,7 +35,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const isHtml = res.headers.get('content-type')?.startsWith('text/html');
   if (!isHtml) return false;
 
-  const html = await res.text().catch(() => { });
+  const html = await res.text().catch(() => {});
 
   if (!html) return false;
   const root = parse(html);
@@ -89,7 +87,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   }
 
   if (object.imageUrl && (object.imageUrl.startsWith('http://') || object.imageUrl.startsWith('https://'))) {
-    object.imageMime = (await fetch(object.imageUrl).catch(() => { }))?.headers.get('content-type');
+    object.imageMime = (await fetch(object.imageUrl).catch(() => {}))?.headers.get('content-type');
     if (!object.imageMime) return false;
   }
 
@@ -130,7 +128,7 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
 
   if (err) return false;
 
-  const resForSure = res || (await fetch(url).catch(() => { }));
+  const resForSure = res || (await fetch(url).catch(() => {}));
   if (!resForSure) return false;
 
   return {
