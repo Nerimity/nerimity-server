@@ -51,6 +51,12 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
   }
   if (body.name === 'push') {
     const payload = body.payload;
+
+    if (payload.ref.startsWith('refs/tags/')) {
+      const tagName = payload.ref.split('/').pop();
+      content = `${user} just published a new release/tag: **${tagName}**! 🚀`;
+    }
+
     content = `${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
   }
   if (!content) {
