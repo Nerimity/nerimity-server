@@ -1183,6 +1183,7 @@ model ModAuditLog {
   reason       String?
   expireAt     DateTime?
   @@index([createdAt])
+  @@index([actionById])
 }
 
 
