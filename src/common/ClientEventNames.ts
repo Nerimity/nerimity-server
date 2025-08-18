@@ -10,6 +10,7 @@ export const USER_CONNECTION_REMOVED = 'user:connection_removed';
 
 export const USER_NOTIFICATION_SETTINGS_UPDATE = 'user:notification_settings_update';
 export const USER_REMINDER_ADD = 'user:reminder_add';
+export const USER_REMINDER_UPDATE = 'user:reminder_update';
 export const USER_REMINDER_REMOVE = 'user:reminder_remove';
 
 export const USER_PRESENCE_UPDATE = 'user:presence_update';

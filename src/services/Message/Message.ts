@@ -494,63 +494,63 @@ interface ConstructDataOpts<T extends MessageDataCreate | MessageDataUpdate> {
   sendMessageOpts?: SendMessageOptions;
 }
 export async function constructData<T extends MessageDataCreate | MessageDataUpdate>({ messageData, creatorId, update, bypassQuotesCheck, sendMessageOpts }: ConstructDataOpts<T>) {
-  if (typeof messageData.content === 'string') {
-    const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1])).filter(isString);
+  if (typeof messageData.content !== 'string') return messageData;
 
-    if (mentionUserIds.length) {
-      const users = await prisma.user.findMany({
-        where: { id: { in: mentionUserIds } },
-        select: { id: true },
-      });
-      messageData.mentions = {
-        ...(update ? { set: users } : { connect: users }),
-      };
-    }
+  const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1])).filter(isString);
 
-    if (sendMessageOpts?.canMentionRoles && sendMessageOpts.serverId) {
-      const mentionRoleIds = removeDuplicates([...messageData.content.matchAll(roleMentionRegex)].map((m) => m[1])).filter(isString);
+  if (mentionUserIds.length) {
+    const users = await prisma.user.findMany({
+      where: { id: { in: mentionUserIds } },
+      select: { id: true },
+    });
+    messageData.mentions = {
+      ...(update ? { set: users } : { connect: users }),
+    };
+  }
 
-      const mentionedRoles = await prisma.serverRole.findMany({
-        where: {
-          id: { in: mentionRoleIds },
+  if (sendMessageOpts?.canMentionRoles && sendMessageOpts.serverId) {
+    const mentionRoleIds = removeDuplicates([...messageData.content.matchAll(roleMentionRegex)].map((m) => m[1])).filter(isString);
+
+    const mentionedRoles = await prisma.serverRole.findMany({
+      where: {
+        id: { in: mentionRoleIds },
+      },
+      select: { id: true },
+    });
+    messageData.roleMentions = {
+      ...(update ? { set: mentionedRoles } : { connect: mentionedRoles }),
+    };
+  }
+
+  if (!update && sendMessageOpts?.replyToMessageIds?.length) {
+    const replyToMessageIds = removeDuplicates(sendMessageOpts.replyToMessageIds);
+
+    const validReplyToMessages = await prisma.message.findMany({
+      where: { id: { in: replyToMessageIds }, channelId: sendMessageOpts?.channelId },
+    });
+    const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
+
+    if (validReplyToMessageIds.length) {
+      messageData.replyMessages = {
+        createMany: {
+          data: validReplyToMessageIds.map((id) => ({ replyToMessageId: id, id: generateId() })),
         },
-        select: { id: true },
-      });
-      messageData.roleMentions = {
-        ...(update ? { set: mentionedRoles } : { connect: mentionedRoles }),
       };
-    }
 
-    if (!update && sendMessageOpts?.replyToMessageIds?.length) {
-      const replyToMessageIds = removeDuplicates(sendMessageOpts.replyToMessageIds);
-
-      const validReplyToMessages = await prisma.message.findMany({
-        where: { id: { in: replyToMessageIds }, channelId: sendMessageOpts?.channelId },
-      });
-      const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
-
-      if (validReplyToMessageIds.length) {
-        messageData.replyMessages = {
-          createMany: {
-            data: validReplyToMessageIds.map((id) => ({ replyToMessageId: id, id: generateId() })),
-          },
-        };
-
-        if (sendMessageOpts.mentionReplies) {
-          messageData.mentionReplies = sendMessageOpts.mentionReplies;
-        }
+      if (sendMessageOpts.mentionReplies) {
+        messageData.mentionReplies = sendMessageOpts.mentionReplies;
       }
     }
+  }
 
-    const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1]))
-      .filter(isString)
-      .slice(0, 8);
-    if (creatorId && quotedMessageIds.length) {
-      const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
-      messageData.quotedMessages = {
-        ...(update ? { set: messages } : { connect: messages }),
-      };
-    }
+  const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1]))
+    .filter(isString)
+    .slice(0, 8);
+  if (creatorId && quotedMessageIds.length) {
+    const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
+    messageData.quotedMessages = {
+      ...(update ? { set: messages } : { connect: messages }),
+    };
   }
   return messageData;
 }
