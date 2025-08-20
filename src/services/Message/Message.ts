@@ -419,82 +419,6 @@ export const MessageInclude = MessageValidator.include;
 
 export const editMessage = editMessageV2;
 
-type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
-type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
-
-const userMentionRegex = /\[@:([\d]+)]/g;
-const roleMentionRegex = /\[r:([\d]+)]/g;
-const quoteMessageRegex = /\[q:([\d]+)]/g;
-
-interface ConstructDataOpts<T extends MessageDataCreate | MessageDataUpdate> {
-  messageData: T;
-  creatorId?: string;
-  update?: boolean;
-  bypassQuotesCheck?: boolean;
-  sendMessageOpts?: SendMessageOptions;
-}
-export async function constructData<T extends MessageDataCreate | MessageDataUpdate>({ messageData, creatorId, update, bypassQuotesCheck, sendMessageOpts }: ConstructDataOpts<T>) {
-  if (typeof messageData.content !== 'string') return messageData;
-
-  const mentionUserIds = removeDuplicates([...messageData.content.matchAll(userMentionRegex)].map((m) => m[1])).filter(isString);
-
-  if (mentionUserIds.length) {
-    const users = await prisma.user.findMany({
-      where: { id: { in: mentionUserIds } },
-      select: { id: true },
-    });
-    messageData.mentions = {
-      ...(update ? { set: users } : { connect: users }),
-    };
-  }
-
-  if (sendMessageOpts?.canMentionRoles && sendMessageOpts.serverId) {
-    const mentionRoleIds = removeDuplicates([...messageData.content.matchAll(roleMentionRegex)].map((m) => m[1])).filter(isString);
-
-    const mentionedRoles = await prisma.serverRole.findMany({
-      where: {
-        id: { in: mentionRoleIds },
-      },
-      select: { id: true },
-    });
-    messageData.roleMentions = {
-      ...(update ? { set: mentionedRoles } : { connect: mentionedRoles }),
-    };
-  }
-
-  if (!update && sendMessageOpts?.replyToMessageIds?.length) {
-    const replyToMessageIds = removeDuplicates(sendMessageOpts.replyToMessageIds);
-
-    const validReplyToMessages = await prisma.message.findMany({
-      where: { id: { in: replyToMessageIds }, channelId: sendMessageOpts?.channelId },
-    });
-    const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
-
-    if (validReplyToMessageIds.length) {
-      messageData.replyMessages = {
-        createMany: {
-          data: validReplyToMessageIds.map((id) => ({ replyToMessageId: id, id: generateId() })),
-        },
-      };
-
-      if (sendMessageOpts.mentionReplies) {
-        messageData.mentionReplies = sendMessageOpts.mentionReplies;
-      }
-    }
-  }
-
-  const quotedMessageIds = removeDuplicates([...messageData.content.matchAll(quoteMessageRegex)].map((m) => m[1]))
-    .filter(isString)
-    .slice(0, 8);
-  if (creatorId && quotedMessageIds.length) {
-    const messages = await quotableMessages(quotedMessageIds, creatorId, bypassQuotesCheck);
-    messageData.quotedMessages = {
-      ...(update ? { set: messages } : { connect: messages }),
-    };
-  }
-  return messageData;
-}
-
 export const createMessage = createMessageV2;
 
 const urlRegex = new RegExp('(^|[ \t\r\n])((http|https):(([A-Za-z0-9$_.+!*(),;/?:@&~=-])|%[A-Fa-f0-9]{2}){2,}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*(),;/?:@&~=%-]*))?([A-Za-z0-9$_+!*();/?:~-]))');
@@ -794,36 +718,6 @@ export const getMessageReactedUsers = async (opts: GetMessageReactedUsersOpts) =
 
   return [reactedUsers, null] as const;
 };
-
-async function quotableMessages(quotedMessageIds: string[], creatorId: string, bypassQuotesCheck?: boolean) {
-  const messages = await prisma.message.findMany({
-    where: {
-      id: { in: quotedMessageIds },
-      type: MessageType.CONTENT,
-      ...(!bypassQuotesCheck
-        ? {
-            channel: {
-              OR: [
-                { server: { serverMembers: { some: { userId: creatorId } } } }, // is server member
-                {
-                  inbox: {
-                    // is inbox channel
-                    some: {
-                      OR: [{ recipientId: creatorId }, { createdById: creatorId }],
-                    },
-                  },
-                },
-              ],
-            },
-          }
-        : {}),
-    },
-    select: {
-      id: true,
-    },
-  });
-  return messages;
-}
 
 interface AddMentionOpts {
   userIds: string[];

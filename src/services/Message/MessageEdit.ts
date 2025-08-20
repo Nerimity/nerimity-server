@@ -3,11 +3,12 @@ import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
 import { generateError } from '../../common/errorHandler';
 import { dateToDateTime, exists, prisma } from '../../common/database';
 import { ChannelType } from '../../types/Channel';
-import { addMessageEmbed, constructData, MessageInclude } from './Message';
+import { addMessageEmbed, MessageInclude } from './Message';
 import { replaceBadWords } from '../../common/badWords';
 import { emitServerMessageUpdated } from '../../emits/Server';
 import { emitDMMessageUpdated } from '../../emits/Channel';
 import { MessageType } from '../../types/Message';
+import { prepareMessageForDatabase } from './prepareMessageForDatabase';
 
 interface EditMessageOptions {
   userId: string;
@@ -51,18 +52,47 @@ const validateMessageOptions = async (opts: EditMessageOptions) => {
 type ValidationResult = NonNullable<Awaited<ReturnType<typeof validateMessageOptions>>[0]>;
 
 const updateMessageInDatabase = async (opts: EditMessageOptions, validatedResult: ValidationResult) => {
+  const processedData = await prepareMessageForDatabase({
+    channelId: opts.channelId,
+    creatorId: opts.userId,
+    content: opts.content,
+    serverId: opts.serverId,
+  }).catch((err) => {
+    console.error(err);
+    return null;
+  });
+
+  if (!processedData) {
+    return [null, generateError('Something went wrong. Try again later.')] as const;
+  }
+
   const message = await prisma.message
     .update({
       where: { id: opts.messageId },
-      data: await constructData({
-        messageData: {
-          content: validatedResult.isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
-          editedAt: dateToDateTime(),
-          embed: Prisma.JsonNull,
-        },
-        creatorId: opts.userId,
-        update: true,
-      }),
+      data: {
+        content: validatedResult.isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
+        editedAt: dateToDateTime(),
+        embed: Prisma.JsonNull,
+
+        ...(processedData.userMentions.length && {
+          mentions: {
+            set: processedData.userMentions,
+          },
+        }),
+
+        ...(processedData.roleMentions.length && {
+          roleMentions: {
+            set: processedData.roleMentions,
+          },
+        }),
+
+        ...(processedData.quotes.length && {
+          quotedMessages: {
+            set: processedData.quotes,
+          },
+        }),
+      },
+
       include: { ...MessageInclude, reactions: false },
     })
     .catch((e) => {

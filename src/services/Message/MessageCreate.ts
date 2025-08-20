@@ -8,13 +8,14 @@ import { htmlToJson } from '@nerimity/html-embed';
 import { generateError } from '../../common/errorHandler';
 import { isString, removeDuplicates } from '../../common/utils';
 import { dismissChannelNotification } from '../Channel';
-import { addMention, addMessageEmbed, constructData, MessageInclude, TransformedMessage, transformMessage } from './Message';
+import { addMention, addMessageEmbed, MessageInclude, TransformedMessage, transformMessage } from './Message';
 import { emitServerMessageCreated } from '../../emits/Server';
 import { sendDmPushNotification, sendServerPushMessageNotification } from '../../fcm/pushNotification';
 import { generateId } from '../../common/flakeId';
 import { emitDMMessageCreated } from '../../emits/Channel';
 import { replaceBadWords } from '../../common/badWords';
 import { zip } from '../../common/zip';
+import { prepareMessageForDatabase } from './prepareMessageForDatabase';
 
 export interface SendMessageOptions {
   userId?: string;
@@ -94,47 +95,86 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
 type ValidationResult = NonNullable<Awaited<ReturnType<typeof validateMessageOptions>>[0]>;
 
 const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validatedResult: ValidationResult) => {
-  const { channel, isServerTextOrDMTextChannel, htmlEmbed, messageCreatedAt } = validatedResult;
+  const { isServerTextOrDMTextChannel, htmlEmbed, messageCreatedAt } = validatedResult;
+
+  const processedData = await prepareMessageForDatabase({
+    channelId: opts.channelId,
+    creatorId: opts.userId,
+    content: opts.content,
+    canMentionRoles: opts.canMentionRoles,
+    replyToMessageIds: opts.replyToMessageIds,
+    serverId: opts.serverId,
+  }).catch((err) => {
+    console.error(err);
+    return null;
+  });
+
+  if (!processedData) {
+    return [null, generateError('Something went wrong. Try again later.')] as const;
+  }
+
   const createMessageQuery = prisma.message.create({
-    data: await constructData({
-      messageData: {
-        silent: opts.silent,
-        id: generateId(),
-        content: isServerTextOrDMTextChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
-        createdById: opts.userId,
-        webhookId: opts.webhookId,
-        channelId: opts.channelId,
-        type: opts.type,
-        createdAt: messageCreatedAt,
+    data: {
+      silent: opts.silent,
+      id: generateId(),
+      content: isServerTextOrDMTextChannel && opts.content ? replaceBadWords(opts.content) : opts.content || '',
+      createdById: opts.userId,
+      webhookId: opts.webhookId,
+      channelId: opts.channelId,
+      type: opts.type,
+      createdAt: messageCreatedAt,
 
-        ...(opts.buttons?.length
-          ? {
-              buttons: {
-                createMany: {
-                  data: opts.buttons,
-                },
-              },
-            }
-          : undefined),
+      ...(processedData.userMentions.length && {
+        mentions: {
+          connect: processedData.userMentions,
+        },
+      }),
 
-        ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
-        ...(opts.attachment
-          ? {
-              attachments: {
-                create: {
-                  ...opts.attachment,
-                  id: generateId(),
-                  channelId: opts.channelId,
-                  serverId: opts.serverId,
-                },
+      ...(processedData.roleMentions.length && {
+        roleMentions: {
+          connect: processedData.roleMentions,
+        },
+      }),
+
+      ...(processedData.quotes.length && {
+        quotedMessages: {
+          connect: processedData.quotes,
+        },
+      }),
+
+      ...(processedData.replies.length && {
+        mentionReplies: opts.mentionReplies,
+        replyMessages: {
+          createMany: {
+            data: processedData.replies,
+          },
+        },
+      }),
+
+      ...(opts.buttons?.length
+        ? {
+            buttons: {
+              createMany: {
+                data: opts.buttons,
               },
-            }
-          : undefined),
-      },
-      creatorId: opts.userId,
-      bypassQuotesCheck: channel?.type === ChannelType.TICKET,
-      sendMessageOpts: opts,
-    }),
+            },
+          }
+        : undefined),
+
+      ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
+      ...(opts.attachment
+        ? {
+            attachments: {
+              create: {
+                ...opts.attachment,
+                id: generateId(),
+                channelId: opts.channelId,
+                serverId: opts.serverId,
+              },
+            },
+          }
+        : undefined),
+    },
     include: {
       ...MessageInclude,
       reactions: {
