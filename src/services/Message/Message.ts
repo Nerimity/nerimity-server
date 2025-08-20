@@ -18,6 +18,7 @@ import { ChannelType } from '../../types/Channel';
 import { replaceBadWords } from '../../common/badWords';
 import { FriendStatus } from '../../types/Friend';
 import { createMessageV2, SendMessageOptions } from './MessageCreate';
+import { editMessageV2 } from './MessageEdit';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -244,15 +245,6 @@ export const deleteRecentUserServerMessages = async (userId: string, serverId: s
   });
 };
 
-interface EditMessageOptions {
-  userId: string;
-  channelId: string;
-  channel?: ChannelCache | null;
-  serverId?: string;
-  content: string;
-  messageId: string;
-}
-
 export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
   include: {
     webhook: {
@@ -427,57 +419,7 @@ export type PublicMessage = Prisma.MessageGetPayload<typeof MessageValidator>;
 
 export const MessageInclude = MessageValidator.include;
 
-export const editMessage = async (opts: EditMessageOptions): Promise<CustomResult<Partial<Message>, CustomError>> => {
-  const messageExists = await exists(prisma.message, {
-    where: { id: opts.messageId, createdById: opts.userId },
-  });
-
-  if (!messageExists) {
-    return [null, generateError('Message does not exist or is not created by you.')];
-  }
-
-  const content = opts.content.trim();
-
-  if (!content) {
-    return [null, generateError('Content is required', 'content')];
-  }
-
-  let channel = opts.channel;
-
-  if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, opts.userId);
-  }
-  const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
-
-  const message = await prisma.message.update({
-    where: { id: opts.messageId },
-    data: await constructData({
-      messageData: {
-        content: isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
-        editedAt: dateToDateTime(),
-        embed: Prisma.JsonNull,
-      },
-      creatorId: opts.userId,
-      update: true,
-    }),
-    include: { ...MessageInclude, reactions: false },
-  });
-
-  // emit
-  if (opts.serverId) {
-    emitServerMessageUpdated(opts.channelId, opts.messageId, message);
-  }
-
-  if (channel?.type === ChannelType.DM_TEXT && channel?.inbox?.recipientId) {
-    emitDMMessageUpdated(channel, opts.messageId, message);
-  }
-
-  if (message.type === MessageType.CONTENT) {
-    addMessageEmbed(message, { channel, serverId: opts.serverId });
-  }
-
-  return [message, null];
-};
+export const editMessage = editMessageV2;
 
 type MessageDataCreate = Parameters<typeof prisma.message.create>[0]['data'];
 type MessageDataUpdate = Parameters<typeof prisma.message.update>[0]['data'];
