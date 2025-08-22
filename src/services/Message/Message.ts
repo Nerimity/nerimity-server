@@ -58,6 +58,7 @@ export type TransformedMessage = ReturnType<typeof transformMessage>;
 export function transformMessage(message: TransformMessage) {
   const newMessage = {
     ...message,
+    createdBy: { ...message.createdBy } as typeof message.createdBy & { avatarUrl?: string },
     reactions: message.reactions.map((reaction) => ({
       ...reaction,
       reacted: !!reaction.reactedUsers?.length,
@@ -106,6 +107,7 @@ export function transformMessage(message: TransformMessage) {
     }),
 
     webhook: undefined,
+    creatorOverride: undefined,
   };
 
   if (message.webhook) {
@@ -118,6 +120,18 @@ export function transformMessage(message: TransformMessage) {
       avatar: message.webhook.avatar,
       hexColor: message.webhook.hexColor,
     };
+  }
+
+  if (newMessage.createdBy) {
+    if (message.creatorOverrideId) {
+      newMessage.createdBy.id += '-' + message.creatorOverrideId;
+    }
+    if (message.creatorOverride?.username) {
+      newMessage.createdBy.username = message.creatorOverride.username;
+    }
+    if (message.creatorOverride?.avatarUrl) {
+      newMessage.createdBy.avatarUrl = message.creatorOverride.avatarUrl;
+    }
   }
 
   return newMessage;
@@ -250,6 +264,13 @@ export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
         avatar: true,
         name: true,
         hexColor: true,
+      },
+    },
+    creatorOverride: {
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true,
       },
     },
     createdBy: {
