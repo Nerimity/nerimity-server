@@ -42,6 +42,9 @@ export interface SendMessageOptions {
     id: string;
     alert?: boolean;
   }[];
+
+  username_override?: string;
+  avatar_url_override?: string;
 }
 
 const validateMessageOptions = async (opts: SendMessageOptions) => {
@@ -113,6 +116,25 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     return [null, generateError('Something went wrong. Try again later.')] as const;
   }
 
+  const shouldOverride = opts.username_override?.trim() || opts.avatar_url_override?.trim();
+  let overrideId: number | undefined;
+
+  if (shouldOverride) {
+    const username = opts.username_override?.trim() || null;
+    const avatarUrl = opts.avatar_url_override?.trim() || null;
+    let override = await prisma.messageCreatorOverride.findFirst({
+      where: { username, avatarUrl },
+      select: { id: true },
+    });
+    if (!override) {
+      override = await prisma.messageCreatorOverride.create({
+        data: { username, avatarUrl },
+        select: { id: true },
+      });
+    }
+    overrideId = override.id;
+  }
+
   const createMessageQuery = prisma.message.create({
     data: {
       silent: opts.silent,
@@ -123,6 +145,7 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
       channelId: opts.channelId,
       type: opts.type,
       createdAt: messageCreatedAt,
+      ...(overrideId !== undefined && { creatorOverrideId: overrideId }),
 
       ...(processedData.userMentions.length && {
         mentions: {

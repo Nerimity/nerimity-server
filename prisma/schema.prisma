@@ -663,6 +663,18 @@ model Channel {
 
 }
 
+model MessageCreatorOverride {
+  @@map("message_creator_overrides")
+  id Int @id @default(autoincrement())
+
+  username String?
+  avatarUrl String?
+
+  messages   Message[]
+
+  @@unique([username, avatarUrl])
+}
+
 model Webhook {
   @@map("webhooks")
   id String @id
@@ -761,6 +773,9 @@ model Message {
   createdBy   User?     @relation(fields: [createdById], references: [id])
   mentions    User[]  @relation(name: "mentioned_messages")
   roleMentions ServerRole[]  @relation(name: "role_mentioned_messages")
+
+  creatorOverrideId Int?
+  creatorOverride MessageCreatorOverride? @relation(fields: [creatorOverrideId], references: [id])
 
 
   webhookId String?

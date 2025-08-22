@@ -6,18 +6,24 @@ import { body } from 'express-validator';
 import env from '../../common/env';
 import { createMessage } from '../../services/Message/Message';
 import { MessageType } from '../../types/Message';
+import { hasBadWord } from '../../common/badWords';
 
 export function webhookkExecute(Router: Router) {
   Router.post(
     '/webhooks/:webhookId/:token',
     body('content').optional(true).isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
 
+    body('avatarUrl').optional(true).isString().withMessage('Avatar URL must be a string!').isLength({ min: 1, max: 255 }).withMessage('Avatar URL length must be between 1 and 255 characters.'),
+    body('username').optional(true).isString().withMessage('Invalid username.').not().contains('@').withMessage('Username cannot contain the @ symbol').not().contains(':').withMessage('Username cannot contain the : symbol').isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.'),
+
     route
   );
 }
 
 interface Body {
-  content: string;
+  content?: string;
+  avatarUrl?: string;
+  username?: string;
 }
 
 const rateLimitCheck = async (channelId: string) => {
@@ -40,6 +46,12 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
   if (!req.body.content) return res.status(400).json(generateError('Content is required.'));
 
+  if (req.body.username?.trim()) {
+    if (hasBadWord(req.body.username)) {
+      return res.status(400).json(generateError('Username cannot contain bad words.', 'username'));
+    }
+  }
+
   const webhookId = req.params.webhookId;
   const token = req.params.token;
 
@@ -57,6 +69,9 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
     content: req.body.content,
     webhookId: webhookCache.id,
     serverId: webhookCache.serverId,
+
+    avatar_url_override: req.body.avatarUrl,
+    username_override: req.body.username,
   });
   if (error) return res.status(400).json(error);
 
