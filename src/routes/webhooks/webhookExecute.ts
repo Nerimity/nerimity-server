@@ -63,6 +63,12 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
   if (ttl) return res.status(429).json(generateError('Rate limit exceeded.'));
 
+  if (req.body.avatarUrl) {
+    if (!validateAvatarUrl(req.body.avatarUrl)) {
+      return res.status(400).json(generateError('Invalid avatar URL.'));
+    }
+  }
+
   const [result, error] = await createMessage({
     channelId: webhookCache.channelId,
     type: MessageType.CONTENT,
@@ -77,3 +83,19 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
   res.json(result);
 }
+
+const VALID_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+const validateAvatarUrl = (rawUrl: string) => {
+  try {
+    const url = new URL(rawUrl);
+
+    const extension = url.pathname.split('.').pop()?.toLowerCase();
+    if (!extension || !VALID_EXTENSIONS.includes(extension.toLowerCase())) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+};
