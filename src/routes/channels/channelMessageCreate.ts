@@ -327,7 +327,7 @@ async function route(req: Request, res: Response) {
     if (attachment?.provider === AttachmentProviders.Local && attachment.path) {
       deleteFile(attachment.path);
     }
-    return res.status(400).json(generateError(error));
+    return res.status(400).json(error);
   }
 
   res.json(message);
