@@ -489,6 +489,7 @@ model ServerRole {
   order                  Int
 
   botRole     Boolean?
+  applyOnJoin            Boolean                 @default(false)
 
   createdAt              DateTime                @default(now())
 
@@ -496,6 +497,7 @@ model ServerRole {
 
 
   mentionedMessages      Message[]               @relation(name: "role_mentioned_messages")
+
 
   @@index([serverId])
 

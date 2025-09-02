@@ -225,7 +225,7 @@ export const joinServer = async (
     return [null, generateError('You have reached the maximum number of servers.')] as const;
   }
 
-  const server = await prisma.server.findFirst({
+  const server = await prisma.server.findUnique({
     where: { id: serverId },
     include: {
       scheduledForDeletion: true,
@@ -269,6 +269,9 @@ export const joinServer = async (
     botRoleId = botRole?.id || null;
   }
 
+  const applyOnJoinRoles = await prisma.serverRole.findMany({ where: { serverId, applyOnJoin: true }, select: { id: true } });
+  const applyOnJoinRoleIds = applyOnJoinRoles.map((role) => role.id);
+
   const [_, serverRoles, serverMember, serverChannels, serverMembers] = await prisma
     .$transaction([
       prisma.user.update({
@@ -281,7 +284,7 @@ export const joinServer = async (
           id: generateId(),
           serverId,
           userId,
-          roleIds: botRoleId ? [botRoleId] : [],
+          roleIds: botRoleId ? [botRoleId, ...applyOnJoinRoleIds] : applyOnJoinRoleIds,
         },
         include: { user: { select: publicUserExcludeFields } },
       }),

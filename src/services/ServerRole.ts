@@ -81,6 +81,7 @@ export interface UpdateServerRoleOptions {
   hexColor?: string;
   hideRole?: boolean;
   icon?: string | null;
+  applyOnJoin?: boolean;
 }
 
 export const updateServerRole = async (serverId: string, roleId: string, update: UpdateServerRoleOptions): Promise<CustomResult<UpdateServerRoleOptions, CustomError>> => {
@@ -99,6 +100,9 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
   if (role.id === server.defaultRoleId) {
     if (update.hideRole !== undefined) {
       return [null, generateError('Cannot hide default role.')];
+    }
+    if (update.applyOnJoin) {
+      return [null, generateError('Default role is already applied on join.')];
     }
   }
   if (update.hexColor && !isValidHex(update.hexColor)) {
