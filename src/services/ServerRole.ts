@@ -109,6 +109,12 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
     return [null, generateError('Invalid hex color.')];
   }
 
+  if (role.botRole) {
+    if (update.applyOnJoin) {
+      return [null, generateError('Cannot apply on join to a bot role.')];
+    }
+  }
+
   await prisma.serverRole.update({ where: { id: role.id }, data: update });
 
   await deleteAllServerMemberCache(serverId);
