@@ -54,11 +54,20 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
     if (payload.ref.startsWith('refs/tags/')) {
       const tagName = payload.ref.split('/').pop();
-      content = `${user} just published a new release/tag: **${tagName}**! 🚀`;
+      content = `${user} just pushed a new tag: **${tagName}**! 🚀`;
+    } else {
+      content = `${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
     }
-
-    content = `${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
   }
+
+  if (body.name === 'release') {
+    
+    if ( 'action' in body.payload && body.payload.action === 'published' ) { {
+      const payload = body.payload;
+      content = `${user} just published a new release: **${payload.release.tag_name}**! 🚀 [🔗](${payload.release.url})`;
+    }
+  }
+
   if (!content) {
     res.status(200).end();
     return;
