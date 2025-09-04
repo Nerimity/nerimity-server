@@ -79,6 +79,7 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
     type: MessageType.CONTENT,
     content,
     webhookId: webhookCache.id,
+    avatar_url_override: 'https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png',
     serverId: webhookCache.serverId,
   });
   if (error) return res.status(400).json(error);
