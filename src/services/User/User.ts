@@ -10,7 +10,7 @@ import { generateId } from '../../common/flakeId';
 import { createPostNotification, fetchLatestPost, fetchPinnedPost, fetchPinnedPosts, PostNotificationType } from '../Post';
 
 import { leaveVoiceChannel } from '../Voice';
-import { MessageInclude } from '../Message/Message';
+import { MessageInclude, transformMessage } from '../Message/Message';
 import { removeDuplicates } from '../../common/utils';
 import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
 import { Prisma } from '@prisma/client';
@@ -668,7 +668,12 @@ export async function getUserNotifications(userId: string) {
       .then(() => {});
   }
 
-  return notifications;
+  const mappedNotifications = notifications.map((n) => ({
+    ...n,
+    message: n.message ? transformMessage(n.message) : n.message,
+  }));
+
+  return mappedNotifications;
 }
 
 export async function dismissUserNotice(noticeId: string, userId: string) {
