@@ -629,7 +629,26 @@ export async function getUserNotifications(userId: string) {
       id: true,
       server: true,
       serverMember: true,
-      message: { include: MessageInclude },
+      message: {
+        include: {
+          ...MessageInclude,
+
+          reactions: {
+            select: {
+              reactedUsers: { where: { userId } },
+              emojiId: true,
+              gif: true,
+              name: true,
+              _count: {
+                select: {
+                  reactedUsers: true,
+                },
+              },
+            },
+            orderBy: { id: 'asc' },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
     take: 20,
