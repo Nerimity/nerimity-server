@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
-import { body, param } from 'express-validator';
+import { body } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { createPost, editPost } from '../../services/Post';
+import { editPost } from '../../services/Post';
 import { hasBit, USER_BADGES } from '../../common/Bitwise';
 
 export function postEdit(Router: Router) {
@@ -42,7 +42,7 @@ async function route(req: Request, res: Response) {
   const [post, error] = await editPost({
     content: body.content,
     editById: req.userCache.id,
-    postId: req.params.postId,
+    postId: req.params.postId!,
   });
 
   if (error) {

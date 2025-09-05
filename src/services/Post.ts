@@ -207,12 +207,16 @@ export async function editPost(opts: { editById: string; postId: string; content
 
   const formattedContent = await formatContent(opts.content?.trim() || '');
 
+  const url = opts.content?.match(urlRegex)?.[0].trim();
+  const OGTags = url ? (await getOGTags(url).catch(() => {})) || Prisma.JsonNull : Prisma.JsonNull;
+
   const newPost = await prisma.post
     .update({
       where: { id: opts.postId },
       data: {
         content: replaceBadWords(formattedContent.newContent),
         mentions: { connect: formattedContent.mentionUserIds.map((id) => ({ id })) },
+        embed: OGTags,
 
         editedAt: dateToDateTime(),
       },
