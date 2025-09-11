@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@src/generated/prisma/client';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
@@ -8,16 +8,14 @@ import { emitReminderAdd, emitReminderRemove, emitReminderUpdate } from '../emit
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 
-export const ReminderSelect = Prisma.validator<Prisma.ReminderDefaultArgs>()({
-  select: {
-    id: true,
-    remindAt: true,
-    createdAt: true,
-    message: { include: MessageInclude },
-    post: { include: constructPostInclude('') },
-    channelId: true,
-  },
-}).select;
+export const ReminderSelect = {
+  id: true,
+  remindAt: true,
+  createdAt: true,
+  message: { include: MessageInclude },
+  post: { include: constructPostInclude('') },
+  channelId: true,
+} satisfies Prisma.ReminderSelect;
 
 export type PartialReminder = Prisma.ReminderGetPayload<{ select: typeof ReminderSelect }>;
 

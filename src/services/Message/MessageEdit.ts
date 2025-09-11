@@ -1,4 +1,4 @@
-import { Message, Prisma } from '@prisma/client';
+import { Message, Prisma } from '@src/generated/prisma/client';
 import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
 import { generateError } from '../../common/errorHandler';
 import { dateToDateTime, exists, prisma } from '../../common/database';

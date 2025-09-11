@@ -18,6 +18,10 @@
     "module": "ESNext",
     "noEmit": true,
 
-    "lib": ["es2022"]
+    "lib": ["es2022"],
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": ["src/*"]
+    }
   }
 }

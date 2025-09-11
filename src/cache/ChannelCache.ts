@@ -1,4 +1,4 @@
-import { Account, Inbox, User } from '@prisma/client';
+import { Account, Inbox, User } from '@src/generated/prisma/client';
 import { addBit, CHANNEL_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { prisma } from '../common/database';
 import { redisClient } from '../common/redis';

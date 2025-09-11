@@ -1,12 +1,5 @@
-import { Friend, User } from '@prisma/client';
-import {
-  FRIEND_REQUEST_SENT,
-  FRIEND_REQUEST_PENDING,
-  FRIEND_REQUEST_ACCEPTED,
-  FRIEND_REMOVED,
-  USER_BLOCKED,
-  USER_UNBLOCKED,
-} from '../common/ClientEventNames';
+import { Friend, User } from '@src/generated/prisma/client';
+import { FRIEND_REQUEST_SENT, FRIEND_REQUEST_PENDING, FRIEND_REQUEST_ACCEPTED, FRIEND_REMOVED, USER_BLOCKED, USER_UNBLOCKED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 
 export const emitFriendRequestSent = (requester: Friend, recipient: Friend) => {
@@ -29,15 +22,10 @@ export const emitFriendRemoved = (userId: string, friendId: string) => {
   io.in(friendId).emit(FRIEND_REMOVED, { friendId: userId });
 };
 
-export const emitUserBlocked = (
-  userId: string,
-  friend: User,
-  emitToRecipient?: boolean | null
-) => {
+export const emitUserBlocked = (userId: string, friend: User, emitToRecipient?: boolean | null) => {
   const io = getIO();
 
-  emitToRecipient &&
-    io.in(friend.id).emit(FRIEND_REMOVED, { friendId: userId });
+  emitToRecipient && io.in(friend.id).emit(FRIEND_REMOVED, { friendId: userId });
 
   io.in(userId).emit(USER_BLOCKED, { user: friend });
 };

@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto';
 import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { createQueueProcessor } from '@nerimity/mimiqueue';
 import { deleteServer } from './services/Server';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@src/generated/prisma/client';
 import { isString } from './common/utils';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {

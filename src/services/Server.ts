@@ -1,4 +1,4 @@
-import { Channel, Prisma, Server, ServerMember, ServerRole } from '@prisma/client';
+import { Channel, Prisma, Server, ServerMember, ServerRole } from '@src/generated/prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
@@ -25,11 +25,11 @@ import { LastOnlineStatus } from './User/User';
 import { logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 
-const serverMemberWithLastOnlineDetails = Prisma.validator<Prisma.ServerMemberDefaultArgs>()({
+const ServerMemberWithLastOnlineDetails = {
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
-});
+} satisfies { include: Prisma.ServerMemberInclude };
 
-type ServerMemberWithLastOnlineDetails = Prisma.ServerMemberGetPayload<typeof serverMemberWithLastOnlineDetails>;
+type ServerMemberWithLastOnlineDetails = Prisma.ServerMemberGetPayload<typeof ServerMemberWithLastOnlineDetails>;
 
 const filterLastOnlineDetailsFromServerMembers = (serverMembers: ServerMemberWithLastOnlineDetails[], requesterUserId: string) => {
   return serverMembers.map((serverMember) => {

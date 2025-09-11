@@ -1,4 +1,4 @@
-import { Attachment } from '@prisma/client';
+import { Attachment } from '@src/generated/prisma/client';
 import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
 import { getServerCache, ServerCache } from '../../cache/ServerCache';
 import { dateToDateTime, prisma } from '../../common/database';

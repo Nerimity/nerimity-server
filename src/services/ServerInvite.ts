@@ -1,4 +1,4 @@
-import { Server, ServerInvite } from '@prisma/client';
+import { Server, ServerInvite } from '@src/generated/prisma/client';
 import { CustomResult } from '../common/CustomResult';
 import { prisma, publicUserExcludeFields } from '../common/database';
 import env from '../common/env';

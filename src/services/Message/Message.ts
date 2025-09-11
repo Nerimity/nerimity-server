@@ -5,7 +5,7 @@ import { MessageType } from '../../types/Message';
 import { dateToDateTime, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 import { generateError } from '../../common/errorHandler';
-import { Message, Prisma } from '@prisma/client';
+import { Message, Prisma } from '@src/generated/prisma/client';
 import { isString, removeDuplicates } from '../../common/utils';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { deleteFile } from '../../common/nerimityCDN';
@@ -257,7 +257,7 @@ export const deleteRecentUserServerMessages = async (userId: string, serverId: s
   });
 };
 
-export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
+export const MessageValidator = {
   include: {
     webhook: {
       select: {
@@ -432,7 +432,7 @@ export const MessageValidator = Prisma.validator<Prisma.MessageDefaultArgs>()({
     },
     reactions: true,
   },
-});
+} satisfies { include: Prisma.MessageInclude };
 
 export type PublicMessage = Prisma.MessageGetPayload<typeof MessageValidator>;
 
