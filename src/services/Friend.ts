@@ -87,16 +87,21 @@ export const addFriend = async (userId: string, friendId: string) => {
     status: FriendStatus.PENDING,
   };
 
-  const docs = await prisma.$transaction([
-    prisma.friend.create({
-      data: requesterObj,
-      include: { recipient: { select: publicUserExcludeFields } },
-    }),
-    prisma.friend.create({
-      data: recipientObj,
-      include: { recipient: { select: publicUserExcludeFields } },
-    }),
-  ]);
+  const docs = await prisma
+    .$transaction([
+      prisma.friend.create({
+        data: requesterObj,
+        include: { recipient: { select: publicUserExcludeFields } },
+      }),
+      prisma.friend.create({
+        data: recipientObj,
+        include: { recipient: { select: publicUserExcludeFields } },
+      }),
+    ])
+    .catch(() => null);
+  if (!docs) {
+    return [null, generateError('Failed to add friend.')];
+  }
 
   const requester = docs[0];
   const recipient = docs[1];
