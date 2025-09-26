@@ -145,15 +145,22 @@ async function scheduleDeleteAccountContent() {
       await prisma.postLike.deleteMany({ where: { id: { in: ids } } });
     }
 
-    const messages = await prisma.message.findMany({
-      take: 300,
-      select: { id: true, attachments: { select: { path: true } } },
-      where: {
-        createdBy: {
-          scheduledForContentDeletion: { isNot: null },
-        },
-      },
-    });
+    const rawMessages = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT "public"."messages"."id" 
+      FROM "public"."messages" 
+      LEFT JOIN "public"."users" AS "j0" ON ("j0"."id") = ("public"."messages"."createdById") 
+      LEFT JOIN "public"."schedule_account_content_delete" AS "j1" ON ("j1"."userId") = ("j0"."id") 
+      WHERE ((NOT ("j1"."userId" IS NULL)) AND ("j0"."id" IS NOT NULL)) LIMIT 300;
+    `;
+    const messages = !rawMessages.length
+      ? []
+      : await prisma.message.findMany({
+          take: 300,
+          select: { id: true, attachments: { select: { path: true } } },
+          where: {
+            id: { in: rawMessages.map((m) => m.id) },
+          },
+        });
     const messageAttachments = messages.filter((m) => m.attachments.length).map((m) => m.attachments[0]?.path);
     const messageIds = messages.map((m) => m.id);
 
