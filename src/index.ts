@@ -100,9 +100,6 @@ async function scheduleWebhookMessagesDelete() {
         id: true,
         messages: {
           take: 300,
-          orderBy: {
-            createdAt: 'desc',
-          },
           select: {
             id: true,
             attachments: {
@@ -150,9 +147,6 @@ async function scheduleDeleteAccountContent() {
 
     const messages = await prisma.message.findMany({
       take: 300,
-      orderBy: {
-        createdAt: 'desc',
-      },
       select: { id: true, attachments: { select: { path: true } } },
       where: {
         createdBy: {
@@ -165,9 +159,6 @@ async function scheduleDeleteAccountContent() {
 
     const posts = await prisma.post.findMany({
       take: 300,
-      orderBy: {
-        createdAt: 'desc',
-      },
       select: { id: true, attachments: { select: { path: true } } },
       where: {
         deleted: false,
@@ -248,7 +239,6 @@ function scheduleDeleteMessages() {
           SELECT id 
           FROM "messages"
           WHERE "channelId"=${details.channelId}
-          ORDER BY "createdAt" DESC
           LIMIT 300       
       );
     `;
