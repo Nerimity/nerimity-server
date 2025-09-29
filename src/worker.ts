@@ -83,10 +83,13 @@ if (env.TYPE === 'api') {
 
   app.use('/api', OpenGraphRouter);
 
+  app.get('/api/debug', async (req, res) => {
+    res.json('no');
+  });
   app.get('/api/owo', async (req, res) => {
     const t1 = performance.now();
-    const result = await getMessagesByChannelId('1672902441227689985 ', {
-      requesterId: '1672902397523042305',
+    const result = await getMessagesByChannelId('1289157729608441857 ', {
+      requesterId: '1289157673362825217',
     });
     res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
     res.json(result);
@@ -103,8 +106,8 @@ if (env.TYPE === 'api') {
 
   app.get('/api/uwu', async (req, res) => {
     const t1 = performance.now();
-    const result = await getMessagesByChannelId('1672902441227689985 ', {
-      requesterId: '1672902397523042305',
+    const result = await getMessagesByChannelId('1289157729608441857 ', {
+      requesterId: '1289157673362825217',
     });
     res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
     res.json(result);
