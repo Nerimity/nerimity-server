@@ -83,18 +83,6 @@ if (env.TYPE === 'api') {
 
   app.use('/api', OpenGraphRouter);
 
-  app.get('/api/debug', async (req, res) => {
-    res.json('no');
-  });
-  app.get('/api/owo', async (req, res) => {
-    const t1 = performance.now();
-    const result = await getMessagesByChannelId('1289157729608441857', {
-      requesterId: '1289157673362825217',
-    });
-    res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
-    res.json(result);
-  });
-
   app.use(
     rateLimit({
       name: 'global_limit',
@@ -103,15 +91,6 @@ if (env.TYPE === 'api') {
       requests: 100,
     })
   );
-
-  app.get('/api/uwu', async (req, res) => {
-    const t1 = performance.now();
-    const result = await getMessagesByChannelId('1289157729608441857', {
-      requesterId: '1289157673362825217',
-    });
-    res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
-    res.json(result);
-  });
 
   app.use('/api', ModerationRouter);
   app.use('/api', UsersRouter);
