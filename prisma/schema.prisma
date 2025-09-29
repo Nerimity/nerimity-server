@@ -819,6 +819,9 @@ model Message {
   @@index([channelId, id])
   @@index([createdAt])
   @@index([webhookId])
+  @@index([creatorOverrideId])
+  @@index([channelId, createdAt(sort: Desc), id(sort: Desc)])
+
 }
 
 
@@ -836,6 +839,8 @@ model MessageButton {
 
   @@id([messageId, id])
 
+  @@index([messageId, order])
+
 }
 
 model ReplyMessages {
@@ -849,9 +854,10 @@ model ReplyMessages {
   replyToMessage Message? @relation(fields: [replyToMessageId], references: [id], onDelete: SetNull, name: "reply_to_messages")
 
   @@unique([messageId, replyToMessageId])
-
-
   @@index([replyToMessageId, messageId])
+
+  @@index([messageId, id(sort: Desc)])
+  @@index([replyToMessageId])
 
 }
 
@@ -901,6 +907,7 @@ model MessageReaction {
 
   @@index([messageId])
 
+
 }
 
 model ReactedMessageUser {
@@ -944,6 +951,7 @@ model MessageMention {
   @@index([mentionedToId])
   @@index([channelId])
   @@index([serverId])
+  
 }
 
 model Attachment {
@@ -979,6 +987,7 @@ model Attachment {
 
   @@index([serverId])
   @@index([messageId, createdAt])
+  @@index([messageId])
   @@index([channelId])
   @@index([postId])
 
