@@ -26,6 +26,7 @@ import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
 import { logger } from './common/pino';
 import { WebhooksRouter } from './routes/webhooks/Router';
+import { getMessagesByChannelId } from './services/Message/Message';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -82,6 +83,15 @@ if (env.TYPE === 'api') {
 
   app.use('/api', OpenGraphRouter);
 
+  app.get('/api/owo', async (req, res) => {
+    const t1 = performance.now();
+    const result = await getMessagesByChannelId('1672902441227689985 ', {
+      requesterId: '1672902397523042305',
+    });
+    res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
+    res.json(result);
+  });
+
   app.use(
     rateLimit({
       name: 'global_limit',
@@ -90,6 +100,15 @@ if (env.TYPE === 'api') {
       requests: 100,
     })
   );
+
+  app.get('/api/uwu', async (req, res) => {
+    const t1 = performance.now();
+    const result = await getMessagesByChannelId('1672902441227689985 ', {
+      requesterId: '1672902397523042305',
+    });
+    res.setHeader('T-msg-took', (performance.now() - t1).toFixed(2) + 'ms');
+    res.json(result);
+  });
 
   app.use('/api', ModerationRouter);
   app.use('/api', UsersRouter);
