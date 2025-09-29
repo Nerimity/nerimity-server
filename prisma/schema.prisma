@@ -3,6 +3,7 @@ generator client {
   engineType = "client"
 
   output   = "../src/generated/prisma"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
