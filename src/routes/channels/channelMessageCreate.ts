@@ -103,15 +103,15 @@ const queue = createQueue({
 });
 
 const queueRoute = async (req: Request, res: Response) => {
-  const t1 = performance.now();
+  // const t1 = performance.now();
 
-  await queue.add(
-    async () => {
-      res.setHeader('T-q-took', (performance.now() - t1).toFixed(2) + 'ms');
-      await route(req, res);
-    },
-    { groupName: req.userIP }
-  );
+  // await queue.add(
+  //   async () => {
+  //     res.setHeader('T-q-took', (performance.now() - t1).toFixed(2) + 'ms');
+  await route(req, res);
+  // },
+  //   { groupName: req.userIP }
+  // );
 };
 
 interface Body {
