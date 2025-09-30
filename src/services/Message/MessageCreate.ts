@@ -135,8 +135,6 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     overrideId = override.id;
   }
 
-  const skipinclude = opts.userId == '1289157673362825217';
-
   const createMessageQuery = prisma.message.create({
     data: {
       silent: opts.silent,
@@ -200,27 +198,23 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
           }
         : undefined),
     },
-    ...(skipinclude
-      ? {}
-      : {
-          include: {
-            ...MessageInclude,
-            reactions: {
-              select: {
-                ...(opts?.userId ? { reactedUsers: { where: { userId: opts.userId } } } : undefined),
-                emojiId: true,
-                gif: true,
-                name: true,
-                _count: {
-                  select: {
-                    reactedUsers: true,
-                  },
-                },
-              },
-              orderBy: { id: 'asc' },
+    include: {
+      ...MessageInclude,
+      reactions: {
+        select: {
+          ...(opts?.userId ? { reactedUsers: { where: { userId: opts.userId } } } : undefined),
+          emojiId: true,
+          gif: true,
+          name: true,
+          _count: {
+            select: {
+              reactedUsers: true,
             },
           },
-        }),
+        },
+        orderBy: { id: 'asc' },
+      },
+    },
   });
 
   // update channel last message
@@ -236,9 +230,6 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
 
   if (!message) {
     return [null, generateError("Couldn't create message")] as const;
-  }
-  if (skipinclude) {
-    return [message, null] as const;
   }
 
   const transformedMessage = transformMessage(message);
@@ -386,12 +377,9 @@ export const createMessageV2 = async (opts: SendMessageOptions) => {
     return [null, createMessageError] as const;
   }
 
-  const skipinclude = opts.userId == '1289157673362825217';
+  handleMessageSideEffects(message, opts, validationResult).then(([, error]) => {
+    if (error) console.error(error.message);
+  });
 
-  if (!skipinclude) {
-    handleMessageSideEffects(message, opts, validationResult).then(([, error]) => {
-      if (error) console.error(error.message);
-    });
-  }
   return [message, null] as const;
 };
