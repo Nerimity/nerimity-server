@@ -22,6 +22,7 @@ export function channelVerification(opts?: Options) {
     }
 
     const [channel, error] = await getChannelCache(channelId, req.userCache.id);
+    res.setHeader('T-chn-vfy-cc-took', (performance.now() - t1).toFixed(2) + 'ms');
 
     if (error !== null) {
       return res.status(403).json(generateError(error));
@@ -34,6 +35,7 @@ export function channelVerification(opts?: Options) {
 
     if (isServerChannel) {
       const [memberCache, error] = await getServerMemberCache(channel.server.id, req.userCache.id);
+      res.setHeader('T-chn-vfy-sm-took', (performance.now() - t1).toFixed(2) + 'ms');
       if (error !== null) {
         return res.status(403).json(generateError(error));
       }
