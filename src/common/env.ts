@@ -24,6 +24,7 @@ export default {
   JWT_CONNECTIONS_SECRET: process.env.JWT_CONNECTIONS_SECRET as string,
   DATABASE_URL: process.env.DATABASE_URL as string,
   REDIS_HOST: process.env.REDIS_HOST as string,
+  REDIS_PATH: process.env.REDIS_PATH as string,
   REDIS_PORT: parseInt(process.env.REDIS_PORT as string),
   REDIS_PASS: process.env.REDIS_PASS as string,
   ORIGIN: origin(),

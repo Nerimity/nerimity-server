@@ -5,8 +5,9 @@ import { Log } from './Log';
 
 export const redisClient = createClient({
   socket: {
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
+    ...(env.REDIS_PATH ? { path: env.REDIS_PATH } : {}),
+    ...(env.REDIS_HOST ? { host: env.REDIS_HOST } : {}),
+    ...(env.REDIS_PORT ? { port: env.REDIS_PORT } : {}),
   },
   password: env.REDIS_PASS,
 });
