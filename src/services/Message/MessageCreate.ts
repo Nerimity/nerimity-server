@@ -135,6 +135,8 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     overrideId = override.id;
   }
 
+  const skipinclude = opts.userId == '1289157673362825217';
+
   const createMessageQuery = prisma.message.create({
     data: {
       silent: opts.silent,
@@ -198,23 +200,27 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
           }
         : undefined),
     },
-    include: {
-      ...MessageInclude,
-      reactions: {
-        select: {
-          ...(opts?.userId ? { reactedUsers: { where: { userId: opts.userId } } } : undefined),
-          emojiId: true,
-          gif: true,
-          name: true,
-          _count: {
-            select: {
-              reactedUsers: true,
+    ...(skipinclude
+      ? {}
+      : {
+          include: {
+            ...MessageInclude,
+            reactions: {
+              select: {
+                ...(opts?.userId ? { reactedUsers: { where: { userId: opts.userId } } } : undefined),
+                emojiId: true,
+                gif: true,
+                name: true,
+                _count: {
+                  select: {
+                    reactedUsers: true,
+                  },
+                },
+              },
+              orderBy: { id: 'asc' },
             },
           },
-        },
-        orderBy: { id: 'asc' },
-      },
-    },
+        }),
   });
 
   // update channel last message
