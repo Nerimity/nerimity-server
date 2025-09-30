@@ -237,6 +237,9 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
   if (!message) {
     return [null, generateError("Couldn't create message")] as const;
   }
+  if (skipinclude) {
+    return [message, null] as const;
+  }
 
   const transformedMessage = transformMessage(message);
 
@@ -383,9 +386,12 @@ export const createMessageV2 = async (opts: SendMessageOptions) => {
     return [null, createMessageError] as const;
   }
 
-  handleMessageSideEffects(message, opts, validationResult).then(([, error]) => {
-    if (error) console.error(error.message);
-  });
+  const skipinclude = opts.userId == '1289157673362825217';
 
+  if (!skipinclude) {
+    handleMessageSideEffects(message, opts, validationResult).then(([, error]) => {
+      if (error) console.error(error.message);
+    });
+  }
   return [message, null] as const;
 };
