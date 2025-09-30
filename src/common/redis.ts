@@ -9,7 +9,7 @@ export const redisClient = createClient({
     ...(env.REDIS_HOST ? { host: env.REDIS_HOST } : {}),
     ...(env.REDIS_PORT ? { port: env.REDIS_PORT } : {}),
   },
-  password: env.REDIS_PASS,
+  ...(env.REDIS_PASS ? { password: env.REDIS_PASS } : {}),
 });
 
 export function connectRedis(): Promise<typeof redisClient> {
