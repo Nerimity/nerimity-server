@@ -21,13 +21,6 @@ import { redisClient } from '../../common/redis';
 import { ReminderSelect } from '../../services/Reminder';
 import env from '../../common/env';
 
-const perfMonit = async <T extends Promise<any>>(func: T) => {
-  const t1 = performance.now();
-  const res = await func;
-  const t2 = performance.now();
-  return [res, t2 - t1] as const;
-};
-
 interface Payload {
   token: string;
   includeCurrentUserServerMembersOnly?: boolean;
@@ -77,7 +70,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     return;
   }
 
-  const [[userCache, error], authenticateUserTook] = await perfMonit(authenticateUser(payload.token, ip));
+  const [userCache, error] = await authenticateUser(payload.token, ip);
 
   if (error !== null) {
     emitError(socket, { ...error, disconnect: true });
@@ -85,57 +78,51 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   }
   socket.join(userCache.id);
 
-  const [user, userTook] = await perfMonit(
-    prisma.user.findUnique({
-      where: { id: userCache.id },
-      include: {
-        reminders: {
-          orderBy: { remindAt: 'asc' },
-          select: ReminderSelect,
-        },
-        notificationSettings: {
-          select: {
-            notificationPingMode: true,
-            notificationSoundMode: true,
-            serverId: true,
-            channelId: true,
-            userId: true,
-          },
-        },
-        connections: { select: { id: true, provider: true, connectedAt: true } },
-        friends: { include: { recipient: { select: { ...publicUserExcludeFields, lastOnlineStatus: true, lastOnlineAt: true } } } },
-        notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
-        account: {
-          select: {
-            hideFollowers: true,
-            hideFollowing: true,
-            email: true,
-            serverOrderIds: true,
-            serverFolders: { select: { id: true, serverIds: true, color: true, name: true } },
-            dmStatus: true,
-            friendRequestStatus: true,
-            emailConfirmed: true,
-          },
+  const user = await prisma.user.findUnique({
+    where: { id: userCache.id },
+    include: {
+      reminders: {
+        orderBy: { remindAt: 'asc' },
+        select: ReminderSelect,
+      },
+      notificationSettings: {
+        select: {
+          notificationPingMode: true,
+          notificationSoundMode: true,
+          serverId: true,
+          channelId: true,
+          userId: true,
         },
       },
-    })
-  );
+      connections: { select: { id: true, provider: true, connectedAt: true } },
+      friends: { include: { recipient: { select: { ...publicUserExcludeFields, lastOnlineStatus: true, lastOnlineAt: true } } } },
+      notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
+      account: {
+        select: {
+          hideFollowers: true,
+          hideFollowing: true,
+          email: true,
+          serverOrderIds: true,
+          serverFolders: { select: { id: true, serverIds: true, color: true, name: true } },
+          dmStatus: true,
+          friendRequestStatus: true,
+          emailConfirmed: true,
+        },
+      },
+    },
+  });
 
   if (!user) {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const [{ servers, serverChannels, serverMembers, serverRoles }, serversTook] = await perfMonit(getServers(userCache.id, payload.includeCurrentUserServerMembersOnly));
+  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id, payload.includeCurrentUserServerMembersOnly);
 
-  const [lastSeenServerChannelIds, lastSeenServerChannelIdsTook] = await perfMonit(getLastSeenServerChannelIdsByUserId(userCache.id));
+  const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(userCache.id);
 
-  const [messageMentions, messageMentionsTook] = await perfMonit(getAllMessageMentions(userCache.id));
+  const messageMentions = await getAllMessageMentions(userCache.id);
 
-  const [inbox, inboxTook] = await perfMonit(
-    (async () => {
-      return !user.bot ? await getInbox(userCache.id) : [];
-    })()
-  );
+  const inbox = !user.bot ? await getInbox(userCache.id) : [];
   const inboxChannels: Channel[] = [];
 
   const inboxResponse: Inbox[] = inbox.map((item) => {
@@ -211,17 +198,15 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     server.channels = undefined;
   }
 
-  const [isFirstConnect, isFirstConnectTook] = await perfMonit(
-    addSocketUser(userCache.id, socket.id, {
-      status: user.status,
-      custom: user.customStatus! || undefined,
-      userId: userCache.id,
-    })
-  );
+  const isFirstConnect = await addSocketUser(userCache.id, socket.id, {
+    status: user.status,
+    custom: user.customStatus! || undefined,
+    userId: userCache.id,
+  });
 
   const userIds = removeDuplicates([...serverMembers.map((member) => member.user.id), ...friendUserIds, userCache.id]);
 
-  const [presences, presencesTook] = await perfMonit(getUserPresences(userIds));
+  const presences = await getUserPresences(userIds);
 
   if (isFirstConnect && user.status !== UserStatus.OFFLINE) {
     emitUserPresenceUpdate(userCache.id, {
@@ -239,23 +224,12 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   const channels = [...serverChannels, ...inboxChannels];
   const channelIds = channels.map((channel) => channel.id);
 
-  const [voiceChannelUsers, voiceChannelUsersTook] = await perfMonit(getVoiceUsersByChannelId(channelIds));
+  const voiceChannelUsers = await getVoiceUsersByChannelId(channelIds);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { account, ...userCacheWithoutAccount } = userCache;
 
   socket.emit(AUTHENTICATED, {
-    perf: {
-      authenticateUserTook,
-      userTook,
-      serversTook,
-      lastSeenServerChannelIdsTook,
-      messageMentionsTook,
-      inboxTook,
-      isFirstConnectTook,
-      presencesTook,
-      voiceChannelUsersTook,
-    },
     user: {
       ...userCacheWithoutAccount,
       hideFollowing: user.account?.hideFollowing,
