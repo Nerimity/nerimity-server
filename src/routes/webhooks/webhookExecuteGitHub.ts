@@ -47,7 +47,17 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
   if (body.name === 'pull_request') {
     const payload = body.payload;
-    content = `${user} just a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+    if (body.payload.action === 'opened') {
+      content = `${user} created a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+    }
+    if (body.payload.action === 'closed') {
+      const closedBy = payload.pull_request.merged_by ? payload.pull_request.merged_by.login : 'Someone';
+      if (body.payload.pull_request.merged) {
+        content = `${closedBy} merged a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+      } else {
+        content = `${closedBy} closed a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+      }
+    }
   }
   if (body.name === 'push') {
     const payload = body.payload;
