@@ -222,7 +222,6 @@ model BotCommand {
   description String?
   args String?
 
-  @@index([applicationId, name])
   @@index([botUserId, name])
   @@unique([applicationId, name])
 }
@@ -251,7 +250,6 @@ model UserDevice {
   createdAt   DateTime @default(now())
   lastSeenAt  DateTime @default(now())
 
-  @@index([userId, ipAddress])
   @@unique([userId, ipAddress])
   @@index([ipAddress])
 
@@ -813,7 +811,6 @@ model Message {
 
 
 
-  @@index([channelId])
   @@index([createdById])
   @@index([channelId, createdAt])
   @@index([channelId, id])
@@ -857,7 +854,6 @@ model ReplyMessages {
   @@index([replyToMessageId, messageId])
 
   @@index([messageId, id(sort: Desc)])
-  @@index([replyToMessageId])
 
 }
 
@@ -878,7 +874,6 @@ model ScheduleAccountContentDelete {
   scheduledAt      DateTime @default(now())
 
   @@index([userId, scheduledAt])
-  @@index([userId])
 
 }
 
@@ -921,7 +916,6 @@ model ReactedMessageUser {
   reactedAt DateTime @default(now())
 
   @@unique([reactionId, userId])
-  @@index([reactionId])
   @@index([userId])
 }
 
@@ -942,6 +936,8 @@ model MessageMention {
   server        Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   webhook       Webhook? @relation(fields: [mentionedByWebhookId], references: [id], onDelete: SetNull)
+
+
 
 
 
@@ -987,7 +983,6 @@ model Attachment {
 
   @@index([serverId])
   @@index([messageId, createdAt])
-  @@index([messageId])
   @@index([channelId])
   @@index([postId])
 
@@ -1068,7 +1063,7 @@ model Post {
   reminders Reminder[]
   embed Json?
 
-  @@index([createdAt(sot: Desc), commentToId, deleted])
+
   @@index([createdAt(sort: Desc), createdById, commentToId, deleted])
   @@index([commentToId, deleted, createdAt(sort: Desc), createdById])
   @@index([createdById, createdAt(sort: Desc)])
@@ -1165,7 +1160,6 @@ model PostLike {
   likedBy       User @relation(fields: [likedById], references: [id])
   createdAt   DateTime @default(now())
 
-  @@index([postId])
   @@index([likedById])
 
   @@unique([postId, likedById])
