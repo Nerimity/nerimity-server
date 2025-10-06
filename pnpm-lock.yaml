@@ -12,8 +12,8 @@ importers:
         specifier: ^1.0.3
         version: 1.0.3
       '@nerimity/html-embed':
-        specifier: ^1.1.14
-        version: 1.1.14
+        specifier: ^1.1.16
+        version: 1.1.16
       '@nerimity/mimiqueue':
         specifier: ^2.1.3
         version: 2.1.3(redis@4.7.1)
@@ -490,8 +490,8 @@ packages:
   '@nerimity/flakeid@1.0.3':
     resolution: {integrity: sha512-PdJ49S/nGfTcBtraygFPiOPFBiu2oXn9+UZYEk2rWIEVQrRbC81zi2BcLYvTsrG913aA0KISFkrVmUnGXytT3g==}
 
-  '@nerimity/html-embed@1.1.14':
-    resolution: {integrity: sha512-GYSvqfcSHZqirSpcxUqu4DO7iItp+62wX8KQ1mQ6HNwrTCUh6oYPFAZ9Or1POtgT8PH1Nu5egjARYkvuN9VQDA==}
+  '@nerimity/html-embed@1.1.16':
+    resolution: {integrity: sha512-sboni3jkFVqKvw58EZQwcASso93A+6650jdB/fmfQ/+ZxrOnmQ7ec9aOIV5zNFU6lJax3sIiEtpGoVMuncnx6w==}
 
   '@nerimity/mimiqueue@2.1.3':
     resolution: {integrity: sha512-m4ZQnWs0DLSuIkHZ5+8ZwxdL+OwwbIVNrZgDFGMCX5QUSPKR15aC9e+sVNLVlqvOeZ/RcfYkL2FwEbmgTGNOmQ==}
@@ -3023,7 +3023,7 @@ snapshots:
 
   '@nerimity/flakeid@1.0.3': {}
 
-  '@nerimity/html-embed@1.1.14':
+  '@nerimity/html-embed@1.1.16':
     dependencies:
       css: 3.0.0
       csstree-validator: 4.0.1
