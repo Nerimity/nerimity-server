@@ -1097,6 +1097,8 @@ model PostPoll {
 
   choices PostPollChoice[] 
   votedUsers PostPollVotedUser[]
+
+  @@index([postId])
 }
 
 model PostPollChoice {
@@ -1109,6 +1111,8 @@ model PostPollChoice {
   content String
 
   votedUsers PostPollVotedUser[]
+
+  @@index([pollId])
 }
 
 model PostPollVotedUser {
