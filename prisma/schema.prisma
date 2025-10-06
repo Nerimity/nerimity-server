@@ -1129,6 +1129,7 @@ model PostPollVotedUser {
   userId      String
   user        User @relation(fields: [userId], references: [id])
   @@index([userId])
+  @@index([pollChoiceId])
 }
 
 model PostNotification {
