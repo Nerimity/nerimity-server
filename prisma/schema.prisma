@@ -1160,7 +1160,7 @@ model PostLike {
   likedBy       User @relation(fields: [likedById], references: [id])
   createdAt   DateTime @default(now())
 
-  @@index([likedById])
+  @@index([likedById, createdAt(sort: Desc)])
 
   @@unique([postId, likedById])
 }
