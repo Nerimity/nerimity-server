@@ -1,4 +1,4 @@
-import { Post, Prisma } from '@src/generated/prisma/client';
+import { Post, Prisma } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
 import { dateToDateTime, prisma, publicUserExcludeFields } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';

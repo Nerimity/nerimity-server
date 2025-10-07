@@ -1,4 +1,4 @@
-import { Channel, Message, User } from '@src/generated/prisma/client';
+import { Channel, Message, User } from '@prisma/client';
 import { BaseChannelCache, ChannelCache, DMChannelCache, InboxCache } from '../cache/ChannelCache';
 import { UserCache } from '../cache/UserCache';
 import { CHANNEL_TYPING, MESSAGE_BUTTON_CLICKED, MESSAGE_BUTTON_CLICKED_CALLBACK, MESSAGE_CREATED, MESSAGE_DELETED, MESSAGE_MARK_UNREAD, MESSAGE_REACTION_ADDED, MESSAGE_REACTION_REMOVED, MESSAGE_UPDATED, SERVER_CHANNEL_CREATED, SERVER_CHANNEL_DELETED, SERVER_CHANNEL_UPDATED } from '../common/ClientEventNames';

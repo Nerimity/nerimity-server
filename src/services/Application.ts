@@ -10,7 +10,7 @@ import { emitUserUpdated } from '../emits/User';
 import { generateToken } from '../common/JWT';
 import { deleteAccount, disconnectSockets } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
-import { BotCommand } from '@src/generated/prisma/client';
+import { BotCommand } from '@prisma/client';
 
 export async function createApplication(requesterAccountId: string) {
   const count = await prisma.application.count({

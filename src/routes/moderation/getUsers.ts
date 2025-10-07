@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 import { queryAsArray } from '../../common/queryAsArray';
-import { Prisma } from '@src/generated/prisma/client';
+import { Prisma } from '@prisma/client';
 
 export function getUsers(Router: Router) {
   Router.get('/moderation/users', authenticate(), isModMiddleware, route);

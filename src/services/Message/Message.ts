@@ -5,7 +5,7 @@ import { MessageType } from '../../types/Message';
 import { dateToDateTime, prisma, publicUserExcludeFields } from '../../common/database';
 import { generateId } from '../../common/flakeId';
 import { generateError } from '../../common/errorHandler';
-import { Message, Prisma } from '@src/generated/prisma/client';
+import { Message, Prisma } from '@prisma/client';
 import { isString, removeDuplicates } from '../../common/utils';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { deleteFile } from '../../common/nerimityCDN';

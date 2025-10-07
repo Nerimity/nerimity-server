@@ -4,7 +4,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { emitServerMemberUpdated } from '../emits/Server';
 import { arrayDiff, removeDuplicates } from '../common/utils';
 import { deleteAllServerMemberCache, getServerMemberCache } from '../cache/ServerMemberCache';
-import { ServerRole } from '@src/generated/prisma/client';
+import { ServerRole } from '@prisma/client';
 import { generateId } from '../common/flakeId';
 import { updateSingleMemberPrivateChannelSocketRooms } from './Channel';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';

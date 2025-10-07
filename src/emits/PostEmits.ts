@@ -1,4 +1,4 @@
-import { Post } from '@src/generated/prisma/client';
+import { Post } from '@prisma/client';
 import { POST_MENTION } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 

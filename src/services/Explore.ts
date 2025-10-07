@@ -1,4 +1,4 @@
-import { Prisma, PublicServer, Server } from '@src/generated/prisma/client';
+import { Prisma, PublicServer, Server } from '@prisma/client';
 import { CustomResult } from '../common/CustomResult';
 import { dateToDateTime, prisma } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';

@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@src/generated/prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import env from './env';
 
@@ -6,10 +6,10 @@ import env from './env';
 // import { logger } from './pino';
 // import env from './env';
 
-const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+// const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
 
 export const prisma = new PrismaClient({
-  adapter,
+  // adapter,
   // log: ['error', 'warn', 'info', 'query'],
   log: [
     'warn',

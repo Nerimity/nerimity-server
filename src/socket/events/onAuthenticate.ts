@@ -1,4 +1,4 @@
-import { Channel, Inbox } from '@src/generated/prisma/client';
+import { Channel, Inbox } from '@prisma/client';
 import { Socket } from 'socket.io';
 import { addSocketUser, authenticateUser, getUserPresences } from '../../cache/UserCache';
 import { AUTHENTICATED, USER_AUTH_QUEUE_POSITION } from '../../common/ClientEventNames';

@@ -1,4 +1,4 @@
-import { Inbox, UserNotificationSettings, User, Prisma } from '@src/generated/prisma/client';
+import { Inbox, UserNotificationSettings, User, Prisma } from '@prisma/client';
 import { Presence } from '../cache/UserCache';
 import { INBOX_CLOSED, INBOX_OPENED, USER_CONNECTION_ADDED, USER_CONNECTION_REMOVED, USER_PRESENCE_UPDATE, USER_NOTIFICATION_SETTINGS_UPDATE, USER_UPDATED, USER_NOTICE_CREATED, USER_UPDATED_SELF } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';

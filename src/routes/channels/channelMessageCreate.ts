@@ -11,7 +11,7 @@ import { memberHasRolePermission, memberHasRolePermissionMiddleware } from '../.
 import { rateLimit } from '../../middleware/rateLimit';
 import { deleteFile, verifyUpload } from '../../common/nerimityCDN';
 import { ChannelType, TextChannelTypes } from '../../types/Channel';
-import { Attachment } from '@src/generated/prisma/client';
+import { Attachment } from '@prisma/client';
 import { dateToDateTime, prisma } from '../../common/database';
 import { ChannelCache } from '../../cache/ChannelCache';
 import { UserCache } from '../../cache/UserCache';

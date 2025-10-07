@@ -1,4 +1,4 @@
-import { AuditLog } from '@src/generated/prisma/client';
+import { AuditLog } from '@prisma/client';
 import { prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 

@@ -13,7 +13,7 @@ import { setTimeout as setPromiseTimeout } from 'timers/promises';
 import { deleteApplication } from '../Application';
 import { createHash } from 'crypto';
 import { generateId } from '../../common/flakeId';
-import { ShadowBan } from '@src/generated/prisma/client';
+import { ShadowBan } from '@prisma/client';
 import { encrypt } from '../../common/encryption';
 import path from 'path';
 import { emitServerFolderCreated, emitServerFolderUpdated, emitServerOrderUpdated } from '../../emits/Server';

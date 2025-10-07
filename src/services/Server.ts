@@ -1,4 +1,4 @@
-import { Channel, Prisma, Server, ServerMember, ServerRole } from '@src/generated/prisma/client';
+import { Channel, Prisma, Server, ServerMember, ServerRole } from '@prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
