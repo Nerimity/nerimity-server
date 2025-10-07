@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@src/generated/prisma/client';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';

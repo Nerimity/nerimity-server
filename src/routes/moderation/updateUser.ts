@@ -12,7 +12,7 @@ import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 import { ModAuditLogType } from '../../common/ModAuditLog';
 import { generateId } from '../../common/flakeId';
 import { checkUserPassword } from '../../services/UserAuthentication';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@src/generated/prisma/client';
 
 export function updateUser(Router: Router) {
   Router.post('/moderation/users/:userId', authenticate(), isModMiddleware, route);

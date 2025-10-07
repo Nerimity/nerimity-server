@@ -3,12 +3,12 @@ import { getIO } from '../socket/socket';
 import { Presence, UserCache } from '../cache/UserCache';
 import { UpdateServerOptions } from '../services/Server';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
-import { Channel, CustomEmoji, Message, Server, ServerChannelPermissions, ServerFolder, ServerMember, ServerRole, User } from '@prisma/client';
+import { Channel, CustomEmoji, Message, Server, ServerChannelPermissions, ServerFolder, ServerMember, ServerRole, User } from '@src/generated/prisma/client';
 import { UpdateServerRoleOptions } from '../services/ServerRole';
 import { UpdateServerMember } from '../services/ServerMember';
 import { VoiceCacheFormatted } from '../cache/VoiceCache';
 import { serverMemberHasPermission } from '../common/serverMembeHasPermission';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@src/generated/prisma/client';
 import { publicUserExcludeFields } from '../common/database';
 
 const PartialMember = {

@@ -1,4 +1,4 @@
-import { Friend } from '@prisma/client';
+import { Friend } from '@src/generated/prisma/client';
 import { deleteAllInboxCache } from '../cache/ChannelCache';
 import { getUserPresences } from '../cache/UserCache';
 import { exists, prisma, publicUserExcludeFields } from '../common/database';

@@ -1,4 +1,4 @@
-import { Friend, User } from '@prisma/client';
+import { Friend, User } from '@src/generated/prisma/client';
 import { FRIEND_REQUEST_SENT, FRIEND_REQUEST_PENDING, FRIEND_REQUEST_ACCEPTED, FRIEND_REMOVED, USER_BLOCKED, USER_UNBLOCKED } from '../common/ClientEventNames';
 import { getIO } from '../socket/socket';
 

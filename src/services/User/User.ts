@@ -13,7 +13,7 @@ import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude, transformMessage } from '../Message/Message';
 import { removeDuplicates } from '../../common/utils';
 import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@src/generated/prisma/client';
 import { UserStatus } from '../../types/User';
 import { createHash } from 'node:crypto';
 import { checkUserPassword } from '../UserAuthentication';

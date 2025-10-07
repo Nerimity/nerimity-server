@@ -1,4 +1,4 @@
-import { Channel, Server } from '@prisma/client';
+import { Channel, Server } from '@src/generated/prisma/client';
 import { deleteServerChannelCaches, getChannelCache, removeServerMemberPermissionsCache, updateServerChannelCache } from '../cache/ChannelCache';
 import { ServerMemberCache, getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
