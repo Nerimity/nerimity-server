@@ -129,3 +129,4 @@ dist/
 src/fcm-credentials.json
 pnpm-workspace.yaml
 src/generated
+testing.ts
