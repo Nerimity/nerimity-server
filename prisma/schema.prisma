@@ -76,6 +76,9 @@ model Application {
   botTokenVersion Int  @default(1)
 
 
+  publicApplication Explore?
+  public Boolean @default(false)
+
 
   creatorAccountId   String
   creatorAccount     Account  @relation(fields: [creatorAccountId], references: [id], onDelete: Cascade)
@@ -386,7 +389,7 @@ model Server {
   bannedUsers            BannedServerMember[]
   verified               Boolean                @default(false)
 
-  publicServer           PublicServer?
+  publicServer           Explore?
 
   attachments Attachment[]
 
@@ -453,11 +456,18 @@ model CustomEmoji {
 }
 
 
-model PublicServer {
-  @@map("public_servers")
-  id              String    @id
-  serverId        String    @unique
-  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade) 
+model Explore {
+  @@map("explore")
+  id              String     @id
+  serverId        String?    @unique
+  server          Server?    @relation(fields: [serverId], references: [id], onDelete: Cascade) 
+
+  type            Int     @default(0)
+
+  botApplicationId String?  @unique
+  botApplication   Application? @relation(fields: [botApplicationId], references: [id])
+
+
   description     String
 
   bumpCount       Int       @default(1)
@@ -468,6 +478,7 @@ model PublicServer {
   pinnedAt        DateTime?
   createdAt       DateTime   @default(now())
 
+  @@index([type])
   @@index([bumpedAt])
 }
 

@@ -17,13 +17,13 @@ interface getPublicServersOpts {
 }
 export const getPublicServers = async (opts: getPublicServersOpts): Promise<PublicServer[]> => {
   const { sort, filter, limit, search } = opts;
-  const where = (): Prisma.PublicServerWhereInput => {
+  const where = (): prisma.exploreWhereInput => {
     if (filter === 'verified') return { server: { verified: true } };
     if (filter === 'pinned') return { pinnedAt: { not: null } };
     return {};
   };
 
-  const orderBy = (): Prisma.Enumerable<Prisma.PublicServerOrderByWithRelationInput> => {
+  const orderBy = (): Prisma.Enumerable<prisma.exploreOrderByWithRelationInput> => {
     if (sort === 'most_bumps') return { bumpCount: 'desc' };
     if (sort === 'most_members') return { server: { serverMembers: { _count: 'desc' } } };
     if (sort === 'recently_added') return { createdAt: 'desc' };
@@ -32,7 +32,7 @@ export const getPublicServers = async (opts: getPublicServersOpts): Promise<Publ
     return {};
   };
 
-  const publicServers = await prisma.publicServer.findMany({
+  const publicServers = await prisma.explore.findMany({
     where: { AND: [where(), { server: { scheduledForDeletion: null } }], ...(search?.trim() ? { OR: [{ server: { name: { contains: search, mode: 'insensitive' } } }, { description: { contains: search, mode: 'insensitive' } }] } : {}) },
     orderBy: orderBy(),
     ...(opts.afterId ? { cursor: { id: opts.afterId }, skip: 1 } : {}),
@@ -46,7 +46,7 @@ export const getPublicServers = async (opts: getPublicServersOpts): Promise<Publ
 };
 
 export const getPublicServer = async (serverId: string): Promise<CustomResult<PublicServer, CustomError>> => {
-  const publicServer = await prisma.publicServer.findFirst({
+  const publicServer = await prisma.explore.findFirst({
     where: { serverId },
     include: {
       server: { include: { _count: { select: { serverMembers: true } } } },
@@ -61,7 +61,7 @@ export const getPublicServer = async (serverId: string): Promise<CustomResult<Pu
 };
 
 export const bumpPublicServer = async (serverId: string, bumpedByUserId: string): Promise<CustomResult<PublicServer, CustomError>> => {
-  const publicServer = await prisma.publicServer.findUnique({
+  const publicServer = await prisma.explore.findUnique({
     where: { serverId, server: { scheduledForDeletion: null } },
     include: {
       server: {
@@ -84,7 +84,7 @@ export const bumpPublicServer = async (serverId: string, bumpedByUserId: string)
     return [null, generateError('Server was bumped too recently.')];
   }
 
-  const newPublicServer = await prisma.publicServer.update({
+  const newPublicServer = await prisma.explore.update({
     where: { id: publicServer.id },
     data: {
       bumpCount: { increment: 1 },
@@ -109,7 +109,7 @@ export const bumpPublicServer = async (serverId: string, bumpedByUserId: string)
 };
 
 export const updatePublicServer = async (serverId: string, description: string): Promise<CustomResult<PublicServer, CustomError>> => {
-  const publicServer = await prisma.publicServer.upsert({
+  const publicServer = await prisma.explore.upsert({
     where: {
       serverId,
     },
@@ -129,7 +129,7 @@ export const updatePublicServer = async (serverId: string, description: string):
 };
 
 export const deletePublicServer = async (serverId: string): Promise<CustomResult<PublicServer, CustomError>> => {
-  const publicServer = await prisma.publicServer.delete({
+  const publicServer = await prisma.explore.delete({
     where: { serverId },
   });
   await updateServerCache(serverId, { public: false });
@@ -137,7 +137,7 @@ export const deletePublicServer = async (serverId: string): Promise<CustomResult
 };
 
 export const joinPublicServer = async (userId: string, serverId: string): Promise<CustomResult<Server, CustomError>> => {
-  const publicServer = await prisma.publicServer.findFirst({
+  const publicServer = await prisma.explore.findFirst({
     where: { serverId },
   });
   if (!publicServer) {

@@ -28,7 +28,7 @@ async function route(req: Request<{ serverId: string }, unknown, Body>, res: Res
 
   const serverId = req.params.serverId;
 
-  const pinnedServers = await prisma.publicServer.count({
+  const pinnedServers = await prisma.explore.count({
     where: {
       serverId: serverId,
     },
@@ -37,7 +37,7 @@ async function route(req: Request<{ serverId: string }, unknown, Body>, res: Res
     return res.status(400).json(generateError('You can only pin up to 4 servers.'));
   }
 
-  const result = await prisma.publicServer
+  const result = await prisma.explore
     .update({
       where: {
         serverId: serverId,

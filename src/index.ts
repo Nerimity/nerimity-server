@@ -85,7 +85,7 @@ function scheduleBumpReset() {
   rule.minute = 0;
 
   schedule.scheduleJob(rule, async () => {
-    await prisma.publicServer.updateMany({ data: { bumpCount: 0 } });
+    await prisma.explore.updateMany({ data: { bumpCount: 0 } });
     Log.info('All public server bumps have been reset to 0.');
   });
 }

@@ -28,7 +28,7 @@ async function route(req: Request<{ serverId: string }, unknown, Body>, res: Res
 
   const serverId = req.params.serverId;
 
-  const result = await prisma.publicServer
+  const result = await prisma.explore
     .update({
       where: {
         serverId: serverId,
