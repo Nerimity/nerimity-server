@@ -77,7 +77,6 @@ model Application {
 
 
   publicApplication Explore?
-  public Boolean @default(false)
 
 
   creatorAccountId   String
@@ -465,7 +464,8 @@ model Explore {
   type            Int     @default(0)
 
   botApplicationId String?  @unique
-  botApplication   Application? @relation(fields: [botApplicationId], references: [id])
+  botApplication   Application? @relation(fields: [botApplicationId], references: [id], onDelete: Cascade)
+  botPermissions   Int?
 
 
   description     String

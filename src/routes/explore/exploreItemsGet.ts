@@ -1,10 +1,10 @@
 import { Request, Response, Router } from 'express';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
-import { getPublicServers } from '../../services/Explore';
+import { getExploreItems } from '../../services/Explore';
 
-export function exploreServersGet(Router: Router) {
-  Router.get('/explore/servers', authenticate(), route);
+export function exploreItemsGet(Router: Router) {
+  Router.get('/explore', authenticate(), route);
 }
 
 interface Query {
@@ -13,6 +13,7 @@ interface Query {
   limit?: string;
   afterId?: string;
   search?: string;
+  type?: 'server' | 'bot';
 }
 
 async function route(req: Request, res: Response) {
@@ -31,12 +32,13 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const publicServer = await getPublicServers({
+  const publicServer = await getExploreItems({
     sort: query.sort,
     filter: query.filter,
     limit,
     afterId: query.afterId,
     search: query.search,
+    type: query.type,
   });
 
   res.json(publicServer);

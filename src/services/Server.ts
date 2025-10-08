@@ -17,7 +17,7 @@ import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
 import { deleteAllServerMemberCache, deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
 import { deleteServerCache, updateServerCache } from '../cache/ServerCache';
-import { getPublicServer } from './Explore';
+import { getExploreItem, getPublicServer } from './Explore';
 import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
@@ -248,7 +248,7 @@ export const joinServer = async (
     where: { serverId, userId },
   });
   if (isInServer) {
-    return [null, generateError('You are already in this server.')] as const;
+    return [null, generateError(bot ? 'This bot is already in this server' : 'You are already in this server.')] as const;
   }
 
   const isBanned = await exists(prisma.bannedServerMember, {
@@ -830,13 +830,13 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
 }
 
 export const getPublicServerFromEmoji = async (emojiId: string) => {
-  const emoji = await prisma.customEmoji.findFirst({
+  const emoji = await prisma.customEmoji.findUnique({
     where: { id: emojiId },
   });
 
   if (!emoji) return [null, generateError('Emoji not found.')] as const;
 
-  return getPublicServer(emoji.serverId);
+  return getExploreItem({ serverId: emoji.serverId });
 };
 
 interface Answer {

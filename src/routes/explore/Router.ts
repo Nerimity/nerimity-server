@@ -1,21 +1,23 @@
-import {Router} from 'express';
-import { exploreServerBump } from './exploreServerBump';
-import { exploreServerDelete } from './exploreServerDelete';
+import { Router } from 'express';
+import { exploreBump } from './exploreBump';
+import { exploreDelete } from './exploreDelete';
 import { exploreServerGet } from './exploreServerGet';
 import { exploreServerJoin } from './exploreServerJoin';
-import { exploreServersGet } from './exploreServersGet';
+import { exploreItemsGet } from './exploreItemsGet';
 import { exploreServerUpdate } from './exploreServerUpdate';
-
-
+import { exploreBotAppUpdate } from './exploreBotAppUpdate';
+import { exploreBotAppGet } from './exploreBotAppGet';
 
 const ExploreRouter = Router();
 
+exploreBump(ExploreRouter);
+exploreDelete(ExploreRouter);
+exploreBotAppGet(ExploreRouter);
+exploreBotAppUpdate(ExploreRouter);
+exploreItemsGet(ExploreRouter);
+
 exploreServerJoin(ExploreRouter);
-exploreServerBump(ExploreRouter);
 exploreServerGet(ExploreRouter);
-exploreServersGet(ExploreRouter);
 exploreServerUpdate(ExploreRouter);
-exploreServerDelete(ExploreRouter);
 
-
-export {ExploreRouter};
+export { ExploreRouter };

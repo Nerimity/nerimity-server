@@ -26,9 +26,9 @@ if (env.DEV_MODE) {
 export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const t1 = performance.now();
-    // if (env.DEV_MODE) {
-    //   return next();
-    // }
+    if (env.DEV_MODE) {
+      return next();
+    }
 
     const ip = req.userIP.replace(/:/g, '=');
 
