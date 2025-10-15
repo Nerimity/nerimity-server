@@ -139,6 +139,17 @@ export const bumpExploreItem = async (opts: BumpExploreItemOpts) => {
     return [null, generateError(`Item not found.`)] as const;
   }
 
+  if (exploreItem.botApplicationId) {
+    const botUser = await prisma.application.findUnique({ where: { id: exploreItem.botApplicationId }, select: { botUserId: true } });
+    if (!botUser?.botUserId) {
+      return [null, generateError(`Bot not found.`)] as const;
+    }
+    const presences = await getUserPresences([botUser.botUserId], true, true);
+    if (!presences.length) {
+      return [null, generateError(`Bot is offline.`)] as const;
+    }
+  }
+
   const lastBumped = exploreItem.bumpedAt;
   const now = new Date();
 
