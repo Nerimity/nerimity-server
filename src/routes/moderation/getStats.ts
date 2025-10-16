@@ -15,7 +15,7 @@ async function route(req: Request, res: Response) {
     weeklyRegisteredUsers,
     totalCreatedServers,
     totalCreatedMessages,
-    weeklyCreatedMessages,
+    // weeklyCreatedMessages,
   ] = await prisma.$transaction([
     prisma.user.count(),
     prisma.user.count({
@@ -27,13 +27,13 @@ async function route(req: Request, res: Response) {
     }),
     prisma.server.count(),
     prisma.message.count(),
-    prisma.message.count({
-      where: {
-        createdAt: {
-          gte: dateToDateTime(firstDayOfWeek),
-        },
-      },
-    }),
+    // prisma.message.count({
+    //   where: {
+    //     createdAt: {
+    //       gte: dateToDateTime(firstDayOfWeek),
+    //     },
+    //   },
+    // }),
   ]);
 
   res.json({
@@ -41,7 +41,7 @@ async function route(req: Request, res: Response) {
     weeklyRegisteredUsers,
     totalCreatedServers,
     totalCreatedMessages,
-    weeklyCreatedMessages,
+    weeklyCreatedMessages: 0,
   });
 }
 
