@@ -10,13 +10,7 @@ export function getStats(Router: Router) {
 async function route(req: Request, res: Response) {
   const firstDayOfWeek = getFirstDayOfWeek();
 
-  const [
-    totalRegisteredUsers,
-    weeklyRegisteredUsers,
-    totalCreatedServers,
-    totalCreatedMessages,
-    // weeklyCreatedMessages,
-  ] = await prisma.$transaction([
+  const [totalRegisteredUsers, weeklyRegisteredUsers, totalCreatedServers, totalCreatedMessages, weeklyCreatedMessages] = await prisma.$transaction([
     prisma.user.count(),
     prisma.user.count({
       where: {
@@ -27,13 +21,13 @@ async function route(req: Request, res: Response) {
     }),
     prisma.server.count(),
     prisma.message.count(),
-    // prisma.message.count({
-    //   where: {
-    //     createdAt: {
-    //       gte: dateToDateTime(firstDayOfWeek),
-    //     },
-    //   },
-    // }),
+    prisma.message.count({
+      where: {
+        createdAt: {
+          gte: dateToDateTime(firstDayOfWeek),
+        },
+      },
+    }),
   ]);
 
   res.json({
@@ -41,7 +35,7 @@ async function route(req: Request, res: Response) {
     weeklyRegisteredUsers,
     totalCreatedServers,
     totalCreatedMessages,
-    weeklyCreatedMessages: 0,
+    weeklyCreatedMessages,
   });
 }
 
