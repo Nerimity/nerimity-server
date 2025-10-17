@@ -6,4 +6,5 @@ export enum MessageType {
   BAN_USER = 4,
   CALL_STARTED = 5,
   BUMP_SERVER = 6,
+  PINNED_MESSAGE = 7,
 }

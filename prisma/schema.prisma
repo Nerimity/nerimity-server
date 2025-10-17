@@ -672,6 +672,7 @@ model Channel {
 
 
   webhooks               Webhook[]
+  pinnedMessages        PinnedMessage[]
 
   @@index([serverId])
   @@index([categoryId])
@@ -820,6 +821,9 @@ model Message {
 
   reminders Reminder[]
 
+  pinnedMessage PinnedMessage?
+  pinned Boolean?
+
 
 
   @@index([createdById])
@@ -830,6 +834,19 @@ model Message {
   @@index([creatorOverrideId])
   @@index([channelId, createdAt(sort: Desc), id(sort: Desc)])
 
+}
+
+model PinnedMessage {
+  @@map("pinned_messages")
+  messageId String @unique
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  pinnedAt DateTime @default(now())
+
+  @@index([channelId, pinnedAt(sort: Desc)])
 }
 
 

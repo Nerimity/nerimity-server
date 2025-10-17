@@ -233,6 +233,69 @@ export const getMessageByChannelId = async (opts: GetSingleMessageByChannelIdOpt
   return message;
 };
 
+export const pinnedChannelMessages = async (channelId: string, afterId?: string) => {
+  const messages = await prisma.pinnedMessage.findMany({
+    where: { channelId },
+    take: 10,
+    orderBy: { pinnedAt: 'desc', messageId: 'desc' },
+    ...(afterId ? { cursor: { messageId: afterId }, skip: 1 } : {}),
+    select: {
+      message: {
+        include: { ...MessageInclude, reactions: false },
+      },
+    },
+  });
+
+  const modifiedMessages = messages.map((p) => transformMessage({ ...p.message, reactions: [] }));
+
+  return modifiedMessages;
+};
+
+export const pinMessage = async (opts: { messageId: string; channelId: string }) => {
+  return prisma
+    .$transaction(async (tx) => {
+      const message = await tx.message.findUnique({
+        where: { channelId: opts.channelId, id: opts.messageId },
+        select: { id: true, pinned: true, type: true },
+      });
+      if (!message) return [null, generateError('Message not found!')] as const;
+      if (message?.pinned) {
+        return [null, generateError('Message already pinned!')] as const;
+      }
+      if (message.type !== MessageType.CONTENT) return [null, generateError('Cannot pin a non-content message!')] as const;
+
+      await tx.message.update({
+        where: { id: opts.messageId },
+        data: { pinned: true, pinnedMessage: { create: { channelId: opts.channelId } } },
+      });
+      return [true, null] as const;
+    })
+    .catch((err) => {
+      console.error(`Error pinning message ${opts.messageId} in channel ${opts.channelId}:`, err);
+      return [null, generateError('Something went wrong, try again later.')] as const;
+    });
+};
+
+export const unpinMessage = async (opts: { messageId: string; channelId: string }) => {
+  return prisma
+    .$transaction(async (tx) => {
+      const pinnedMessage = await tx.pinnedMessage.findUnique({
+        where: { messageId: opts.messageId, channelId: opts.channelId },
+      });
+      if (!pinnedMessage) return [null, generateError('Message not found!')] as const;
+
+      await tx.message.update({
+        where: { id: opts.messageId },
+        data: { pinned: false, pinnedMessage: { delete: true } },
+      });
+      return [true, null] as const;
+    })
+    .catch((err) => {
+      console.error(`Error unpinning message ${opts.messageId} in channel ${opts.channelId}:`, err);
+      return [null, generateError('Something went wrong, try again later.')] as const;
+    });
+};
+
 // delete messages sent in the last 7 hours
 export const deleteRecentUserServerMessages = async (userId: string, serverId: string) => {
   const fromTime = new Date();

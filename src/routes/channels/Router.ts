@@ -18,8 +18,15 @@ import { channelGet } from './channelGet';
 import { voiceGenerateCredentials } from './channelVoiceGenerateCredentials';
 import { channelMessagesSingle } from './channelMessagesSingle';
 import { channelMessageMarkUnread } from './channelMessageMarkUnread';
+import { channelMessagePinAdd } from './channelMessagePinAdd';
+import { channelMessagePinRemove } from './channelMessagePinRemove';
+import { channelMessagePinsGet } from './channelMessagePinsGet';
 
 const ChannelsRouter = Router();
+
+channelMessagePinAdd(ChannelsRouter);
+channelMessagePinRemove(ChannelsRouter);
+channelMessagePinsGet(ChannelsRouter);
 
 voiceGenerateCredentials(ChannelsRouter);
 

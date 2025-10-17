@@ -5,8 +5,4 @@ export enum ChannelType {
   TICKET = 3,
 }
 
-export const TextChannelTypes = [
-  ChannelType.DM_TEXT,
-  ChannelType.SERVER_TEXT,
-  ChannelType.TICKET,
-];
+export const TextChannelTypes = [ChannelType.DM_TEXT, ChannelType.SERVER_TEXT, ChannelType.TICKET];
