@@ -248,7 +248,7 @@ export const pinnedChannelMessages = async (channelId: string, afterId?: string)
 
   const modifiedMessages = messages.map((p) => transformMessage({ ...p.message, reactions: [] }));
 
-  return modifiedMessages;
+  return [modifiedMessages, null] as const;
 };
 
 export const pinMessage = async (opts: { messageId: string; channelId: string }) => {
