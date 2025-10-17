@@ -237,7 +237,7 @@ export const pinnedChannelMessages = async (channelId: string, afterId?: string)
   const messages = await prisma.pinnedMessage.findMany({
     where: { channelId },
     take: 10,
-    orderBy: { pinnedAt: 'desc', messageId: 'desc' },
+    orderBy: { pinnedAt: 'desc' },
     ...(afterId ? { cursor: { messageId: afterId }, skip: 1 } : {}),
     select: {
       message: {
