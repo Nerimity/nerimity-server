@@ -77,8 +77,8 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
     }
   }
 
-  if (!server && opts.serverId && isServerChannel) {
-    server = await getServerCache(opts.serverId);
+  if (!server && opts.server?.id && isServerChannel) {
+    server = await getServerCache(opts.server?.id);
     if (!server) {
       return [null, generateError('Server not found.')] as const;
     }
@@ -106,7 +106,7 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     content: opts.content,
     canMentionRoles: opts.canMentionRoles,
     replyToMessageIds: opts.replyToMessageIds,
-    serverId: opts.serverId,
+    serverId: validatedResult.server?.id,
   }).catch((err) => {
     console.error(err);
     return null;
@@ -192,7 +192,7 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
                 ...opts.attachment,
                 id: generateId(),
                 channelId: opts.channelId,
-                serverId: opts.serverId,
+                serverId: validatedResult.server?.id,
               },
             },
           }
@@ -244,12 +244,12 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
     await dismissChannelNotification(opts.userId, opts.channelId, false);
   }
 
-  if (opts.serverId && isServerChannel) {
+  if (validatedResult.server?.id && isServerChannel) {
     let mentionUserIds: string[] = [];
 
     if (opts.everyoneMentioned) {
       const serverMembers = await prisma.serverMember.findMany({
-        where: { serverId: opts.serverId, NOT: { userId: opts.userId } },
+        where: { serverId: validatedResult.server?.id, NOT: { userId: opts.userId } },
         select: { userId: true },
       });
       mentionUserIds = serverMembers.map((member) => member.userId);
@@ -270,7 +270,7 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
           where: {
             memberInServers: {
               some: {
-                serverId: opts.serverId,
+                serverId: validatedResult.server?.id,
                 roleIds: { hasSome: message.roleMentions.map((role) => role.id) },
               },
             },
@@ -289,7 +289,7 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
     if (mentionUserIds.length) {
       await addMention({
         userIds: removeDuplicates(mentionUserIds),
-        serverId: opts.serverId,
+        serverId: validatedResult.server?.id,
         channelId: opts.channelId,
         requesterId: opts.userId,
         message,
@@ -299,9 +299,9 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
   }
 
   // emit
-  if (opts.serverId && isServerChannel) {
+  if (validatedResult.server?.id && isServerChannel) {
     emitServerMessageCreated(message, opts.socketId);
-    sendServerPushMessageNotification(opts.serverId, message, channel!, server!);
+    sendServerPushMessageNotification(validatedResult.server?.id, message, channel!, server!);
   }
 
   if (channel?.type === ChannelType.DM_TEXT) {
@@ -358,7 +358,7 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
   }
 
   if (message.type === MessageType.CONTENT) {
-    addMessageEmbed(message, { channel, serverId: opts.serverId });
+    addMessageEmbed(message, { channel, serverId: validatedResult.server?.id });
   }
 
   return [true, null] as const;
