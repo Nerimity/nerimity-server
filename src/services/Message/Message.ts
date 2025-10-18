@@ -251,7 +251,7 @@ export const pinnedChannelMessages = async (channelId: string, afterId?: string)
   return [modifiedMessages, null] as const;
 };
 
-export const pinMessage = async (opts: { messageId: string; channelId: string }) => {
+export const pinMessage = async (opts: { messageId: string; channelId: string; channelCache: ChannelCache; serverCache?: ServerCache; userId: string }) => {
   return prisma
     .$transaction(async (tx) => {
       const message = await tx.message.findUnique({
@@ -268,6 +268,21 @@ export const pinMessage = async (opts: { messageId: string; channelId: string })
         where: { id: opts.messageId },
         data: { pinned: true, pinnedMessage: { create: { channelId: opts.channelId } } },
       });
+
+      createMessage({
+        channel: opts.channelCache,
+        server: opts.serverCache,
+        type: MessageType.PINNED_MESSAGE,
+        channelId: opts.channelCache.id,
+        userId: opts.userId,
+      });
+
+      if (opts.serverCache?.id) {
+        emitServerMessageUpdated(opts.channelId!, message.id, { pinned: true });
+      } else if (opts.channelCache.type === ChannelType.DM_TEXT) {
+        emitDMMessageUpdated(opts.channelCache, message.id, { pinned: true });
+      }
+
       return [true, null] as const;
     })
     .catch((err) => {
@@ -276,11 +291,12 @@ export const pinMessage = async (opts: { messageId: string; channelId: string })
     });
 };
 
-export const unpinMessage = async (opts: { messageId: string; channelId: string }) => {
+export const unpinMessage = async (opts: { messageId: string; channelId: string; serverCache: ServerCache; channelCache: ChannelCache }) => {
   return prisma
     .$transaction(async (tx) => {
       const pinnedMessage = await tx.pinnedMessage.findUnique({
         where: { messageId: opts.messageId, channelId: opts.channelId },
+        select: { messageId: true },
       });
       if (!pinnedMessage) return [null, generateError('Message not found!')] as const;
 
@@ -288,6 +304,13 @@ export const unpinMessage = async (opts: { messageId: string; channelId: string 
         where: { id: opts.messageId },
         data: { pinned: false, pinnedMessage: { delete: true } },
       });
+
+      if (opts.serverCache?.id) {
+        emitServerMessageUpdated(opts.channelId!, pinnedMessage.messageId, { pinned: false });
+      } else if (opts.channelCache.type === ChannelType.DM_TEXT) {
+        emitDMMessageUpdated(opts.channelCache, pinnedMessage.messageId, { pinned: false });
+      }
+
       return [true, null] as const;
     })
     .catch((err) => {

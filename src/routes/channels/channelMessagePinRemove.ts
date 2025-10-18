@@ -36,6 +36,8 @@ async function route(req: Request, res: Response) {
   const [isUnpinned, error] = await unpinMessage({
     channelId: req.channelCache.id,
     messageId: params.messageId!,
+    channelCache: req.channelCache,
+    serverCache: req.serverCache,
   });
   if (error) return res.status(500).json(error);
 

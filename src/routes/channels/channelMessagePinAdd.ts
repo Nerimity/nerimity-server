@@ -4,10 +4,9 @@ import { generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
-import { createMessage, pinMessage } from '../../services/Message/Message';
+import { pinMessage } from '../../services/Message/Message';
 import { ChannelType } from '../../types/Channel';
 import { rateLimit } from '@src/middleware/rateLimit';
-import { MessageType } from '@src/types/Message';
 
 export function channelMessagePinAdd(Router: Router) {
   Router.post(
@@ -42,16 +41,11 @@ async function route(req: Request, res: Response) {
   const [isPinned, error] = await pinMessage({
     channelId: req.channelCache.id,
     messageId: params.messageId!,
-  });
-  if (error) return res.status(500).json(error);
-
-  await createMessage({
-    channel: req.channelCache,
-    server: req.serverCache,
-    type: MessageType.PINNED_MESSAGE,
-    channelId: req.channelCache.id,
+    channelCache: req.channelCache,
+    serverCache: req.serverCache,
     userId: req.userCache.id,
   });
+  if (error) return res.status(500).json(error);
 
   return res.status(200).json({ status: isPinned });
 }
