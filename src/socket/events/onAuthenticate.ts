@@ -133,9 +133,12 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   const friendUserIds = user.friends.map((friend) => friend.recipientId);
 
   const updatedFriends = user.friends.map((friend) => {
-    let isPrivacyFriendsAndServers = [LastOnlineStatus.FRIENDS, LastOnlineStatus.FRIENDS_AND_SERVERS].includes(friend.recipient?.lastOnlineStatus);
+    const lastOnlineStatus = friend.recipient?.lastOnlineStatus;
+    let isPrivacyFriendsAndServers = [LastOnlineStatus.FRIENDS, LastOnlineStatus.FRIENDS_AND_SERVERS].includes(lastOnlineStatus);
 
     if (friend.status === FriendStatus.BLOCKED) {
+      isPrivacyFriendsAndServers = false;
+    } else if (lastOnlineStatus === LastOnlineStatus.FRIENDS && friend.status !== FriendStatus.FRIENDS) {
       isPrivacyFriendsAndServers = false;
     }
 
