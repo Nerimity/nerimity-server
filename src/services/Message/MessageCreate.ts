@@ -55,6 +55,9 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
 
   if (!channel) {
     [channel] = await getChannelCache(opts.channelId, opts.userId);
+    if (channel && 'server' in channel) {
+      server = channel.server;
+    }
   }
 
   const isServerTextOrDMTextChannel = opts.webhookId ? true : channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
