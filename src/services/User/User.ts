@@ -325,7 +325,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
     return [null, generateError('User not found.', 'user')];
   }
 
-  const followsYou = prisma.follower.findUnique({
+  const followsYou = await prisma.follower.findUnique({
     where: {
       followedById_followedToId: {
         followedById: recipientId,
