@@ -325,6 +325,15 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
     return [null, generateError('User not found.', 'user')];
   }
 
+  const followsYou = prisma.follower.findUnique({
+    where: {
+      followedById_followedToId: {
+        followedById: recipientId,
+        followedToId: requesterId,
+      },
+    },
+  });
+
   // get mutual Friends
   const recipientFriends = await prisma.friend.findMany({
     where: { userId: recipientId, status: FriendStatus.FRIENDS },
@@ -394,6 +403,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
     {
       block: isBlocked,
       user: { ...user, profile: undefined },
+      followsYou,
       hideFollowing: user.account?.hideFollowing,
       hideFollowers: user.account?.hideFollowers,
       mutualFriendIds,
