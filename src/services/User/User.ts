@@ -403,7 +403,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
     {
       block: isBlocked,
       user: { ...user, profile: undefined },
-      followsYou,
+      followsYou: !!followsYou,
       hideFollowing: user.account?.hideFollowing,
       hideFollowers: user.account?.hideFollowers,
       mutualFriendIds,
