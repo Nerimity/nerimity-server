@@ -330,7 +330,7 @@ export async function updateBotCommands(opts: UpdateBotCommandsOpts) {
         name: c.name,
         description: c.description,
         args: c.args,
-        permission: c.permissions,
+        permissions: c.permissions,
       })),
       skipDuplicates: true,
     }),
