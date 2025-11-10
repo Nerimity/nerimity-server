@@ -21,6 +21,7 @@ export function applicationBotSetCommands(Router: Router) {
     body('commands.*.description').isString().withMessage('Command description must be a string!').isLength({ min: 0, max: 60 }).withMessage('Command description length must be less than or equal to 60 characters').optional(true),
 
     body('commands.*.args').isString().withMessage('Command args must be a string!').isLength({ min: 0, max: 60 }).withMessage('Command args length must be less than or equal to 60 characters').optional(true),
+    body('commands.*.permissions').isNumeric().withMessage('Command permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.').isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional(true),
 
     authenticate({ allowBot: true }),
     rateLimit({
@@ -37,6 +38,7 @@ interface Body {
     name: string;
     description?: string;
     args?: string;
+    permissions?: number;
   }[];
 }
 

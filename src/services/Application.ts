@@ -4,13 +4,11 @@ import { generateId } from '../common/flakeId';
 import { generateHexColor, generateTag } from '../common/random';
 import { UserStatus } from '../types/User';
 import { checkUsernameOrTag, checkUsernameOrTagUpdated } from './User/updateUser';
-import * as nerimityCDN from '../common/nerimityCDN';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { emitUserUpdated } from '../emits/User';
 import { generateToken } from '../common/JWT';
 import { deleteAccount, disconnectSockets } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
-import { BotCommand } from '@src/generated/prisma/client';
 
 export async function createApplication(requesterAccountId: string) {
   const count = await prisma.application.count({
@@ -305,6 +303,7 @@ interface UpdateBotCommandsOpts {
     name: string;
     description?: string;
     args?: string;
+    permissions?: number;
   }[];
 }
 
@@ -331,6 +330,7 @@ export async function updateBotCommands(opts: UpdateBotCommandsOpts) {
         name: c.name,
         description: c.description,
         args: c.args,
+        permission: c.permissions,
       })),
       skipDuplicates: true,
     }),
@@ -345,6 +345,7 @@ export async function getServerBotCommands(serverId: string) {
       name: true,
       description: true,
       args: true,
+      permissions: true,
     },
     orderBy: { name: 'asc' },
     where: {

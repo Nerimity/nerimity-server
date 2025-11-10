@@ -224,6 +224,8 @@ model BotCommand {
   description String?
   args String?
 
+  permissions Int?
+
   @@index([botUserId, name])
   @@unique([applicationId, name])
 }
