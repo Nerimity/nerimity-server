@@ -118,10 +118,11 @@ export const deleteReminder = async (reminderId: string, userId: string) => {
 };
 
 export const updateReminder = async (reminderId: string, userId: string, timestamp: number) => {
-  const res = await prisma.reminder.update({ where: { id: reminderId, createdById: userId }, data: { remindAt: dateToDateTime(timestamp) }, select: { ...ReminderSelect, post: { include: constructPostInclude(userId) } } }).catch((err) => console.error(err));
+  const res = await prisma.reminder.update({ where: { id: reminderId, createdById: userId }, data: { remindAt: dateToDateTime(timestamp) }, select: { ...ReminderSelect(userId), post: { include: constructPostInclude(userId) } } }).catch((err) => console.error(err));
   if (!res) return [null, generateError('Something went wrong. Try again later.')] as const;
 
-  emitReminderUpdate(userId, res);
+  const transformedReminder = transformReminder(res);
+  emitReminderUpdate(userId, transformedReminder);
 
-  return [res, null] as const;
+  return [transformedReminder, null] as const;
 };
