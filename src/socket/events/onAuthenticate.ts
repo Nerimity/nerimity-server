@@ -18,7 +18,7 @@ import { LastOnlineStatus } from '../../services/User/User';
 import { FriendStatus } from '../../types/Friend';
 import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
-import { ReminderSelect } from '../../services/Reminder';
+import { ReminderSelect, transformReminder } from '../../services/Reminder';
 import env from '../../common/env';
 
 interface Payload {
@@ -83,7 +83,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     include: {
       reminders: {
         orderBy: { remindAt: 'asc' },
-        select: ReminderSelect,
+        select: ReminderSelect(userCache.id),
       },
       notificationSettings: {
         select: {
@@ -247,7 +247,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
       emailConfirmed: user.account?.emailConfirmed,
       connections: user.connections,
       notices: user.notices,
-      reminders: user.reminders,
+      reminders: user.reminders.map(transformReminder),
     },
     notificationSettings: user.notificationSettings,
     voiceChannelUsers,

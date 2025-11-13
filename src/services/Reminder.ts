@@ -2,23 +2,53 @@ import { Prisma } from '@src/generated/prisma/client';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { MessageInclude } from './Message/Message';
+import { MessageInclude, transformMessage } from './Message/Message';
 import { constructPostInclude } from './Post';
 import { emitReminderAdd, emitReminderRemove, emitReminderUpdate } from '../emits/Reminder';
 import { getChannelCache } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 
-export const ReminderSelect = {
-  id: true,
-  remindAt: true,
-  createdAt: true,
-  message: { include: MessageInclude },
-  post: { include: constructPostInclude('') },
-  channelId: true,
-} satisfies Prisma.ReminderSelect;
+export const ReminderSelect = (userId: string) =>
+  ({
+    id: true,
+    remindAt: true,
+    createdAt: true,
+    message: {
+      include: {
+        ...MessageInclude,
+        reactions: {
+          select: {
+            reactedUsers: { where: { userId } },
+            emojiId: true,
+            gif: true,
+            name: true,
+            _count: {
+              select: {
+                reactedUsers: true,
+              },
+            },
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+    },
+    post: { include: constructPostInclude('') },
+    channelId: true,
+  } satisfies Prisma.ReminderSelect);
 
-export type PartialReminder = Prisma.ReminderGetPayload<{ select: typeof ReminderSelect }>;
+export type PartialReminder = Prisma.ReminderGetPayload<{ select: ReturnType<typeof ReminderSelect> }>;
 
+export const transformReminder = (reminder: PartialReminder) => {
+  if (reminder.message) {
+    return {
+      ...reminder,
+      message: transformMessage(reminder.message),
+    };
+  }
+  return reminder;
+};
+
+export type TransformedReminder = ReturnType<typeof transformReminder>;
 interface AddReminderOpts {
   userId: string;
   timestamp: number;
@@ -62,19 +92,21 @@ export const addReminder = async (opts: AddReminderOpts) => {
         postId: opts.postId,
         createdById: opts.userId,
       },
-      select: { ...ReminderSelect, post: { include: constructPostInclude(opts.userId) } },
+      select: { ...ReminderSelect(opts.userId), post: { include: constructPostInclude(opts.userId) } },
     })
     .catch((err) => console.error(err));
 
   if (!reminder) return [null, generateError('Something went wrong. Try again later.')] as const;
+  const transformedReminder = transformReminder(reminder);
 
-  emitReminderAdd(opts.userId, reminder);
+  emitReminderAdd(opts.userId, transformedReminder);
 
-  return [reminder, null] as const;
+  return [transformedReminder, null] as const;
 };
 
 export const getReminders = async (userId: string) => {
-  return await prisma.reminder.findMany({ where: { createdById: userId }, select: { ...ReminderSelect, post: { include: constructPostInclude(userId) } } });
+  const reminders = await prisma.reminder.findMany({ where: { createdById: userId }, select: { ...ReminderSelect(userId), post: { include: constructPostInclude(userId) } } });
+  return reminders.map(transformReminder);
 };
 
 export const deleteReminder = async (reminderId: string, userId: string) => {
