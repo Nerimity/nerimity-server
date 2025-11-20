@@ -26,3 +26,13 @@ export const isValidHex = (hex: string) => hexRegex.test(hex);
 export function isString(value: any): value is string {
   return typeof value === 'string' || value instanceof String;
 }
+
+/**
+ * @returns A Date object where minutes, seconds, and milliseconds are set to zero.
+ */
+export function getHourStart(date: Date = new Date()): Date {
+  const hourStart = new Date(date);
+  hourStart.setMinutes(0, 0, 0);
+  hourStart.setSeconds(0, 0);
+  return hourStart;
+}

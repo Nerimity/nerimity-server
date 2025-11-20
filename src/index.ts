@@ -16,7 +16,7 @@ import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { createQueueProcessor } from '@nerimity/mimiqueue';
 import { deleteServer } from './services/Server';
 import { Prisma } from '@src/generated/prisma/client';
-import { isString } from './common/utils';
+import { getHourStart, isString } from './common/utils';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -61,6 +61,7 @@ if (cluster.isPrimary) {
       removeExpiredBannedIpsSchedule();
       removeExpiredSuspensions();
       scheduleWebhookMessagesDelete();
+      cleanupServerHourlyMessageCount();
     }
   });
 
@@ -426,4 +427,28 @@ function scheduleServerDeletion() {
 
     scheduleServerDeletion();
   }, oneMinuteToMilliseconds);
+}
+
+function cleanupServerHourlyMessageCount(daysToKeep: number = 30) {
+  setInterval(async () => {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      const preciseCutoff = getHourStart(cutoffDate);
+
+      console.log(`[CLEANUP] Deleting records older than: ${preciseCutoff.toISOString()}`);
+
+      const result = await prisma.serverHourlyMessageCount.deleteMany({
+        where: {
+          hourStart: {
+            lt: preciseCutoff,
+          },
+        },
+      });
+      console.log(`Cleaned up ${result.count} records older than ${preciseCutoff.toISOString()} for serverHourlyMessageCount.`);
+    } catch (error) {
+      console.error('[CLEANUP] Failed to clean up old hourly activity records:', error);
+    }
+  }, 24 * 60 * 60 * 1000); // Run every 24 hours
 }

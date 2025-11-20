@@ -32,9 +32,11 @@ import { exploreServerPinRemove } from './exploreServerPinRemove';
 import { exploreServerPin } from './exploreServerPin';
 import { userBatchShadowBan } from './userBatchShadowBan';
 import { userBatchUndoShadowBan } from './userBatchUndoShadowBan';
+import { getServersActive } from './getServersActive';
 
 const ModerationRouter = Router();
 
+getServersActive(ModerationRouter);
 exploreServerPinRemove(ModerationRouter);
 exploreServerPin(ModerationRouter);
 

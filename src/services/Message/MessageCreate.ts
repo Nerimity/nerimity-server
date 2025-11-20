@@ -6,7 +6,7 @@ import { MessageType } from '../../types/Message';
 import { ChannelType } from '../../types/Channel';
 import { htmlToJson } from '@nerimity/html-embed';
 import { generateError } from '../../common/errorHandler';
-import { isString, removeDuplicates } from '../../common/utils';
+import { getHourStart, isString, removeDuplicates } from '../../common/utils';
 import { dismissChannelNotification } from '../Channel';
 import { addMention, addMessageEmbed, MessageInclude, TransformedMessage, transformMessage } from './Message';
 import { emitServerMessageCreated } from '../../emits/Server';
@@ -16,6 +16,7 @@ import { emitDMMessageCreated } from '../../emits/Channel';
 import { replaceBadWords } from '../../common/badWords';
 import { zip } from '../../common/zip';
 import { prepareMessageForDatabase } from './prepareMessageForDatabase';
+import { validationResult } from 'express-validator';
 
 export interface SendMessageOptions {
   userId?: string;
@@ -364,6 +365,10 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
     addMessageEmbed(message, { channel, serverId: validatedResult.server?.id });
   }
 
+  if (validatedResult.server) {
+    incrementMessageCount(validatedResult.server.id);
+  }
+
   return [true, null] as const;
 };
 
@@ -386,3 +391,29 @@ export const createMessageV2 = async (opts: SendMessageOptions) => {
 
   return [message, null] as const;
 };
+
+async function incrementMessageCount(serverId: string): Promise<void> {
+  // Determine the correct hour bucket (e.g., 10:00:00 AM)
+  const hourStart = getHourStart();
+
+  try {
+    await prisma.serverHourlyMessageCount.upsert({
+      where: {
+        serverId_hourStart: {
+          serverId: serverId,
+          hourStart: hourStart,
+        },
+      },
+      update: {
+        messageCount: { increment: 1 },
+      },
+      create: {
+        serverId: serverId,
+        hourStart: hourStart,
+        messageCount: 1,
+      },
+    });
+  } catch (error) {
+    console.error(`Error during Prisma count increment for server ${serverId}:`, error);
+  }
+}

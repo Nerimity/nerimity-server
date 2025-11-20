@@ -408,10 +408,35 @@ model Server {
 
   webhooks               Webhook[]
 
+  hourlyMessageCounts ServerHourlyMessageCount[]
+
 @@index([createdAt])
 
 
 }
+
+
+
+model ServerHourlyMessageCount {
+  @@map("server_hourly_message_counts")
+
+  serverId        String
+
+  server          Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+
+  hourStart       DateTime
+
+  messageCount    Int       @default(0)
+
+  @@unique([serverId, hourStart])
+  @@index([serverId])
+}
+
+
+
+
+
 
 // Personal settings for joined servers
 model UserNotificationSettings {
