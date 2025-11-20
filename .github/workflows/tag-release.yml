@@ -44,7 +44,9 @@ jobs:
           npm i -g pnpm
           pnpm i
       - name: Prisma Migrate
-        run: pnpm run prisma:migrate_dev
+        run: |
+          pnpm run prisma:migrate_dev
+          pnpm run prisma:generate
         env:
           DATABASE_URL: 'postgresql://postgres:123@postgres:5432/postgres'
           DATABASE_DIRECT_URL: 'postgresql://postgres:123@postgres:5432/postgres'
