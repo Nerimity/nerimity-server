@@ -1,15 +1,11 @@
 generator client {
   provider = "prisma-client"
-  engineType = "client"
-
   output   = "../src/generated/prisma"
   previewFeatures = ["relationJoins"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DATABASE_DIRECT_URL")
 }
 
 model Account {
