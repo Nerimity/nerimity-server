@@ -24,6 +24,7 @@ async function getTopActiveServers(daysToLookBack: number) {
 
     const results = await prisma.serverHourlyMessageCount.groupBy({
       by: ['serverId'],
+      take: 20,
       _sum: {
         messageCount: true,
       },
