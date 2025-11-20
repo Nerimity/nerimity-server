@@ -60,7 +60,7 @@ async function getTopActiveServers(daysToLookBack: number) {
       },
     });
 
-    return servers.map((s) => ({ ...s, messageCount: results.find((r) => r.serverId === s.id)?._sum.messageCount || 0 }));
+    return servers.map((s) => ({ ...s, messageCount: results.find((r) => r.serverId === s.id)?._sum.messageCount || 0 })).sort((a, b) => b.messageCount - a.messageCount);
   } catch {
     return [];
   }
