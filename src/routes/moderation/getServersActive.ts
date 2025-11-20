@@ -48,6 +48,7 @@ async function getTopActiveServers(daysToLookBack: number) {
       },
       select: {
         scheduledForDeletion: true,
+        publicServer: { select: { id: true, pinnedAt: true } },
         name: true,
         hexColor: true,
         id: true,
