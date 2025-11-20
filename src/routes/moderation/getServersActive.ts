@@ -20,8 +20,6 @@ async function getTopActiveServers(daysToLookBack: number) {
     startDate.setDate(startDate.getDate() - daysToLookBack);
     const queryStart = getHourStart(startDate);
 
-    console.log(`[QUERY] Aggregating server activity since: ${queryStart.toISOString()}`);
-
     const results = await prisma.serverHourlyMessageCount.groupBy({
       by: ['serverId'],
       take: 20,
