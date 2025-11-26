@@ -44,6 +44,10 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
+  if (query.grantType !== 'authorization_code' && query.grantType !== 'refresh_token') {
+    return res.status(400).json('grantType must be "authorization_code" or "refresh_token"!');
+  }
+
   let result;
   let error;
 
