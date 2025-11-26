@@ -1,17 +1,17 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { getApplication } from '../../services/Application';
+import { regenerateApplicationClientSecret } from '../../services/Application';
 import { generateError } from '../../common/errorHandler';
 
-export function applicationGet(Router: Router) {
-  Router.get(
-    '/applications/:id',
+export function applicationClientSecretRefresh(Router: Router) {
+  Router.post(
+    '/applications/:id/client-secret-refresh',
     authenticate(),
     rateLimit({
-      name: 'get-app',
+      name: 'refresh-app-secret',
       restrictMS: 60000,
-      requests: 15,
+      requests: 3,
     }),
     route
   );
@@ -22,12 +22,11 @@ async function route(req: Request, res: Response) {
   if (!id) {
     return res.status(400).json(generateError('Missing application id!'));
   }
-
   if (!req.userCache.account) {
     return res.status(401).json(generateError('Unauthorized!'));
   }
 
-  const [application, error] = await getApplication(req.userCache.account.id, id);
+  const [application, error] = await regenerateApplicationClientSecret(req.userCache.account.id, id);
 
   if (error) {
     return res.status(404).json(error);

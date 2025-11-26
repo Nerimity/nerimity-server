@@ -11,16 +11,20 @@ import { applicationDelete } from './applicationDelete';
 import { applicationUpdate } from './applicationUpdate';
 import { applicationExistsCheck } from './applicationExistsCheck';
 import { applicationBotSetCommands } from './applicationBotSetCommands';
+import { applicationClientSecretRefresh } from './applicationClientSecretRefresh';
 
 const ApplicationsRouter = Router();
 
 applicationsCreate(ApplicationsRouter);
 applicationsGet(ApplicationsRouter);
 applicationGet(ApplicationsRouter);
+
 applicationsCreateBot(ApplicationsRouter);
 applicationDelete(ApplicationsRouter);
 applicationUpdate(ApplicationsRouter);
 applicationExistsCheck(ApplicationsRouter);
+
+applicationClientSecretRefresh(ApplicationsRouter);
 
 applicationBotSetCommands(ApplicationsRouter);
 applicationBotUpdate(ApplicationsRouter);

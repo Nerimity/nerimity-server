@@ -9,6 +9,7 @@ import { emitUserUpdated } from '../emits/User';
 import { generateToken } from '../common/JWT';
 import { deleteAccount, disconnectSockets } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
+import { generateOauth2Token } from './Oauth2';
 
 export async function createApplication(requesterAccountId: string) {
   const count = await prisma.application.count({
@@ -43,6 +44,7 @@ export async function updateApplication(
   id: string,
   update: {
     name?: string;
+    redirectUris?: string[];
   }
 ) {
   const app = await prisma.application.findUnique({
@@ -55,6 +57,7 @@ export async function updateApplication(
 
   const sanitizedUpdate = {
     ...addToObjectIfExists('name', update.name?.trim()),
+    ...addToObjectIfExists('redirectUris', update.redirectUris),
   };
 
   const application = await prisma.application.update({
@@ -87,6 +90,29 @@ export async function getApplication(requesterAccountId: string, id: string) {
   if (!application) {
     return [null, generateError('Application not found!')] as const;
   }
+
+  if (!application.clientSecret) {
+    const clientSecret = generateOauth2Token();
+    await prisma.application.update({ where: { id }, data: { clientSecret } });
+    application.clientSecret = clientSecret;
+  }
+
+  return [application, null] as const;
+}
+
+export async function regenerateApplicationClientSecret(requesterAccountId: string, id: string) {
+  const application = await prisma.application.findUnique({
+    where: { creatorAccountId: requesterAccountId, id },
+    include: { botUser: true },
+  });
+
+  if (!application) {
+    return [null, generateError('Application not found!')] as const;
+  }
+
+  const clientSecret = generateOauth2Token();
+  await prisma.application.update({ where: { id }, data: { clientSecret } });
+  application.clientSecret = clientSecret;
 
   return [application, null] as const;
 }

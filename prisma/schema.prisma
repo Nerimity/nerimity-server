@@ -79,6 +79,42 @@ model Application {
   creatorAccount     Account  @relation(fields: [creatorAccountId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   botCommands BotCommand[]
+
+  clientSecret String?
+
+  userGrants ApplicationUserGrant[]
+  redirectUris String[]
+
+}
+
+
+model ApplicationUserGrant {
+  @@map("application_user_grants")
+  id String @id
+
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  code String? @unique
+  codeExpiresAt DateTime
+
+  refreshToken String? @unique
+  refreshExpiresAt DateTime?
+
+  accessToken String? @unique
+  accessExpiresAt DateTime?
+
+  scopes Int
+  redirectUri String
+
+
+  @@unique([applicationId, userId])
+
 }
 
 
@@ -193,6 +229,8 @@ model User {
   externalEmbed ExternalEmbed?
 
   webhooks               Webhook[]
+
+  applicationUserGrants ApplicationUserGrant[]
 
 
   @@unique([username, tag])
