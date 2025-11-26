@@ -1,6 +1,5 @@
 import { Request, Response, Router } from 'express';
 
-import { authenticate } from '../../middleware/authenticate';
 import { query } from 'express-validator';
 import { rateLimit } from '@src/middleware/rateLimit';
 import { customExpressValidatorResult } from '@src/common/errorHandler';
@@ -9,7 +8,6 @@ import { exchangeCodeForToken, refreshToken } from '@src/services/Oauth2';
 export function oauth2TokenRoute(Router: Router) {
   Router.post(
     '/oauth2/token',
-    authenticate(),
     query('clientId').not().isEmpty().withMessage('clientId is required!').isString().withMessage('clientId must be a string!').isLength({ min: 1, max: 20 }).withMessage('clientId length must be between 1 and 20 characters.'),
     query('clientSecret').not().isEmpty().withMessage('clientSecret is required!').isString().withMessage('clientSecret must be a string!').isLength({ min: 1, max: 20 }).withMessage('clientSecret length must be between 1 and 20 characters.'),
     query('grantType').not().isEmpty().withMessage('grantType is required!').isString().withMessage('grantType must be a string!').isLength({ min: 1, max: 20 }).withMessage('grantType length must be between 1 and 20 characters.'),
