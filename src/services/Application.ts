@@ -34,6 +34,7 @@ export async function createApplication(requesterAccountId: string) {
 export async function getApplications(requesterAccountId: string) {
   const applications = await prisma.application.findMany({
     where: { creatorAccountId: requesterAccountId },
+    omit: { clientSecret: true },
   });
 
   return [applications, null] as const;
