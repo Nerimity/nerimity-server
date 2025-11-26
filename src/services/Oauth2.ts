@@ -170,7 +170,11 @@ export const refreshToken = async (opts: RefreshTokenOpts) => {
     return [null, generateError('Invalid refresh token.')] as const;
   }
 
-  const isRefreshTokenExpired = grant.refreshExpiresAt!.getTime() < Date.now();
+  if (!grant.refreshExpiresAt) {
+    return [null, generateError('Refresh token expired.')] as const;
+  }
+
+  const isRefreshTokenExpired = grant.refreshExpiresAt.getTime() < Date.now();
   if (isRefreshTokenExpired) {
     return [null, generateError('Refresh token expired.')] as const;
   }
