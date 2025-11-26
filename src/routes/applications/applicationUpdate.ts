@@ -11,7 +11,7 @@ export function applicationUpdate(Router: Router) {
     body('name').isString().withMessage('Invalid name.').isLength({ min: 3, max: 35 }).withMessage('name must be between 3 and 35 characters long.').optional({ nullable: true }),
 
     body('redirectUris').isArray().withMessage('redirectUris must be an array of strings.').optional({ nullable: true }),
-    body('redirectUris.*').isString().withMessage('redirectUris must be an array of strings.').optional({}),
+    body('redirectUris.*').isString().withMessage('redirectUris must be an array of strings.').isURL({ require_protocol: true }).withMessage('Each redirectUri must be a valid URL.').optional({}),
 
     authenticate(),
     rateLimit({
