@@ -24,9 +24,8 @@ import { ApplicationsRouter } from './routes/applications/Router';
 import { OpenGraphRouter } from './routes/open-graph/Router';
 import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
-import { logger } from './common/pino';
 import { WebhooksRouter } from './routes/webhooks/Router';
-import { getMessagesByChannelId } from './services/Message/Message';
+import { Oauth2Router } from './routes/oauth2/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -106,4 +105,5 @@ if (env.TYPE === 'api') {
   app.use('/api', ApplicationsRouter);
   app.use('/api', RemindersRouter);
   app.use('/api', WebhooksRouter);
+  app.use('/api', Oauth2Router);
 }
