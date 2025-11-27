@@ -203,3 +203,32 @@ export const refreshToken = async (opts: RefreshTokenOpts) => {
 
   return [result, null] as const;
 };
+
+interface GetOAuth2ApplicationOpts {
+  clientId: string;
+  redirectUri: string;
+  userId: string;
+}
+
+export const getOAuthApplication = async (opts: GetOAuth2ApplicationOpts) => {
+  if (!opts.userId) {
+    return [null, generateError('Unauthorized')] as const;
+  }
+  const user = await prisma.user.findUnique({ where: { id: opts.userId }, select: { id: true, username: true, tag: true, badges: true, hexColor: true, avatar: true, account: { select: { id: true } } } });
+  if (!user) {
+    return [null, generateError('Unauthorized')] as const;
+  }
+  if (!user.account) {
+    return [null, generateError('Unauthorized')] as const;
+  }
+
+  const application = await prisma.application.findUnique({ where: { id: opts.clientId }, select: { redirectUris: true, createdAt: true, creatorAccount: { select: { user: { select: { hexColor: true, username: true, id: true, badges: true, tag: true } } } }, id: true, name: true, botUser: { select: { id: true, avatar: true, banner: true, badges: true, hexColor: true } } } });
+  if (!application) {
+    return [null, generateError('Invalid client ID.')] as const;
+  }
+
+  if (!application.redirectUris.includes(opts.redirectUri)) {
+    return [null, generateError('Invalid redirect URI.')] as const;
+  }
+  return [{ application: { ...application, redirectUris: undefined }, user }, null] as const;
+};
