@@ -56,6 +56,10 @@ export async function updateApplication(
     return [null, generateError('Application not found!')] as const;
   }
 
+  if (update.redirectUris && update.redirectUris.length > 10) {
+    return [null, generateError('Too many redirect URIs!')] as const;
+  }
+
   const sanitizedUpdate = {
     ...addToObjectIfExists('name', update.name?.trim()),
     ...addToObjectIfExists('redirectUris', update.redirectUris),
