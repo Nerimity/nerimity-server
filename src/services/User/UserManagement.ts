@@ -69,7 +69,7 @@ export async function sendResetPasswordCode(email: string) {
     return [{ message: `DEV MODE: Password reset link: ${url}` }, null] as const;
   }
 
-  const result = await sendResetPasswordMail(url, account.email).catch(() => false);
+  const result = await sendResetPasswordMail(url, account.email).catch((err) => console.log('Failed to send reset password email', err));
 
   if (!result) {
     return [null, generateError('Failed to send email. Daily limit exceeded.')] as const;
