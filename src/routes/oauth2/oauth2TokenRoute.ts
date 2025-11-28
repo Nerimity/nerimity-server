@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 
 import { query } from 'express-validator';
 import { rateLimit } from '@src/middleware/rateLimit';
-import { customExpressValidatorResult } from '@src/common/errorHandler';
+import { customExpressValidatorResult, generateError } from '@src/common/errorHandler';
 import { exchangeCodeForToken, refreshToken } from '@src/services/Oauth2';
 
 export function oauth2TokenRoute(Router: Router) {
@@ -52,6 +52,9 @@ async function route(req: Request, res: Response) {
   let error;
 
   if (query.grantType === 'authorization_code') {
+    if (!query.code) {
+      return res.status(400).json(generateError('code is required!'));
+    }
     [result, error] = await exchangeCodeForToken({
       clientId: query.clientId,
       clientSecret: query.clientSecret,
@@ -59,6 +62,9 @@ async function route(req: Request, res: Response) {
       redirectUri: query.redirectUri,
     });
   } else {
+    if (!query.refreshToken) {
+      return res.status(400).json(generateError('refreshToken is required!'));
+    }
     [result, error] = await refreshToken({
       clientId: query.clientId,
       clientSecret: query.clientSecret,
