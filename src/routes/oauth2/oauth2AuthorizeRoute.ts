@@ -36,7 +36,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(validateError);
   }
 
-  const scopes = query.scopes.split('+');
+  const scopes = query.scopes.split(' ');
 
   const [result, error] = await oauth2Authorize({
     clientId: query.clientId,
