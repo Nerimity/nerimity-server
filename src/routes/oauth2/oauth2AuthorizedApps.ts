@@ -19,8 +19,7 @@ export function oauth2AuthorizedApps(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const [result, error] = await getAppAuthorizations(req.userCache.id);
-  if (error) return res.status(500).json(error);
+  const results = await getAppAuthorizations(req.userCache.id);
 
-  return res.status(200).json(result);
+  return res.status(200).json(results);
 }
