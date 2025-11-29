@@ -35,6 +35,11 @@ export const oauth2Authorize = async (opts: Oauth2AuthorizeOpts) => {
     return [null, generateError('Invalid user ID.')] as const;
   }
 
+  const grantsCount = await prisma.applicationUserGrant.count({ where: { userId: opts.userId } });
+  if (grantsCount >= 50) {
+    return [null, generateError('Max connections reached! Remove some connections and try again.')] as const;
+  }
+
   let scopes = 0;
   let hasInvalidScopes = false;
   opts.scopes.forEach((scope) => {
@@ -231,4 +236,38 @@ export const getOAuthApplication = async (opts: GetOAuth2ApplicationOpts) => {
     return [null, generateError('Invalid redirect URI.')] as const;
   }
   return [{ application: { ...application, redirectUris: undefined }, user }, null] as const;
+};
+
+export const getAppAuthorizations = async (userId: string) => {
+  return prisma.applicationUserGrant.findMany({
+    where: { userId },
+    select: {
+      createdAt: true,
+      id: true,
+      application: {
+        select: {
+          name: true,
+          id: true,
+          createdAt: true,
+          botUser: {
+            select: {
+              id: true,
+              username: true,
+              tag: true,
+              badges: true,
+              hexColor: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+export const unauthorizeApplication = async (userId: string, applicationId: string) => {
+  const grant = await prisma.applicationUserGrant.findUnique({ where: { applicationId_userId: { applicationId, userId } } });
+  if (!grant) return [null, generateError('Grant not found')] as const;
+  await prisma.applicationUserGrant.delete({ where: { id: grant.id } }).catch(() => {});
+  return [true, null];
 };
