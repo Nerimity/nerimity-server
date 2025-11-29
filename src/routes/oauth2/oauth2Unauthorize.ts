@@ -25,5 +25,5 @@ async function route(req: Request, res: Response) {
   const [result, error] = await unauthorizeApplication(req.userCache.id, req.params.appId);
   if (error) return res.status(500).json(error);
 
-  return res.status(200).json(result);
+  return res.status(200).json({ status: result });
 }
