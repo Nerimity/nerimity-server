@@ -2,7 +2,6 @@ import { Request, Response, Router } from 'express';
 
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '@src/middleware/rateLimit';
-import { generateError } from '@src/common/errorHandler';
 import { getAppAuthorizations } from '@src/services/Oauth2';
 
 export function oauth2AuthorizedApps(Router: Router) {
@@ -20,8 +19,6 @@ export function oauth2AuthorizedApps(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  if (!req.params.appId) return res.status(400).json(generateError('Missing application id!'));
-
   const [result, error] = await getAppAuthorizations(req.userCache.id);
   if (error) return res.status(500).json(error);
 
