@@ -4,6 +4,7 @@ import { oauth2TokenRoute } from './oauth2TokenRoute';
 import { oauth2AuthorizeGetRoute } from './oauth2AuthorizeGet';
 import { oauth2Unauthorize } from './oauth2Unauthorize';
 import { oauth2AuthorizedApps } from './oauth2AuthorizedApps';
+import { oauth2CurrentUser } from './oauth2CurrentUser';
 
 const Oauth2Router = Router();
 
@@ -12,5 +13,6 @@ oauth2Unauthorize(Oauth2Router);
 oauth2AuthorizeRoute(Oauth2Router);
 oauth2TokenRoute(Oauth2Router);
 oauth2AuthorizeGetRoute(Oauth2Router);
+oauth2CurrentUser(Oauth2Router);
 
 export { Oauth2Router };

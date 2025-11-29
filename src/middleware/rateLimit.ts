@@ -35,7 +35,7 @@ export function rateLimit(opts: Options) {
     let id = '';
 
     if (!opts.globalLimit) {
-      id = opts.useIP ? ip : req.userCache?.id;
+      id = opts.useIP ? ip : req.userCache?.id || req.oAuth2Grant.user.id;
       if (!id) {
         id = ip;
       }

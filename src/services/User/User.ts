@@ -322,7 +322,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
   });
 
   if (!user) {
-    return [null, generateError('User not found.', 'user')];
+    return [null, generateError('User not found.', 'user')] as const;
   }
 
   const followsYou = await prisma.follower.findUnique({
@@ -414,7 +414,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
       ...(includePinnedPosts ? { pinnedPosts } : {}),
     },
     null,
-  ];
+  ] as const;
 };
 
 export enum LastOnlineStatus {

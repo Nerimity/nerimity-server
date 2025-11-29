@@ -267,6 +267,7 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
     prisma.userConnection.deleteMany({ where: { userId } }),
     prisma.chatNotice.deleteMany({ where: { userId } }),
     prisma.userNotice.deleteMany({ where: { userId } }),
+    prisma.applicationUserGrant.deleteMany({ where: { userId } }),
     ...(opts?.shadowBan && opts?.email
       ? [
           prisma.shadowBan.deleteMany({ where: { id: opts.shadowBan.id } }),
