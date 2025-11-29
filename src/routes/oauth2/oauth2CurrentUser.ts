@@ -29,10 +29,10 @@ async function route(req: Request, res: Response) {
   }
 
   if (hasBit(req.oAuth2Grant.scopes, APPLICATION_SCOPES.USER_EMAIL.bit)) {
-    return {
+    return res.status(200).json({
       ...result,
       email: req.oAuth2Grant.user.account.email,
-    };
+    });
   }
 
   return res.status(200).json(result);
