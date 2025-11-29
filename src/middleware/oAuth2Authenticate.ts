@@ -37,7 +37,7 @@ export function oAuth2Authenticate(opts?: Options) {
         accessExpiresAt: true,
         scopes: true,
         user: {
-          include: {
+          select: {
             ...publicUserExcludeFields,
 
             account: {
