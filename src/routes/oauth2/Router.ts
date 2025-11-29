@@ -7,10 +7,10 @@ import { oauth2AuthorizedApps } from './oauth2AuthorizedApps';
 
 const Oauth2Router = Router();
 
+oauth2AuthorizedApps(Oauth2Router);
+oauth2Unauthorize(Oauth2Router);
 oauth2AuthorizeRoute(Oauth2Router);
 oauth2TokenRoute(Oauth2Router);
 oauth2AuthorizeGetRoute(Oauth2Router);
-oauth2Unauthorize(Oauth2Router);
-oauth2AuthorizedApps(Oauth2Router);
 
 export { Oauth2Router };
