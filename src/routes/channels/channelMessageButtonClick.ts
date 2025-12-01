@@ -51,7 +51,9 @@ async function route(req: Request, res: Response) {
       }
     }
   } else {
-    req.body = {};
+    if (req.body) {
+      req.body = {};
+    }
   }
 
   const [status, error] = await buttonClick({
