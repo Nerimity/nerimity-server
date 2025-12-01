@@ -2,21 +2,82 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { buttonClick, buttonClickCallback } from '../../services/Message/Message';
-import { body, oneOf } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { buttonClickCallback } from '../../services/Message/Message';
+import { generateError } from '../../common/errorHandler';
+import { type } from 'arktype';
+import { addToObjectIfExists } from '@src/common/addToObjectIfExists';
+
+const dropdownItemSchema = type({
+  id: 'string<50',
+  label: 'string<100',
+});
+
+const textComponent = type({
+  type: "'text'",
+  content: 'string<=500',
+});
+
+const dropdownComponent = type({
+  type: "'dropdown'",
+  items: dropdownItemSchema.array().lessThanLength(20),
+});
+
+const component = textComponent.or(dropdownComponent);
+
+const baseSchema = type({
+  userId: 'string<=255',
+  'title?': 'string<=100',
+  'buttonLabel?': 'string<=100',
+});
+
+const contentRequiredSchema = baseSchema.and({
+  content: 'string<=500',
+  'components?': component.array().lessThanLength(4),
+});
+
+const componentsRequiredSchema = baseSchema.and({
+  'content?': 'string<=500',
+  components: component.array().lessThanLength(4),
+});
+
+const buttonCallbackSchema = contentRequiredSchema.or(componentsRequiredSchema);
+
+export type ButtonCallback = type.infer<typeof buttonCallbackSchema>;
+
+const sanitizeButtonCallback = (data: ButtonCallback): ButtonCallback => {
+  return {
+    ...addToObjectIfExists('content', data.content),
+    ...addToObjectIfExists('title', data.title),
+    ...addToObjectIfExists('userId', data.userId),
+    ...addToObjectIfExists('buttonLabel', data.buttonLabel),
+    ...(data.components
+      ? {
+          components: data.components.map((component) => ({
+            ...addToObjectIfExists('type', component.type),
+            ...(component.type === 'text'
+              ? {
+                  content: component.content,
+                }
+              : undefined),
+            ...(component.type === 'dropdown'
+              ? {
+                  items: component.items.map((item) => ({
+                    ...addToObjectIfExists('id', item.id),
+                    ...addToObjectIfExists('label', item.label),
+                  })),
+                }
+              : undefined),
+          })),
+        }
+      : undefined),
+  } as any;
+};
 
 export function channelMessageButtonClickCallback(Router: Router) {
   Router.post(
     '/channels/:channelId/messages/:messageId/buttons/:buttonId/callback',
     authenticate({ allowBot: true }),
     channelVerification(),
-
-    body('userId').isString().withMessage('userId must be a string').isLength({ min: 1, max: 255 }).withMessage('userId must be between 1 and 255 characters long'),
-
-    body('title').optional(true).isString().withMessage('title must be a string').isLength({ min: 0, max: 100 }).withMessage('title length must be less than or equal to 100 characters'),
-
-    body('content').optional(true).isString().withMessage('content must be a string').isLength({ min: 0, max: 500 }).withMessage('content length must be less than or equal to 500 characters'),
 
     rateLimit({
       name: 'button_click_callback',
@@ -33,26 +94,21 @@ interface RequestParams {
   buttonId: string;
 }
 
-interface Body {
-  userId: string;
-  title?: string;
-  content?: string;
-}
-
 async function route(req: Request, res: Response) {
   const { channelId, messageId, buttonId } = req.params as unknown as RequestParams;
 
-  const validateError = customExpressValidatorResult(req);
+  const body = buttonCallbackSchema(req.body);
 
-  if (validateError) {
-    return res.status(400).json(validateError);
+  if (body instanceof type.errors) {
+    res.status(400).json(generateError(body[0]?.message ?? 'Invalid request body.'));
+    return;
   }
 
   const [status, error] = await buttonClickCallback({
     channelId,
     messageId,
     buttonId,
-    data: req.body as Body,
+    data: sanitizeButtonCallback(body),
   });
 
   if (error) {
