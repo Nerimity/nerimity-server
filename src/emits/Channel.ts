@@ -79,11 +79,11 @@ export const emitButtonClickCallback = (opts: { emitToId: string; userId: string
   const io = getIO();
 
   io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED_CALLBACK, {
+    ...opts.data,
     messageId: opts.messageId,
     channelId: opts.channelId,
     buttonId: opts.buttonId,
     userId: opts.userId,
-    data: opts.data,
   });
 };
 
