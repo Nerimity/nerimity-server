@@ -61,7 +61,7 @@ async function route(req: Request, res: Response) {
     messageId,
     buttonId,
     clickedUserId: req.userCache.id,
-    data: req.body,
+    data: req.query.type === 'modal_click' ? req.body : undefined,
   });
 
   if (error) {
