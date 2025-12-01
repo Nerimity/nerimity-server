@@ -963,7 +963,7 @@ export async function addMention(opts: AddMentionOpts) {
   ]);
 }
 
-export async function buttonClick(opts: { channelId: string; messageId: string; buttonId: string; clickedUserId: string }) {
+export async function buttonClick(opts: { channelId: string; messageId: string; buttonId: string; clickedUserId: string; data: any }) {
   const button = await prisma.messageButton.findUnique({
     where: { messageId_id: { messageId: opts.messageId, id: opts.buttonId } },
     include: {
@@ -1007,6 +1007,7 @@ export async function buttonClick(opts: { channelId: string; messageId: string; 
     messageId: opts.messageId,
     channelId: opts.channelId,
     buttonId: opts.buttonId,
+    data: opts.data,
   });
 
   return [true, null] as const;

@@ -70,10 +70,10 @@ export const emitServerChannelCreated = (serverId: string, channel: Channel) => 
   io.in(serverId).emit(SERVER_CHANNEL_CREATED, { serverId, channel });
 };
 
-export const emitButtonClick = (opts: { emitToId: string; userId: string; messageId: string; channelId: string; buttonId: string }) => {
+export const emitButtonClick = (opts: { emitToId: string; userId: string; messageId: string; channelId: string; buttonId: string; data: any }) => {
   const io = getIO();
 
-  io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED, { messageId: opts.messageId, channelId: opts.channelId, buttonId: opts.buttonId, userId: opts.userId });
+  io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED, { messageId: opts.messageId, channelId: opts.channelId, buttonId: opts.buttonId, userId: opts.userId, data: opts.data });
 };
 export const emitButtonClickCallback = (opts: { emitToId: string; userId: string; messageId: string; channelId: string; buttonId: string; data: any }) => {
   const io = getIO();
