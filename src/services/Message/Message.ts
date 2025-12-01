@@ -1002,7 +1002,7 @@ export async function buttonClick(opts: { channelId: string; messageId: string; 
   }
 
   emitButtonClick({
-    type: opts.data ? 'modal_click' : 'message_click',
+    type: opts.data ? 'modal_click' : 'button_click',
     emitToId: button.message.createdById,
     userId: opts.clickedUserId,
     messageId: opts.messageId,
