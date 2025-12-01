@@ -2,15 +2,15 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { buttonClick, buttonClickCallback } from '../../services/Message/Message';
-import { body, oneOf } from 'express-validator';
-import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { buttonClickCallback } from '../../services/Message/Message';
+import { generateError } from '../../common/errorHandler';
 import { type } from 'arktype';
+import { addToObjectIfExists } from '@src/common/addToObjectIfExists';
 
-const dropdownItemSchema = {
+const dropdownItemSchema = type({
   id: 'string<50',
   label: 'string<100',
-} as const;
+});
 
 const textComponent = type({
   type: "'text'",
@@ -19,7 +19,7 @@ const textComponent = type({
 
 const dropdownComponent = type({
   type: "'dropdown'",
-  items: [dropdownItemSchema],
+  items: dropdownItemSchema.array().lessThanLength(20),
 });
 
 const component = textComponent.or(dropdownComponent);
@@ -27,21 +27,51 @@ const component = textComponent.or(dropdownComponent);
 const baseSchema = type({
   userId: 'string<=255',
   'title?': 'string<=100',
+  'buttonLabel?': 'string<=100',
 });
 
 const contentRequiredSchema = baseSchema.and({
   content: 'string<=500',
-  'components?': [component, 'Array<4'],
+  'components?': component.array().lessThanLength(4),
 });
 
 const componentsRequiredSchema = baseSchema.and({
   'content?': 'string<=500',
-  components: [component, 'Array<4'],
+  components: component.array().lessThanLength(4),
 });
 
 const buttonCallbackSchema = contentRequiredSchema.or(componentsRequiredSchema);
 
 export type ButtonCallback = type.infer<typeof buttonCallbackSchema>;
+
+const sanitizeButtonCallback = (data: ButtonCallback): ButtonCallback => {
+  return {
+    ...addToObjectIfExists('content', data.content),
+    ...addToObjectIfExists('title', data.title),
+    ...addToObjectIfExists('userId', data.userId),
+    ...addToObjectIfExists('buttonLabel', data.buttonLabel),
+    ...(data.components
+      ? {
+          components: data.components.map((component) => ({
+            ...addToObjectIfExists('type', component.type),
+            ...(component.type === 'text'
+              ? {
+                  content: component.content,
+                }
+              : undefined),
+            ...(component.type === 'dropdown'
+              ? {
+                  items: component.items.map((item) => ({
+                    ...addToObjectIfExists('id', item.id),
+                    ...addToObjectIfExists('label', item.label),
+                  })),
+                }
+              : undefined),
+          })),
+        }
+      : undefined),
+  } as any;
+};
 
 export function channelMessageButtonClickCallback(Router: Router) {
   Router.post(
@@ -67,7 +97,7 @@ interface RequestParams {
 async function route(req: Request, res: Response) {
   const { channelId, messageId, buttonId } = req.params as unknown as RequestParams;
 
-  const body = buttonCallbackSchema.(req.body);
+  const body = buttonCallbackSchema(req.body);
 
   if (body instanceof type.errors) {
     res.status(400).json(generateError(body[0]?.message ?? 'Invalid request body.'));
@@ -78,7 +108,7 @@ async function route(req: Request, res: Response) {
     channelId,
     messageId,
     buttonId,
-    data: body,
+    data: sanitizeButtonCallback(body),
   });
 
   if (error) {

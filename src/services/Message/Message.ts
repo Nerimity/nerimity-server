@@ -984,6 +984,9 @@ export async function buttonClick(opts: { channelId: string; messageId: string; 
     return [false, generateError('Channel not found')] as const;
   }
 
+  if (!button.message.createdById) {
+    return [false, generateError('Button not found')] as const;
+  }
   if (channel.serverId) {
     const isMessageCreatorInServer = await prisma.serverMember.findUnique({
       where: {
