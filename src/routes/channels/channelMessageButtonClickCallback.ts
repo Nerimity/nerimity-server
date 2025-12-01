@@ -19,10 +19,17 @@ const textComponent = type({
 
 const dropdownComponent = type({
   type: "'dropdown'",
+  'label?': 'string<=100',
   items: dropdownItemSchema.array().lessThanLength(20),
 });
 
-const component = textComponent.or(dropdownComponent);
+const inputComponent = type({
+  type: "'input'",
+  'label?': 'string<=100',
+  'placeholder?': 'string<=100',
+});
+
+const component = textComponent.or(dropdownComponent).or(inputComponent);
 
 const baseSchema = type({
   userId: 'string<=255',
@@ -54,6 +61,12 @@ const sanitizeButtonCallback = (data: ButtonCallback): ButtonCallback => {
       ? {
           components: data.components.map((component) => ({
             ...addToObjectIfExists('type', component.type),
+            ...(component.type === 'input'
+              ? {
+                  ...addToObjectIfExists('label', component.label),
+                  ...addToObjectIfExists('placeholder', component.placeholder),
+                }
+              : undefined),
             ...(component.type === 'text'
               ? {
                   content: component.content,
@@ -61,6 +74,7 @@ const sanitizeButtonCallback = (data: ButtonCallback): ButtonCallback => {
               : undefined),
             ...(component.type === 'dropdown'
               ? {
+                  ...addToObjectIfExists('label', component.label),
                   items: component.items.map((item) => ({
                     ...addToObjectIfExists('id', item.id),
                     ...addToObjectIfExists('label', item.label),
