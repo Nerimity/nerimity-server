@@ -74,7 +74,7 @@ export const emitServerChannelCreated = (serverId: string, channel: Channel) => 
 export const emitButtonClick = (opts: { type: 'modal_click' | 'button_click'; emitToId: string; userId: string; messageId: string; channelId: string; buttonId: string; data: any }) => {
   const io = getIO();
 
-  io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED, { messageId: opts.messageId, channelId: opts.channelId, buttonId: opts.buttonId, userId: opts.userId, data: opts.data });
+  io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED, { messageId: opts.messageId, channelId: opts.channelId, buttonId: opts.buttonId, userId: opts.userId, data: opts.data, type: opts.type });
 };
 
 // emits to client
