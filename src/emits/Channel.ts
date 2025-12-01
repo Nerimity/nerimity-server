@@ -70,17 +70,19 @@ export const emitServerChannelCreated = (serverId: string, channel: Channel) => 
   io.in(serverId).emit(SERVER_CHANNEL_CREATED, { serverId, channel });
 };
 
+// emits to bot
 export const emitButtonClick = (opts: { type: 'modal_click' | 'message_click'; emitToId: string; userId: string; messageId: string; channelId: string; buttonId: string; data: any }) => {
   const io = getIO();
 
   io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED, { messageId: opts.messageId, channelId: opts.channelId, buttonId: opts.buttonId, userId: opts.userId, data: opts.data });
 };
+
+// emits to client
 export const emitButtonClickCallback = (opts: { emitToId: string; userId: string; messageId: string; channelId: string; buttonId: string; data: any }) => {
   const io = getIO();
 
   io.in(opts.emitToId).emit(MESSAGE_BUTTON_CLICKED_CALLBACK, {
-    data: opts.data,
-    type: 'message_click',
+    ...opts.data,
     messageId: opts.messageId,
     channelId: opts.channelId,
     buttonId: opts.buttonId,
