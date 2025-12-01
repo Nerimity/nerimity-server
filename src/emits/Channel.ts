@@ -83,7 +83,7 @@ export const emitButtonClickCallback = (opts: { emitToId: string; userId: string
     channelId: opts.channelId,
     buttonId: opts.buttonId,
     userId: opts.userId,
-    ...opts.data,
+    data: opts.data,
   });
 };
 
