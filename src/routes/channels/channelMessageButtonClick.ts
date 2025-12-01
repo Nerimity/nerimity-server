@@ -28,25 +28,26 @@ interface RequestParams {
 async function route(req: Request, res: Response) {
   const { channelId, messageId, buttonId } = req.params as unknown as RequestParams;
 
-  if (typeof req.body === 'object') {
+  if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
     const bodyKeys = Object.keys(req.body);
-    if (bodyKeys.length > 0) {
-      if (bodyKeys.length > 10) {
-        return res.status(400).json(generateError('Maximum of 10 keys are allowed.'));
-      }
-      for (let i = 0; i < bodyKeys.length; i++) {
-        const key = bodyKeys[i]!;
-        const value = req.body[key as keyof typeof req.body];
-        if (key.length > 100) {
-          return res.status(400).json(generateError(`Key length must be between 1 and 100 characters.`));
-        }
-        if (typeof value !== 'string') {
-          if (value.length > 500) {
-            return res.status(400).json(generateError(`Value length must be between 1 and 500 characters.`));
-          }
-        }
 
-        return res.status(400).json(generateError('Invalid key type ' + key));
+    if (bodyKeys.length > 10) {
+      return res.status(400).json(generateError('Maximum of 10 keys are allowed.'));
+    }
+
+    for (const key of bodyKeys) {
+      if (key.length === 0 || key.length > 100) {
+        return res.status(400).json(generateError('Key length must be between 1 and 100 characters.'));
+      }
+
+      const value = req.body[key as keyof typeof req.body];
+
+      if (typeof value !== 'string') {
+        return res.status(400).json(generateError('Invalid value type for key ' + key));
+      }
+
+      if (value.length === 0 || value.length > 500) {
+        return res.status(400).json(generateError('Value length must be between 1 and 500 characters.'));
       }
     }
   }
