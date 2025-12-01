@@ -50,6 +50,8 @@ async function route(req: Request, res: Response) {
         return res.status(400).json(generateError('Value length must be between 1 and 500 characters.'));
       }
     }
+  } else {
+    req.body = {};
   }
 
   const [status, error] = await buttonClick({
