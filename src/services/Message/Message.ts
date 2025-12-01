@@ -17,6 +17,7 @@ import { ChannelType } from '../../types/Channel';
 import { FriendStatus } from '../../types/Friend';
 import { createMessageV2, SendMessageOptions } from './MessageCreate';
 import { editMessageV2 } from './MessageEdit';
+import { ButtonCallback } from '@src/routes/channels/channelMessageButtonClickCallback';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -1012,11 +1013,7 @@ interface ButtonClickCallbackOpts {
   channelId: string;
   messageId: string;
   buttonId: string;
-  data: {
-    userId: string;
-    title?: string;
-    content?: string;
-  };
+  data: ButtonCallback;
 }
 
 export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
@@ -1061,6 +1058,9 @@ export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
       return [false, generateError('Button not found')] as const;
     }
   }
+  if (!button.message.createdById) {
+    return [false, generateError('Invalid message')] as const;
+  }
 
   emitButtonClickCallback({
     emitToId: opts.data.userId,
@@ -1068,10 +1068,7 @@ export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
     messageId: opts.messageId,
     channelId: opts.channelId,
     buttonId: opts.buttonId,
-    data: {
-      ...addToObjectIfExists('title', opts.data.title),
-      ...addToObjectIfExists('content', opts.data.content),
-    },
+    data: opts.data,
   });
 
   return [true, null] as const;
