@@ -466,6 +466,7 @@ model ServerHourlyMessageCount {
   hourStart       DateTime
 
   messageCount    Int       @default(0)
+  userMessageCount Int       @default(0)
 
   @@unique([serverId, hourStart])
   @@index([serverId])

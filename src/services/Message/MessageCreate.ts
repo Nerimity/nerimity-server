@@ -366,7 +366,7 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
   }
 
   if (validatedResult.server) {
-    incrementMessageCount(validatedResult.server.id);
+    incrementMessageCount(validatedResult.server.id, message.createdBy && !message.createdBy.bot);
   }
 
   return [true, null] as const;
@@ -392,7 +392,7 @@ export const createMessageV2 = async (opts: SendMessageOptions) => {
   return [message, null] as const;
 };
 
-async function incrementMessageCount(serverId: string): Promise<void> {
+async function incrementMessageCount(serverId: string, isByUser?: boolean): Promise<void> {
   // Determine the correct hour bucket (e.g., 10:00:00 AM)
   const hourStart = getHourStart();
 
@@ -406,6 +406,7 @@ async function incrementMessageCount(serverId: string): Promise<void> {
       },
       update: {
         messageCount: { increment: 1 },
+        ...(isByUser ? { userMessageCount: { increment: 1 } } : {}),
       },
       create: {
         serverId: serverId,

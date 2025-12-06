@@ -25,6 +25,7 @@ async function getTopActiveServers(daysToLookBack: number) {
       take: 20,
       _sum: {
         messageCount: true,
+        userMessageCount: true,
       },
       where: {
         hourStart: {
@@ -60,7 +61,12 @@ async function getTopActiveServers(daysToLookBack: number) {
       },
     });
 
-    return servers.map((s) => ({ ...s, messageCount: results.find((r) => r.serverId === s.id)?._sum.messageCount || 0 })).sort((a, b) => b.messageCount - a.messageCount);
+    return servers
+      .map((s) => {
+        const counts = results.find((r) => r.serverId === s.id);
+        return { ...s, userMessageCount: counts?._sum.userMessageCount || 0, messageCount: counts?._sum.messageCount || 0 };
+      })
+      .sort((a, b) => b.messageCount - a.messageCount);
   } catch {
     return [];
   }
