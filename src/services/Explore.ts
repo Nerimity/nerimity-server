@@ -65,7 +65,8 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
   });
 
   return publicServers.sort((a, b) => {
-    return serverRank.get(a.id)! - serverRank.get(b.id)!;
+    // USE a.serverId and b.serverId for the lookup
+    return serverRank.get(a.serverId!)! - serverRank.get(b.serverId!)!;
   });
 };
 

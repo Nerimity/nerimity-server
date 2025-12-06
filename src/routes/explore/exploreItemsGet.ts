@@ -8,7 +8,7 @@ export function exploreItemsGet(Router: Router) {
 }
 
 interface Query {
-  sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
+  sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped' | 'most_active';
   filter?: 'pinned' | 'all' | 'verified';
   limit?: string;
   afterId?: string;
