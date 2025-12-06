@@ -272,6 +272,7 @@ async function route(req: Request, res: Response) {
       path: uploadedFile!.path,
       expireAt: uploadedFile?.expireAt ? new Date(uploadedFile.expireAt) : undefined,
       mime: uploadedFile!.mimetype,
+      duration: uploadedFile!.duration,
       provider: AttachmentProviders.Local,
       filesize: uploadedFile!.filesize,
     };

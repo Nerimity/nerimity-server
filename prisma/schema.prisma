@@ -1053,6 +1053,7 @@ model Attachment {
   width       Int?
   height      Int?
   filesize    Int?
+  duration    Int? // audio or video duration
 
   expireAt    DateTime?  
 
