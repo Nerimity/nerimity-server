@@ -9,14 +9,68 @@ import { createMessage } from './Message/Message';
 import { MessageType } from '../types/Message';
 import { ExploreOrderByWithRelationInput, ExploreWhereInput } from '@src/generated/prisma/models';
 import { getUserPresences } from '@src/cache/UserCache';
+import { getHourStart } from '@src/common/utils';
 
 export enum ExploreType {
   SERVER = 0,
   BOT = 1,
 }
 
+const mostActivePublicServers = async (opts: { limit: number; skip: number; search?: string; filter: ExploreWhereInput }) => {
+  const daysToLookBack = 7;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - daysToLookBack);
+  const queryStart = getHourStart(startDate);
+
+  const results = await prisma.serverHourlyMessageCount.groupBy({
+    by: ['serverId'],
+    take: opts.limit,
+    skip: opts.skip,
+
+    where: {
+      server: {
+        scheduledForDeletion: null,
+        ...(opts.search?.trim() ? { OR: [{ name: { contains: opts.search, mode: 'insensitive' } }, { publicServer: { description: { contains: opts.search, mode: 'insensitive' } } }] } : {}),
+        publicServer: {
+          ...(Object.keys(opts.filter).length ? opts.filter : { isNot: null }),
+        },
+      },
+      hourStart: {
+        gte: queryStart,
+      },
+    },
+    orderBy: {
+      _sum: {
+        userMessageCount: 'desc',
+      },
+    },
+  });
+
+  const serverIds = results.map((result) => result.serverId);
+
+  const publicServers = await prisma.explore.findMany({
+    where: {
+      id: {
+        in: serverIds,
+      },
+    },
+    include: {
+      server: { include: { createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
+    },
+  });
+
+  const serverRank = new Map<string, number>();
+  serverIds.forEach((id, index) => {
+    serverRank.set(id, index);
+  });
+
+  return publicServers.sort((a, b) => {
+    return serverRank.get(a.id)! - serverRank.get(b.id)!;
+  });
+};
+
 interface getExploreItemsOpts {
-  sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped';
+  sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped' | 'most_active';
   filter?: 'pinned' | 'all' | 'verified';
   limit?: number;
   afterId?: string;
@@ -33,6 +87,10 @@ export const getExploreItems = async (opts: getExploreItemsOpts): Promise<Explor
     else where.type = ExploreType.SERVER;
     return where;
   };
+
+  if (sort === 'most_active') {
+    return await mostActivePublicServers({ limit: limit!, skip: opts.afterId ? parseInt(opts.afterId) : 0, search, filter: where() });
+  }
 
   const orderBy = (): Prisma.Enumerable<ExploreOrderByWithRelationInput> => {
     if (sort === 'most_bumps') return { bumpCount: 'desc' };
