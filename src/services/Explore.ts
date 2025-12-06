@@ -50,7 +50,7 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
 
   const publicServers = await prisma.explore.findMany({
     where: {
-      id: {
+      serverId: {
         in: serverIds,
       },
     },
