@@ -16,7 +16,6 @@ import { emitDMMessageCreated } from '../../emits/Channel';
 import { replaceBadWords } from '../../common/badWords';
 import { zip } from '../../common/zip';
 import { prepareMessageForDatabase } from './prepareMessageForDatabase';
-import { validationResult } from 'express-validator';
 
 export interface SendMessageOptions {
   userId?: string;

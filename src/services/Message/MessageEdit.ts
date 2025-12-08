@@ -9,13 +9,16 @@ import { emitServerMessageUpdated } from '../../emits/Server';
 import { emitDMMessageUpdated } from '../../emits/Channel';
 import { MessageType } from '../../types/Message';
 import { prepareMessageForDatabase } from './prepareMessageForDatabase';
+import { htmlToJson } from '@nerimity/html-embed';
+import { zip } from '@src/common/zip';
 
 interface EditMessageOptions {
   userId: string;
   channelId: string;
   channel?: ChannelCache | null;
   serverId?: string;
-  content: string;
+  content?: string;
+  htmlEmbed?: string;
   messageId: string;
 }
 
@@ -28,10 +31,13 @@ const validateMessageOptions = async (opts: EditMessageOptions) => {
     return [null, generateError('Message does not exist or is not created by you.')] as const;
   }
 
-  const content = opts.content.trim();
-
-  if (!content) {
-    return [null, generateError('Content is required', 'content')] as const;
+  let htmlEmbed = undefined;
+  if (opts.htmlEmbed) {
+    try {
+      htmlEmbed = htmlToJson(opts.htmlEmbed);
+    } catch (err: any) {
+      return [null, generateError(err.message, 'htmlEmbed')] as const;
+    }
   }
 
   let channel = opts.channel;
@@ -44,6 +50,7 @@ const validateMessageOptions = async (opts: EditMessageOptions) => {
   const data = {
     channel,
     isServerOrDMChannel,
+    htmlEmbed,
   };
 
   return [data, null] as const;
@@ -52,6 +59,7 @@ const validateMessageOptions = async (opts: EditMessageOptions) => {
 type ValidationResult = NonNullable<Awaited<ReturnType<typeof validateMessageOptions>>[0]>;
 
 const updateMessageInDatabase = async (opts: EditMessageOptions, validatedResult: ValidationResult) => {
+  const htmlEmbed = validatedResult.htmlEmbed;
   const processedData = await prepareMessageForDatabase({
     channelId: opts.channelId,
     creatorId: opts.userId,
@@ -70,9 +78,10 @@ const updateMessageInDatabase = async (opts: EditMessageOptions, validatedResult
     .update({
       where: { id: opts.messageId },
       data: {
-        content: validatedResult.isServerOrDMChannel ? replaceBadWords(opts.content) : opts.content,
+        content: validatedResult.isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content,
         editedAt: dateToDateTime(),
         embed: Prisma.JsonNull,
+        ...(htmlEmbed ? { htmlEmbed: zip(JSON.stringify(htmlEmbed)) } : undefined),
 
         ...(processedData.userMentions.length && {
           mentions: {

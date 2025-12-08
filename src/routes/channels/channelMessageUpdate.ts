@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { CHANNEL_PERMISSIONS } from '../../common/Bitwise';
 import { authenticate } from '../../middleware/authenticate';
 import { channelPermissions } from '../../middleware/channelPermissions';
@@ -18,7 +18,9 @@ export function channelMessageUpdate(Router: Router) {
       bit: CHANNEL_PERMISSIONS.SEND_MESSAGE.bit,
       message: 'You are not allowed to edit messages in this channel.',
     }),
-    body('content').isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
+    body('content').optional(true).isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
+    body('htmlEmbed').optional(true).isString().withMessage('htmlEmbed must be a string!').isLength({ min: 1, max: 5000 }).withMessage('htmlEmbed length must be between 1 and 5000 characters.'),
+
     rateLimit({
       name: 'update_message',
       restrictMS: 20000,
@@ -29,7 +31,8 @@ export function channelMessageUpdate(Router: Router) {
 }
 
 interface Body {
-  content: string;
+  content?: string;
+  htmlEmbed?: string;
 }
 
 async function route(req: Request, res: Response) {
@@ -46,10 +49,15 @@ async function route(req: Request, res: Response) {
     return res.status(400).json({ error: 'Ticket message cannot be edited.' });
   }
 
+  if (!body.content?.trim() && !body.htmlEmbed) {
+    return res.status(400).json(generateError('content or htmlEmbed is required.'));
+  }
+
   const [updated, error] = await editMessage({
     messageId,
     channelId: req.channelCache.id,
     content: body.content,
+    htmlEmbed: body.htmlEmbed,
     userId: req.userCache.id,
     channel: req.channelCache,
     serverId: req.channelCache?.server?.id,
