@@ -387,7 +387,7 @@ export const deleteServer = async (serverId: string, deletedByUserId: string) =>
   return [true, null] as const;
 };
 
-export const leaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true): Promise<CustomResult<boolean, CustomError>> => {
+export const leaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true, reason?: string): Promise<CustomResult<boolean, CustomError>> => {
   const server = await prisma.server.findUnique({
     where: { id: serverId },
     include: { channels: { select: { id: true } }, scheduledForDeletion: true },
@@ -424,6 +424,7 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
         id: generateId(),
         userId,
         serverId,
+        reason,
       },
     });
     deleteAllInboxCache(userId);
@@ -527,7 +528,7 @@ export const kickServerMember = async (userId: string, serverId: string, kickedB
 export const serverMemberBans = async (serverId: string) => {
   return prisma.bannedServerMember.findMany({
     where: { serverId },
-    select: { serverId: true, user: true },
+    select: { serverId: true, user: true, bannedAt: true, reason: true },
   });
 };
 export const serverMemberRemoveBan = async (serverId: string, userId: string, banRemovedById: string): Promise<CustomResult<boolean, CustomError>> => {
@@ -544,7 +545,7 @@ export const serverMemberRemoveBan = async (serverId: string, userId: string, ba
   return [true, null];
 };
 
-export const banServerMember = async (userId: string, serverId: string, bannedByUserId?: string, shouldDeleteRecentMessages?: boolean) => {
+export const banServerMember = async (userId: string, serverId: string, bannedByUserId?: string, shouldDeleteRecentMessages?: boolean, reason?: string) => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -561,12 +562,13 @@ export const banServerMember = async (userId: string, serverId: string, bannedBy
     return [null, generateError('Invalid userId')];
   }
 
-  const [, error] = await leaveServer(userId, serverId, true, false);
+  const [, error] = await leaveServer(userId, serverId, true, false, reason);
   if (error) return [null, error];
 
   await logServerUserBanned({
     userId: bannedByUserId,
     serverId,
+    reason,
     bannedUserId: userId,
   });
 

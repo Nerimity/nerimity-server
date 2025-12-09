@@ -97,6 +97,7 @@ interface ServerBannedUserOpts {
   serverId: string;
   userId?: string;
   bannedUserId: string;
+  reason?: string;
 }
 export const logServerUserBanned = async (opts: ServerBannedUserOpts) => {
   await prisma.auditLog.create({
@@ -105,6 +106,7 @@ export const logServerUserBanned = async (opts: ServerBannedUserOpts) => {
       actionType: AuditLogType.SERVER_USER_BAN,
       actionById: opts.userId || 'System',
       serverId: opts.serverId,
+      reason: opts.reason,
       data: {
         bannedUserId: opts.bannedUserId,
       },

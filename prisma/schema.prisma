@@ -676,6 +676,10 @@ model BannedServerMember {
   serverId String
   server   Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
   user     User  @relation(fields: [userId], references: [id])
+
+  reason   String?
+
+  bannedAt DateTime @default(now())
 }
 
 model Friend {
@@ -1318,6 +1322,7 @@ model AuditLog {
   serverId     String?
 
   data         Json?
+  reason       String?
 
   @@index([actionById, createdAt])
   @@index([serverId, createdAt])
