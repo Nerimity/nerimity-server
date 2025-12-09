@@ -529,6 +529,7 @@ export const serverMemberBans = async (serverId: string) => {
   return prisma.bannedServerMember.findMany({
     where: { serverId },
     select: { serverId: true, user: true, bannedAt: true, reason: true },
+    orderBy: { bannedAt: 'desc' },
   });
 };
 export const serverMemberRemoveBan = async (serverId: string, userId: string, banRemovedById: string): Promise<CustomResult<boolean, CustomError>> => {
