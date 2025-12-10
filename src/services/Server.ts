@@ -459,6 +459,7 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
           id: generateId(),
           userId,
           serverId,
+          reason,
         },
       })
     );
