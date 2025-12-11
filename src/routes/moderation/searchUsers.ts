@@ -5,7 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 
 export function searchUsers(Router: Router) {
-  Router.get('/moderation/users/search', authenticate(), isModMiddleware(), route);
+  Router.get('/moderation/users/search', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {
