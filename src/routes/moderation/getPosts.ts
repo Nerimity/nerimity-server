@@ -4,7 +4,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { fetchPosts } from '../../services/Post';
 
 export function getPosts(Router: Router) {
-  Router.get('/moderation/posts', authenticate(), isModMiddleware({ allowModBadge: true }), route);
+  Router.get('/moderation/posts', authenticate(), isModMiddleware(), route);
 }
 
 async function route(req: Request, res: Response) {

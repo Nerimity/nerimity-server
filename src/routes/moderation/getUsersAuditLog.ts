@@ -4,7 +4,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { getAuditLogs } from '../../services/AuditLog';
 
 export function getUsersAuditLog(Router: Router) {
-  Router.get('/moderation/users/audit-logs', authenticate(), isModMiddleware({ allowModBadge: true }), route);
+  Router.get('/moderation/users/audit-logs', authenticate(), isModMiddleware(), route);
 }
 
 async function route(req: Request, res: Response) {

@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { TicketStatus } from '../../services/Ticket';
 export function getTickets(Router: Router) {
-  Router.get('/moderation/tickets', authenticate(), isModMiddleware({ allowModBadge: true }), route);
+  Router.get('/moderation/tickets', authenticate(), isModMiddleware(), route);
 }
 
 async function route(req: Request, res: Response) {
