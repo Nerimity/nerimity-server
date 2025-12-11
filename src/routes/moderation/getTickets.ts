@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { TicketStatus } from '../../services/Ticket';
 export function getTickets(Router: Router) {
-  Router.get('/moderation/tickets', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/tickets', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {
@@ -14,9 +14,7 @@ async function route(req: Request, res: Response) {
     status = parseInt(req.query.status) as TicketStatus;
   }
 
-  const after = req.query.after
-    ? parseInt(req.query.after as string)
-    : undefined;
+  const after = req.query.after ? parseInt(req.query.after as string) : undefined;
   let limit = parseInt((req.query.limit || '30') as string);
 
   if (limit > 30) {

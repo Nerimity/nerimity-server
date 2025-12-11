@@ -5,7 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 
 export function getServer(Router: Router) {
-  Router.get('/moderation/servers/:serverId', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/servers/:serverId', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {

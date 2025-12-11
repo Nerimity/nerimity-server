@@ -14,7 +14,7 @@ export function postBatchSuspend(Router: Router) {
   Router.post(
     '/moderation/posts/delete',
     authenticate(),
-    isModMiddleware,
+    isModMiddleware(),
     body('postIds').not().isEmpty().withMessage('postIds is required').isArray().withMessage('postIds must be an array.'),
 
     body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'),

@@ -10,7 +10,7 @@ export function exploreServerPin(Router: Router) {
   Router.post(
     '/moderation/servers/:serverId/pin',
     authenticate(),
-    isModMiddleware,
+    isModMiddleware(),
 
     route
   );

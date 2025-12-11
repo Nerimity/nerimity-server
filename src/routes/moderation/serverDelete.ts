@@ -14,7 +14,7 @@ import { deleteServerCache } from '../../cache/ServerCache';
 import { emitServerRemoveScheduleDelete, emitServerScheduleDelete } from '../../emits/Server';
 
 export function serverDelete(Router: Router) {
-  Router.delete<any>('/moderation/servers/:serverId', authenticate(), isModMiddleware, body('reason').not().isEmpty().withMessage('Reason is required.').isString().withMessage('Reason must be a string.').isLength({ min: 0, max: 500 }), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
+  Router.delete<any>('/moderation/servers/:serverId', authenticate(), isModMiddleware(), body('reason').not().isEmpty().withMessage('Reason is required.').isString().withMessage('Reason must be a string.').isLength({ min: 0, max: 500 }), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
 }
 
 interface Body {

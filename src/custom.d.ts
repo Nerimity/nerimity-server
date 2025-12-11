@@ -12,6 +12,7 @@ declare global {
       userCache: UserCache;
 
       oAuth2Grant: OAuth2GrantCache;
+      hasAdminOrCreatorBadge?: boolean;
 
       channelCache: ChannelCache;
       serverMemberCache: ServerMemberCache;

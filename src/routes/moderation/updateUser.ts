@@ -15,7 +15,7 @@ import { checkUserPassword } from '../../services/UserAuthentication';
 import { Prisma } from '@src/generated/prisma/client';
 
 export function updateUser(Router: Router) {
-  Router.post('/moderation/users/:userId', authenticate(), isModMiddleware, route);
+  Router.post('/moderation/users/:userId', authenticate(), isModMiddleware(), route);
 }
 
 interface Body {

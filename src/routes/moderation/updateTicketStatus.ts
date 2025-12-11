@@ -4,10 +4,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { authenticate } from '../../middleware/authenticate';
 import { TicketStatus, updateTicketStatus } from '../../services/Ticket';
 import { body } from 'express-validator';
-import {
-  customExpressValidatorResult,
-  generateError,
-} from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { isModMiddleware } from './isModMiddleware';
 import { prisma } from '../../common/database';
 
@@ -15,7 +12,7 @@ export function ticketUpdate(Router: Router) {
   Router.post(
     '/moderation/tickets/:id',
     authenticate(),
-    isModMiddleware,
+    isModMiddleware(),
 
     body('status').isNumeric().withMessage('status must be a number!'),
 

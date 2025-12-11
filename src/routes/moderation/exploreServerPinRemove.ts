@@ -10,7 +10,7 @@ export function exploreServerPinRemove(Router: Router) {
   Router.delete(
     '/moderation/servers/:serverId/pin',
     authenticate(),
-    isModMiddleware,
+    isModMiddleware(),
 
     route
   );

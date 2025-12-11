@@ -1,10 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { body } from 'express-validator';
 import { prisma } from '../../common/database';
-import {
-  customExpressValidatorResult,
-  generateError,
-} from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { checkUserPassword } from '../../services/UserAuthentication';
@@ -14,16 +11,9 @@ export function announcementPostCreate(Router: Router) {
   Router.post(
     '/moderation/posts/:postId/announcement',
     authenticate(),
-    isModMiddleware,
+    isModMiddleware(),
 
-    body('password')
-      .isLength({ min: 4, max: 72 })
-      .withMessage('Password must be between 4 and 72 characters long.')
-      .isString()
-      .withMessage('Password must be a string!')
-      .not()
-      .isEmpty()
-      .withMessage('Password is required'),
+    body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'),
     route
   );
 }
@@ -42,17 +32,10 @@ async function route(req: Request<{ postId: string }, unknown, Body>, res: Respo
     where: { id: req.userCache.account?.id },
     select: { password: true },
   });
-  if (!account)
-    return res
-      .status(404)
-      .json(generateError('Something went wrong. Try again later.'));
+  if (!account) return res.status(404).json(generateError('Something went wrong. Try again later.'));
 
-  const isPasswordValid = await checkUserPassword(
-    account.password,
-    req.body.password
-  );
-  if (!isPasswordValid)
-    return res.status(403).json(generateError('Invalid password.', 'password'));
+  const isPasswordValid = await checkUserPassword(account.password, req.body.password);
+  if (!isPasswordValid) return res.status(403).json(generateError('Invalid password.', 'password'));
 
   const postId = req.params.postId;
 
@@ -62,16 +45,12 @@ async function route(req: Request<{ postId: string }, unknown, Body>, res: Respo
   });
 
   if (!post) {
-    return res
-      .status(404)
-      .json(generateError('Post not found', 'postId'));
+    return res.status(404).json(generateError('Post not found', 'postId'));
   }
 
   const addRes = await addAnnouncementPost(postId).catch(() => {
-    return res
-      .status(500)
-      .json(generateError('Something went wrong. Try again later.'));
-  })
+    return res.status(500).json(generateError('Something went wrong. Try again later.'));
+  });
   if (!addRes) return;
 
   res.json({ success: true });

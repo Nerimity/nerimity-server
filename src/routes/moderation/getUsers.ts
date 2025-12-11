@@ -7,7 +7,7 @@ import { queryAsArray } from '../../common/queryAsArray';
 import { Prisma } from '@src/generated/prisma/client';
 
 export function getUsers(Router: Router) {
-  Router.get('/moderation/users', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/users', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 const ValidOrderBy = ['joinedAt', 'username'] as const;

@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
 export function searchServers(Router: Router) {
-  Router.get('/moderation/servers/search', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/servers/search', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {

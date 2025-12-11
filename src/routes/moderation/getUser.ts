@@ -5,7 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
 
 export function getUser(Router: Router) {
-  Router.get('/moderation/users/:userId', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/users/:userId', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {
@@ -20,7 +20,7 @@ async function route(req: Request, res: Response) {
         },
       },
       profile: true,
-      devices: { orderBy: { createdAt: 'desc' } },
+      devices: { orderBy: { createdAt: 'desc' }, omit: { ipAddress: !req.hasAdminOrCreatorBadge } },
       servers: {
         select: {
           scheduledForDeletion: true,
@@ -60,8 +60,8 @@ async function route(req: Request, res: Response) {
           suspendCount: true,
           warnExpiresAt: true,
           warnCount: true,
-          email: true,
-          emailConfirmCode: true,
+          email: req.hasAdminOrCreatorBadge,
+          emailConfirmCode: req.hasAdminOrCreatorBadge,
           emailConfirmed: true,
         },
       },

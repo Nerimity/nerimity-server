@@ -5,7 +5,7 @@ import { isModMiddleware } from './isModMiddleware';
 import { getHourStart } from '@src/common/utils';
 
 export function getServersActive(Router: Router) {
-  Router.get('/moderation/servers/active', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/servers/active', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {

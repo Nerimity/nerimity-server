@@ -5,7 +5,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 
 export function getUsersOnline(Router: Router) {
-  Router.get('/moderation/online-users', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/online-users', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {
@@ -18,7 +18,7 @@ async function route(req: Request, res: Response) {
   }
 
   const users = await prisma.user.findMany({
-    where: { id: { in: connectedUserIds } },
+    where: { id: { in: connectedUserIds as string[] } },
     orderBy: {
       joinedAt: sort,
     },

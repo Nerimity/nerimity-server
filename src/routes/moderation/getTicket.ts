@@ -3,7 +3,7 @@ import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 export function getTicket(Router: Router) {
-  Router.get('/moderation/tickets/:id', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/tickets/:id', authenticate(), isModMiddleware({ allowModBadge: true }), route);
 }
 
 async function route(req: Request, res: Response) {

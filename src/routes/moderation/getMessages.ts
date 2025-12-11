@@ -5,7 +5,7 @@ import { getMessagesByChannelId } from '../../services/Message/Message';
 import { prisma } from '../../common/database';
 
 export function getMessages(Router: Router) {
-  Router.get('/moderation/channels/:channelId/messages', authenticate(), isModMiddleware, route);
+  Router.get('/moderation/channels/:channelId/messages', authenticate(), isModMiddleware(), route);
 }
 
 async function route(req: Request, res: Response) {
