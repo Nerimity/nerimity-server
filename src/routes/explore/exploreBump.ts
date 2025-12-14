@@ -19,14 +19,19 @@ async function route(req: Request, res: Response) {
   const validToken = await turnstileVerify(req.body.token);
 
   if (!validToken) {
-    return res.status(401).json(generateError('Invalid captcha! Please try again.', 'token'));
+    return res.status(403).json(generateError('Invalid captcha! Please try again.', 'token'));
   }
 
   const { id } = req.params;
 
-  const [exploreItem, exploreError] = await getExploreItem({ serverId: id });
+  let [exploreItem, exploreError] = await getExploreItem({ serverId: id });
+  if (exploreError) {
+  [exploreItem, exploreError] = await getExploreItem({ botApplicationId: id });
   if (exploreError) return res.status(404).json(exploreError);
+  }
 
+  if (!exploreItem) return res.status(404).json(generateError('Explore item not found.'));
+  
   if (exploreItem.serverId) {
     const [member, memberError] = await getServerMemberCache(exploreItem.serverId, req.userCache.id);
     if (!member) return res.status(403).json(generateError(memberError || 'You must be a member of this server to bump.'));
