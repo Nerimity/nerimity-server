@@ -18,7 +18,7 @@ async function route(req: Request, res: Response) {
   const validToken = await turnstileVerify(req.body.token);
 
   if (!validToken) {
-    return res.status(401).json(generateError('Invalid captcha! Please try again.', 'token'));
+    return res.status(403).json(generateError('Invalid captcha! Please try again.', 'token'));
   }
 
   const { id } = req.params;
