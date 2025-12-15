@@ -1,10 +1,9 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
-import { bumpExploreItem, getExploreItem } from '../../services/Explore';
+import { bumpExploreItem } from '../../services/Explore';
 import { body } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { turnstileVerify } from '../../common/turnstileVerify';
-import { getServerMemberCache } from '../../cache/ServerMemberCache';
 
 export function exploreBump(Router: Router) {
   Router.post('/explore/:id/bump', authenticate(), body('token').isString().withMessage('Token must be a string.').isLength({ min: 1, max: 5000 }).withMessage('Token must be between 1 and 5000 characters long.'), route);
@@ -23,22 +22,8 @@ async function route(req: Request, res: Response) {
   }
 
   const { id } = req.params;
-
-  let [exploreItem, exploreError] = await getExploreItem({ serverId: id });
-  if (exploreError) {
-  [exploreItem, exploreError] = await getExploreItem({ botApplicationId: id });
-  if (exploreError) return res.status(404).json(exploreError);
-  }
-
-  if (!exploreItem) return res.status(404).json(generateError('Explore item not found.'));
-  
-  if (exploreItem.serverId) {
-    const [member, memberError] = await getServerMemberCache(exploreItem.serverId, req.userCache.id);
-    if (!member) return res.status(403).json(generateError(memberError || 'You must be a member of this server to bump.'));
-  }
-
   const [server, error] = await bumpExploreItem({
-    exploreId: exploreItem.id,
+    exploreId: id!,
     bumpedByUserId: req.userCache.id,
   });
 

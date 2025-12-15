@@ -194,6 +194,12 @@ export const bumpExploreItem = async (opts: BumpExploreItemOpts) => {
     },
   });
 
+  if (exploreItem?.type === ExploreType.SERVER) {
+    const isMemberInServer = await prisma.serverMember.findUnique({ where: { userId_serverId: { userId: opts.bumpedByUserId, serverId: exploreItem.serverId! } } });
+    if (!isMemberInServer) {
+      return [null, generateError('You must be a member of the server to bump.')] as const;
+    }
+  }
   if (!exploreItem) {
     return [null, generateError(`Item not found.`)] as const;
   }
