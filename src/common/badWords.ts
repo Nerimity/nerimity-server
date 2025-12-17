@@ -23,42 +23,16 @@ const badWordsWholeRegex = new RegExp(BadWords.map((w) => `^${w}$`).join('|'), '
 
 const goodWords = ['I love myself', 'I love you', "I'm a good person!", 'uwu <3', "You're nice :)", 'Nerimity is Awesome!', 'I love Positivity!', 'Keep yourself safe 💖', 'I will restore your faith in humanity 😇', 'This venerable one loves you', "I'm feeling a little insecure today 👉👈🥺", 'I love [@:s] 😊', '🥰', '||Ty for clicking! ^^||'];
 
-export const replaceBadWords = (originalMessage: string) => {
-  const normalizedMessage = originalMessage
-    .split('')
-    .map((char) => {
-      const normalized = anyAscii(char);
-
-      return normalized.length > 0 ? normalized[0] : char;
-    })
-    .join('');
+export const replaceBadWords = (message: string) => {
+  const normalizedMessage = anyAscii(message);
 
   if (badWordsWholeRegex.test(normalizedMessage)) {
-    return goodWords[Math.floor(Math.random() * goodWords.length)]!;
+    const randomGoodWord = goodWords[Math.floor(Math.random() * goodWords.length)]!;
+    return randomGoodWord;
   }
 
-  const result = originalMessage.split('');
-  let match;
-
-  badWordsRegex.lastIndex = 0;
-
-  while ((match = badWordsRegex.exec(normalizedMessage)) !== null) {
-    const start = match.index;
-    const length = match[0].length;
-
-    if (length === 0) {
-      badWordsRegex.lastIndex++;
-      continue;
-    }
-
-    for (let i = start; i < start + length; i++) {
-      if (result[i] && result[i] !== ' ') {
-        result[i] = '#';
-      }
-    }
-  }
-
-  return result.join('');
+  const cleanMessage = message.replaceAll(badWordsRegex, createHashes);
+  return cleanMessage;
 };
 
 export const hasBadWord = (message: string) => {
