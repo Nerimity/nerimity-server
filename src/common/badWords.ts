@@ -1,3 +1,5 @@
+import anyAscii from 'any-ascii';
+
 const BadWords = ['kys', 'kill yourself', 'kill youself', 'kill urself', 'kill myself', 'kms', 'i hope you die', 'i hope u die', 'nigger', 'n!gger', 'n1gger', 'nigg3r', 'niggers', 'niggerz', 'faggot', 'fag', 'f@g', 'tranny', 'killing myself'];
 const BadWords2 = ['kill yourself', 'kill youself', 'kill urself', 'kill myself', 'i hope you die', 'i hope u die', 'nigger', 'n!gger', 'n1gger', 'nigg3r', 'niggers', 'niggerz', 'faggot', 'tranny', 'killing myself'];
 
@@ -22,6 +24,8 @@ const badWordsWholeRegex = new RegExp(BadWords.map((w) => `^${w}$`).join('|'), '
 const goodWords = ['I love myself', 'I love you', "I'm a good person!", 'uwu <3', "You're nice :)", 'Nerimity is Awesome!', 'I love Positivity!', 'Keep yourself safe 💖', 'I will restore your faith in humanity 😇', 'This venerable one loves you', "I'm feeling a little insecure today 👉👈🥺", 'I love [@:s] 😊', '🥰', '||Ty for clicking! ^^||'];
 
 export const replaceBadWords = (message: string) => {
+  message = anyAscii(message);
+
   if (badWordsWholeRegex.test(message)) {
     const randomGoodWord = goodWords[Math.floor(Math.random() * goodWords.length)]!;
     return randomGoodWord;
@@ -32,6 +36,7 @@ export const replaceBadWords = (message: string) => {
 };
 
 export const hasBadWord = (message: string) => {
+  message = anyAscii(message);
   return badWordsRegex.test(message) || badWords2AnywhereRegex.test(message);
 };
 

@@ -55,6 +55,7 @@
     "@prisma/client": "^7.0.0",
     "@socket.io/redis-adapter": "^8.3.0",
     "@socket.io/redis-streams-adapter": "^0.2.2",
+    "any-ascii": "^0.3.3",
     "arktype": "^2.1.26",
     "bcrypt": "^6.0.0",
     "bottleneck": "^2.19.5",
