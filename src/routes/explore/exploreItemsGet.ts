@@ -38,7 +38,7 @@ async function route(req: Request, res: Response) {
     limit,
     afterId: query.afterId,
     search: query.search,
-    type: query.type,
+    type: query.type || 'server',
   });
 
   res.json(publicServer);
