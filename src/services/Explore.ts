@@ -29,7 +29,7 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
 
     where: {
       server: {
-        scheduledForDeletion: null,
+        scheduledForDeletion: { is: null },
         ...(opts.search?.trim() ? { OR: [{ name: { contains: opts.search, mode: 'insensitive' } }, { publicServer: { description: { contains: opts.search, mode: 'insensitive' } } }] } : {}),
         publicServer: {
           ...(Object.keys(opts.filter).length ? opts.filter : { isNot: null }),
@@ -109,7 +109,7 @@ export const getExploreItems = async (opts: getExploreItemsOpts): Promise<Explor
 
   const publicServers = await prisma.explore.findMany({
     where: {
-      AND: [where(), opts.type === 'server' ? { server: { scheduledForDeletion: null } } : {}],
+      AND: [where(), opts.type === 'server' ? { server: { scheduledForDeletion: { is: null } } } : {}],
       ...(search?.trim() ? { OR: [{ botApplication: { botUser: { username: { contains: search, mode: 'insensitive' } } } }, { server: { name: { contains: search, mode: 'insensitive' } } }, { description: { contains: search, mode: 'insensitive' } }] } : {}),
     },
     orderBy: orderBy(),
