@@ -21,6 +21,7 @@ import { channelMessageMarkUnread } from './channelMessageMarkUnread';
 import { channelMessagePinAdd } from './channelMessagePinAdd';
 import { channelMessagePinRemove } from './channelMessagePinRemove';
 import { channelMessagePinsGet } from './channelMessagePinsGet';
+import { channelMessagesSearch } from './channelMessagesSearch';
 
 const ChannelsRouter = Router();
 
@@ -37,10 +38,12 @@ channelMessageMarkUnread(ChannelsRouter);
 channelGet(ChannelsRouter);
 channelNoticeGet(ChannelsRouter);
 channelMessages(ChannelsRouter);
+channelMessagesSearch(ChannelsRouter);
 channelMessagesSingle(ChannelsRouter);
 channelVoiceJoin(ChannelsRouter);
 channelVoiceLeave(ChannelsRouter);
 channelAttachments(ChannelsRouter);
+
 channelMessageCreate(ChannelsRouter);
 channelMessageUpdate(ChannelsRouter);
 channelMessageDelete(ChannelsRouter);

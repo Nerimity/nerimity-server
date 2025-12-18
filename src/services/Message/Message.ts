@@ -1158,3 +1158,70 @@ export async function markMessageUnread(opts: { channelId: string; messageId: st
   emitMessageMarkUnread(opts.userId, opts.channelId, (message.createdAt as unknown as number) - 1);
   return [true, null] as const;
 }
+
+interface SearchMessageByChannelIdOpts {
+  query?: string;
+  limit?: number;
+  beforeMessageId?: string;
+  afterMessageId?: string;
+  requesterId?: string;
+}
+
+export const searchMessagesByChannelId = async (channelId: string, opts?: SearchMessageByChannelIdOpts) => {
+  const limit = opts?.limit || 50;
+  if (limit > 100) return [];
+  if (limit <= 0) return [];
+
+  if (!opts?.query?.trim()) return [];
+
+  const messages = await prisma.message.findMany({
+    where: {
+      content: {
+        mode: 'insensitive',
+        contains: opts?.query,
+      },
+      channelId,
+      ...(opts?.beforeMessageId
+        ? {
+            id: { lt: opts.beforeMessageId },
+          }
+        : undefined),
+      ...(opts?.afterMessageId
+        ? {
+            id: { gt: opts.afterMessageId },
+          }
+        : undefined),
+    },
+    include: {
+      ...MessageInclude,
+
+      reactions: {
+        select: {
+          ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
+          emojiId: true,
+          gif: true,
+          name: true,
+          _count: {
+            select: {
+              reactedUsers: true,
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+      },
+    },
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    ...(opts?.afterMessageId
+      ? {
+          orderBy: { createdAt: 'asc' },
+        }
+      : undefined),
+  });
+
+  const modifiedMessages = messages.map(transformMessage);
+
+  if (opts?.afterMessageId) return modifiedMessages;
+
+  return modifiedMessages.reverse();
+};
