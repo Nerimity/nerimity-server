@@ -12,7 +12,7 @@ export function channelMessagesSearch(Router: Router) {
     '/channels/:channelId/messages/search',
     authenticate(),
     channelVerification(),
-    query('query').isString().withMessage('Invalid query.').isLength({ min: 3, max: 35 }).withMessage('query must be between 3 and 35 characters long.'),
+    query('query').isString().withMessage('Invalid query.').isLength({ min: 1, max: 50 }).withMessage('query must be between 1 and 50 characters long.'),
 
     rateLimit({
       name: 'messages_search',
