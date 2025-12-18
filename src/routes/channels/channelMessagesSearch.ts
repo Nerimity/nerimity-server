@@ -1,18 +1,18 @@
-import { query, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
 import { searchMessagesByChannelId } from '../../services/Message/Message';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
-import { body, param } from 'express-validator';
+import { query } from 'express-validator';
 
 export function channelMessagesSearch(Router: Router) {
   Router.get(
     '/channels/:channelId/messages/search',
     authenticate(),
     channelVerification(),
-    param('query').isString().withMessage('Invalid query.').isLength({ min: 3, max: 35 }).withMessage('query must be between 3 and 35 characters long.'),
+    query('query').isString().withMessage('Invalid query.').isLength({ min: 3, max: 35 }).withMessage('query must be between 3 and 35 characters long.'),
 
     rateLimit({
       name: 'messages_search',
