@@ -1160,7 +1160,7 @@ export async function markMessageUnread(opts: { channelId: string; messageId: st
 }
 
 interface SearchMessageByChannelIdOpts {
-  query?: string;
+  query: string;
   limit?: number;
   beforeMessageId?: string;
   afterMessageId?: string;
