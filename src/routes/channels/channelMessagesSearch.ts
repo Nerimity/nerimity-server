@@ -1,18 +1,18 @@
-import { Request, Response, Router } from 'express';
+import { query, Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
 import { searchMessagesByChannelId } from '../../services/Message/Message';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { ChannelType } from '../../types/Channel';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 
 export function channelMessagesSearch(Router: Router) {
   Router.get(
     '/channels/:channelId/messages/search',
     authenticate(),
     channelVerification(),
-    body('query').isString().withMessage('Invalid query.').isLength({ min: 3, max: 35 }).withMessage('query must be between 3 and 35 characters long.'),
+    param('query').isString().withMessage('Invalid query.').isLength({ min: 3, max: 35 }).withMessage('query must be between 3 and 35 characters long.'),
 
     rateLimit({
       name: 'messages_search',
@@ -23,15 +23,11 @@ export function channelMessagesSearch(Router: Router) {
   );
 }
 
-interface Body {
-  query: string;
-}
-
 async function route(req: Request, res: Response) {
   const limit = parseInt((req.query.limit as string) || '50') || undefined;
   const after = (req.query.after as string) || undefined;
   const before = (req.query.before as string) || undefined;
-  const body = req.body as Body;
+  const query = req.query.query as string;
 
   const validateError = customExpressValidatorResult(req);
 
@@ -45,7 +41,7 @@ async function route(req: Request, res: Response) {
 
   const t1 = performance.now();
   const messages = await searchMessagesByChannelId(req.channelCache.id, {
-    query: body.query,
+    query,
     limit,
     afterMessageId: after,
     beforeMessageId: before,
