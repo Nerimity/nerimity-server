@@ -398,7 +398,7 @@ export const MessageValidator = {
       },
     },
     replyMessages: {
-      orderBy: { order: 'desc' },
+      orderBy: { order: 'asc' },
       select: {
         replyToMessage: {
           select: {

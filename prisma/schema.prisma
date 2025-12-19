@@ -948,7 +948,7 @@ model ReplyMessages {
   @@unique([messageId, replyToMessageId])
   @@index([replyToMessageId, messageId])
 
-  @@index([messageId, order(sort: Desc)])
+  @@index([messageId, order(sort: Asc)])
 
 }
 
