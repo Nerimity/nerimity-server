@@ -72,34 +72,29 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
 
 interface getExploreItemsOpts {
   sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped' | 'most_active';
-  filter?: 'pinned' | 'all' | 'verified';
-  limit?: number;
+  filter?: 'pinned' | 'all' | 'verified' | 'offline_bots';
+  limit: number;
   afterId?: string;
   search?: string;
   type?: 'server' | 'bot';
 }
 export const getExploreItems = async (opts: getExploreItemsOpts): Promise<Explore[]> => {
+  if (opts.type === 'bot') return getExploreBots(opts);
+  return getExploreServers(opts);
+};
+export const getExploreBots = async (opts: getExploreItemsOpts, accumulatedItems: Explore[] = []): Promise<Explore[]> => {
   const { sort, filter, limit, search } = opts;
   const where = (): ExploreWhereInput => {
     let where: ExploreWhereInput = {};
-    if (filter === 'verified') where = { server: { verified: true } };
     if (filter === 'pinned') where = { pinnedAt: { not: null } };
-    if (opts.type === 'bot') where.type = ExploreType.BOT;
-    else where.type = ExploreType.SERVER;
+    where.type = ExploreType.BOT;
     return where;
   };
-
-  if (sort === 'most_active') {
-    return await mostActivePublicServers({ limit: limit!, skip: opts.afterId ? parseInt(opts.afterId) : 0, search, filter: where() });
-  }
 
   const orderBy = (): Prisma.Enumerable<ExploreOrderByWithRelationInput> => {
     if (sort === 'most_bumps') return { bumpCount: 'desc' };
     if (sort === 'most_members') {
-      if (opts.type === 'bot') {
-        return { botApplication: { botUser: { servers: { _count: 'desc' } } } };
-      }
-      return { server: { serverMembers: { _count: 'desc' } } };
+      return { botApplication: { botUser: { servers: { _count: 'desc' } } } };
     }
     if (sort === 'recently_added') return { createdAt: 'desc' };
     if (sort === 'recently_bumped') return { bumpedAt: 'desc' };
@@ -109,13 +104,12 @@ export const getExploreItems = async (opts: getExploreItemsOpts): Promise<Explor
 
   const publicServers = await prisma.explore.findMany({
     where: {
-      AND: [where(), opts.type === 'server' ? { server: { scheduledForDeletion: { is: null } } } : {}],
-      ...(search?.trim() ? { OR: [{ botApplication: { botUser: { username: { contains: search, mode: 'insensitive' } } } }, { server: { name: { contains: search, mode: 'insensitive' } } }, { description: { contains: search, mode: 'insensitive' } }] } : {}),
+      AND: where(),
+      ...(search?.trim() ? { OR: [{ botApplication: { botUser: { username: { contains: search, mode: 'insensitive' } } } }, { description: { contains: search, mode: 'insensitive' } }] } : {}),
     },
     orderBy: orderBy(),
     ...(opts.afterId ? { cursor: { id: opts.afterId }, skip: 1 } : {}),
     include: {
-      server: { include: { createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
       botApplication: {
         select: {
           id: true,
@@ -129,22 +123,80 @@ export const getExploreItems = async (opts: getExploreItemsOpts): Promise<Explor
     ...(limit ? { take: limit } : {}),
   });
 
-  if (opts.type === 'bot') {
-    const botUserIds = publicServers.map((item) => item.botApplication?.botUser?.id).filter((id) => id) as string[];
-    if (botUserIds.length) {
-      const onlineBots = await getUserPresences(botUserIds, true, true);
-      return publicServers.map((item) => ({
-        ...item,
-        botApplication: {
-          ...item.botApplication,
-          botUser: {
-            ...item.botApplication?.botUser,
-            online: !!onlineBots.find((bot) => bot.userId === item.botApplication?.botUser?.id),
-          },
+  if (publicServers.length === 0) return accumulatedItems;
+
+  // 2. Fetch Presences and Create a Lookup Map for performance
+  const botIds = publicServers.map((s) => s.botApplication?.botUser?.id).filter(Boolean) as string[];
+  const onlineBots = await getUserPresences(botIds, true, true);
+  const onlineSet = new Set(onlineBots.map((b) => b.userId));
+
+  // 3. Filter and Format
+  const processedBatch = publicServers
+    .filter((item) => {
+      const isOnline = onlineSet.has(item.botApplication?.botUser?.id ?? '');
+      if (filter === 'offline_bots') return !isOnline;
+      return isOnline;
+    })
+    .map((item) => ({
+      ...item,
+      botApplication: {
+        ...item.botApplication,
+        botUser: {
+          ...item.botApplication?.botUser,
+          online: onlineSet.has(item.botApplication?.botUser?.id ?? ''),
         },
-      }));
-    }
+      },
+    }));
+
+  const totalResults = [...accumulatedItems, ...processedBatch];
+
+  // 4. Check if we need more results (Recursion)
+  // If we haven't reached the limit yet and there's more data in the DB
+  if (totalResults.length < limit && publicServers.length === limit) {
+    const lastId = publicServers[publicServers.length - 1]?.id;
+    return getExploreBots({ ...opts, afterId: lastId }, totalResults);
   }
+
+  return totalResults.slice(0, limit);
+};
+
+export const getExploreServers = async (opts: getExploreItemsOpts): Promise<Explore[]> => {
+  const { sort, filter, limit, search } = opts;
+  const where = (): ExploreWhereInput => {
+    let where: ExploreWhereInput = {};
+    if (filter === 'verified') where = { server: { verified: true } };
+    if (filter === 'pinned') where = { pinnedAt: { not: null } };
+    else where.type = ExploreType.SERVER;
+    return where;
+  };
+
+  if (sort === 'most_active') {
+    return await mostActivePublicServers({ limit: limit!, skip: opts.afterId ? parseInt(opts.afterId) : 0, search, filter: where() });
+  }
+
+  const orderBy = (): Prisma.Enumerable<ExploreOrderByWithRelationInput> => {
+    if (sort === 'most_bumps') return { bumpCount: 'desc' };
+    if (sort === 'most_members') {
+      return { server: { serverMembers: { _count: 'desc' } } };
+    }
+    if (sort === 'recently_added') return { createdAt: 'desc' };
+    if (sort === 'recently_bumped') return { bumpedAt: 'desc' };
+    if (sort === 'pinned_at') return { pinnedAt: 'asc' };
+    return {};
+  };
+
+  const publicServers = await prisma.explore.findMany({
+    where: {
+      AND: [where(), opts.type === 'server' ? { server: { scheduledForDeletion: { is: null } } } : {}],
+      ...(search?.trim() ? { OR: [{ server: { name: { contains: search, mode: 'insensitive' } } }, { description: { contains: search, mode: 'insensitive' } }] } : {}),
+    },
+    orderBy: orderBy(),
+    ...(opts.afterId ? { cursor: { id: opts.afterId }, skip: 1 } : {}),
+    include: {
+      server: { include: { createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
+    },
+    ...(limit ? { take: limit } : {}),
+  });
 
   return publicServers;
 };
