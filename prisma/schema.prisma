@@ -938,6 +938,7 @@ model ReplyMessages {
   @@map("reply_messages")
   id       String @id
   messageId String
+  order     Int?
 
   replyToMessageId String?
 
@@ -947,7 +948,7 @@ model ReplyMessages {
   @@unique([messageId, replyToMessageId])
   @@index([replyToMessageId, messageId])
 
-  @@index([messageId, id(sort: Desc)])
+  @@index([messageId, order(sort: Desc)])
 
 }
 

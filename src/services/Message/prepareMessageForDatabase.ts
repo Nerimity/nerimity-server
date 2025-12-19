@@ -94,14 +94,22 @@ const handleReplies = async (opts: PrepareMessageForDatabaseOpts) => {
 
   const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
 
-  return (
-    validReplyToMessageIds
-      .map((id) => ({ replyToMessageId: id, id: generateId() }))
-      // Sort based on the position of the ID in the input array
-      .sort((a, b) => {
-        return replyToMessageIds.indexOf(a.replyToMessageId) - replyToMessageIds.indexOf(b.replyToMessageId);
-      })
-  );
+  // return (
+  //   validReplyToMessageIds
+  //     .map((id) => ({ replyToMessageId: id, id: generateId(), order: replyToMessageIds.indexOf(id) }))
+  //     // Sort based on the position of the ID in the input array
+  //     .sort((a, b) => {
+  //       return replyToMessageIds.indexOf(a.replyToMessageId) - replyToMessageIds.indexOf(b.replyToMessageId);
+  //     })
+  // );
+
+  return replyToMessageIds
+    .filter((id) => validReplyToMessageIds.includes(id))
+    .map((id, index) => ({
+      replyToMessageId: id,
+      id: generateId(),
+      order: index,
+    }));
 };
 
 export const prepareMessageForDatabase = async (opts: PrepareMessageForDatabaseOpts) => {
