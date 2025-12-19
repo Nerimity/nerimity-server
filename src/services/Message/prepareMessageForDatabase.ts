@@ -91,9 +91,17 @@ const handleReplies = async (opts: PrepareMessageForDatabaseOpts) => {
     where: { id: { in: replyToMessageIds }, channelId: opts?.channelId },
     select: { id: true },
   });
+
   const validReplyToMessageIds = validReplyToMessages.map((m) => m.id);
 
-  return validReplyToMessageIds.map((id) => ({ replyToMessageId: id, id: generateId() }));
+  return (
+    validReplyToMessageIds
+      .map((id) => ({ replyToMessageId: id, id: generateId() }))
+      // Sort based on the position of the ID in the input array
+      .sort((a, b) => {
+        return replyToMessageIds.indexOf(a.replyToMessageId) - replyToMessageIds.indexOf(b.replyToMessageId);
+      })
+  );
 };
 
 export const prepareMessageForDatabase = async (opts: PrepareMessageForDatabaseOpts) => {
