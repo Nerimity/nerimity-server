@@ -72,7 +72,7 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
 
 interface getExploreItemsOpts {
   sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped' | 'most_active';
-  filter?: 'pinned' | 'all' | 'verified' | 'offline_bots';
+  filter?: 'pinned' | 'all' | 'verified' | 'offline_bots' | 'online_bots';
   limit: number;
   afterId?: string;
   search?: string;
@@ -135,7 +135,8 @@ export const getExploreBots = async (opts: getExploreItemsOpts, accumulatedItems
     .filter((item) => {
       const isOnline = onlineSet.has(item.botApplication?.botUser?.id ?? '');
       if (filter === 'offline_bots') return !isOnline;
-      return isOnline;
+      if (filter === 'online_bots') return isOnline;
+      return true;
     })
     .map((item) => ({
       ...item,
