@@ -27,6 +27,16 @@ async function route(req: Request, res: Response) {
     take: limit,
     ...(after ? { cursor: { id: after } } : undefined),
     include: {
+      suggestBy: {
+        select: {
+          id: true,
+          username: true,
+          tag: true,
+          avatar: true,
+          hexColor: true,
+          badges: true,
+        },
+      },
       server: {
         select: {
           publicServer: { select: { id: true, pinnedAt: true } },
