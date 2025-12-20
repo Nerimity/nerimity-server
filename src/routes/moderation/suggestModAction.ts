@@ -66,17 +66,22 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
     return res.status(200).json({ success: true, data: { ...existing, reason } });
   }
 
-  const data = await prisma.moderatorSuggestAction.create({
-    data: {
-      id: generateId(),
-      userId: req.body.userId,
-      serverId: req.body.serverId,
-      postId: req.body.postId,
-      suggestById: req.userCache.id,
-      actionType: req.body.actionType as number,
-      reason: req.body.reason,
-    },
-  });
+  const data = await prisma.moderatorSuggestAction
+    .create({
+      data: {
+        id: generateId(),
+        userId: req.body.userId,
+        serverId: req.body.serverId,
+        postId: req.body.postId,
+        suggestById: req.userCache.id,
+        actionType: req.body.actionType as number,
+        reason: req.body.reason,
+      },
+    })
+    .catch((err) => console.error(err));
 
+  if (!data) {
+    return res.status(400).json({ success: false, error: 'Something went wrong. Try again later.' });
+  }
   res.status(200).json({ success: true, data });
 }
