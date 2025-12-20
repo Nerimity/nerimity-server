@@ -45,7 +45,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
 
   const existing = await prisma.moderatorSuggestAction.findUnique({
     where: {
-      userId: req.userCache.id,
+      userId: req.body.userId,
       serverId: req.body.serverId,
       postId: req.body.postId,
     },
@@ -69,7 +69,7 @@ async function route(req: Request<unknown, unknown, Body>, res: Response) {
   const data = await prisma.moderatorSuggestAction.create({
     data: {
       id: generateId(),
-      userId: req.userCache.id,
+      userId: req.body.userId,
       serverId: req.body.serverId,
       postId: req.body.postId,
       suggestById: req.userCache.id,
