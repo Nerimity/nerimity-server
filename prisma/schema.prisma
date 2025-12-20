@@ -232,6 +232,10 @@ model User {
 
   applicationUserGrants ApplicationUserGrant[]
 
+  modSuggestActions ModeratorSuggestAction[] @relation(name: "modSuggestActions")
+ 
+  moderationActions ModeratorSuggestAction?
+
 
   @@unique([username, tag])
   @@index([joinedAt])
@@ -448,7 +452,12 @@ model Server {
 
   hourlyMessageCounts ServerHourlyMessageCount[]
 
-@@index([createdAt])
+
+  moderationAction ModeratorSuggestAction?
+
+  @@index([createdAt])
+
+
 
 
 }
@@ -1159,6 +1168,8 @@ model Post {
   reminders Reminder[]
   embed Json?
 
+  moderationAction ModeratorSuggestAction? 
+
 
   @@index([createdAt(sort: Desc), createdById, commentToId, deleted])
   @@index([commentToId, deleted, createdAt(sort: Desc), createdById])
@@ -1365,4 +1376,26 @@ model ExternalEmbed {
 
   userId String? @unique
   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ModeratorSuggestAction {
+  @@map("mod_suggest_actions")
+  id          String   @id
+  createdAt   DateTime @default(now())
+  actionType   Int
+
+  suggestById   String
+  suggestBy     User     @relation(fields: [suggestById], references: [id], name: "modSuggestActions", onDelete: Cascade)
+
+  serverId     String? @unique
+  server       Server?  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  postId      String? @unique
+  post        Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  userId String? @unique
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reason       String?
+
 }
