@@ -15,8 +15,6 @@ export function suggestModAction(Router: Router) {
     isModMiddleware({ allowModBadge: true }),
     body('reason').isString().withMessage('Reason must be a string.').notEmpty().withMessage('Reason is required.').isLength({ min: 1, max: 500 }).withMessage('Reason must be 1-500 chars.'),
 
-    body('password').isString().withMessage('Password must be a string!').notEmpty().withMessage('Password is required').isLength({ min: 4, max: 72 }).withMessage('Password length error.'),
-
     body('actionType').isInt().withMessage('Action Type must be a number.').notEmpty().withMessage('Action Type is required.'),
 
     body('serverId').optional().isString().withMessage('Server ID must be a string.'),

@@ -33,8 +33,8 @@ import { exploreServerPin } from './exploreServerPin';
 import { userBatchShadowBan } from './userBatchShadowBan';
 import { userBatchUndoShadowBan } from './userBatchUndoShadowBan';
 import { getServersActive } from './getServersActive';
-import { deleteSuggestModActions } from './deleteSuggestModActions';
-import { listSuggestModActions } from './listSuggestModActions';
+import { deleteSuggestModActions } from './suggestDeleteModActions';
+import { listSuggestModActions } from './suggestListModActions';
 import { suggestModAction } from './suggestModAction';
 
 const ModerationRouter = Router();
