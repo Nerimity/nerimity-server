@@ -37,6 +37,14 @@ async function route(req: Request, res: Response) {
           badges: true,
         },
       },
+      post: {
+        select: {
+          id: true,
+          createdBy: {
+            select: { id: true, username: true, tag: true, badges: true },
+          },
+        },
+      },
       server: {
         select: {
           publicServer: { select: { id: true, pinnedAt: true } },
