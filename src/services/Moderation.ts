@@ -314,6 +314,33 @@ export async function suspendUsersBatch(opts: SuspendUsersOpts) {
         },
       },
     });
+
+    const posts = await prisma.post.findMany({
+      where: {
+        createdById: { in: sanitizedUserIds },
+        createdAt: {
+          gt: dateToDateTime(lastSevenHours),
+        },
+      },
+      select: { id: true },
+    });
+    const postIds = posts.map((post) => post.id);
+
+    await prisma
+      .$transaction([
+        prisma.post.updateMany({
+          where: { id: { in: postIds } },
+          data: {
+            content: null,
+            deleted: true,
+          },
+        }),
+        prisma.postLike.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.attachment.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.postPoll.deleteMany({ where: { postId: { in: postIds } } }),
+        prisma.announcementPost.deleteMany({ where: { postId: { in: postIds } } }),
+      ])
+      .catch((err) => console.error(err));
   }
 
   return [true, null] as const;
