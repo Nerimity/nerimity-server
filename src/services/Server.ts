@@ -641,8 +641,8 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
       serverId: serverId,
       data: {
         ...addToObjectIfExists('name', update.name),
-        ...addToObjectIfExists('defaultChannelId', update.defaultChannelId),
-        ...addToObjectIfExists('systemChannelId', update.systemChannelId),
+        ...addToObjectIfExists('defaultChannelName', update.defaultChannelId, defaultChannel?.name),
+        ...addToObjectIfExists('systemChannelName', update.systemChannelId, update.systemChannelId ?? systemChannel?.name),
         ...addToObjectIfExists('avatar', update.avatar, !!update.avatar),
         ...addToObjectIfExists('banner', update.banner, !!update.banner),
       },
