@@ -59,7 +59,7 @@ async function route(req: Request, res: Response) {
     matchedBody.slowModeSeconds = null;
   }
 
-  const [updated, error] = await updateServerChannel(req.serverCache.id, req.params.channelId!, matchedBody);
+  const [updated, error] = await updateServerChannel(req.serverCache.id, req.params.channelId!, matchedBody, req.userCache.id);
   if (error) {
     return res.status(400).json(error);
   }

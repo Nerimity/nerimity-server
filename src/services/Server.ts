@@ -22,7 +22,7 @@ import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
 import { LastOnlineStatus } from './User/User';
-import { logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
+import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 
 const ServerMemberWithLastOnlineDetails = {
@@ -600,26 +600,29 @@ export interface UpdateServerOptions {
   createdById?: string;
 }
 
-export const updateServer = async (serverId: string, update: UpdateServerOptions): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
+export const updateServer = async (serverId: string, update: UpdateServerOptions, actionById?: string): Promise<CustomResult<UpdateServerOptions, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
+  let defaultChannel: Channel | null = null;
+  let systemChannel: Channel | null = null;
+
   // check if channel is a server channel
   if (update.defaultChannelId) {
-    const channel = await prisma.channel.findFirst({
+    defaultChannel = await prisma.channel.findFirst({
       where: { id: update.defaultChannelId },
     });
-    if (!channel || channel.serverId !== serverId) {
+    if (!defaultChannel || defaultChannel.serverId !== serverId) {
       return [null, generateError('Invalid defaultChannelId')];
     }
   }
   if (update.systemChannelId) {
-    const channel = await prisma.channel.findFirst({
+    systemChannel = await prisma.channel.findFirst({
       where: { id: update.systemChannelId },
     });
-    if (!channel || channel.serverId !== serverId) {
+    if (!systemChannel || systemChannel.serverId !== serverId) {
       return [null, generateError('Invalid systemChannelId')];
     }
   }
@@ -630,6 +633,22 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
 
   await prisma.server.update({ where: { id: serverId }, data: update });
   emitServerUpdated(serverId, update);
+
+  if (actionById) {
+    addServerAuditLog({
+      actionType: AuditLogType.SERVER_UPDATE,
+      actionById: actionById,
+      serverId: serverId,
+      data: {
+        ...addToObjectIfExists('name', update.name),
+        ...addToObjectIfExists('defaultChannelId', update.defaultChannelId),
+        ...addToObjectIfExists('systemChannelId', update.systemChannelId),
+        ...addToObjectIfExists('avatar', update.avatar, !!update.avatar),
+        ...addToObjectIfExists('banner', update.banner, !!update.banner),
+      },
+    });
+  }
+
   return [update, null];
 };
 

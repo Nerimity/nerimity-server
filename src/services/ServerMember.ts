@@ -9,6 +9,8 @@ import { generateId } from '../common/flakeId';
 import { updateSingleMemberPrivateChannelSocketRooms } from './Channel';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { removeServerMemberPermissionsCache } from '../cache/ChannelCache';
+import { addServerAuditLog, AuditLogType } from './AuditLog';
+import { addToObjectIfExists } from '@src/common/addToObjectIfExists';
 
 export const getTopRole = async (serverId: string, userId: string): Promise<CustomResult<ServerRole, CustomError>> => {
   const server = await prisma.server.findFirst({
@@ -50,6 +52,9 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     return [null, generateError('Member is not in this server.')];
   }
 
+  let addedRoles: ServerRole[] = [];
+  let removedRoles: ServerRole[] = [];
+
   if (update.roleIds) {
     const [currentTopRole, error] = await getTopRole(serverId, updatedByUserId);
     if (error) return [null, error];
@@ -82,8 +87,8 @@ export const updateServerMember = async (serverId: string, userId: string, updat
 
     const topRoleOrder = currentTopRole.order;
 
-    const removedRoles = arrayDiff<ServerRole[]>(oldRoles, newRoles, 'order');
-    const addedRoles = arrayDiff<ServerRole[]>(newRoles, oldRoles, 'order');
+    removedRoles = arrayDiff<ServerRole[]>(oldRoles, newRoles, 'order');
+    addedRoles = arrayDiff<ServerRole[]>(newRoles, oldRoles, 'order');
 
     const removedRolePermission = removedRoles.length ? removedRoles[0]!.order >= topRoleOrder : false;
     const addedRolePermission = addedRoles.length ? addedRoles[0]!.order >= topRoleOrder : false;
@@ -127,6 +132,17 @@ export const updateServerMember = async (serverId: string, userId: string, updat
 
   emitServerMemberUpdated(serverId, userId, update);
 
+  addServerAuditLog({
+    actionType: AuditLogType.SERVER_USER_UPDATE,
+    actionById: updatedByUserId,
+    serverId: serverId,
+    data: {
+      ...(addedRoles.length ? { addedRoles: addedRoles.map((role) => role.name) } : {}),
+      ...(removedRoles.length ? { removedRoles: removedRoles.map((role) => role.name) } : {}),
+      ...addToObjectIfExists('nickname', update.nickname),
+    },
+  });
+
   return [update, null];
 };
 interface UpdateServerMemberProfile {
@@ -165,6 +181,15 @@ export const updateServerMemberProfile = async (serverId: string, userId: string
   deleteAllServerMemberCache(serverId);
 
   emitServerMemberUpdated(serverId, userId, update);
+
+  addServerAuditLog({
+    actionType: AuditLogType.SERVER_USER_UPDATE,
+    actionById: updatedByUserId,
+    serverId: serverId,
+    data: {
+      ...addToObjectIfExists('nickname', update.nickname),
+    },
+  });
 
   return [update, null];
 };

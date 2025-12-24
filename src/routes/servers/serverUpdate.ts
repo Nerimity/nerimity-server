@@ -92,12 +92,16 @@ async function route(req: Request, res: Response) {
     banner = uploadedFile!.path;
   }
 
-  const [updated, error] = await updateServer(req.serverCache.id, {
-    ...matchedBody,
-    banner,
-    avatar,
-    ...(req.body.systemChannelId === null ? { systemChannelId: null } : undefined),
-  });
+  const [updated, error] = await updateServer(
+    req.serverCache.id,
+    {
+      ...matchedBody,
+      banner,
+      avatar,
+      ...(req.body.systemChannelId === null ? { systemChannelId: null } : undefined),
+    },
+    req.userCache.id
+  );
   if (error) {
     return res.status(400).json(error);
   }

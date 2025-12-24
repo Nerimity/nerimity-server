@@ -9,6 +9,9 @@ import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleOrderUpdate
 import { updatePrivateChannelSocketRooms } from './Channel';
 import { isValidHex } from '../common/utils';
 import { removeServerMemberPermissionsCache } from '../cache/ChannelCache';
+import { addServerAuditLog, AuditLogType } from './AuditLog';
+import { permission } from 'process';
+import { addToObjectIfExists } from '@src/common/addToObjectIfExists';
 
 export const createServerRole = async (name: string, creatorId: string, serverId: string, opts?: { permissions?: number; bot?: boolean }) => {
   const server = await prisma.server.findUnique({
@@ -72,6 +75,18 @@ export const createServerRole = async (name: string, creatorId: string, serverId
   await deleteAllServerMemberCache(serverId);
   emitServerRoleCreated(serverId, createdRole);
 
+  if (!opts?.bot) {
+    addServerAuditLog({
+      actionType: AuditLogType.SERVER_ROLE_CREATE,
+      actionById: creatorId,
+      serverId: serverId,
+      data: {
+        name,
+        permissions: createdRole?.permissions || 0,
+      },
+    });
+  }
+
   return [createdRole, null] as const;
 };
 
@@ -84,7 +99,7 @@ export interface UpdateServerRoleOptions {
   applyOnJoin?: boolean;
 }
 
-export const updateServerRole = async (serverId: string, roleId: string, update: UpdateServerRoleOptions): Promise<CustomResult<UpdateServerRoleOptions, CustomError>> => {
+export const updateServerRole = async (serverId: string, roleId: string, update: UpdateServerRoleOptions, actionById?: string): Promise<CustomResult<UpdateServerRoleOptions, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -130,10 +145,25 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
     channels: serverChannels,
   });
 
+  if (actionById) {
+    addServerAuditLog({
+      actionType: AuditLogType.SERVER_ROLE_UPDATE,
+      actionById: actionById,
+      serverId: serverId,
+      data: {
+        ...addToObjectIfExists('name', update.name),
+        ...addToObjectIfExists('permissions', update.permissions),
+        ...addToObjectIfExists('hideRole', update.hideRole),
+        ...addToObjectIfExists('applyOnJoin', update.applyOnJoin),
+        ...addToObjectIfExists('icon', update.icon, !!update.icon),
+      },
+    });
+  }
+
   return [update, null];
 };
 
-export const deleteServerRole = async (serverId: string, roleId: string, opts?: { forceDeleteBotRole: boolean }) => {
+export const deleteServerRole = async (serverId: string, roleId: string, opts?: { forceDeleteBotRole: boolean }, actionById?: string) => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -188,6 +218,19 @@ export const deleteServerRole = async (serverId: string, roleId: string, opts?: 
   deleteAllServerMemberCache(serverId);
   await removeServerMemberPermissionsCache(roleChannelPermissions.map((c) => c.channelId));
   emitServerRoleDeleted(serverId, roleId);
+
+  if (!role.botRole) {
+    if (actionById) {
+      addServerAuditLog({
+        actionType: AuditLogType.SERVER_ROLE_DELETE,
+        actionById: actionById,
+        serverId: serverId,
+        data: {
+          name: role.name,
+        },
+      });
+    }
+  }
 
   return [role, null];
 };

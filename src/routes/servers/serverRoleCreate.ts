@@ -6,21 +6,11 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { createServerRole } from '../../services/ServerRole';
 
 export function serverRoleCreate(Router: Router) {
-  Router.post(
-    '/servers/:serverId/roles',
-    authenticate({allowBot: true}),
-    serverMemberVerification(),
-    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
-    route
-  );
+  Router.post('/servers/:serverId/roles', authenticate({ allowBot: true }), serverMemberVerification(), memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES), route);
 }
 
 async function route(req: Request, res: Response) {
-  const [newRole, error] = await createServerRole(
-    'New Role',
-    req.userCache.id,
-    req.serverCache.id
-  );
+  const [newRole, error] = await createServerRole('New Role', req.userCache.id, req.serverCache.id);
 
   if (error) {
     return res.status(400).json(error);

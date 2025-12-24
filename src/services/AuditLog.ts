@@ -2,13 +2,23 @@ import { AuditLog } from '@src/generated/prisma/client';
 import { prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 
-enum AuditLogType {
+export enum AuditLogType {
   SERVER_OWNERSHIP_UPDATE = 'SERVER_OWNERSHIP_UPDATE',
   SERVER_DELETE = 'SERVER_DELETE',
+  SERVER_UPDATE = 'SERVER_UPDATE',
 
   SERVER_USER_BAN = 'SERVER_USER_BAN',
   SERVER_USER_UNBAN = 'SERVER_USER_UNBAN',
   SERVER_USER_KICK = 'SERVER_USER_KICK',
+  SERVER_USER_UPDATE = 'SERVER_USER_UPDATE',
+
+  SERVER_CHANNEL_CREATE = 'SERVER_CHANNEL_CREATE',
+  SERVER_CHANNEL_UPDATE = 'SERVER_CHANNEL_UPDATE',
+  SERVER_CHANNEL_DELETE = 'SERVER_CHANNEL_DELETE',
+
+  SERVER_ROLE_CREATE = 'SERVER_ROLE_CREATE',
+  SERVER_ROLE_UPDATE = 'SERVER_ROLE_UPDATE',
+  SERVER_ROLE_DELETE = 'SERVER_ROLE_DELETE',
 }
 
 interface ServerOwnershipUpdateAuditLog {
@@ -69,6 +79,25 @@ export const logServerOwnershipUpdate = async (opts: ServerOwnershipUpdateOpts) 
         oldOwnerUserId: opts.oldOwnerUserId,
         newOwnerUserId: opts.newOwnerUserId,
       },
+    },
+  });
+};
+
+interface AddServerAuditLogOpts {
+  actionType: AuditLogType;
+  actionById: string;
+  serverId: string;
+  data?: Record<string, any>;
+}
+
+export const addServerAuditLog = async (opts: AddServerAuditLogOpts) => {
+  await prisma.auditLog.create({
+    data: {
+      id: generateId(),
+      actionType: opts.actionType,
+      actionById: opts.actionById,
+      serverId: opts.serverId,
+      data: opts.data,
     },
   });
 };

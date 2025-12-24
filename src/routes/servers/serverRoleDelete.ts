@@ -8,13 +8,7 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { deleteServerRole } from '../../services/ServerRole';
 
 export function serverRoleDelete(Router: Router) {
-  Router.delete(
-    '/servers/:serverId/roles/:roleId',
-    authenticate({allowBot: true}),
-    serverMemberVerification(),
-    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
-    route
-  );
+  Router.delete('/servers/:serverId/roles/:roleId', authenticate({ allowBot: true }), serverMemberVerification(), memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES), route);
 }
 
 async function route(req: Request, res: Response) {
@@ -26,15 +20,10 @@ async function route(req: Request, res: Response) {
   }
   const isCreator = req.serverCache.createdById === req.userCache.id;
   if (!isCreator && role.order >= req.serverMemberCache.topRoleOrder) {
-    return res
-      .status(400)
-      .json(generateError('You do not have priority to modify this role.'));
+    return res.status(400).json(generateError('You do not have priority to modify this role.'));
   }
 
-  const [, error] = await deleteServerRole(
-    req.serverCache.id,
-    req.params.roleId
-  );
+  const [, error] = await deleteServerRole(req.serverCache.id, req.params.roleId, undefined, req.userCache.id);
 
   if (error) {
     return res.status(400).json(error);

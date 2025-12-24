@@ -18,6 +18,7 @@ import { omit } from '../common/omit';
 import { Interface } from 'readline';
 import { emitServerChannelPermissionsUpdated } from '../emits/Server';
 import { removeManyWebhookCache } from '../cache/WebhookCache';
+import { addServerAuditLog, AuditLogType } from './AuditLog';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
   const [channel] = await getChannelCache(channelId, userId);
@@ -161,6 +162,16 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
 
   emitServerChannelCreated(opts.serverId, channel);
 
+  addServerAuditLog({
+    actionType: AuditLogType.SERVER_CHANNEL_CREATE,
+    actionById: opts.creatorId,
+    serverId: opts.serverId,
+    data: {
+      type: opts.channelType ?? ChannelType.SERVER_TEXT,
+      name: opts.channelName,
+    },
+  });
+
   return [channel, null];
 };
 
@@ -225,7 +236,7 @@ export interface UpdateServerChannelOptions {
   slowModeSeconds?: number | null;
 }
 
-export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
+export const updateServerChannel = async (serverId: string, channelId: string, update: UpdateServerChannelOptions, actionById?: string): Promise<CustomResult<UpdateServerChannelOptions, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -247,6 +258,19 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
   });
 
   emitServerChannelUpdated(serverId, channelId, update);
+
+  if (actionById) {
+    addServerAuditLog({
+      actionType: AuditLogType.SERVER_CHANNEL_UPDATE,
+      actionById: actionById,
+      serverId: serverId,
+      data: {
+        ...addToObjectIfExists('name', update.name),
+        ...addToObjectIfExists('icon', update.icon, !!update.icon),
+        ...addToObjectIfExists('slowModeSeconds', update.slowModeSeconds),
+      },
+    });
+  }
 
   return [update, null];
 };
@@ -384,7 +408,7 @@ export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannel
   }
 }
 
-export const deleteServerChannel = async (serverId: string, channelId: string): Promise<CustomResult<string, CustomError>> => {
+export const deleteServerChannel = async (serverId: string, channelId: string, actionById?: string): Promise<CustomResult<string, CustomError>> => {
   const server = await prisma.server.findFirst({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')];
@@ -433,6 +457,15 @@ export const deleteServerChannel = async (serverId: string, channelId: string): 
   getIO().in(serverId).socketsLeave(channelId);
 
   emitServerChannelDeleted(serverId, channelId);
+
+  if (actionById) {
+    addServerAuditLog({
+      actionType: AuditLogType.SERVER_CHANNEL_DELETE,
+      actionById: actionById,
+      serverId: serverId,
+      data: { name: channel.name },
+    });
+  }
 
   return [channelId, null];
 };

@@ -86,7 +86,7 @@ async function route(req: Request, res: Response) {
     }
   }
 
-  const [updated, error] = await updateServerRole(req.serverCache.id, role.id, matchedBody);
+  const [updated, error] = await updateServerRole(req.serverCache.id, role.id, matchedBody, req.userCache.id);
   if (error) {
     return res.status(400).json(error);
   }

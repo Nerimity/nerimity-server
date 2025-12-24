@@ -1,4 +1,4 @@
-export function addToObjectIfExists(key: string, value: any) {
+export function addToObjectIfExists(key: string, value: any, customValue?: any) {
   if (value === undefined) return;
-  return { [key]: value };
+  return { [key]: customValue || value };
 }
