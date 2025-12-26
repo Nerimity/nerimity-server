@@ -122,17 +122,21 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
   }
 
   if (update.hexColor) {
+    let isValid = false;
     if (update.hexColor.startsWith('linear-gradient')) {
       const [gradient, gradientError] = convertLinearGradientStringToFormat(update.hexColor);
       if (gradientError) return [null, generateError('hexColor: ' + gradientError)];
       if (gradient) {
         update.hexColor = gradient;
+        isValid = true;
       }
     }
 
-    const validHex = isValidHex(update.hexColor);
-    if (!validHex) {
-      return [null, generateError('Invalid hex color.')];
+    if (!isValid) {
+      const validHex = isValidHex(update.hexColor);
+      if (!validHex) {
+        return [null, generateError('Invalid hex color.')];
+      }
     }
   }
 
