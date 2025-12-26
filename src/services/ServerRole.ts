@@ -124,7 +124,7 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
   if (update.hexColor) {
     if (update.hexColor.startsWith('linear-gradient')) {
       const [gradient, gradientError] = convertLinearGradientStringToFormat(update.hexColor);
-      if (gradientError) return [null, generateError(gradientError)];
+      if (gradientError) return [null, generateError('hexColor: ' + gradientError)];
       if (gradient) {
         update.hexColor = gradient;
       }
