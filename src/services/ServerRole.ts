@@ -7,7 +7,7 @@ import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, hasBit } from '../common/Bitwise';
 import { emitServerRoleCreated, emitServerRoleDeleted, emitServerRoleOrderUpdated, emitServerRoleUpdated } from '../emits/Server';
 import { updatePrivateChannelSocketRooms } from './Channel';
-import { isValidHex } from '../common/utils';
+import { convertLinearGradientStringToFormat, isValidHex } from '../common/utils';
 import { removeServerMemberPermissionsCache } from '../cache/ChannelCache';
 import { addServerAuditLog, AuditLogType } from './AuditLog';
 import { permission } from 'process';
@@ -120,8 +120,20 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
       return [null, generateError('Default role is already applied on join.')];
     }
   }
-  if (update.hexColor && !isValidHex(update.hexColor)) {
-    return [null, generateError('Invalid hex color.')];
+
+  if (update.hexColor) {
+    if (update.hexColor.startsWith('linear-gradient')) {
+      const [gradient, gradientError] = convertLinearGradientStringToFormat(update.hexColor);
+      if (gradientError) return [null, generateError(gradientError)];
+      if (gradient) {
+        update.hexColor = gradient;
+      }
+    }
+
+    const validHex = isValidHex(update.hexColor);
+    if (!validHex) {
+      return [null, generateError('Invalid hex color.')];
+    }
   }
 
   if (role.botRole) {
@@ -155,6 +167,7 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
         ...addToObjectIfExists('permissions', update.permissions),
         ...addToObjectIfExists('hideRole', update.hideRole),
         ...addToObjectIfExists('applyOnJoin', update.applyOnJoin),
+        ...addToObjectIfExists('hexColor', update.hexColor, !!update.hexColor),
         ...addToObjectIfExists('icon', update.icon, !!update.icon),
       },
     });
