@@ -16,7 +16,7 @@ export function serverRoleUpdate(Router: Router) {
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
     body('name').isString().withMessage('Name must be a string.').isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({ nullable: true }),
-    body('hexColor').isString().withMessage('hexColor must be a string.').isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('hexColor').isString().withMessage('hexColor must be a string.').isLength({ min: 4, max: 100 }).withMessage('hexColor must be between 4 and 100 characters long.').optional({ nullable: true }),
     body('hideRole').isBoolean().withMessage('hideRole must be a boolean.').optional({ nullable: true }),
     body('applyOnJoin').isBoolean().withMessage('applyOnJoin must be a boolean.').optional({ nullable: true }),
     body('permissions').isNumeric().withMessage('Permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.').isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({ nullable: true }),
