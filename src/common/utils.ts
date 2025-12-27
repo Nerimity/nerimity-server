@@ -37,8 +37,9 @@ export function getHourStart(date: Date = new Date()): Date {
   return hourStart;
 }
 
+// input: linear-gradient(90deg, #ff0000 0%, #00ff00 100%)
+// output lg45#ff0000 0#00ff00 100
 export const convertLinearGradientStringToFormat = (str: string) => {
-  // 1. Basic parsing
   const wrapperRegex = /^linear-gradient\((.*)\)$/i;
   const match = str.match(wrapperRegex);
   if (!match) return [null, 'Invalid Format'] as const;
@@ -46,18 +47,15 @@ export const convertLinearGradientStringToFormat = (str: string) => {
   const parts = match[1]?.split(',').map((p) => p.trim());
   if (!parts) return [null, 'Invalid Format'] as const;
 
-  // 2. Limit Check (Degree + 2-4 colors)
   if (parts.length < 3 || parts.length > 5) {
     return [null, 'Error: Must have degree and 2-4 color stops'] as const;
   }
 
-  // 3. Extract Degree
   const degMatch = parts[0]?.match(/^(\d+)deg$/i);
   if (!degMatch?.[1]) return [null, 'Invalid Degree'] as const;
   const d = parseInt(degMatch[1]);
   if (d < 0 || d > 360) return [null, 'Degree out of range'] as const;
 
-  // 4. Extract Colors and Stops
   const items = [];
   for (let i = 1; i < parts.length; i++) {
     const stopRegex = /^(#[a-f0-9]{3,6})\s*(\d+)%$/i;
@@ -66,20 +64,14 @@ export const convertLinearGradientStringToFormat = (str: string) => {
     items.push({ hex: m[1], stop: m[2] });
   }
 
-  // 5. Construct String
-  // Format: lg{deg}{hex1} {stop1}{hex2} {stop2}{hex3} ... {lastStop}
-
-  // Start: lg + Degree + First Hex
   let result = `lg${d}${items[0]?.hex}`;
 
-  // Loop through remaining items to chain Stop(n-1) + Hex(n)
   for (let i = 1; i < items.length; i++) {
     const prevStop = items[i - 1]?.stop;
     const currHex = items[i]?.hex;
     result += ` ${prevStop}${currHex}`;
   }
 
-  // End: Final Stop
   result += ` ${items[items.length - 1]?.stop}`;
 
   return [result, null] as const;
