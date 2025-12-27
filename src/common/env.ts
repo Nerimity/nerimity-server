@@ -37,8 +37,6 @@ export default {
   MAX_INVITES_PER_SERVER: parseInt(process.env.MAX_INVITES_PER_SERVER || '0') as number,
   MAX_ROLES_PER_SERVER: parseInt(process.env.MAX_ROLES_PER_SERVER || '0') as number,
 
-  DEFAULT_SERVER_ROLE_COLOR: process.env.DEFAULT_SERVER_ROLE_COLOR as string,
-
   TURNSTILE_SECRET: process.env.TURNSTILE_SECRET as string,
   CLOUDFLARE_CALLS_ID: process.env.CLOUDFLARE_CALLS_ID as string,
   CLOUDFLARE_CALLS_TOKEN: process.env.CLOUDFLARE_CALLS_TOKEN as string,

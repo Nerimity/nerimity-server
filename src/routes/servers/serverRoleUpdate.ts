@@ -35,7 +35,7 @@ export function serverRoleUpdate(Router: Router) {
 interface Body {
   name?: string;
   permissions?: number;
-  hexColor?: string;
+  hexColor?: string | null;
   hideRoles?: boolean;
   icon?: string | null;
   applyOnJoin?: boolean;
@@ -62,6 +62,10 @@ async function route(req: Request, res: Response) {
 
   if (req.body.icon === null) {
     matchedBody.icon = null;
+  }
+
+  if (req.body.hexColor === null) {
+    matchedBody.hexColor = null;
   }
 
   if (!isCreator && matchedBody.permissions !== undefined) {

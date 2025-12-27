@@ -53,7 +53,6 @@ export const createServerRole = async (name: string, creatorId: string, serverId
         serverId,
         permissions: opts?.permissions || ROLE_PERMISSIONS.SEND_MESSAGE.bit,
         order: 2,
-        hexColor: env.DEFAULT_SERVER_ROLE_COLOR,
         ...(opts?.bot ? { botRole: true, hideRole: true } : {}),
 
         createdById: creatorId,
@@ -93,7 +92,7 @@ export const createServerRole = async (name: string, creatorId: string, serverId
 export interface UpdateServerRoleOptions {
   name?: string;
   permissions?: number;
-  hexColor?: string;
+  hexColor?: string | null;
   hideRole?: boolean;
   icon?: string | null;
   applyOnJoin?: boolean;

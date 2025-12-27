@@ -97,7 +97,6 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         permissions: ROLE_PERMISSIONS.SEND_MESSAGE.bit,
 
         order: 1,
-        hexColor: env.DEFAULT_SERVER_ROLE_COLOR,
 
         createdById: opts.creatorId,
       },

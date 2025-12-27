@@ -559,7 +559,7 @@ model ServerRole {
   name                   String
   icon                   String?
 
-  hexColor               String
+  hexColor               String?
 
   createdById            String
   createdBy              User                    @relation(fields: [createdById], references: [id])
