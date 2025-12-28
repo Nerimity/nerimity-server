@@ -161,7 +161,7 @@ export const updateServerMemberProfile = async (serverId: string, userId: string
   }
 
   if (userId !== updatedByUserId) {
-    const [updatedByCache] = await getServerMemberCache(updatedByUserId, serverId);
+    const [updatedByCache] = await getServerMemberCache(serverId, updatedByUserId);
     const isAdmin = hasBit(updatedByCache?.permissions || 0, ROLE_PERMISSIONS.ADMIN.bit);
     const isCreator = server.createdById === updatedByUserId;
     if (!isAdmin && !isCreator) {
