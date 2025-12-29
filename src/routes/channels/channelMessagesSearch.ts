@@ -13,6 +13,7 @@ export function channelMessagesSearch(Router: Router) {
     authenticate(),
     channelVerification(),
     query('query').isString().withMessage('Invalid query.').isLength({ min: 1, max: 50 }).withMessage('query must be between 1 and 50 characters long.'),
+    query('order').isString().withMessage('Invalid order.').isLength({ min: 1, max: 50 }).withMessage('order must be between 1 and 50 characters long.'),
 
     rateLimit({
       name: 'messages_search',
@@ -28,11 +29,16 @@ async function route(req: Request, res: Response) {
   const after = (req.query.after as string) || undefined;
   const before = (req.query.before as string) || undefined;
   const query = req.query.query as string;
+  const order = req.query.order as 'asc' | 'desc';
 
   const validateError = customExpressValidatorResult(req);
 
   if (validateError) {
     return res.status(400).json(validateError);
+  }
+
+  if (!['desc', 'asc'].includes(order)) {
+    return res.status(400).json(generateError('Invalid order.'));
   }
 
   if (req.channelCache.type === ChannelType.CATEGORY) {
@@ -42,6 +48,7 @@ async function route(req: Request, res: Response) {
   const t1 = performance.now();
   const messages = await searchMessagesByChannelId(req.channelCache.id, {
     query,
+    order,
     limit,
     afterMessageId: after,
     beforeMessageId: before,

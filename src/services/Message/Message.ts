@@ -1161,6 +1161,7 @@ export async function markMessageUnread(opts: { channelId: string; messageId: st
 
 interface SearchMessageByChannelIdOpts {
   query: string;
+  order?: 'asc' | 'desc';
   limit?: number;
   beforeMessageId?: string;
   afterMessageId?: string;
@@ -1211,7 +1212,7 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
       },
     },
     take: limit,
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: opts.order || 'desc' },
     ...(opts?.afterMessageId
       ? {
           orderBy: { createdAt: 'asc' },
