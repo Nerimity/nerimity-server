@@ -27,9 +27,11 @@ interface TenorItem {
   media_formats: {
     gif?: {
       url: string;
+      dims: [number, number];
     };
     tinygif?: {
       url: string;
+      dims: [number, number];
     };
   };
   created: number;
@@ -71,6 +73,8 @@ async function route(req: Request, res: Response) {
     ?.map((item: TenorItem) => ({
       url: item.itemurl,
       previewUrl: item.media_formats.tinygif?.url || item.media_formats.gif?.url,
+      previewWidth: item.media_formats.tinygif?.dims[0] || item.media_formats.gif?.dims[0],
+      previewHeight: item.media_formats.tinygif?.dims[1] || item.media_formats.gif?.dims[1],
     }));
 
   if (!transformedResults) {
