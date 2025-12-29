@@ -3,6 +3,11 @@ export function removeDuplicates<T extends any[]>(arr: T) {
   return Array.from(new Set(arr)) as T;
 }
 
+export function ensureArray(value: any): string[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 export function arrayDiff<T>(arr1: any[], arr2: any[], key?: string) {
   return arr1.filter(function (i: any) {
     if (!key) {

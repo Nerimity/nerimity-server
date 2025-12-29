@@ -1166,6 +1166,7 @@ interface SearchMessageByChannelIdOpts {
   beforeMessageId?: string;
   afterMessageId?: string;
   requesterId?: string;
+  userIds?: string[];
 }
 
 export const searchMessagesByChannelId = async (channelId: string, opts?: SearchMessageByChannelIdOpts) => {
@@ -1173,14 +1174,18 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
   if (limit > 100) return [];
   if (limit <= 0) return [];
 
-  if (!opts?.query?.trim()) return [];
+  const order = opts?.order || 'desc';
 
   const messages = await prisma.message.findMany({
     where: {
-      content: {
-        mode: 'insensitive',
-        contains: opts?.query,
-      },
+      ...(opts?.query.trim()
+        ? {
+            content: {
+              mode: 'insensitive',
+              contains: opts.query.trim(),
+            },
+          }
+        : {}),
       channelId,
       ...(opts?.beforeMessageId
         ? {
@@ -1192,6 +1197,7 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
             id: { gt: opts.afterMessageId },
           }
         : undefined),
+      ...(opts?.userIds?.length ? { createdById: { in: opts.userIds } } : undefined),
     },
     include: {
       ...MessageInclude,
@@ -1212,17 +1218,18 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
       },
     },
     take: limit,
-    orderBy: { createdAt: opts.order || 'desc' },
-    ...(opts?.afterMessageId
-      ? {
-          orderBy: { createdAt: 'asc' },
-        }
-      : undefined),
+    orderBy: {
+      createdAt: opts?.afterMessageId ? 'asc' : order,
+    },
   });
 
   const modifiedMessages = messages.map(transformMessage);
 
   if (opts?.afterMessageId) return modifiedMessages;
+
+  if (opts?.afterMessageId || order === 'asc') {
+    return modifiedMessages;
+  }
 
   return modifiedMessages.reverse();
 };
