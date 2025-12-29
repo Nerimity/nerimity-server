@@ -15,7 +15,14 @@ export function channelMessagesSearch(Router: Router) {
     channelVerification(),
     query('query').isString().withMessage('Invalid query.').isLength({ min: 1, max: 50 }).withMessage('query must be between 1 and 50 characters long.').optional({ nullable: true }),
     query('order').isString().withMessage('Invalid order.').isLength({ min: 1, max: 50 }).withMessage('order must be between 1 and 50 characters long.').optional({ nullable: true }),
-    query('user_id').optional({ nullable: true }).isString().withMessage('Invalid user_id.').isLength({ min: 1, max: 100 }).withMessage('user_id must be between 1 and 100 characters long.').optional({ nullable: true }),
+
+    query('user_id')
+      .optional({ nullable: true })
+      .toArray()
+      .isArray()
+      .withMessage('user_id must be an array.')
+      .custom((ids: any[]) => ids.every((id) => typeof id === 'string' && id.length >= 1 && id.length <= 100))
+      .withMessage('Each user_id must be a string between 1 and 100 characters.'),
 
     rateLimit({
       name: 'messages_search',
