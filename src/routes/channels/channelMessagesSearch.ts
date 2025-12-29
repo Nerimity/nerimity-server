@@ -29,7 +29,7 @@ async function route(req: Request, res: Response) {
   const after = (req.query.after as string) || undefined;
   const before = (req.query.before as string) || undefined;
   const query = req.query.query as string;
-  const order = req.query.order as 'asc' | 'desc';
+  const order = (req.query.order || 'desc') as 'asc' | 'desc';
 
   const validateError = customExpressValidatorResult(req);
 
