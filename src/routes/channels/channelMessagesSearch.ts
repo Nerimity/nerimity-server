@@ -13,7 +13,7 @@ export function channelMessagesSearch(Router: Router) {
     authenticate(),
     channelVerification(),
     query('query').isString().withMessage('Invalid query.').isLength({ min: 1, max: 50 }).withMessage('query must be between 1 and 50 characters long.'),
-    query('order').isString().withMessage('Invalid order.').isLength({ min: 1, max: 50 }).withMessage('order must be between 1 and 50 characters long.'),
+    query('order').isString().withMessage('Invalid order.').isLength({ min: 1, max: 50 }).withMessage('order must be between 1 and 50 characters long.').optional({ nullable: true }),
 
     rateLimit({
       name: 'messages_search',
