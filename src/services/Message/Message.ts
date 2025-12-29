@@ -1178,7 +1178,7 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
 
   const messages = await prisma.message.findMany({
     where: {
-      ...(opts?.query.trim()
+      ...(opts?.query?.trim()
         ? {
             content: {
               mode: 'insensitive',
