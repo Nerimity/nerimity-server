@@ -60,7 +60,7 @@ async function route(req: Request, res: Response) {
   const url = new URL('https://tenor.googleapis.com/v2/search');
 
   url.searchParams.set('q', query);
-  url.searchParams.set('contentfilter', 'high');
+  url.searchParams.set('contentfilter', 'medium');
   if (pos) {
     url.searchParams.set('pos', pos);
   }
