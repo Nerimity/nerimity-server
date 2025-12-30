@@ -14,6 +14,16 @@ export function getTenorSearch(Router: Router) {
     }),
     route
   );
+  Router.get(
+    '/v2/tenor/search',
+    authenticate(),
+    rateLimit({
+      name: 'tenor-search',
+      restrictMS: 60000,
+      requests: 20,
+    }),
+    route
+  );
 }
 
 interface TenorResponse {
@@ -45,13 +55,18 @@ interface TenorItem {
 
 async function route(req: Request, res: Response) {
   const query = req.query.query as string;
+  const pos = req.query.pos as string;
 
   const url = new URL('https://tenor.googleapis.com/v2/search');
 
   url.searchParams.set('q', query);
   url.searchParams.set('contentfilter', 'high');
+  if (pos) {
+    url.searchParams.set('pos', pos);
+  }
 
   url.searchParams.append('key', env.TENOR_API_KEY);
+  console.log(url.href);
 
   const fetchRes = await fetch(url.href).catch(() => {});
   if (!fetchRes) {
@@ -79,6 +94,14 @@ async function route(req: Request, res: Response) {
 
   if (!transformedResults) {
     res.status(403).send();
+    return;
+  }
+
+  if (req.path.startsWith('/v2')) {
+    res.json({
+      next: json.next,
+      results: transformedResults,
+    });
     return;
   }
 
