@@ -66,7 +66,6 @@ async function route(req: Request, res: Response) {
   }
 
   url.searchParams.append('key', env.TENOR_API_KEY);
-  console.log(url.href);
 
   const fetchRes = await fetch(url.href).catch(() => {});
   if (!fetchRes) {
