@@ -21,6 +21,11 @@ export function channelMessageUpdate(Router: Router) {
     body('content').optional(true).isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
     body('htmlEmbed').optional(true).isString().withMessage('htmlEmbed must be a string!').isLength({ min: 1, max: 5000 }).withMessage('htmlEmbed length must be between 1 and 5000 characters.'),
 
+    body('buttons.*').optional(true).isObject().withMessage('buttons must be an array of objects!'),
+    body('buttons.*.label').isString().withMessage('buttons label must be a string!').isLength({ min: 1, max: 64 }).withMessage('button label length must be between 1 and 64 characters.'),
+    body('buttons.*.id').isAlphanumeric('en-US', { ignore: '_-' }).withMessage('buttons id must be a string!').isLength({ min: 1, max: 64 }).withMessage('button id length must be between 1 and 64 characters.'),
+    body('buttons.*.alert').optional(true).isBoolean().withMessage('buttons alert must be a boolean!'),
+
     rateLimit({
       name: 'update_message',
       restrictMS: 20000,
@@ -33,6 +38,7 @@ export function channelMessageUpdate(Router: Router) {
 interface Body {
   content?: string;
   htmlEmbed?: string;
+  buttons?: { label: string; id: string; alert?: boolean }[];
 }
 
 async function route(req: Request, res: Response) {
@@ -61,6 +67,7 @@ async function route(req: Request, res: Response) {
     userId: req.userCache.id,
     channel: req.channelCache,
     serverId: req.channelCache?.server?.id,
+    buttons: body.buttons?.map(({ id, label, alert }) => ({ id, label, alert })),
   });
 
   if (error) {
