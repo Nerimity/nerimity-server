@@ -90,10 +90,13 @@ const updateMessageInDatabase = async (opts: EditMessageOptions, validatedResult
     return [null, generateError('Something went wrong. Try again later.')] as const;
   }
 
-  const [, message] = await prisma
-    .$transaction([
-      ...(buttons ? [prisma.messageButton.deleteMany({ where: { messageId: opts.messageId } })] : []),
-      prisma.message.update({
+  const message = await prisma
+    .$transaction(async (tx) => {
+      if (buttons) {
+        await tx.messageButton.deleteMany({ where: { messageId: opts.messageId } });
+      }
+
+      return await tx.message.update({
         where: { id: opts.messageId },
         data: {
           content: validatedResult.isServerOrDMChannel && opts.content ? replaceBadWords(opts.content) : opts.content,
@@ -129,8 +132,8 @@ const updateMessageInDatabase = async (opts: EditMessageOptions, validatedResult
         },
 
         include: { ...MessageInclude, reactions: false },
-      }),
-    ])
+      });
+    })
     .catch((e) => {
       console.error(e);
       return [null, null];
