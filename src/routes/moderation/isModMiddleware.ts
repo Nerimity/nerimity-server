@@ -8,17 +8,15 @@ export function isModMiddleware(opts?: { allowModBadge?: boolean }) {
     const isCreator = hasBit(badges, USER_BADGES.FOUNDER.bit);
     const isAdmin = hasBit(badges, USER_BADGES.ADMIN.bit);
     const isMod = hasBit(badges, USER_BADGES.MOD.bit);
-    req.hasAdminOrCreatorBadge = false;
+    req.hasAdminOrCreatorBadge = isCreator || isAdmin;
 
     if (opts?.allowModBadge && isMod) {
       next();
       return;
     }
 
-    if (!isCreator && !isAdmin) {
+    if (!req.hasAdminOrCreatorBadge) {
       return res.status(403).json(generateError('Admin access only!'));
     }
-    req.hasAdminOrCreatorBadge = true;
-    next();
   };
 }
