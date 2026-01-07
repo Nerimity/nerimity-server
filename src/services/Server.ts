@@ -285,7 +285,7 @@ export const joinServer = async (
           userId,
           roleIds: botRoleId ? [botRoleId, ...applyOnJoinRoleIds] : applyOnJoinRoleIds,
         },
-        include: { user: { select: publicUserExcludeFields } },
+        include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } } } } },
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
@@ -293,7 +293,7 @@ export const joinServer = async (
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },
-        include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
+        include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } }, lastOnlineAt: true, lastOnlineStatus: true } } },
       }),
     ])
     .catch(() => []);
