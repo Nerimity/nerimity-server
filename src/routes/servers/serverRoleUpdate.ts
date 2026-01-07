@@ -20,6 +20,7 @@ export function serverRoleUpdate(Router: Router) {
     body('hideRole').isBoolean().withMessage('hideRole must be a boolean.').optional({ nullable: true }),
     body('applyOnJoin').isBoolean().withMessage('applyOnJoin must be a boolean.').optional({ nullable: true }),
     body('permissions').isNumeric().withMessage('Permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.').isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({ nullable: true }),
+    body('font').isNumeric().withMessage('Font must be a number.').isInt({ min: 0, max: 10 }).withMessage('Font must be between 0 and 10.').optional({ nullable: true }),
 
     body('icon').isString().withMessage('Icon must be a string.').isLength({ min: 0, max: 100 }).withMessage('Icon must be between 0 and 100 characters long.').optional({ nullable: true }),
 
@@ -39,6 +40,7 @@ interface Body {
   hideRoles?: boolean;
   icon?: string | null;
   applyOnJoin?: boolean;
+  font?: number | null;
 }
 
 async function route(req: Request, res: Response) {
@@ -66,6 +68,10 @@ async function route(req: Request, res: Response) {
 
   if (req.body.hexColor === null) {
     matchedBody.hexColor = null;
+  }
+
+  if (req.body.font === null) {
+    matchedBody.font = null;
   }
 
   if (!isCreator && matchedBody.permissions !== undefined) {
