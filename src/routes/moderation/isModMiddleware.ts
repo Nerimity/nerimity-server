@@ -18,5 +18,6 @@ export function isModMiddleware(opts?: { allowModBadge?: boolean }) {
     if (!req.hasAdminOrCreatorBadge) {
       return res.status(403).json(generateError('Admin access only!'));
     }
+    next();
   };
 }
