@@ -165,7 +165,7 @@ export const getServers = async (userId: string, includeCurrentUserServerMembers
           },
           serverMembers: {
             ...(includeCurrentUserServerMembersOnly ? { where: { userId } } : {}),
-            include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
+            include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } }, lastOnlineAt: true, lastOnlineStatus: true } } },
           },
           roles: true,
           customEmojis: {

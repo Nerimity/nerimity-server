@@ -369,6 +369,11 @@ export const MessageValidator = {
         avatar: true,
         badges: true,
         bot: true,
+        profile: {
+          select: {
+            font: true,
+          },
+        },
       },
     },
     mentions: {

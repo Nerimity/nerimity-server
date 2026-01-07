@@ -303,7 +303,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
         where: { followedById: requesterId },
         select: { followedToId: true },
       },
-      profile: { select: { bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } },
+      profile: { select: { font: true, bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } },
       _count: {
         select: {
           followers: true,

@@ -177,9 +177,9 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
       ...addToObjectIfExists('hideFollowing', opts.hideFollowing),
       ...(opts.newPassword?.trim()
         ? {
-          password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-          passwordVersion: { increment: 1 },
-        }
+            password: await bcrypt.hash(opts.newPassword!.trim(), 10),
+            passwordVersion: { increment: 1 },
+          }
         : undefined),
 
       ...(opts.email && opts.email !== email ? { emailConfirmed: false } : undefined),
@@ -195,17 +195,17 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
           ...(opts.lastOnlineStatus === LastOnlineStatus.HIDDEN ? { lastOnlineAt: null } : undefined),
           ...(opts.profile
             ? {
-              profile: {
-                upsert: {
-                  create: opts.profile,
-                  update: opts.profile,
+                profile: {
+                  upsert: {
+                    create: opts.profile,
+                    update: opts.profile,
+                  },
                 },
-              },
-            }
+              }
             : undefined),
         },
       },
     },
-    include: { user: { include: { profile: { select: { bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } } } },
+    include: { user: { include: { profile: { select: { font: true, bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } } } },
   });
 };

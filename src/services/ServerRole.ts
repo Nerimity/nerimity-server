@@ -95,7 +95,6 @@ export interface UpdateServerRoleOptions {
   hexColor?: string | null;
   hideRole?: boolean;
   icon?: string | null;
-  font?: number | null;
 
   applyOnJoin?: boolean;
 }
@@ -174,7 +173,6 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
         ...addToObjectIfExists('applyOnJoin', update.applyOnJoin),
         ...addToObjectIfExists('hexColor', update.hexColor, !!update.hexColor),
         ...addToObjectIfExists('icon', update.icon, !!update.icon),
-        ...addToObjectIfExists('font', update.font, !!update.font),
       },
     });
   }

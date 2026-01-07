@@ -351,6 +351,8 @@ model UserProfile {
   bgColorOne String? // used for gradient background color
   bgColorTwo String? // used for gradient background color
   primaryColor String?
+  font                   Int?
+
 
 }
 
@@ -560,7 +562,6 @@ model ServerRole {
   icon                   String?
 
   hexColor               String?
-  font                   Int?
 
   createdById            String
   createdBy              User                    @relation(fields: [createdById], references: [id])

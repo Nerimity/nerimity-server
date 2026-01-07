@@ -30,6 +30,8 @@ export function userUpdate(Router: Router) {
     body('bgColorTwo').isString().withMessage('bgColorTwo must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
     body('primaryColor').isString().withMessage('primaryColor must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
 
+    body('font').isNumeric().withMessage('Font must be a number.').isInt({ min: 0, max: 10 }).withMessage('Font must be between 0 and 10.').optional({ nullable: true }),
+
     body('dmStatus').isInt({ min: 0, max: 2 }).withMessage('dmStatus must be a number.').optional({ nullable: true }),
     body('friendRequestStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
     body('lastOnlineStatus').isInt({ min: 0, max: 2 }).withMessage('friendRequestStatus must be a number.').optional({ nullable: true }),
@@ -61,6 +63,7 @@ interface Body {
   bgColorOne?: string | null;
   bgColorTwo?: string | null;
   primaryColor?: string | null;
+  font?: number | null;
 
   hideFollowing?: boolean;
   hideFollowers?: boolean;
@@ -90,6 +93,7 @@ async function route(req: Request, res: Response) {
     ...(body.bgColorOne !== undefined ? { bgColorOne: body.bgColorOne } : {}),
     ...(body.bgColorTwo !== undefined ? { bgColorTwo: body.bgColorTwo } : {}),
     ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {}),
+    ...(body.font !== undefined ? { font: body.font } : {}),
   };
 
   let avatar: string | undefined;

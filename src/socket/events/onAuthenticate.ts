@@ -81,6 +81,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   const user = await prisma.user.findUnique({
     where: { id: userCache.id },
     include: {
+      profile: { select: { font: true } },
       reminders: {
         orderBy: { remindAt: 'asc' },
         select: ReminderSelect(userCache.id),
@@ -95,7 +96,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
         },
       },
       connections: { select: { id: true, provider: true, connectedAt: true } },
-      friends: { include: { recipient: { select: { ...publicUserExcludeFields, lastOnlineStatus: true, lastOnlineAt: true } } } },
+      friends: { include: { recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true } }, lastOnlineStatus: true, lastOnlineAt: true } } } },
       notices: { orderBy: { createdAt: 'asc' }, select: { id: true, type: true, title: true, content: true, createdAt: true, createdBy: { select: { username: true } } } },
       account: {
         select: {
@@ -235,6 +236,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   socket.emit(AUTHENTICATED, {
     user: {
       ...userCacheWithoutAccount,
+      profile: user.profile,
       hideFollowing: user.account?.hideFollowing,
       hideFollowers: user.account?.hideFollowers,
       email: user.account?.email,
