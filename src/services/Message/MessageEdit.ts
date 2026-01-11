@@ -136,11 +136,15 @@ const updateMessageInDatabase = async (opts: EditMessageOptions, validatedResult
     })
     .catch((e) => {
       console.error(e);
-      return [null, null];
+      return null;
     });
 
   if (!message) {
     return [null, generateError('Failed to update message')] as const;
+  }
+
+  if (message.htmlEmbed) {
+    message.htmlEmbed = Buffer.from(message.htmlEmbed).toString('base64');
   }
 
   return [message, null] as const;
