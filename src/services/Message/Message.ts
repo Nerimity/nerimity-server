@@ -111,6 +111,10 @@ export function transformMessage(message: TransformMessage) {
     creatorOverride: undefined,
   };
 
+  if (message.htmlEmbed) {
+    newMessage.htmlEmbed = Buffer.from(message.htmlEmbed).toString('base64');
+  }
+
   if (message.webhook) {
     newMessage.createdBy = {
       id: message.webhookId!,
