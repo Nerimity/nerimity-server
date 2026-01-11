@@ -2,7 +2,7 @@ import pako from 'pako';
 
 export function zip(string: string) {
   const binaryString = pako.deflate(string);
-  return Buffer.from(binaryString).toString('base64');
+  return Buffer.from(binaryString);
 }
 
 export function unzip(base64: string) {
