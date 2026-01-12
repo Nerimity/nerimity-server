@@ -36,30 +36,30 @@ export async function onChangeActivity(socket: Socket, payload: Activity | null)
   }
 
   if (out.action) {
-    out.action = truncate(out.action, 20, false);
+    out.action = truncate(out.action, 30, false);
   }
 
   if (out.name) {
-    out.name = truncate(out.name, 40);
+    out.name = truncate(out.name, 80);
   }
 
-  if (out.link && out.link.length >= 200) {
+  if (out.link && out.link.length >= 300) {
     out.link = undefined;
   }
 
-  if (out.imgSrc && out.imgSrc.length >= 200) {
+  if (out.imgSrc && out.imgSrc.length >= 300) {
     out.imgSrc = undefined;
   }
 
   if (out.title) {
-    out.title = truncate(out.title, 50);
+    out.title = truncate(out.title, 80);
   }
 
   if (out.subtitle) {
-    out.subtitle = truncate(out.subtitle, 50);
+    out.subtitle = truncate(out.subtitle, 80);
   }
 
-  if (out.emoji && out.emoji.length >= 30) {
+  if (out.emoji && out.emoji.length >= 50) {
     out.emoji = undefined;
   }
 
