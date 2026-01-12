@@ -17,7 +17,7 @@ export function userUpdatePresence(Router: Router) {
       .withMessage('Invalid status.')
       .custom((val) => val >= 0 && val <= 4)
       .withMessage('Status must be between 0 and 4.'),
-    body('custom').optional({ values: 'null' }).isString().withMessage('Invalid custom status.').isLength({ min: 0, max: 100 }).withMessage('custom status must be between 0 and 100.'),
+    body('custom').optional({ values: 'null' }).isString().withMessage('Invalid custom status.').isLength({ min: 0, max: 200 }).withMessage('custom status must be between 0 and 200.'),
     rateLimit({
       name: 'update_presence',
       restrictMS: 5000,
