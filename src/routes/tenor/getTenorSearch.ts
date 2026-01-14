@@ -57,7 +57,7 @@ async function route(req: Request, res: Response) {
   const query = req.query.query as string;
   const pos = req.query.pos as string;
 
-  const url = new URL('https://tenor.googleapis.com/v2/search');
+  const url = new URL('https://api.klipy.com/v2/search');
 
   url.searchParams.set('q', query);
   url.searchParams.set('contentfilter', 'medium');
@@ -65,7 +65,7 @@ async function route(req: Request, res: Response) {
     url.searchParams.set('pos', pos);
   }
 
-  url.searchParams.append('key', env.TENOR_API_KEY);
+  url.searchParams.append('key', env.KLIPY_API_KEY);
 
   const fetchRes = await fetch(url.href).catch(() => {});
   if (!fetchRes) {

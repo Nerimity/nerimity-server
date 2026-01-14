@@ -39,12 +39,12 @@ setInterval(() => {
 async function route(req: Request, res: Response) {
   if (cache) return res.json(cache);
 
-  const url = new URL('https://tenor.googleapis.com/v2/categories');
+  const url = new URL('https://api.klipy.com/v2/categories');
 
   url.searchParams.set('type', 'trending');
   url.searchParams.set('contentfilter', 'high');
 
-  url.searchParams.append('key', env.TENOR_API_KEY);
+  url.searchParams.append('key', env.KLIPY_API_KEY);
 
   const fetchRes = await fetch(url.href).catch(() => {});
   if (!fetchRes) {
