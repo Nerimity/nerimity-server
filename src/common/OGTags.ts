@@ -94,7 +94,7 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   object.domain = new URL(url).hostname;
   object.origUrl = url;
 
-  if (url.startsWith('https://tenor.com/') && object.imageUrl) {
+  if (url.startsWith('https://klipy.com/') || (url.startsWith('https://tenor.com/') && object.imageUrl)) {
     object.type = 'image';
     delete object.title;
     delete object.siteName;
