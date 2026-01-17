@@ -44,18 +44,19 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
   const user = payload.sender ? payload.sender.login : 'Someone';
 
   let content = '';
+  const repo = 'repository' in payload && payload.repository ? payload.repository.full_name : '';
 
   if (body.name === 'pull_request') {
     const payload = body.payload;
     if (body.payload.action === 'opened') {
-      content = `${user} created a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+      content = `[${repo}] ${user} created a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
     }
     if (body.payload.action === 'closed') {
       const closedBy = payload.pull_request.merged_by ? payload.pull_request.merged_by.login : 'Someone';
       if (body.payload.pull_request.merged) {
-        content = `${closedBy} merged a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+        content = `[${repo}] ${closedBy} merged a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
       } else {
-        content = `${closedBy} closed a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
+        content = `[${repo}] ${closedBy} closed a **pull request** titled: "${payload.pull_request.title}\n${payload.pull_request.html_url}"`;
       }
     }
   }
@@ -64,16 +65,16 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
 
     if (payload.ref.startsWith('refs/tags/')) {
       const tagName = payload.ref.split('/').pop();
-      content = `${user} just pushed a new tag: **${tagName}**`;
+      content = `[${repo}] ${user} just pushed a new tag: **${tagName}**`;
     } else {
-      content = `${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
+      content = `[${repo}] ${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
     }
   }
 
   if (body.name === 'release') {
     if ('action' in body.payload && body.payload.action === 'published') {
       const payload = body.payload;
-      content = `${user} just published a new release: **${payload.release.tag_name}**! 🚀 [🔗](${payload.release.url})`;
+      content = `[${repo}] ${user} just published a new release: **${payload.release.tag_name}**! 🚀 [🔗](${payload.release.url})`;
     }
   }
 
