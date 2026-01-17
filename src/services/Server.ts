@@ -173,6 +173,7 @@ export const getServers = async (userId: string, includeCurrentUserServerMembers
               id: true,
               gif: true,
               name: true,
+              webp: true,
             },
           },
         },
@@ -217,7 +218,7 @@ export const joinServer = async (
   bot?: {
     permissions: number;
     botName: string;
-  }
+  },
 ): Promise<CustomResult<Server, CustomError>> => {
   const maxServersReached = await hasReachedMaxServers(userId);
   if (maxServersReached) {
@@ -363,7 +364,7 @@ export const deleteServer = async (serverId: string, deletedByUserId: string) =>
         where: { channelId: id },
         create: { channelId: id },
         update: {},
-      })
+      }),
     ),
   ]);
 
@@ -460,7 +461,7 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
           serverId,
           reason,
         },
-      })
+      }),
     );
   }
   await prisma.$transaction(transactions);
@@ -684,6 +685,7 @@ export const addServerEmoji = async (opts: AddServerEmojiOpts) => {
       id: opts.emojiId,
       name: opts.name,
       gif: opts.animated || false,
+      webp: opts.emojiPath.endsWith('.webp') || opts.emojiPath.endsWith('.webp#a'),
       serverId: opts.serverId,
       uploadedById: opts.uploadedById,
     },
@@ -838,8 +840,8 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
               }
             : undefined),
         },
-      })
-    )
+      }),
+    ),
   );
 
   const payload = {
@@ -1028,7 +1030,7 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
               }
             : {}),
         },
-      })
+      }),
     ),
   ]);
 

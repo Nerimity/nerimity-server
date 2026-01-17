@@ -11,10 +11,10 @@ const mapper = new Map(
     image: 'imageUrl',
     'image:width': 'imageWidth',
     'image:height': 'imageHeight',
-  })
+  }),
 );
 
-type GetOGTagsReturn = Promise<false | Record<string, string | number>>;
+type GetOGTagsReturn = Promise<false | Record<string, string | number | boolean>>;
 
 const youtubeLinkRegex = /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
 
@@ -136,6 +136,7 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
     imageUrl: url,
     imageWidth: dimensions!.width,
     imageHeight: dimensions!.height,
+    animated: dimensions!.animated,
     imageMime: resForSure.headers.get('content-type')!,
   };
 }

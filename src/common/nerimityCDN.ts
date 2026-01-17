@@ -1,7 +1,7 @@
 import { CustomResult } from './CustomResult';
 import env from './env';
 
-export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ width: number; height: number }, any>> {
+export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ width: number; height: number; animated: boolean }, any>> {
   return new Promise((resolve) => {
     fetch(env.LOCAL_NERIMITY_CDN + `proxy-dimensions?url=${encodeURI(url)}`, {
       method: 'GET',

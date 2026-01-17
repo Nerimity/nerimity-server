@@ -517,6 +517,9 @@ model CustomEmoji {
   id           String  @id
   name         String
   gif          Boolean
+  // Every images are technically webp now, even gifs. 
+  // this is just here to support old gifs.
+  webp         Boolean @default(false)
 
   serverId     String
   server       Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
