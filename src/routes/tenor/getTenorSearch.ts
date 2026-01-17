@@ -12,7 +12,7 @@ export function getTenorSearch(Router: Router) {
       restrictMS: 60000,
       requests: 20,
     }),
-    route
+    route,
   );
   Router.get(
     '/v2/tenor/search',
@@ -22,7 +22,7 @@ export function getTenorSearch(Router: Router) {
       restrictMS: 60000,
       requests: 20,
     }),
-    route
+    route,
   );
 }
 
@@ -86,6 +86,7 @@ async function route(req: Request, res: Response) {
     })
     ?.map((item: TenorItem) => ({
       url: item.itemurl,
+      gifUrl: item.media_formats.gif?.url || item.media_formats.tinygif?.url,
       previewUrl: item.media_formats.tinygif?.url || item.media_formats.gif?.url,
       previewWidth: item.media_formats.tinygif?.dims[0] || item.media_formats.gif?.dims[0],
       previewHeight: item.media_formats.tinygif?.dims[1] || item.media_formats.gif?.dims[1],
