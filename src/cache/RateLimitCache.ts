@@ -1,8 +1,9 @@
+import { safeExec } from '@src/common/utils';
 import { redisClient } from '../common/redis';
 import { RATE_LIMIT_ITTER_KEY_STRING, RATE_LIMIT_KEY_STRING } from './CacheKeys';
 
 interface CheckAndUpdateRateLimitOptions {
-  id: string,
+  id: string;
   requests: number;
   perMS: number;
   restrictMS: number;
@@ -12,68 +13,53 @@ interface CheckAndUpdateRateLimitOptions {
 }
 
 enum RateLimitStatus {
-  REACHED = "1"
+  REACHED = '1',
 }
 
 interface RateLimitCache {
   requests: string;
   status?: RateLimitStatus;
-
 }
 
 export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptions) {
   const key = RATE_LIMIT_KEY_STRING(opts.id);
 
-  const mainMulti = redisClient.multi();
-  mainMulti.hGetAll(key);
-  mainMulti.pTTL(key);
+  // 1. Fetch data - Use Pipeline
+  const [res, ttl] = await safeExec<[RateLimitCache, number]>(redisClient.pipeline().hgetall(key).pttl(key));
 
-  const [res, ttl] = await mainMulti.exec() as [RateLimitCache, number];
-
+  // New Key logic
   if (!res || Object.keys(res).length === 0) {
-    const multi = redisClient.multi();
-    multi.hSet(key, {
-      requests: 1
-    });
-    multi.pExpire(key, opts.perMS);
-    await multi.exec();
+    await redisClient.pipeline().hset(key, { requests: 1 }).pexpire(key, opts.perMS).exec();
     return false as const;
   }
 
   const requests = parseInt(res.requests);
-  const status = res.status;
+  if (res.status === RateLimitStatus.REACHED) return ttl;
 
-  if (status === RateLimitStatus.REACHED) {
-    return ttl;
-  }
-
+  // Reached Limit logic
   if (requests >= opts.requests) {
-    
     if (opts.onThreeIterations) {
       const itterKey = RATE_LIMIT_ITTER_KEY_STRING(opts.id + opts.itterId?.());
-      const itterMulti = redisClient.multi();
 
-      itterMulti.incr(itterKey);
-      const threeMinutesToMilliseconds = 3 * 60 * 1000;
-      itterMulti.pExpire(itterKey, threeMinutesToMilliseconds, "NX")
-      const [itterRes] = await itterMulti.exec();
-      if (itterRes as number >= 3) {
+      const [itterRes] = await safeExec<[number]>(
+        redisClient
+          .pipeline()
+          .incr(itterKey)
+          .pexpire(itterKey, 3 * 60 * 1000, 'NX'),
+      );
+
+      if (itterRes! >= 3) {
         opts.onThreeIterations();
         await redisClient.del(itterKey);
       }
     }
 
-    const multi = redisClient.multi();
-    multi.hSet(key, {
-      status: RateLimitStatus.REACHED
-    });
-    multi.pExpire(key, opts.restrictMS);
-    await multi.exec();
+    await redisClient.pipeline().hset(key, { status: RateLimitStatus.REACHED }).pexpire(key, opts.restrictMS).exec();
+
     return ttl;
   }
 
-  await redisClient.HINCRBY(key, "requests", 1);
+  // Normal Increment
+  await redisClient.hincrby(key, 'requests', 1);
   return false as const;
-
 }
-

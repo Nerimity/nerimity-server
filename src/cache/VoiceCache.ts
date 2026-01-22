@@ -1,3 +1,4 @@
+import { safeExec } from '@src/common/utils';
 import { redisClient } from '../common/redis';
 import { VOICE_USERS_KEY_HASH, VOICE_USER_CHANNEL_ID_SET } from './CacheKeys';
 
@@ -16,16 +17,11 @@ export async function isUserInVoice(userId: string) {
   return redisClient.exists(VOICE_USER_CHANNEL_ID_SET(userId));
 }
 
-export async function getVoiceUserByUserId(
-  userId: string
-): Promise<(VoiceCache & VoiceCacheFormatted) | null> {
+export async function getVoiceUserByUserId(userId: string): Promise<(VoiceCache & VoiceCacheFormatted) | null> {
   const channelId = await redisClient.get(VOICE_USER_CHANNEL_ID_SET(userId));
   if (!channelId) return null;
 
-  const stringJson = await redisClient.hGet(
-    VOICE_USERS_KEY_HASH(channelId),
-    userId
-  );
+  const stringJson = await redisClient.hget(VOICE_USERS_KEY_HASH(channelId), userId);
   if (!stringJson) return null;
   const parsedJson = JSON.parse(stringJson);
   return { ...parsedJson, channelId };
@@ -35,24 +31,20 @@ export async function removeVoiceUserByUserId(userId: string) {
   const channelId = await redisClient.get(VOICE_USER_CHANNEL_ID_SET(userId));
   if (!channelId) return false;
 
-  const multi = redisClient.multi();
+  const multi = redisClient.pipeline();
 
   multi.del(VOICE_USER_CHANNEL_ID_SET(userId));
-  multi.hDel(VOICE_USERS_KEY_HASH(channelId), userId);
+  multi.hdel(VOICE_USERS_KEY_HASH(channelId), userId);
 
   await multi.exec();
   return true;
 }
 
-export async function addUserToVoice(
-  channelId: string,
-  userId: string,
-  data: VoiceCache
-): Promise<VoiceCacheFormatted> {
-  const multi = redisClient.multi();
+export async function addUserToVoice(channelId: string, userId: string, data: VoiceCache): Promise<VoiceCacheFormatted> {
+  const multi = redisClient.pipeline();
 
   multi.set(VOICE_USER_CHANNEL_ID_SET(userId), channelId);
-  multi.hSet(VOICE_USERS_KEY_HASH(channelId), userId, JSON.stringify(data));
+  multi.hset(VOICE_USERS_KEY_HASH(channelId), userId, JSON.stringify(data));
   await multi.exec();
 
   return {
@@ -63,19 +55,17 @@ export async function addUserToVoice(
 }
 
 export async function countVoiceUsersInChannel(channelId: string) {
-  return redisClient.hLen(VOICE_USERS_KEY_HASH(channelId));
+  return redisClient.hlen(VOICE_USERS_KEY_HASH(channelId));
 }
 
-export async function getVoiceUsersByChannelId(
-  channelIds: string[]
-): Promise<VoiceCacheFormatted[]> {
+export async function getVoiceUsersByChannelId(channelIds: string[]): Promise<VoiceCacheFormatted[]> {
   if (!channelIds.length) return [];
-  const multi = redisClient.multi();
+  const multi = redisClient.pipeline();
   for (let i = 0; i < channelIds.length; i++) {
     const channelId = channelIds[i]!;
-    multi.hGetAll(VOICE_USERS_KEY_HASH(channelId));
+    multi.hgetall(VOICE_USERS_KEY_HASH(channelId));
   }
-  const array = await multi.exec();
+  const array = await safeExec<string[]>(multi);
 
   return channelIds
     .map((channelId, i) => {

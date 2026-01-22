@@ -1,3 +1,5 @@
+import { ChainableCommander } from 'ioredis';
+
 // remove duplicate values from an array
 export function removeDuplicates<T extends any[]>(arr: T) {
   return Array.from(new Set(arr)) as T;
@@ -81,3 +83,13 @@ export const convertLinearGradientStringToFormat = (str: string) => {
 
   return [result, null] as const;
 };
+
+export async function safeExec<T extends any[]>(batch: ChainableCommander): Promise<{ [K in keyof T]: T[K] | null }> {
+  const results = await batch.exec();
+
+  if (!results) {
+    throw new Error('Pipeline connection failed');
+  }
+
+  return results.map(([err, res]) => (err ? null : res)) as any;
+}

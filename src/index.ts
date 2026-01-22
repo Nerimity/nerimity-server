@@ -349,8 +349,8 @@ async function updatePostViews() {
         prisma.post.update({
           where: { id: d.id },
           data: { views: { increment: d.views } },
-        })
-      )
+        }),
+      ),
     )
     .catch((err) => console.error(err));
 }
@@ -430,25 +430,28 @@ function scheduleServerDeletion() {
 }
 
 function cleanupServerHourlyMessageCount(daysToKeep: number = 30) {
-  setInterval(async () => {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+  setInterval(
+    async () => {
+      try {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-      const preciseCutoff = getHourStart(cutoffDate);
+        const preciseCutoff = getHourStart(cutoffDate);
 
-      console.log(`[CLEANUP] Deleting records older than: ${preciseCutoff.toISOString()}`);
+        console.log(`[CLEANUP] Deleting records older than: ${preciseCutoff.toISOString()}`);
 
-      const result = await prisma.serverHourlyMessageCount.deleteMany({
-        where: {
-          hourStart: {
-            lt: preciseCutoff,
+        const result = await prisma.serverHourlyMessageCount.deleteMany({
+          where: {
+            hourStart: {
+              lt: preciseCutoff,
+            },
           },
-        },
-      });
-      console.log(`Cleaned up ${result.count} records older than ${preciseCutoff.toISOString()} for serverHourlyMessageCount.`);
-    } catch (error) {
-      console.error('[CLEANUP] Failed to clean up old hourly activity records:', error);
-    }
-  }, 24 * 60 * 60 * 1000); // Run every 24 hours
+        });
+        console.log(`Cleaned up ${result.count} records older than ${preciseCutoff.toISOString()} for serverHourlyMessageCount.`);
+      } catch (error) {
+        console.error('[CLEANUP] Failed to clean up old hourly activity records:', error);
+      }
+    },
+    24 * 60 * 60 * 1000,
+  ); // Run every 24 hours
 }

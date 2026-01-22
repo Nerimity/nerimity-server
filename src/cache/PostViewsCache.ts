@@ -1,31 +1,32 @@
+import { safeExec } from '@src/common/utils';
 import { redisClient } from '../common/redis';
 import { POST_VIEWS_KEY } from './CacheKeys';
 
 export function addPostViewsToCache(postIds: string[], ip: string) {
-  const multi = redisClient.multi();
+  const multi = redisClient.pipeline();
   for (let i = 0; i < postIds.length; i++) {
     const postId = postIds[i];
     if (!postId) continue;
     const key = POST_VIEWS_KEY(postId);
-    multi.sAdd(key, ip);
-    multi.sAdd(POST_VIEWS_KEY('id'), postId);
+    multi.sadd(key, ip);
+    multi.sadd(POST_VIEWS_KEY('id'), postId);
   }
   return multi.exec();
 }
 
 export async function getAndRemovePostViewsCache() {
-  const postIds = await redisClient.sMembers(POST_VIEWS_KEY('id'));
+  const postIds = await redisClient.smembers(POST_VIEWS_KEY('id'));
   if (!postIds.length) return [];
 
-  const multi = redisClient.multi();
+  const multi = redisClient.pipeline();
 
   for (let i = 0; i < postIds.length; i++) {
     const postId = postIds[i];
     if (!postId) continue;
     const key = POST_VIEWS_KEY(postId);
-    multi.sCard(key);
+    multi.scard(key);
   }
-  const results = await multi.exec();
+  const results = await safeExec<number[]>(multi);
 
   const data = results.map((views, i) => ({
     id: postIds[i]!,
