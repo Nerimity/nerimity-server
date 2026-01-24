@@ -181,7 +181,7 @@ export async function deleteOrLeaveAllServers(userId: string) {
       await deleteServer(server.id, userId);
       continue;
     }
-    await leaveServer(userId, server.id);
+    await leaveServer({ userId, serverId: server.id });
   }
 
   return [true, null] as const;

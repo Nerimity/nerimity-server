@@ -387,16 +387,27 @@ export const deleteServer = async (serverId: string, deletedByUserId: string) =>
   return [true, null] as const;
 };
 
-export const leaveServer = async (userId: string, serverId: string, ban = false, leaveMessage = true, reason?: string): Promise<CustomResult<boolean, CustomError>> => {
+interface LeaveServerOptions {
+  userId: string;
+  serverId: string;
+  ban?: boolean;
+  leaveMessage?: boolean;
+  reason?: string;
+}
+
+export const leaveServer = async (opts: LeaveServerOptions): Promise<CustomResult<boolean, CustomError>> => {
+  const ban = opts.ban ?? false;
+  const leaveMessage = opts.leaveMessage ?? true;
+
   const server = await prisma.server.findUnique({
-    where: { id: serverId },
+    where: { id: opts.serverId },
     include: { channels: { select: { id: true } }, scheduledForDeletion: true },
   });
   if (!server) {
     return [null, generateError('Server does not exist.')];
   }
 
-  const isServerCreator = server.createdById === userId;
+  const isServerCreator = server.createdById === opts.userId;
 
   if (isServerCreator) {
     return [null, generateError('You cannot leave your own server.')];
@@ -404,17 +415,17 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
 
   // check if user is in the server
   const member = await prisma.serverMember.findUnique({
-    where: { userId_serverId: { serverId, userId } },
+    where: { userId_serverId: { serverId: opts.serverId, userId: opts.userId } },
     include: { user: { select: { bot: true, account: { select: { id: true } } } } },
   });
   if (!member && !ban) {
     return [null, generateError('You are not in this server.')];
   }
 
-  await deleteServerMemberCache(serverId, userId);
+  await deleteServerMemberCache(opts.serverId, opts.userId);
   if (!member && ban) {
     const isBanned = await prisma.bannedServerMember.findFirst({
-      where: { serverId, userId },
+      where: { serverId: opts.serverId, userId: opts.userId },
     });
     if (isBanned) {
       return [null, generateError('User already banned.')];
@@ -422,33 +433,33 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
     await prisma.bannedServerMember.create({
       data: {
         id: generateId(),
-        userId,
-        serverId,
-        reason,
+        userId: opts.userId,
+        serverId: opts.serverId,
+        reason: opts.reason,
       },
     });
-    deleteAllInboxCache(userId);
+    deleteAllInboxCache(opts.userId);
     return [true, null];
   }
 
   const transactions: any[] = [
     prisma.user.update({
-      where: { id: userId },
-      data: { servers: { disconnect: { id: serverId } } },
+      where: { id: opts.userId },
+      data: { servers: { disconnect: { id: opts.serverId } } },
     }),
     prisma.serverMember.delete({
-      where: { userId_serverId: { serverId: serverId, userId: userId } },
+      where: { userId_serverId: { serverId: opts.serverId, userId: opts.userId } },
     }),
     prisma.messageMention.deleteMany({
-      where: { serverId: serverId, mentionedToId: userId },
+      where: { serverId: opts.serverId, mentionedToId: opts.userId },
     }),
     prisma.serverChannelLastSeen.deleteMany({
-      where: { serverId: serverId, userId: userId },
+      where: { serverId: opts.serverId, userId: opts.userId },
     }),
     prisma.userNotificationSettings.deleteMany({
       where: {
-        OR: [{ serverId }, { channel: { serverId } }],
-        userId: userId,
+        OR: [{ serverId: opts.serverId }, { channel: { serverId: opts.serverId } }],
+        userId: opts.userId,
       },
     }),
   ];
@@ -457,41 +468,41 @@ export const leaveServer = async (userId: string, serverId: string, ban = false,
       prisma.bannedServerMember.create({
         data: {
           id: generateId(),
-          userId,
-          serverId,
-          reason,
+          userId: opts.userId,
+          serverId: opts.serverId,
+          reason: opts.reason,
         },
       }),
     );
   }
   await prisma.$transaction(transactions);
 
-  deleteAllInboxCache(userId);
+  deleteAllInboxCache(opts.userId);
   if (member?.user.account?.id) {
-    await removeServerIdFromAccountOrder(member.user.account.id, serverId);
+    await removeServerIdFromAccountOrder(member.user.account.id, opts.serverId);
   }
   if (!server.scheduledForDeletion && server.systemChannelId && leaveMessage) {
     await createMessage({
       channelId: server.systemChannelId,
       type: MessageType.LEAVE_SERVER,
-      userId,
-      serverId,
+      userId: opts.userId,
+      serverId: opts.serverId,
       updateLastSeen: false,
     });
   }
 
   emitServerLeft({
-    userId,
-    serverId,
+    userId: opts.userId,
+    serverId: opts.serverId,
     channelIds: server.channels.map((c) => c.id),
   });
 
   if (member?.user.bot) {
     const botRole = await prisma.serverRole.findFirst({
-      where: { serverId, createdById: userId, botRole: true },
+      where: { serverId: opts.serverId, createdById: opts.userId, botRole: true },
     });
     if (botRole) {
-      await deleteServerRole(serverId, botRole.id, {
+      await deleteServerRole(opts.serverId, botRole.id, {
         forceDeleteBotRole: true,
       });
     }
@@ -509,7 +520,7 @@ export const kickServerMember = async (userId: string, serverId: string, kickedB
     return [null, generateError('You can not kick yourself.')];
   }
 
-  const [, error] = await leaveServer(userId, serverId, false, false);
+  const [, error] = await leaveServer({ userId, serverId, leaveMessage: false, ban: false });
   if (error) return [null, error];
 
   if (server.systemChannelId) {
@@ -564,7 +575,7 @@ export const banServerMember = async (userId: string, serverId: string, bannedBy
     return [null, generateError('Invalid userId')];
   }
 
-  const [, error] = await leaveServer(userId, serverId, true, false, reason);
+  const [, error] = await leaveServer({ userId, serverId, leaveMessage: false, ban: true, reason });
   if (error) return [null, error];
 
   await logServerUserBanned({

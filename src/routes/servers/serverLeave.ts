@@ -8,7 +8,7 @@ export function serverLeave(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
-  const [status, error] = await leaveServer(req.userCache.id, req.serverCache.id);
+  const [status, error] = await leaveServer({ userId: req.userCache.id, serverId: req.serverCache.id });
   if (error) {
     return res.status(500).json(error);
   }
