@@ -129,7 +129,7 @@ const getServerChannelMemberPermissions = async (serverId: string, channelId: st
   return setServerChannelMemberPermissions(serverId, channelId, userId);
 };
 
-export const getChannelForUser = async (channelId: string, userId?: string) => {
+export const getChannelForUserCache = async (channelId: string, userId?: string) => {
   // Check server channel in cache.
   const serverChannel = await getServerChannelCache(channelId);
   if (serverChannel) {

@@ -1,5 +1,5 @@
 import { Attachment } from '@src/generated/prisma/client';
-import { ChannelCache, getChannelForUser } from '../../cache/ChannelCache';
+import { ChannelCache, getChannelForUserCache } from '../../cache/ChannelCache';
 import { getServerCache, ServerCache } from '../../cache/ServerCache';
 import { dateToDateTime, prisma } from '../../common/database';
 import { MessageType } from '../../types/Message';
@@ -54,7 +54,7 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
   let server = opts.server;
 
   if (!channel) {
-    [channel] = await getChannelForUser(opts.channelId, opts.userId);
+    [channel] = await getChannelForUserCache(opts.channelId, opts.userId);
     if (channel && 'server' in channel) {
       server = channel.server;
     }

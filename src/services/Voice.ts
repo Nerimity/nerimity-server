@@ -1,4 +1,4 @@
-import { getChannelForUser } from '../cache/ChannelCache';
+import { getChannelForUserCache } from '../cache/ChannelCache';
 import { getUserIdBySocketId } from '../cache/UserCache';
 import { addUserToVoice, countVoiceUsersInChannel, getVoiceUserByUserId, isUserInVoice, removeVoiceUserByUserId } from '../cache/VoiceCache';
 import { prisma } from '../common/database';
@@ -9,6 +9,7 @@ import { ChannelType, TextChannelTypes } from '../types/Channel';
 import { FriendStatus } from '../types/Friend';
 import { MessageType } from '../types/Message';
 import { createMessage } from './Message/Message';
+import { createSystemMessage } from './Message/MessageCreateSystem';
 
 export const generateTurnCredentials = async () => {
   const res = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${env.CLOUDFLARE_CALLS_ID}/credentials/generate`, {
@@ -41,7 +42,7 @@ export const joinVoiceChannel = async (userId: string, socketId: string, channel
     await leaveVoiceChannel(userId);
   }
 
-  const [channelCache] = await getChannelForUser(channelId, userId);
+  const [channelCache] = await getChannelForUserCache(channelId, userId);
 
   if (!channelCache) {
     return [null, generateError(`Channel does not exist.`)];
@@ -70,7 +71,7 @@ export const joinVoiceChannel = async (userId: string, socketId: string, channel
   const count = await countVoiceUsersInChannel(channelId);
 
   if (count === 0) {
-    createMessage({
+    createSystemMessage({
       type: MessageType.CALL_STARTED,
       channelId,
       userId,
@@ -99,7 +100,7 @@ export const leaveVoiceChannel = async (userId: string, channelId?: string) => {
   if (channelId && voiceUser.channelId !== channelId) {
     return [null, generateError('You are not in this channel.')] as const;
   }
-  const [channelCache] = await getChannelForUser(voiceUser.channelId, userId);
+  const [channelCache] = await getChannelForUserCache(voiceUser.channelId, userId);
 
   if (!channelCache) {
     return [null, generateError(`Channel does not exist.`)];

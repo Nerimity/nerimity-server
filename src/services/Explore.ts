@@ -10,6 +10,7 @@ import { MessageType } from '../types/Message';
 import { ExploreOrderByWithRelationInput, ExploreWhereInput } from '@src/generated/prisma/models';
 import { getUserPresences } from '@src/cache/UserCache';
 import { getHourStart } from '@src/common/utils';
+import { createSystemMessage } from './Message/MessageCreateSystem';
 
 export enum ExploreType {
   SERVER = 0,
@@ -289,7 +290,7 @@ export const bumpExploreItem = async (opts: BumpExploreItemOpts) => {
   });
 
   if (exploreItem.server?.systemChannelId) {
-    await createMessage({
+    await createSystemMessage({
       channelId: exploreItem.server.systemChannelId,
       type: MessageType.BUMP_SERVER,
       userId: opts.bumpedByUserId,

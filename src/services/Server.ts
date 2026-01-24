@@ -12,7 +12,7 @@ import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentUserServerMessages } from './Message/Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
-import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches } from '../cache/ChannelCache';
+import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches, removeServerMemberPermissionsCache } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
 import { deleteAllServerMemberCache, deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
@@ -24,6 +24,7 @@ import { removeDuplicates } from '../common/utils';
 import { LastOnlineStatus } from './User/User';
 import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
 import { removeManyWebhookCache } from '../cache/WebhookCache';
+import { createSystemMessage } from './Message/MessageCreateSystem';
 
 const ServerMemberWithLastOnlineDetails = {
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -328,7 +329,7 @@ export const joinServer = async (
   userPresence && emitUserPresenceUpdateTo(serverId, userPresence);
 
   if (server.systemChannelId) {
-    await createMessage({
+    await createSystemMessage({
       channelId: server.systemChannelId,
       type: MessageType.JOIN_SERVER,
       serverId: serverId,
@@ -477,24 +478,27 @@ export const leaveServer = async (opts: LeaveServerOptions): Promise<CustomResul
   }
   await prisma.$transaction(transactions);
 
+  const channelIds = server.channels.map((channel) => channel.id);
+
+  await removeServerMemberPermissionsCache(channelIds, [opts.userId]);
+
   deleteAllInboxCache(opts.userId);
   if (member?.user.account?.id) {
     await removeServerIdFromAccountOrder(member.user.account.id, opts.serverId);
   }
   if (!server.scheduledForDeletion && server.systemChannelId && leaveMessage) {
-    await createMessage({
+    await createSystemMessage({
       channelId: server.systemChannelId,
       type: MessageType.LEAVE_SERVER,
       userId: opts.userId,
       serverId: opts.serverId,
-      updateLastSeen: false,
     });
   }
 
   emitServerLeft({
     userId: opts.userId,
     serverId: opts.serverId,
-    channelIds: server.channels.map((c) => c.id),
+    channelIds,
   });
 
   if (member?.user.bot) {
@@ -524,12 +528,11 @@ export const kickServerMember = async (userId: string, serverId: string, kickedB
   if (error) return [null, error];
 
   if (server.systemChannelId) {
-    await createMessage({
+    await createSystemMessage({
       channelId: server.systemChannelId,
       type: MessageType.KICK_USER,
       userId,
       serverId,
-      updateLastSeen: false,
     });
   }
 
@@ -590,12 +593,11 @@ export const banServerMember = async (userId: string, serverId: string, bannedBy
   }
 
   if (server.systemChannelId) {
-    await createMessage({
+    await createSystemMessage({
       channelId: server.systemChannelId,
       type: MessageType.BAN_USER,
       userId,
       serverId,
-      updateLastSeen: false,
     });
   }
   return [true, null];

@@ -1,4 +1,4 @@
-import { ChannelCache, getChannelForUser } from '../../cache/ChannelCache';
+import { ChannelCache, getChannelForUserCache } from '../../cache/ChannelCache';
 import { emitButtonClick, emitButtonClickCallback, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../../emits/Channel';
 import { emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../../emits/Server';
 import { MessageType } from '../../types/Message';
@@ -18,6 +18,7 @@ import { FriendStatus } from '../../types/Friend';
 import { createMessageV2, SendMessageOptions } from './MessageCreate';
 import { editMessageV2 } from './MessageEdit';
 import { ButtonCallback } from '@src/routes/channels/channelMessageButtonClickCallback';
+import { createSystemMessage } from './MessageCreateSystem';
 
 interface GetMessageByChannelIdOpts {
   limit?: number;
@@ -274,7 +275,7 @@ export const pinMessage = async (opts: { messageId: string; channelId: string; c
         data: { pinned: true, pinnedMessage: { create: { channelId: opts.channelId } } },
       });
 
-      createMessage({
+      createSystemMessage({
         channel: opts.channelCache,
         server: opts.serverCache,
         type: MessageType.PINNED_MESSAGE,
@@ -602,7 +603,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelForUser(opts.channelId, message.createdById);
+    [channel] = await getChannelForUserCache(opts.channelId, message.createdById);
   }
 
   if (channel?.type === ChannelType.DM_TEXT && !channel?.inbox?.recipientId) {
@@ -711,7 +712,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelForUser(opts.channelId, opts.reactedByUserId);
+    [channel] = await getChannelForUserCache(opts.channelId, opts.reactedByUserId);
   }
 
   if (channel?.inbox?.recipientId) {
@@ -800,7 +801,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelForUser(opts.channelId, opts.reactionRemovedByUserId);
+    [channel] = await getChannelForUserCache(opts.channelId, opts.reactionRemovedByUserId);
   }
 
   if (channel?.inbox?.recipientId) {
@@ -1092,7 +1093,7 @@ export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
 }
 
 export async function markMessageUnread(opts: { channelId: string; messageId: string; userId: string }) {
-  const [channel, error] = await getChannelForUser(opts.channelId, opts.userId);
+  const [channel, error] = await getChannelForUserCache(opts.channelId, opts.userId);
   if (error) {
     return [false, error] as const;
   }
