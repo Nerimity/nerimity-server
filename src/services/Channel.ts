@@ -1,5 +1,5 @@
 import { Channel, Server } from '@src/generated/prisma/client';
-import { deleteServerChannelCaches, getChannelCache, removeServerMemberPermissionsCache, updateServerChannelCache } from '../cache/ChannelCache';
+import { deleteServerChannelCaches, getChannelForUser, removeServerMemberPermissionsCache, updateServerChannelCache } from '../cache/ChannelCache';
 import { ServerMemberCache, getServerMemberCache, getServerMembersCache } from '../cache/ServerMemberCache';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { CustomResult } from '../common/CustomResult';
@@ -21,7 +21,7 @@ import { removeManyWebhookCache } from '../cache/WebhookCache';
 import { addServerAuditLog, AuditLogType } from './AuditLog';
 
 export const dismissChannelNotification = async (userId: string, channelId: string, emit = true) => {
-  const [channel] = await getChannelCache(channelId, userId);
+  const [channel] = await getChannelForUser(channelId, userId);
   if (!channel) return;
 
   const transactions: any[] = [
@@ -54,7 +54,7 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
         update: {
           lastSeen: dateToDateTime(),
         },
-      })
+      }),
     );
   }
   if (!channel.server) {
@@ -67,7 +67,7 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
           },
         },
         data: { lastSeen: dateToDateTime() },
-      })
+      }),
     );
   }
 

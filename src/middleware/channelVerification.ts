@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { getChannelCache } from '../cache/ChannelCache';
+import { getChannelForUser } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 import { generateError } from '../common/errorHandler';
 import { CHANNEL_PERMISSIONS, USER_BADGES, hasBit } from '../common/Bitwise';
@@ -21,7 +21,7 @@ export function channelVerification(opts?: Options) {
       return res.status(403).json(generateError('Channel ID is required.'));
     }
 
-    const [channel, error] = await getChannelCache(channelId, req.userCache.id);
+    const [channel, error] = await getChannelForUser(channelId, req.userCache.id);
     res.setHeader('T-chn-vfy-cc-took', (performance.now() - t1).toFixed(2) + 'ms');
 
     if (error !== null) {

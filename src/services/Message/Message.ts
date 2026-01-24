@@ -1,4 +1,4 @@
-import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
+import { ChannelCache, getChannelForUser } from '../../cache/ChannelCache';
 import { emitButtonClick, emitButtonClickCallback, emitDMMessageDeleted, emitDMMessageReactionAdded, emitDMMessageReactionRemoved, emitDMMessageUpdated, emitMessageMarkUnread } from '../../emits/Channel';
 import { emitServerMessageDeleted, emitServerMessageDeletedBatch, emitServerMessageReactionAdded, emitServerMessageReactionRemoved, emitServerMessageUpdated } from '../../emits/Server';
 import { MessageType } from '../../types/Message';
@@ -602,7 +602,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, message.createdById);
+    [channel] = await getChannelForUser(opts.channelId, message.createdById);
   }
 
   if (channel?.type === ChannelType.DM_TEXT && !channel?.inbox?.recipientId) {
@@ -711,7 +711,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, opts.reactedByUserId);
+    [channel] = await getChannelForUser(opts.channelId, opts.reactedByUserId);
   }
 
   if (channel?.inbox?.recipientId) {
@@ -800,7 +800,7 @@ export const removeMessageReaction = async (opts: RemoveReactionOpts) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, opts.reactionRemovedByUserId);
+    [channel] = await getChannelForUser(opts.channelId, opts.reactionRemovedByUserId);
   }
 
   if (channel?.inbox?.recipientId) {
@@ -970,7 +970,7 @@ export async function addMention(opts: AddMentionOpts) {
           serverId: serverId,
           createdAt: dateToDateTime(message.createdAt),
         },
-      })
+      }),
     ),
   ]);
 }
@@ -1092,7 +1092,7 @@ export async function buttonClickCallback(opts: ButtonClickCallbackOpts) {
 }
 
 export async function markMessageUnread(opts: { channelId: string; messageId: string; userId: string }) {
-  const [channel, error] = await getChannelCache(opts.channelId, opts.userId);
+  const [channel, error] = await getChannelForUser(opts.channelId, opts.userId);
   if (error) {
     return [false, error] as const;
   }

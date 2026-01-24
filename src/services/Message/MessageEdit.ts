@@ -1,5 +1,5 @@
 import { Message, Prisma } from '@src/generated/prisma/client';
-import { ChannelCache, getChannelCache } from '../../cache/ChannelCache';
+import { ChannelCache, getChannelForUser } from '../../cache/ChannelCache';
 import { generateError } from '../../common/errorHandler';
 import { dateToDateTime, exists, prisma } from '../../common/database';
 import { ChannelType } from '../../types/Channel';
@@ -57,7 +57,7 @@ const validateMessageOptions = async (opts: EditMessageOptions) => {
   let channel = opts.channel;
 
   if (!channel) {
-    [channel] = await getChannelCache(opts.channelId, opts.userId);
+    [channel] = await getChannelForUser(opts.channelId, opts.userId);
   }
   const isServerOrDMChannel = channel?.type === ChannelType.DM_TEXT || channel?.type === ChannelType.SERVER_TEXT;
 

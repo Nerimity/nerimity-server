@@ -1,4 +1,4 @@
-import { getChannelCache } from '../cache/ChannelCache';
+import { getChannelForUser } from '../cache/ChannelCache';
 import { getUserIdBySocketId } from '../cache/UserCache';
 import { addUserToVoice, countVoiceUsersInChannel, getVoiceUserByUserId, isUserInVoice, removeVoiceUserByUserId } from '../cache/VoiceCache';
 import { prisma } from '../common/database';
@@ -41,7 +41,7 @@ export const joinVoiceChannel = async (userId: string, socketId: string, channel
     await leaveVoiceChannel(userId);
   }
 
-  const [channelCache] = await getChannelCache(channelId, userId);
+  const [channelCache] = await getChannelForUser(channelId, userId);
 
   if (!channelCache) {
     return [null, generateError(`Channel does not exist.`)];
@@ -99,7 +99,7 @@ export const leaveVoiceChannel = async (userId: string, channelId?: string) => {
   if (channelId && voiceUser.channelId !== channelId) {
     return [null, generateError('You are not in this channel.')] as const;
   }
-  const [channelCache] = await getChannelCache(voiceUser.channelId, userId);
+  const [channelCache] = await getChannelForUser(voiceUser.channelId, userId);
 
   if (!channelCache) {
     return [null, generateError(`Channel does not exist.`)];

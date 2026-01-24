@@ -5,7 +5,7 @@ import { generateId } from '../common/flakeId';
 import { MessageInclude, transformMessage } from './Message/Message';
 import { constructPostInclude } from './Post';
 import { emitReminderAdd, emitReminderRemove, emitReminderUpdate } from '../emits/Reminder';
-import { getChannelCache } from '../cache/ChannelCache';
+import { getChannelForUser } from '../cache/ChannelCache';
 import { getServerMemberCache } from '../cache/ServerMemberCache';
 
 export const ReminderSelect = (userId: string) =>
@@ -34,7 +34,7 @@ export const ReminderSelect = (userId: string) =>
     },
     post: { include: constructPostInclude('') },
     channelId: true,
-  } satisfies Prisma.ReminderSelect);
+  }) satisfies Prisma.ReminderSelect;
 
 export type PartialReminder = Prisma.ReminderGetPayload<{ select: ReturnType<typeof ReminderSelect> }>;
 
@@ -76,7 +76,7 @@ export const addReminder = async (opts: AddReminderOpts) => {
       if (!serverMember) return [null, generateError('You are not in this server!')] as const;
     }
 
-    const [, channelError] = await getChannelCache(message.channel.id, opts.userId);
+    const [, channelError] = await getChannelForUser(message.channel.id, opts.userId);
     if (channelError) return [null, channelError] as const;
 
     channelId = message.channel.id;
