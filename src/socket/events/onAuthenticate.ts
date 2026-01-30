@@ -60,7 +60,7 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
         console.error(err);
       });
     },
-    { id: queueId }
+    { id: queueId },
   );
 }
 
@@ -250,6 +250,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
       connections: user.connections,
       notices: user.notices,
       reminders: user.reminders.map(transformReminder),
+      ip: undefined,
     },
     notificationSettings: user.notificationSettings,
     voiceChannelUsers,
