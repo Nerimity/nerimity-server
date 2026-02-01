@@ -38,6 +38,6 @@ export async function customRedisFlush() {
   }
 
   if (!keys.length) return;
-  await redisClient.del(keys);
-  Log.info('Redis: Flushed', keys.length, 'keys');
+  const res = await redisClient.del(keys);
+  Log.info('Redis: Flushed', res, 'keys out of', keys.length);
 }
