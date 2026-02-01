@@ -33,7 +33,7 @@ export const fetchWebhookCache = async (opts: { id: string }) => {
     channel: webhook.channel,
   } as WebhookCache;
 
-  await redisClient.set(key, JSON.stringify(data), 'EX', 1800); // 30 minutes
+  await redisClient.set(key, JSON.stringify(data), { EX: 1800 }); // 30 minutes
 
   return data;
 };
