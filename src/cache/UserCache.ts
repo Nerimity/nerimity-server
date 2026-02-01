@@ -6,7 +6,7 @@ import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../service
 import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
-import { removeDuplicates, safeExec } from '../common/utils';
+import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 
@@ -31,14 +31,14 @@ export interface Presence {
 }
 
 export async function getUserPresences(userIds: string[], includeSocketId = false, hideOffline = true): Promise<Presence[]> {
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
     const userId = userIds[i]!;
     const key = USER_PRESENCE_KEY_STRING(userId);
     multi.get(key);
   }
 
-  const results = await safeExec<string[]>(multi);
+  const results = await multi.exec();
 
   const presences: Presence[] = [];
   for (let i = 0; i < results.length; i++) {
@@ -59,12 +59,12 @@ export async function updateCachePresence(
   userId: string,
   presence: Partial<Presence> & {
     userId: string;
-  },
+  }
 ): Promise<boolean | Presence> {
   const key = USER_PRESENCE_KEY_STRING(userId);
   const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
 
-  const connectedCount = await redisClient.scard(socketIdsKey);
+  const connectedCount = await redisClient.sCard(socketIdsKey);
 
   if (connectedCount === 0) return false;
 
@@ -86,20 +86,18 @@ export async function addSocketUser(userId: string, socketId: string, presence: 
   const userIdKey = CONNECTED_USER_ID_KEY_STRING(socketId);
   const presenceKey = USER_PRESENCE_KEY_STRING(userId);
 
-  const [count] = await safeExec(redisClient.pipeline().scard(socketIdsKey).sadd(socketIdsKey, socketId));
+  const count = await redisClient.sCard(socketIdsKey);
 
-  const isFirstSocket = count === 0;
-
-  const updatePipeline = redisClient.pipeline();
-  updatePipeline.set(userIdKey, userId);
-
-  if (isFirstSocket) {
-    updatePipeline.set(presenceKey, JSON.stringify(presence));
+  const multi = redisClient.multi();
+  multi.sAdd(socketIdsKey, socketId);
+  multi.set(userIdKey, userId);
+  if (!count) {
+    multi.set(presenceKey, JSON.stringify(presence));
   }
 
-  await updatePipeline.exec();
+  await multi.exec();
 
-  return isFirstSocket;
+  return count === 0;
 }
 
 // returns true if every user is disconnected.
@@ -108,25 +106,18 @@ export async function socketDisconnect(socketId: string, userId: string) {
   const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
   const presenceKey = USER_PRESENCE_KEY_STRING(userId);
 
-  const pipeline = redisClient.pipeline();
-  pipeline.srem(socketIdsKey, socketId);
-  pipeline.scard(socketIdsKey);
+  const count = await redisClient.sCard(socketIdsKey);
+  if (!count) return;
 
-  const [removed, remainingCount] = await safeExec<number[]>(pipeline);
-
-  if (removed === null && remainingCount === null) return false;
-
-  if (removed === 0) return false;
-
-  if (remainingCount === 0) {
-    const cleanupPipeline = redisClient.pipeline();
-    cleanupPipeline.del(userIdKey);
-    cleanupPipeline.del(presenceKey);
-    await cleanupPipeline.exec();
-    return true;
+  const multi = redisClient.multi();
+  multi.sRem(socketIdsKey, socketId);
+  if (count === 1) {
+    multi.del(userIdKey);
+    multi.del(presenceKey);
   }
+  await multi.exec();
 
-  return false;
+  return count === 1;
 }
 
 export interface UserCache {
@@ -163,7 +154,7 @@ export async function getUserIdBySocketId(socketId: string) {
 
 export async function getUserIdsBySocketIds(socketIds: string[]): Promise<string[]> {
   if (!socketIds.length) return [];
-  const userIds = await redisClient.mget(socketIds.map((socketId) => CONNECTED_USER_ID_KEY_STRING(socketId)));
+  const userIds = await redisClient.mGet(socketIds.map((socketId) => CONNECTED_USER_ID_KEY_STRING(socketId)));
   return removeDuplicates(userIds.filter((id) => id) as string[]);
 }
 
@@ -311,9 +302,9 @@ export async function getAllConnectedUserIds() {
 
 export async function addAllowedIPCache(ipAddress: string) {
   const key = ALLOWED_IP_KEY_SET();
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
 
-  multi.sadd(key, ipAddress);
+  multi.sAdd(key, ipAddress);
   // expire key every 1 hour
   multi.expire(key, 60 * 60);
   await multi.exec();
@@ -322,18 +313,18 @@ export async function addAllowedIPCache(ipAddress: string) {
 export async function removeAllowedIPsCache(ipAddresses: string[]) {
   if (!ipAddresses.length) return;
   const key = ALLOWED_IP_KEY_SET();
-  await redisClient.srem(key, ipAddresses);
+  await redisClient.sRem(key, ipAddresses);
 }
 
 export async function isIPAllowedCache(ipAddress: string) {
   const key = ALLOWED_IP_KEY_SET();
-  const exists = await redisClient.sismember(key, ipAddress);
+  const exists = await redisClient.sIsMember(key, ipAddress);
   return exists;
 }
 
 export async function addGoogleAccessTokenCache(userId: string, accessToken: string) {
   const key = GOOGLE_ACCESS_TOKEN(userId);
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
   multi.set(key, accessToken);
   multi.expire(key, 3000);
   return await multi.exec();

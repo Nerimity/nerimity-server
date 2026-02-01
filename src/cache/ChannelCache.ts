@@ -95,20 +95,20 @@ const setServerChannelMemberPermissions = async (serverId: string, channelId: st
     permissions = addBit(permissions, rolePermission.permissions || 0);
   }
 
-  redisClient.hset(key, userId, permissions.toString());
+  redisClient.hSet(key, userId, permissions.toString());
 
   return [permissions, null] as const;
 };
 
 export const removeServerMemberPermissionsCache = async (channelIds: string[], userIds?: string[]) => {
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
 
   for (let i = 0; i < channelIds.length; i++) {
     const channelId = channelIds[i]!;
     const key = SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId);
 
     if (userIds) {
-      multi.hdel(key, ...userIds);
+      multi.hDel(key, userIds);
       continue;
     }
 
@@ -121,7 +121,7 @@ export const removeServerMemberPermissionsCache = async (channelIds: string[], u
 const getServerChannelMemberPermissions = async (serverId: string, channelId: string, userId: string) => {
   const key = SERVER_CHANNEL_PERMISSION_KEY_HASH(channelId);
 
-  const cachedPermissions = await redisClient.hget(key, userId);
+  const cachedPermissions = await redisClient.hGet(key, userId);
   if (cachedPermissions) {
     return [Number(cachedPermissions), null] as const;
   }
@@ -260,7 +260,7 @@ export const updateServerChannelCache = async (channelId: string, update: Partia
 };
 
 export const deleteServerChannelCaches = async (channelIds: string[], alsoDeletePermissions = true) => {
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
   for (let i = 0; i < channelIds.length; i++) {
     const channelId = channelIds[i]!;
     multi.del(SERVER_CHANNEL_KEY_STRING(channelId));
@@ -418,7 +418,7 @@ export const deleteAllInboxCache = async (userId: string) => {
     where: { createdById: userId },
     select: { recipientId: true, channelId: true },
   });
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
   for (let i = 0; i < inboxList.length; i++) {
     const inbox = inboxList[i];
     multi.del(INBOX_KEY_STRING(inbox.channelId, inbox.recipientId));
@@ -433,7 +433,7 @@ export const deleteAllInboxCacheInServer = async (serverId: string) => {
     where: { createdBy: { servers: { some: { id: serverId } } } },
     select: { createdById: true, recipientId: true, channelId: true },
   });
-  const multi = redisClient.pipeline();
+  const multi = redisClient.multi();
   for (let i = 0; i < inboxList.length; i++) {
     const inbox = inboxList[i];
     multi.del(INBOX_KEY_STRING(inbox.channelId, inbox.createdById));

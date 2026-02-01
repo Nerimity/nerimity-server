@@ -14,7 +14,7 @@ export interface ServerMemberCache {
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
   const key = SERVER_MEMBERS_KEY_HASH(serverId);
 
-  let stringifiedMember = await redisClient.hget(key, userId);
+  let stringifiedMember = await redisClient.hGet(key, userId);
 
   if (stringifiedMember) {
     return [JSON.parse(stringifiedMember), null];
@@ -48,13 +48,13 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
     permissions,
     topRoleOrder: roles[0].order,
   } as ServerMemberCache);
-  await redisClient.hset(key, userId, stringifiedMember);
+  await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
 };
 
 export const deleteServerMemberCache = (serverId: string, userId: string) => {
   const key = SERVER_MEMBERS_KEY_HASH(serverId);
-  return redisClient.hdel(key, userId);
+  return redisClient.hDel(key, userId);
 };
 
 export const deleteAllServerMemberCache = (serverId: string) => {
@@ -65,7 +65,7 @@ export const deleteAllServerMemberCache = (serverId: string) => {
 export const getServerMembersCache = async (serverId: string): Promise<ServerMemberCache[]> => {
   const key = SERVER_MEMBERS_KEY_HASH(serverId);
 
-  const members = await redisClient.hgetall(key);
+  const members = await redisClient.hGetAll(key);
 
   const array = Object.values(members);
 

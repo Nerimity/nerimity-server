@@ -14,9 +14,7 @@ export async function createIO(server?: http.Server) {
     transports: ['websocket'],
   });
 
-  const redis = redisClient.duplicate();
-
-  io.adapter(createAdapter(redis));
+  io.adapter(createAdapter(redisClient));
   io.on('connection', onConnection);
 }
 

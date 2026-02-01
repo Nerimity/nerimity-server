@@ -1,15 +1,15 @@
+import { createClient } from 'redis';
 import env from './env';
 import { POST_VIEWS_KEY, WS_KEYS } from '../cache/CacheKeys';
 import { Log } from './Log';
 
-import { Redis } from 'ioredis';
-
-export const redisClient = new Redis({
-  ...(env.REDIS_PATH ? { path: env.REDIS_PATH } : {}),
-  ...(env.REDIS_HOST ? { host: env.REDIS_HOST } : {}),
-  ...(env.REDIS_PORT ? { port: env.REDIS_PORT } : {}),
+export const redisClient = createClient({
+  socket: {
+    ...(env.REDIS_PATH ? { path: env.REDIS_PATH } : {}),
+    ...(env.REDIS_HOST ? { host: env.REDIS_HOST } : {}),
+    ...(env.REDIS_PORT ? { port: env.REDIS_PORT } : {}),
+  },
   ...(env.REDIS_PASS ? { password: env.REDIS_PASS } : {}),
-  lazyConnect: true,
 });
 
 export function connectRedis(): Promise<typeof redisClient> {
