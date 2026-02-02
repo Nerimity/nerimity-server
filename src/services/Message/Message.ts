@@ -709,7 +709,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
   // emit
   if (opts.serverId) {
     emitServerMessageReactionAdded(opts.channelId, payload);
-    return [message, null];
+    return [payload, null];
   }
 
   let channel = opts.channel;
