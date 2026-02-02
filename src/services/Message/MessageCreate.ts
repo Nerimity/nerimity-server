@@ -204,11 +204,8 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     include: {
       ...MessageInclude,
       reactions: {
-        select: {
+        include: {
           ...(opts?.userId ? { reactedUsers: { where: { userId: opts.userId } } } : undefined),
-          emojiId: true,
-          gif: true,
-          name: true,
           _count: {
             select: {
               reactedUsers: true,

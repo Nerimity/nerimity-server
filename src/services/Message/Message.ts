@@ -45,6 +45,7 @@ type TransformMessage = Omit<PublicMessage, 'reactions'> & {
       reactedUsers: true;
       emojiId: true;
       gif: true;
+      webp: true;
       name: true;
       _count: {
         select: {
@@ -185,11 +186,8 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       ...MessageInclude,
 
       reactions: {
-        select: {
+        include: {
           ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
-          emojiId: true,
-          gif: true,
-          name: true,
           _count: {
             select: {
               reactedUsers: true,
@@ -1216,11 +1214,8 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
       ...MessageInclude,
 
       reactions: {
-        select: {
+        include: {
           ...(opts?.requesterId ? { reactedUsers: { where: { userId: opts.requesterId } } } : undefined),
-          emojiId: true,
-          gif: true,
-          name: true,
           _count: {
             select: {
               reactedUsers: true,

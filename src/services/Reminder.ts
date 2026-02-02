@@ -17,11 +17,8 @@ export const ReminderSelect = (userId: string) =>
       include: {
         ...MessageInclude,
         reactions: {
-          select: {
+          include: {
             reactedUsers: { where: { userId } },
-            emojiId: true,
-            gif: true,
-            name: true,
             _count: {
               select: {
                 reactedUsers: true,
