@@ -1,11 +1,10 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
-import { joinServerByInviteCode } from '../../services/ServerInvite';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { ROLE_PERMISSIONS } from '../../common/Bitwise';
-import { getApplication, getApplicationBot } from '../../services/Application';
+import { getApplicationBot } from '../../services/Application';
 import { joinServer } from '../../services/Server';
 import { generateError } from '../../common/errorHandler';
 
@@ -21,7 +20,7 @@ export function serverInviteBotJoin(Router: Router) {
       restrictMS: 60000,
       requests: 3,
     }),
-    route
+    route,
   );
 }
 
@@ -41,7 +40,7 @@ async function route(req: Request, res: Response) {
 
   const perms = parseInt((permissions || '0') as string) || 0;
 
-  const [result, joinError] = await joinServer(botUser.id, serverId, {
+  const [, joinError] = await joinServer(botUser.id, serverId, {
     botName: botUser.username,
     permissions: perms,
   });

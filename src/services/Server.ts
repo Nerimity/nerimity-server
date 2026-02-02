@@ -221,7 +221,7 @@ export const joinServer = async (
     botName: string;
   },
 ): Promise<CustomResult<Server, CustomError>> => {
-  const maxServersReached = await hasReachedMaxServers(userId);
+  const maxServersReached = bot ? false : await hasReachedMaxServers(userId);
   if (maxServersReached) {
     return [null, generateError('You have reached the maximum number of servers.')] as const;
   }
