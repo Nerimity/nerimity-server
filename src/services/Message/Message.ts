@@ -627,6 +627,7 @@ interface AddReactionOpts {
   name: string;
   emojiId?: string;
   gif?: boolean;
+  webp?: boolean;
 }
 
 export const addMessageReaction = async (opts: AddReactionOpts) => {
@@ -685,6 +686,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
         name: opts.name,
         emojiId: opts.emojiId,
         gif: opts.gif,
+        webp: opts.webp,
         messageId: opts.messageId,
         reactedUsers: { create: { userId: opts.reactedByUserId } },
       },
@@ -700,6 +702,7 @@ export const addMessageReaction = async (opts: AddReactionOpts) => {
     emojiId: opts.emojiId,
     name: opts.name,
     gif: opts.gif,
+    webp: opts.webp,
     count: newCount,
   };
 

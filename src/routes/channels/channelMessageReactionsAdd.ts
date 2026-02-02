@@ -14,12 +14,13 @@ export function channelMessageReactionsAdd(Router: Router) {
     body('name').not().isEmpty().withMessage('name is required!').isString().withMessage('name must be a string!').isLength({ min: 1, max: 20 }).withMessage('name length must be between 1 and 20 characters.'),
     body('emojiId').optional({ values: 'falsy' }).isString().withMessage('emojiId must be a string!').isLength({ min: 1, max: 20 }).withMessage('emojiId length must be between 1 and 20 characters.'),
     body('gif').optional({ values: 'falsy' }).isBoolean().withMessage('gif must be a boolean!'),
+    body('webp').optional({ values: 'falsy' }).isBoolean().withMessage('webp must be a boolean!'),
     rateLimit({
       name: 'reaction_add',
       restrictMS: 20000,
       requests: 20,
     }),
-    route
+    route,
   );
 }
 
@@ -27,6 +28,7 @@ interface Body {
   name: string; // emoji name or unicode
   emojiId?: string;
   gif?: boolean;
+  webp?: boolean;
 }
 
 async function route(req: Request, res: Response) {
