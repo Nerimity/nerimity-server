@@ -140,6 +140,7 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
 
       permissions: {
         create: {
+          id: generateId(),
           serverId: opts.serverId,
           roleId: server.defaultRoleId,
           permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, addBit(CHANNEL_PERMISSIONS.JOIN_VOICE.bit, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)),
@@ -152,6 +153,7 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
       permissions: {
         select: {
           roleId: true,
+          memberId: true,
           permissions: true,
         },
       },
@@ -175,43 +177,72 @@ export const createServerChannel = async (opts: CreateServerChannelOpts): Promis
   return [channel, null];
 };
 
+// Either roleId or memberId must be provided. If both are provided, error will be thrown. If neither are provided, error will be thrown.
 interface UpdateServerChannelPermissionsOpts {
   serverId: string;
   channelId: string;
-  roleId: string;
+  roleId?: string;
+  memberId?: string; // Server Member
   permissions: number;
 }
 
 export const updateServerChannelPermissions = async (opts: UpdateServerChannelPermissionsOpts) => {
+  if (opts.memberId && opts.roleId) {
+    return [null, generateError('Only one of roleId and memberId can be provided.')] as const;
+  }
+  if (!opts.memberId && !opts.roleId) {
+    return [null, generateError('Either roleId or memberId must be provided.')] as const;
+  }
+
   const channel = await prisma.channel.findUnique({ where: { id: opts.channelId, serverId: opts.serverId }, select: { id: true, permissions: true } });
   if (!channel) {
     return [null, generateError('Channel does not exist.')] as const;
   }
 
-  const role = await prisma.serverRole.findUnique({ where: { id: opts.roleId, serverId: opts.serverId } });
-  if (!role) {
-    return [null, generateError('Role does not exist.')] as const;
+  if (opts.roleId) {
+    const role = await prisma.serverRole.findUnique({ where: { id: opts.roleId, serverId: opts.serverId } });
+    if (!role) {
+      return [null, generateError('Role does not exist.')] as const;
+    }
+  }
+  if (opts.memberId) {
+    const member = await prisma.serverMember.findUnique({ where: { id: opts.memberId, serverId: opts.serverId } });
+    if (!member) {
+      return [null, generateError('Member does not exist.')] as const;
+    }
   }
 
   const updated = await prisma.serverChannelPermissions.upsert({
     where: {
-      roleId_channelId: {
-        roleId: opts.roleId,
-        channelId: opts.channelId,
-      },
+      ...(opts.roleId
+        ? {
+            roleId_channelId: {
+              roleId: opts.roleId,
+              channelId: opts.channelId,
+            },
+          }
+        : {
+            memberId_channelId: {
+              memberId: opts.memberId!,
+              channelId: opts.channelId,
+            },
+          }),
     },
     update: {
       permissions: opts.permissions,
     },
     create: {
+      id: generateId(),
       channelId: opts.channelId,
       roleId: opts.roleId,
       serverId: opts.serverId,
       permissions: opts.permissions,
+      memberId: opts.memberId,
     },
     select: {
       permissions: true,
       roleId: true,
+      memberId: true,
       serverId: true,
       channelId: true,
     },
@@ -276,7 +307,7 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
 };
 
 interface UpdatePrivateChannelSocketRoomsOpts {
-  channels: { permissions: { permissions: number | null; roleId: string }[]; id: string }[];
+  channels: { permissions: { permissions: number | null; roleId?: string | null; memberId?: string | null }[]; id: string }[];
   serverId: string;
 }
 
@@ -293,7 +324,7 @@ export async function updateSingleMemberPrivateChannelSocketRooms(opts: UpdatePr
 
   const member = await prisma.serverMember.findUnique({
     where: { userId_serverId: { serverId: opts.serverId, userId: opts.userId } },
-    select: { roleIds: true, userId: true },
+    select: { id: true, roleIds: true, userId: true },
   });
   if (!member) return;
 
@@ -325,9 +356,12 @@ export async function updateSingleMemberPrivateChannelSocketRooms(opts: UpdatePr
 
     for (let y = 0; y < channel.permissions.length; y++) {
       const channelPermissions = channel.permissions[y]!;
-      if (roleIds.includes(channelPermissions.roleId)) {
-        permissions = addBit(permissions, channelPermissions.permissions || 0);
+      if (channelPermissions.memberId) {
+        if (channelPermissions.memberId !== member.id) continue;
+      } else if (!roleIds.includes(channelPermissions.roleId!)) {
+        continue;
       }
+      permissions = addBit(permissions, channelPermissions.permissions || 0);
     }
 
     const isPublicChannel = hasBit(permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
@@ -357,7 +391,7 @@ export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannel
 
   const members = await prisma.serverMember.findMany({
     where: { serverId: opts.serverId, userId: { in: onlineUserIds.filter((id) => id) as string[] } },
-    select: { roleIds: true, userId: true },
+    select: { id: true, roleIds: true, userId: true },
   });
 
   for (let i = 0; i < members.length; i++) {
@@ -392,9 +426,12 @@ export async function updatePrivateChannelSocketRooms(opts: UpdatePrivateChannel
 
       for (let y = 0; y < channel.permissions.length; y++) {
         const channelPermissions = channel.permissions[y]!;
-        if (roleIds.includes(channelPermissions.roleId)) {
-          permissions = addBit(permissions, channelPermissions.permissions || 0);
+        if (channelPermissions.memberId) {
+          if (channelPermissions.memberId !== member.id) continue;
+        } else if (!roleIds.includes(channelPermissions.roleId!)) {
+          continue;
         }
+        permissions = addBit(permissions, channelPermissions.permissions || 0);
       }
 
       const isPublicChannel = hasBit(permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);

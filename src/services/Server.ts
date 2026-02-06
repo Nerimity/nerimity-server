@@ -110,6 +110,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         type: ChannelType.SERVER_TEXT,
         permissions: {
           create: {
+            id: generateId(),
             serverId: serverId,
             roleId: roleId,
             permissions: addBit(CHANNEL_PERMISSIONS.SEND_MESSAGE.bit, addBit(CHANNEL_PERMISSIONS.JOIN_VOICE.bit, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit)),
@@ -118,7 +119,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         createdById: opts.creatorId,
         order: 1,
       },
-      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, memberId: true, roleId: true } } },
     }),
     prisma.user.update({
       where: { id: opts.creatorId },
@@ -162,7 +163,7 @@ export const getServers = async (userId: string, includeCurrentUserServerMembers
           _count: { select: { welcomeQuestions: true } },
           channels: {
             where: { deleting: null },
-            include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+            include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, memberId: true, roleId: true } } },
           },
           serverMembers: {
             ...(includeCurrentUserServerMembersOnly ? { where: { userId } } : {}),
@@ -291,7 +292,7 @@ export const joinServer = async (
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
-        include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+        include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, memberId: true, roleId: true } } },
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },

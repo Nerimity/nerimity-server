@@ -678,6 +678,9 @@ model ServerMember {
 
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
 
+  channelPermissions     ServerChannelPermissions[]
+
+
   @@unique([userId, serverId])
   @@index([serverId])
 }
@@ -801,11 +804,15 @@ model Webhook {
 
 model ServerChannelPermissions {
   @@map("server_channel_permissions")
+  id String @id
 
   permissions     Int?
 
-  roleId String
-  role   ServerRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId String?
+  role   ServerRole? @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  memberId String?
+  member   ServerMember? @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   channelId String
   channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
@@ -815,9 +822,10 @@ model ServerChannelPermissions {
 
   createdAt DateTime @default(now())
 
-  @@id([roleId, channelId])
 
-  @@index([channelId])
+  @@unique([memberId, channelId])
+  @@unique([roleId, channelId])
+  @@index([channelId, serverId])
   @@index([serverId])
 
 }

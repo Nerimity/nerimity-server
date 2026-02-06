@@ -60,11 +60,13 @@ const setServerChannelMemberPermissions = async (serverId: string, channelId: st
         userId,
       },
     },
-    select: { roleIds: true, server: { select: { defaultRoleId: true } } },
+    select: { id: true, roleIds: true, server: { select: { defaultRoleId: true } } },
   });
   if (!member) {
     return [null, 'Member not found.'] as const;
   }
+
+  member.roleIds.push(member.server.defaultRoleId);
 
   const channel = await prisma.channel.findUnique({
     where: {
@@ -72,8 +74,12 @@ const setServerChannelMemberPermissions = async (serverId: string, channelId: st
     },
     select: {
       permissions: {
+        where: {
+          OR: [{ roleId: { in: member.roleIds } }, { memberId: member.id }],
+        },
         select: {
           roleId: true,
+          memberId: true,
           permissions: true,
         },
       },
@@ -83,15 +89,12 @@ const setServerChannelMemberPermissions = async (serverId: string, channelId: st
     return [null, 'Channel not found.'] as const;
   }
 
-  member.roleIds.push(member.server.defaultRoleId);
-
   // const rolePermissions = channel.permissions.filter((p) => member.roleIds.includes(p.roleId));
 
   let permissions = 0;
 
   for (let i = 0; i < channel.permissions.length; i++) {
     const rolePermission = channel.permissions[i]!;
-    if (!member.roleIds.includes(rolePermission?.roleId)) continue;
     permissions = addBit(permissions, rolePermission.permissions || 0);
   }
 
