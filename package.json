@@ -14,7 +14,7 @@
     "dev-api": "tsup --watch --onSuccess \"node --enable-source-maps dist/index.mjs --api \"",
     "dev-ws": "tsup --watch --onSuccess \"node --enable-source-maps dist/index.mjs --ws \"",
     "build": "pnpm bundle",
-    "test": "pnpm bundle && concurrently -k --success first --kill-others-on-fail \"pnpm start-dist-both\" \"pnpm test:wait && pnpm vitest\"",
+    "test": "pnpm bundle && concurrently --success first --kill-others \"node --trace-warnings --enable-source-maps dist/index.mjs --api\" \"node --trace-warnings --enable-source-maps dist/index.mjs --ws\" \"pnpm test:wait && pnpm vitest\"",
     "test:wait": "node -e \"const http=require('http');const urls=['http://localhost:8080/api','http://localhost:8081'];const start=Date.now();const wait=(u)=>new Promise(r=>{const t=setInterval(()=>{http.get(u,res=>{if(res.statusCode&&res.statusCode<500){clearInterval(t);r();}}).on('error',()=>{});if(Date.now()-start>30000){clearInterval(t);process.exit(1);}},500);});(async()=>{for(const u of urls) await wait(u);})().catch(()=>process.exit(1));\"",
     "prisma:create": "prisma migrate dev --name",
     "prisma:migrate_dev": "prisma migrate dev",
