@@ -3,7 +3,7 @@ import env from './env';
 
 export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ width: number; height: number; animated: boolean }, any>> {
   return new Promise((resolve) => {
-    fetch(env.LOCAL_NERIMITY_CDN + `proxy-dimensions?url=${encodeURI(url)}`, {
+    fetch(env.LOCAL_NERIMITY_CDN + `proxy-dimensions?url=${encodeURIComponent(url)}`, {
       method: 'GET',
       headers: {
         secret: env.NERIMITY_CDN_SECRET,
