@@ -11,7 +11,7 @@ import { channelPermissions } from '../../middleware/channelPermissions';
 export function channelVoiceJoin(Router: Router) {
   Router.post(
     '/channels/:channelId/voice/join',
-    authenticate(),
+    authenticate({ allowBot: true }),
     channelVerification(),
     channelPermissions({
       bit: CHANNEL_PERMISSIONS.JOIN_VOICE.bit,
@@ -23,7 +23,7 @@ export function channelVoiceJoin(Router: Router) {
       requests: 10,
     }),
     body('socketId').not().isEmpty().withMessage('socketId is required').isString().withMessage('socketId must be a string').isLength({ min: 3, max: 320 }).withMessage('socketId must be between 3 and 320 characters long.'),
-    route
+    route,
   );
 }
 

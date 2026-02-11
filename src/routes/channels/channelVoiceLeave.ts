@@ -7,14 +7,14 @@ import { leaveVoiceChannel } from '../../services/Voice';
 export function channelVoiceLeave(Router: Router) {
   Router.post(
     '/channels/:channelId/voice/leave',
-    authenticate(),
+    authenticate({ allowBot: true }),
     channelVerification(),
     rateLimit({
       name: 'channel_voice_leave',
       restrictMS: 20000,
       requests: 10,
     }),
-    route
+    route,
   );
 }
 
