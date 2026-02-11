@@ -62,7 +62,23 @@ interface ServerUserKickAuditLog {
     kickedUserId: string;
   };
 }
-type TypedAuditLog = Omit<AuditLog, 'data'> & (ServerOwnershipUpdateAuditLog | ServerDeleteAuditLog | ServerUserBanAuditLog | ServerUserUnbanAuditLog | ServerUserKickAuditLog);
+
+interface ServerUserMuteAuditLog {
+  actionType: AuditLogType.SERVER_USER_MUTE;
+  serverId: string;
+  data: {
+    mutedUserId: string;
+  };
+}
+
+interface ServerUserUnmuteAuditLog {
+  actionType: AuditLogType.SERVER_USER_UNMUTE;
+  serverId: string;
+  data: {
+    unmutedUserId: string;
+  };
+}
+type TypedAuditLog = Omit<AuditLog, 'data'> & (ServerOwnershipUpdateAuditLog | ServerDeleteAuditLog | ServerUserBanAuditLog | ServerUserUnbanAuditLog | ServerUserKickAuditLog | ServerUserMuteAuditLog | ServerUserUnmuteAuditLog);
 
 interface ServerOwnershipUpdateOpts {
   serverId: string;
@@ -255,6 +271,12 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
         break;
       case AuditLogType.SERVER_USER_KICK:
         userIdSet.add(auditLog.data.kickedUserId);
+        break;
+      case AuditLogType.SERVER_USER_MUTE:
+        userIdSet.add(auditLog.data.mutedUserId);
+        break;
+      case AuditLogType.SERVER_USER_UNMUTE:
+        userIdSet.add(auditLog.data.unmutedUserId);
         break;
     }
   });
