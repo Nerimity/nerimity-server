@@ -66,14 +66,18 @@ const main = async () => {
 };
 main();
 
-app.use(helmet());
-
 app.use(
   helmet({
     strictTransportSecurity: {
       maxAge: 31536000,
       includeSubDomains: false,
     },
+  }),
+);
+
+app.use(
+  cors({
+    origin: env.ORIGIN,
   }),
 );
 
@@ -91,7 +95,7 @@ if (env.TYPE === 'api') {
       useIP: true,
       restrictMS: 30000,
       requests: 100,
-    })
+    }),
   );
 
   app.use('/api', ModerationRouter);
