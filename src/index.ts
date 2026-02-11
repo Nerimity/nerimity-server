@@ -23,7 +23,7 @@ import { getHourStart, isString } from './common/utils';
 };
 
 if (cluster.isPrimary) {
-  let cpuCount = cpus().length;
+  let cpuCount = cpus().length >=3 ? 3 : cpus().length;
 
   if (env.DEV_MODE) {
     cpuCount = 1;
