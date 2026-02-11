@@ -69,9 +69,12 @@ main();
 app.use(helmet());
 
 app.use(
-  cors({
-    origin: env.ORIGIN,
-  })
+  helmet({
+    strictTransportSecurity: {
+      maxAge: 31536000,
+      includeSubDomains: false,
+    },
+  }),
 );
 
 if (env.TYPE === 'api') {
