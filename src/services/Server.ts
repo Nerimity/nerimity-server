@@ -1,7 +1,7 @@
 import { Channel, Prisma, Server, ServerMember, ServerRole } from '@src/generated/prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
-import { exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
+import { dateToDateTime, exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
 import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
@@ -22,7 +22,7 @@ import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
 import { LastOnlineStatus } from './User/User';
-import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserUnbanned } from './AuditLog';
+import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserMuted, logServerUserUnbanned, logServerUserUnmuted } from './AuditLog';
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 import { createSystemMessage } from './Message/MessageCreateSystem';
 
@@ -601,6 +601,79 @@ export const banServerMember = async (userId: string, serverId: string, bannedBy
     });
   }
   return [true, null];
+};
+
+export const serverMemberRemoveMute = async (serverId: string, userId: string, muteRemovedById: string) => {
+  const mutedMember = await prisma.mutedServerMember.findUnique({
+    where: { userId_serverId: { serverId, userId } },
+  });
+  if (!mutedMember) {
+    return [null, generateError('This member is not muted.')] as const;
+  }
+  const res = await prisma.mutedServerMember.delete({ where: { id: mutedMember.id } }).catch((e) => {
+    Log.error('Failed to remove server member mute', e);
+    return null;
+  });
+
+  if (!res) {
+    return [null, generateError('Failed to remove server member mute. Please try again.')] as const;
+  }
+
+  await deleteServerMemberCache(serverId, userId);
+
+  await logServerUserUnmuted({ userId: muteRemovedById, serverId, unmutedUserId: userId });
+
+  return [true, null] as const;
+};
+
+export const muteServerMember = async (userId: string, serverId: string, expireMs: number, mutedByUserId?: string, reason?: string) => {
+  const server = await prisma.server.findUnique({ where: { id: serverId } });
+  if (!server) {
+    return [null, generateError('Server does not exist.')] as const;
+  }
+  if (server.createdById === userId) {
+    return [null, generateError('You can not mute yourself.')] as const;
+  }
+
+  const userToMute = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+  if (!userToMute) {
+    return [null, generateError('Invalid userId')] as const;
+  }
+
+  const expireAt = dateToDateTime(Date.now() + expireMs);
+  const res = await prisma.mutedServerMember
+    .upsert({
+      where: { userId_serverId: { serverId, userId } },
+      create: {
+        id: generateId(),
+        userId,
+        serverId,
+        expireAt,
+      },
+      update: {
+        expireAt,
+      },
+    })
+    .catch((e) => {
+      Log.error('Failed to mute server member', e);
+      return null;
+    });
+
+  if (!res) return [null, 'Failed to mute server member. Please try again.'] as const;
+
+  await deleteServerMemberCache(serverId, userId);
+
+  await logServerUserMuted({
+    userId: mutedByUserId,
+    serverId,
+    reason,
+    mutedUserId: userId,
+  });
+
+  return [true, null] as const;
 };
 
 export interface UpdateServerOptions {
