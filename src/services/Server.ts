@@ -521,6 +521,9 @@ export const kickServerMember = async (userId: string, serverId: string, kickedB
     return [null, generateError('Server does not exist.')];
   }
   if (server.createdById === userId) {
+    return [null, generateError('You can not kick the server owner.')] as const;
+  }
+  if (kickedByUserId && kickedByUserId === userId) {
     return [null, generateError('You can not kick yourself.')];
   }
 
@@ -567,6 +570,9 @@ export const banServerMember = async (userId: string, serverId: string, bannedBy
     return [null, generateError('Server does not exist.')];
   }
   if (server.createdById === userId) {
+    return [null, generateError('You can not ban the server owner.')] as const;
+  }
+  if (bannedByUserId && bannedByUserId === userId) {
     return [null, generateError('You can not ban yourself.')];
   }
 
@@ -632,7 +638,10 @@ export const muteServerMember = async (userId: string, serverId: string, expireM
     return [null, generateError('Server does not exist.')] as const;
   }
   if (server.createdById === userId) {
-    return [null, generateError('You can not mute yourself.')] as const;
+    return [null, generateError('You can not mute the server owner.')] as const;
+  }
+  if (mutedByUserId && mutedByUserId === userId) {
+    return [null, generateError('You can not mute yourself.')];
   }
 
   const userToMute = await prisma.user.findUnique({

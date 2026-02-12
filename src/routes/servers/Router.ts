@@ -54,6 +54,8 @@ import { serverChannelWebhookCreate } from './serverChannelWebhookCreate';
 import { serverChannelWebhookDelete } from './serverChannelWebhookDelete';
 import { serverChannelWebhookGetSingle } from './serverChannelWebhookGetSingle';
 import { serverChannelWebhookUpdate } from './serverChannelWebhookUpdate';
+import { serverMemberMute } from './serverMemberMute';
+import { serverMemberMuteRemove } from './serverMemberMuteRemove';
 
 const ServersRouter = Router();
 
@@ -109,6 +111,9 @@ serverMemberKick(ServersRouter);
 serverMemberBan(ServersRouter);
 serverMemberBanList(ServersRouter);
 serverMemberBanRemove(ServersRouter);
+
+serverMemberMute(ServersRouter);
+serverMemberMuteRemove(ServersRouter);
 
 serverEmojiAdd(ServersRouter);
 serverEmojisGet(ServersRouter);

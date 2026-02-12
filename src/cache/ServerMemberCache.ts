@@ -9,6 +9,7 @@ export interface ServerMemberCache {
   userId: string;
   permissions: number;
   topRoleOrder: number;
+  muteExpireAt?: number;
 }
 
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
@@ -27,6 +28,8 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   });
 
   if (!serverMember) return [null, 'Server member is not in this server.'];
+
+  const muted = await prisma.mutedServerMember.findUnique({ where: { userId_serverId: { serverId, userId } } });
 
   // get member permissions
   let permissions = 0;
@@ -47,6 +50,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
     userId: serverMember.userId,
     permissions,
     topRoleOrder: roles[0].order,
+    muteExpireAt: muted?.expireAt,
   } as ServerMemberCache);
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
