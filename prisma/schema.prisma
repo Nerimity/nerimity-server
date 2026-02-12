@@ -677,6 +677,7 @@ model ServerMember {
 
   messageNotifications         MessageNotification[]
 
+  muteExpireAt DateTime?
 
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
 

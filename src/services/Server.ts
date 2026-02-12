@@ -616,10 +616,20 @@ export const serverMemberRemoveMute = async (serverId: string, userId: string, m
   if (!mutedMember) {
     return [null, generateError('This member is not muted.')] as const;
   }
-  const res = await prisma.mutedServerMember.delete({ where: { id: mutedMember.id } }).catch((e) => {
-    Log.error('Failed to remove server member mute', e);
-    return null;
-  });
+  const res = await prisma
+    .$transaction(async (tx) => {
+      const member = await tx.serverMember.findUnique({ where: { userId_serverId: { serverId, userId } } });
+
+      if (member) {
+        await tx.serverMember.update({ where: { userId_serverId: { serverId, userId } }, data: { muteExpireAt: null } });
+      }
+
+      return await tx.mutedServerMember.delete({ where: { id: mutedMember.id } });
+    })
+    .catch((e) => {
+      Log.error('Failed to remove server member mute', e);
+      return null;
+    });
 
   if (!res) {
     return [null, generateError('Failed to remove server member mute. Please try again.')] as const;
@@ -653,18 +663,31 @@ export const muteServerMember = async (userId: string, serverId: string, expireA
   }
 
   const expireAt = dateToDateTime(expireAtMs);
-  const res = await prisma.mutedServerMember
-    .upsert({
-      where: { userId_serverId: { serverId, userId } },
-      create: {
-        id: generateId(),
-        userId,
-        serverId,
-        expireAt,
-      },
-      update: {
-        expireAt,
-      },
+  const res = await prisma
+    .$transaction(async (tx) => {
+      const member = await tx.serverMember.findUnique({ where: { userId_serverId: { serverId, userId } } });
+
+      if (member) {
+        await tx.serverMember.update({
+          where: { userId_serverId: { serverId, userId } },
+          data: {
+            muteExpireAt: expireAt,
+          },
+        });
+      }
+
+      return await tx.mutedServerMember.upsert({
+        where: { userId_serverId: { serverId, userId } },
+        create: {
+          id: generateId(),
+          userId,
+          serverId,
+          expireAt,
+        },
+        update: {
+          expireAt,
+        },
+      });
     })
     .catch((e) => {
       Log.error('Failed to mute server member', e);
