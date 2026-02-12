@@ -273,6 +273,11 @@ export const joinServer = async (
   const applyOnJoinRoles = await prisma.serverRole.findMany({ where: { serverId, applyOnJoin: true }, select: { id: true } });
   const applyOnJoinRoleIds = applyOnJoinRoles.map((role) => role.id);
 
+  const muted = await prisma.mutedServerMember.findUnique({
+    where: { userId_serverId: { serverId, userId } },
+    select: { expireAt: true },
+  });
+
   const [_, serverRoles, serverMember, serverChannels, serverMembers] = await prisma
     .$transaction([
       prisma.user.update({
@@ -285,6 +290,7 @@ export const joinServer = async (
           id: generateId(),
           serverId,
           userId,
+          muteExpireAt: muted?.expireAt || null,
           roleIds: botRoleId ? [botRoleId, ...applyOnJoinRoleIds] : applyOnJoinRoleIds,
         },
         include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } } } } },
