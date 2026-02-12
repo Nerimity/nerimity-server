@@ -22,14 +22,12 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   }
 
   // fetch from database and cache it.
-  const serverMember = await prisma.serverMember.findFirst({
-    where: { userId: userId, serverId: serverId },
+  const serverMember = await prisma.serverMember.findUnique({
+    where: { userId_serverId: { serverId, userId } },
     include: { server: { select: { defaultRoleId: true } } },
   });
 
   if (!serverMember) return [null, 'Server member is not in this server.'];
-
-  const muted = await prisma.mutedServerMember.findUnique({ where: { userId_serverId: { serverId, userId } } });
 
   // get member permissions
   let permissions = 0;
@@ -50,7 +48,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
     userId: serverMember.userId,
     permissions,
     topRoleOrder: roles[0].order,
-    muteExpireAt: muted?.expireAt,
+    muteExpireAt: serverMember.muteExpireAt as unknown as number,
   } as ServerMemberCache);
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
