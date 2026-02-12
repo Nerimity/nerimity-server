@@ -632,7 +632,7 @@ export const serverMemberRemoveMute = async (serverId: string, userId: string, m
   return [true, null] as const;
 };
 
-export const muteServerMember = async (userId: string, serverId: string, expireMs: number, mutedByUserId?: string, reason?: string) => {
+export const muteServerMember = async (userId: string, serverId: string, expireAtMs: number, mutedByUserId?: string, reason?: string) => {
   const server = await prisma.server.findUnique({ where: { id: serverId } });
   if (!server) {
     return [null, generateError('Server does not exist.')] as const;
@@ -652,7 +652,7 @@ export const muteServerMember = async (userId: string, serverId: string, expireM
     return [null, generateError('Invalid userId')] as const;
   }
 
-  const expireAt = dateToDateTime(Date.now() + expireMs);
+  const expireAt = dateToDateTime(expireAtMs);
   const res = await prisma.mutedServerMember
     .upsert({
       where: { userId_serverId: { serverId, userId } },

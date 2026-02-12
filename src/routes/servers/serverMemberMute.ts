@@ -15,7 +15,7 @@ export function serverMemberMute(Router: Router) {
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     body('reason').isString().withMessage('Reason must be a string!').isLength({ min: 1, max: 150 }).withMessage('Reason length must be between 1 and 150 characters.').optional({ nullable: true }),
-    body('expireMS').notEmpty().withMessage('ExpireMS is required.').isNumeric().withMessage('ExpireMS must be a number!'),
+    body('expireAt').notEmpty().withMessage('ExpireAt is required.').isNumeric().withMessage('ExpireAt must be a number!'),
 
     rateLimit({
       name: 'server_mute_member',
@@ -31,9 +31,14 @@ async function route(req: Request, res: Response) {
   if (validateError) {
     return res.status(400).json(validateError);
   }
+
+  if (req.body.expireAt <= Date.now()) {
+    return res.status(400).json({ error: 'ExpireAt must be a future timestamp.' });
+  }
+
   const userId = req.params.userId as string;
 
-  const [, error] = await muteServerMember(userId, req.serverCache.id, req.body.expireMS, req.userCache.id, req.body?.reason);
+  const [, error] = await muteServerMember(userId, req.serverCache.id, req.body.expireAt, req.userCache.id, req.body?.reason);
   if (error) {
     return res.status(400).json(error);
   }
