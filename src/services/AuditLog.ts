@@ -164,6 +164,7 @@ interface ServerMutedUserOpts {
   serverId: string;
   userId?: string;
   mutedUserId: string;
+  expireAt: number;
   reason?: string;
 }
 export const logServerUserMuted = async (opts: ServerMutedUserOpts) => {
@@ -176,6 +177,7 @@ export const logServerUserMuted = async (opts: ServerMutedUserOpts) => {
       reason: opts.reason,
       data: {
         mutedUserId: opts.mutedUserId,
+        expireAt: opts.expireAt,
       },
     },
   });
