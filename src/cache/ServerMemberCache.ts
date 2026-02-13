@@ -21,6 +21,10 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
     return [JSON.parse(stringifiedMember), null];
   }
 
+  if (!serverId) {
+    return [null, 'Missing server id!'];
+  }
+
   // fetch from database and cache it.
   const serverMember = await prisma.serverMember.findUnique({
     where: { userId_serverId: { serverId, userId } },
