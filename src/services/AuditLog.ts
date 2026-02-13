@@ -11,6 +11,8 @@ export enum AuditLogType {
   SERVER_USER_UNBAN = 'SERVER_USER_UNBAN',
   SERVER_USER_KICK = 'SERVER_USER_KICK',
   SERVER_USER_UPDATE = 'SERVER_USER_UPDATE',
+  SERVER_USER_MUTE = 'SERVER_USER_MUTE',
+  SERVER_USER_UNMUTE = 'SERVER_USER_UNMUTE',
 
   SERVER_CHANNEL_CREATE = 'SERVER_CHANNEL_CREATE',
   SERVER_CHANNEL_UPDATE = 'SERVER_CHANNEL_UPDATE',
@@ -60,7 +62,23 @@ interface ServerUserKickAuditLog {
     kickedUserId: string;
   };
 }
-type TypedAuditLog = Omit<AuditLog, 'data'> & (ServerOwnershipUpdateAuditLog | ServerDeleteAuditLog | ServerUserBanAuditLog | ServerUserUnbanAuditLog | ServerUserKickAuditLog);
+
+interface ServerUserMuteAuditLog {
+  actionType: AuditLogType.SERVER_USER_MUTE;
+  serverId: string;
+  data: {
+    mutedUserId: string;
+  };
+}
+
+interface ServerUserUnmuteAuditLog {
+  actionType: AuditLogType.SERVER_USER_UNMUTE;
+  serverId: string;
+  data: {
+    unmutedUserId: string;
+  };
+}
+type TypedAuditLog = Omit<AuditLog, 'data'> & (ServerOwnershipUpdateAuditLog | ServerDeleteAuditLog | ServerUserBanAuditLog | ServerUserUnbanAuditLog | ServerUserKickAuditLog | ServerUserMuteAuditLog | ServerUserUnmuteAuditLog);
 
 interface ServerOwnershipUpdateOpts {
   serverId: string;
@@ -142,7 +160,48 @@ export const logServerUserBanned = async (opts: ServerBannedUserOpts) => {
     },
   });
 };
+interface ServerMutedUserOpts {
+  serverId: string;
+  userId?: string;
+  mutedUserId: string;
+  expireAt: number;
+  reason?: string;
+}
+export const logServerUserMuted = async (opts: ServerMutedUserOpts) => {
+  await prisma.auditLog.create({
+    data: {
+      id: generateId(),
+      actionType: AuditLogType.SERVER_USER_MUTE,
+      actionById: opts.userId || 'System',
+      serverId: opts.serverId,
+      reason: opts.reason,
+      data: {
+        mutedUserId: opts.mutedUserId,
+        expireAt: opts.expireAt,
+      },
+    },
+  });
+};
 
+interface ServerUnmutedUserOpts {
+  serverId: string;
+  userId: string;
+  unmutedUserId: string;
+}
+
+export const logServerUserUnmuted = async (opts: ServerUnmutedUserOpts) => {
+  await prisma.auditLog.create({
+    data: {
+      id: generateId(),
+      actionType: AuditLogType.SERVER_USER_UNMUTE,
+      actionById: opts.userId,
+      serverId: opts.serverId,
+      data: {
+        unmutedUserId: opts.unmutedUserId,
+      },
+    },
+  });
+};
 interface ServerUnbannedUserOpts {
   serverId: string;
   userId: string;
@@ -214,6 +273,12 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
         break;
       case AuditLogType.SERVER_USER_KICK:
         userIdSet.add(auditLog.data.kickedUserId);
+        break;
+      case AuditLogType.SERVER_USER_MUTE:
+        userIdSet.add(auditLog.data.mutedUserId);
+        break;
+      case AuditLogType.SERVER_USER_UNMUTE:
+        userIdSet.add(auditLog.data.unmutedUserId);
         break;
     }
   });

@@ -163,6 +163,7 @@ model User {
   servers                Server[]
   createdServerRoles     ServerRole[]
   bannedServers          BannedServerMember[]
+  mutedServers           MutedServerMember[]
   customEmojis           CustomEmoji[]
 
   lastOnlineAt          DateTime?
@@ -428,6 +429,7 @@ model Server {
   users                  User[]
   roles                  ServerRole[]
   bannedUsers            BannedServerMember[]
+  mutedUsers             MutedServerMember[]
   verified               Boolean                @default(false)
 
   publicServer           Explore?
@@ -675,11 +677,30 @@ model ServerMember {
 
   messageNotifications         MessageNotification[]
 
+  muteExpireAt DateTime?
 
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
 
   @@unique([userId, serverId])
   @@index([serverId])
+}
+
+model MutedServerMember {
+  @@map("muted_server_members")
+  id       String  @id
+  userId   String
+  serverId String
+  server   Server  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user     User  @relation(fields: [userId], references: [id])
+
+  expireAt DateTime
+
+  mutedAt DateTime @default(now())
+
+  
+  @@unique([userId, serverId])
+  @@index([serverId, mutedAt(sort: Desc)])
+
 }
 
 
@@ -694,6 +715,9 @@ model BannedServerMember {
   reason   String?
 
   bannedAt DateTime @default(now())
+
+  @@unique([userId, serverId])
+  @@index([serverId, bannedAt(sort: Desc)])
 }
 
 model Friend {

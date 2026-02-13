@@ -92,7 +92,7 @@ export function channelMessageCreate(Router: Router) {
         await banServerMember(req.userCache.id, req.serverCache.id, undefined, true);
       },
     }),
-    queueRoute
+    queueRoute,
   );
 }
 
@@ -131,6 +131,12 @@ interface Body {
 
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
+
+  if (req.serverMemberCache.muteExpireAt) {
+    if (Date.now() < req.serverMemberCache.muteExpireAt) {
+      return res.status(403).json(generateError('You are muted in this server.'));
+    }
+  }
 
   if (req.channelCache.type === ChannelType.SERVER_TEXT && req.channelCache.slowModeSeconds && !isServerMemberModerator(req.serverCache, req.serverMemberCache)) {
     const ttl = await checkAndUpdateRateLimit({

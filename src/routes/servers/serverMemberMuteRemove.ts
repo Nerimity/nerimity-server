@@ -4,16 +4,16 @@ import { authenticate } from '../../middleware/authenticate';
 import { memberHasRolePermissionMiddleware } from '../../middleware/memberHasRolePermission';
 import { rateLimit } from '../../middleware/rateLimit';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
-import { serverMemberRemoveBan } from '../../services/Server';
+import { serverMemberRemoveMute } from '../../services/Server';
 
-export function serverMemberBanRemove(Router: Router) {
+export function serverMemberMuteRemove(Router: Router) {
   Router.delete(
-    '/servers/:serverId/bans/:userId',
+    '/servers/:serverId/mutes/:userId',
     authenticate({ allowBot: true }),
     serverMemberVerification(),
-    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.BAN),
+    memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
     rateLimit({
-      name: 'server_unban_member',
+      name: 'server_unmute_member',
       restrictMS: 10000,
       requests: 80,
     }),
@@ -24,7 +24,7 @@ export function serverMemberBanRemove(Router: Router) {
 async function route(req: Request, res: Response) {
   const userId = req.params.userId as string;
 
-  const [, error] = await serverMemberRemoveBan(req.serverCache.id, userId, req.userCache.id);
+  const [, error] = await serverMemberRemoveMute(req.serverCache.id, userId, req.userCache.id);
   if (error) {
     return res.status(400).json(error);
   }

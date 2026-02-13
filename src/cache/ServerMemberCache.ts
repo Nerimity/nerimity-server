@@ -9,6 +9,7 @@ export interface ServerMemberCache {
   userId: string;
   permissions: number;
   topRoleOrder: number;
+  muteExpireAt?: number;
 }
 
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
@@ -21,8 +22,8 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
   }
 
   // fetch from database and cache it.
-  const serverMember = await prisma.serverMember.findFirst({
-    where: { userId: userId, serverId: serverId },
+  const serverMember = await prisma.serverMember.findUnique({
+    where: { userId_serverId: { serverId, userId } },
     include: { server: { select: { defaultRoleId: true } } },
   });
 
@@ -47,6 +48,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
     userId: serverMember.userId,
     permissions,
     topRoleOrder: roles[0].order,
+    muteExpireAt: serverMember.muteExpireAt as unknown as number,
   } as ServerMemberCache);
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];
