@@ -38,6 +38,7 @@ export const getTopRole = async (serverId: string, userId: string): Promise<Cust
 export interface UpdateServerMember {
   roleIds?: string[];
   nickname?: string;
+  muteExpireAt?: number;
 }
 
 export const updateServerMember = async (serverId: string, userId: string, updatedByUserId: string, update: UpdateServerMember): Promise<CustomResult<UpdateServerMember, CustomError>> => {
@@ -126,7 +127,7 @@ export const updateServerMember = async (serverId: string, userId: string, updat
   if (update.roleIds) {
     await removeServerMemberPermissionsCache(
       serverChannels.map((c) => c.id),
-      [userId]
+      [userId],
     );
   }
 
@@ -233,7 +234,7 @@ export const addWelcomeAnswerRolesToUser = async (opts: AddWelcomeAnswerRolesToU
     transaction.push(
       prisma.answeredServerWelcomeQuestion.deleteMany({
         where: { questionId: answer.question.id, memberId: member.id },
-      })
+      }),
     );
   }
 
@@ -252,7 +253,7 @@ export const addWelcomeAnswerRolesToUser = async (opts: AddWelcomeAnswerRolesToU
           set: newRoles,
         },
       },
-    })
+    }),
   );
   await prisma.$transaction(transaction);
 
@@ -270,7 +271,7 @@ export const addWelcomeAnswerRolesToUser = async (opts: AddWelcomeAnswerRolesToU
   deleteAllServerMemberCache(opts.serverId);
   await removeServerMemberPermissionsCache(
     serverChannels.map((c) => c.id),
-    [opts.userId]
+    [opts.userId],
   );
 
   emitServerMemberUpdated(opts.serverId, opts.userId, { roleIds: newRoles });
@@ -316,13 +317,13 @@ export const removeWelcomeAnswerRolesFromUser = async (opts: RemoveWelcomeAnswer
     transaction.push(
       prisma.answeredServerWelcomeQuestion.deleteMany({
         where: { questionId: answer.question.id, memberId: member.id },
-      })
+      }),
     );
   } else {
     transaction.push(
       prisma.answeredServerWelcomeQuestion.delete({
         where: { memberId_answerId: { memberId: member.id, answerId: answer.id } },
-      })
+      }),
     );
   }
 
@@ -334,7 +335,7 @@ export const removeWelcomeAnswerRolesFromUser = async (opts: RemoveWelcomeAnswer
           set: newRoles,
         },
       },
-    })
+    }),
   );
   await prisma.$transaction(transaction);
 
@@ -352,7 +353,7 @@ export const removeWelcomeAnswerRolesFromUser = async (opts: RemoveWelcomeAnswer
   deleteAllServerMemberCache(opts.serverId);
   await removeServerMemberPermissionsCache(
     serverChannels.map((c) => c.id),
-    [opts.userId]
+    [opts.userId],
   );
 
   emitServerMemberUpdated(opts.serverId, opts.userId, { roleIds: newRoles });

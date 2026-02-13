@@ -7,7 +7,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
-import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
+import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerMemberUpdated, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentUserServerMessages } from './Message/Message';
 import { MessageType } from '../types/Message';
@@ -643,6 +643,8 @@ export const serverMemberRemoveMute = async (serverId: string, userId: string, m
 
   await deleteServerMemberCache(serverId, userId);
 
+  emitServerMemberUpdated(serverId, userId, { muteExpireAt: null });
+
   await logServerUserUnmuted({ userId: muteRemovedById, serverId, unmutedUserId: userId });
 
   return [true, null] as const;
@@ -703,6 +705,8 @@ export const muteServerMember = async (userId: string, serverId: string, expireA
   if (!res) return [null, 'Failed to mute server member. Please try again.'] as const;
 
   await deleteServerMemberCache(serverId, userId);
+
+  emitServerMemberUpdated(serverId, userId, { muteExpireAt: expireAtMs });
 
   await logServerUserMuted({
     userId: mutedByUserId,
