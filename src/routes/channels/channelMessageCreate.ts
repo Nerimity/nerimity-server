@@ -132,7 +132,7 @@ interface Body {
 async function route(req: Request, res: Response) {
   const body = req.body as Body;
 
-  if (req.serverMemberCache.muteExpireAt) {
+  if (req.serverMemberCache?.muteExpireAt) {
     if (Date.now() < req.serverMemberCache.muteExpireAt) {
       return res.status(403).json(generateError('You are muted in this server.'));
     }
