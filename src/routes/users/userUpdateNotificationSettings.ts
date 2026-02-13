@@ -3,11 +3,7 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import {
-  NotificationPingMode,
-  NotificationSoundMode,
-  updateUserNotificationSettings,
-} from '../../services/User/User';
+import { NotificationPingMode, NotificationSoundMode, updateUserNotificationSettings } from '../../services/User/User';
 
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { serverMemberVerification } from '../../middleware/serverMemberVerification';
@@ -16,35 +12,19 @@ export function userUpdateNotificationSettings(Router: Router) {
   Router.post(
     '/users/notifications',
     authenticate(),
-    serverMemberVerification(),
+    serverMemberVerification({ serverIdInBody: true }),
     rateLimit({
       name: 'update_notification',
       restrictMS: 10000,
       requests: 20,
     }),
 
-    body('channelId')
-      .optional({ nullable: true })
-      .isString()
-      .withMessage('Invalid channelId.')
-      .isLength({ min: 3, max: 320 })
-      .withMessage('Invalid channelId.'),
-    body('serverId')
-      .optional({ nullable: true })
-      .isString()
-      .withMessage('Invalid serverId.')
-      .isLength({ min: 3, max: 320 })
-      .withMessage('Invalid serverId.'),
+    body('channelId').optional({ nullable: true }).isString().withMessage('Invalid channelId.').isLength({ min: 3, max: 320 }).withMessage('Invalid channelId.'),
+    body('serverId').optional({ nullable: true }).isString().withMessage('Invalid serverId.').isLength({ min: 3, max: 320 }).withMessage('Invalid serverId.'),
 
-    body('notificationSoundMode')
-      .optional({ nullable: true })
-      .isInt({ min: 0, max: 2 })
-      .withMessage('Invalid notificationSoundMode.'),
-    body('notificationPingMode')
-      .optional({ nullable: true })
-      .isInt({ min: 0, max: 2 })
-      .withMessage('Invalid notificationPingMode.'),
-    route
+    body('notificationSoundMode').optional({ nullable: true }).isInt({ min: 0, max: 2 }).withMessage('Invalid notificationSoundMode.'),
+    body('notificationPingMode').optional({ nullable: true }).isInt({ min: 0, max: 2 }).withMessage('Invalid notificationPingMode.'),
+    route,
   );
 }
 
@@ -67,14 +47,11 @@ async function route(req: Request, res: Response) {
   const [result, error] = await updateUserNotificationSettings(
     req.userCache.id,
     {
-      ...addToObjectIfExists(
-        'notificationSoundMode',
-        body.notificationSoundMode
-      ),
+      ...addToObjectIfExists('notificationSoundMode', body.notificationSoundMode),
       ...addToObjectIfExists('notificationPingMode', body.notificationPingMode),
     },
     body.channelId ? undefined : body.serverId,
-    body.channelId
+    body.channelId,
   );
 
   if (error) {

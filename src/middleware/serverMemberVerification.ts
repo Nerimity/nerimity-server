@@ -6,11 +6,15 @@ import { generateError } from '../common/errorHandler';
 interface Options {
   allowBot?: boolean;
   ignoreScheduledDeletion?: boolean;
+  serverIdInBody?: boolean;
 }
 
 export function serverMemberVerification(opts?: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const { serverId } = req.params;
+    const params = req.params;
+    const body = req.body;
+
+    const serverId = opts?.serverIdInBody ? body.serverId : params.serverId;
 
     const [memberCache, error] = await getServerMemberCache(serverId, req.userCache.id);
     if (error !== null) {
