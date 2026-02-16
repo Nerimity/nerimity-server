@@ -237,7 +237,6 @@ function hasChannelPermission(opts: hasChannelPermissionOpts) {
 
 const UserMentionRegex = /\[@:(.*?)\]/g;
 const RoleMentionRegex = /\[r:(.*?)\]/g;
-const CustomEmojiRegex = /\[(?:w?a)?ce:(.*?):(.*?)\]/g;
 const commandRegex = /^(\/[^:\s]*):\d+( .*)?$/m;
 
 function formatMessage(message: { mentions: User[]; content?: string; roleMentions: ServerRole[] }) {
@@ -254,11 +253,7 @@ function formatMessage(message: { mentions: User[]; content?: string; roleMentio
     return role ? `@${role.name}` : _;
   });
 
-  const cEmojiReplace = roleReplace.replace(CustomEmojiRegex, (_, p1, p2) => {
-    return `:[ce:${p1}:${p2}]`;
-  });
-
-  const commandReplace = cEmojiReplace.replace(commandRegex, '$1$2');
+  const commandReplace = roleReplace.replace(commandRegex, '$1$2');
 
   return commandReplace;
 }
