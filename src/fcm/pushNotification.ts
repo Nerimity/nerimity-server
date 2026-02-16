@@ -3,7 +3,7 @@ import { cert } from 'firebase-admin/app';
 import { prisma } from '../common/database';
 import { NotificationPingMode, removeFCMTokens } from '../services/User/User';
 import { Message, ServerChannelPermissions, ServerRole, User } from '@src/generated/prisma/client';
-import { ChannelCache } from '../cache/ChannelCache';
+import { BaseChannelCache, DMChannelCache, ServerChannelCache } from '../cache/ChannelCache';
 import { ServerCache } from '../cache/ServerCache';
 import { Log } from '../common/Log';
 import { addBit, CHANNEL_PERMISSIONS, hasBit, ROLE_PERMISSIONS } from '../common/Bitwise';
@@ -39,7 +39,7 @@ export async function sendServerPushMessageNotification(
       avatar: string | null;
     }[];
   },
-  channel: ChannelCache,
+  channel: BaseChannelCache & ServerChannelCache,
   server: ServerCache
 ) {
   if (message.silent) return;
@@ -133,7 +133,7 @@ export async function sendServerPushMessageNotification(
 
   if (content) {
     content = formatMessage(message as any)!;
-    content = content.substring(0, 100);
+    if (content.length > 200) content = content.substring(0, 200) + '…';
   }
 
   const batchResponse = await admin.messaging().sendEachForMulticast({
@@ -168,7 +168,7 @@ export async function sendDmPushNotification(
       hexColor: string | null;
     };
   },
-  channel: ChannelCache
+  channel: BaseChannelCache & DMChannelCache
 ) {
   if (message.silent) return;
   if (!credentials) return;
@@ -185,7 +185,7 @@ export async function sendDmPushNotification(
 
   if (content) {
     content = formatMessage(message as any)!;
-    content = content.substring(0, 100);
+    if (content.length > 200) content = content.substring(0, 200) + '…';
   }
   const batchResponse = await admin.messaging().sendEachForMulticast({
     tokens,
@@ -254,8 +254,8 @@ function formatMessage(message: { mentions: User[]; content?: string; roleMentio
     return role ? `@${role.name}` : _;
   });
 
-  const cEmojiReplace = roleReplace.replace(CustomEmojiRegex, (_, __, p2) => {
-    return `:${p2}:`;
+  const cEmojiReplace = roleReplace.replace(CustomEmojiRegex, (_, p1, p2) => {
+    return `:[ce:${p1}:${p2}]`;
   });
 
   const commandReplace = cEmojiReplace.replace(commandRegex, '$1$2');
