@@ -237,7 +237,7 @@ function hasChannelPermission(opts: hasChannelPermissionOpts) {
 
 const UserMentionRegex = /\[@:(.*?)\]/g;
 const RoleMentionRegex = /\[r:(.*?)\]/g;
-const CustomEmojiRegex = /\[[a]?ce:(.*?):(.*?)\]/g;
+const CustomEmojiRegex = /\[(?:w?a)?ce:(.*?):(.*?)\]/g;
 const commandRegex = /^(\/[^:\s]*):\d+( .*)?$/m;
 
 function formatMessage(message: { mentions: User[]; content?: string; roleMentions: ServerRole[] }) {
