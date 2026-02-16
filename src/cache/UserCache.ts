@@ -59,7 +59,7 @@ export async function updateCachePresence(
   userId: string,
   presence: Partial<Presence> & {
     userId: string;
-  }
+  },
 ): Promise<boolean | Presence> {
   const key = USER_PRESENCE_KEY_STRING(userId);
   const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
@@ -111,8 +111,8 @@ export async function socketDisconnect(socketId: string, userId: string) {
 
   const multi = redisClient.multi();
   multi.sRem(socketIdsKey, socketId);
+  multi.del(userIdKey);
   if (count === 1) {
-    multi.del(userIdKey);
     multi.del(presenceKey);
   }
   await multi.exec();

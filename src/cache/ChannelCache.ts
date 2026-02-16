@@ -95,7 +95,11 @@ const setServerChannelMemberPermissions = async (serverId: string, channelId: st
     permissions = addBit(permissions, rolePermission.permissions || 0);
   }
 
-  redisClient.hSet(key, userId, permissions.toString());
+  redisClient
+    .multi()
+    .hSet(key, userId, permissions.toString())
+    .expire(key, 60 * 60 * 24)
+    .exec(); // expire in 24 hours
 
   return [permissions, null] as const;
 };
