@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 import { Log } from './Log';
+import { JsonWebKey } from 'crypto';
 
 const origin = (): string | string[] => {
   if (!process.env.ORIGIN) {
@@ -17,6 +18,7 @@ const origin = (): string | string[] => {
 export default {
   DEV_MODE: process.env.DEV_MODE === 'true',
   API_PORT: parseInt(process.env.API_PORT as string),
+  NERIMITY_EMBED_BOT_PRIVATE_KEY: JSON.parse((process.env.NERIMITY_EMBED_BOT_PRIVATE_KEY as string) || 'null') as JsonWebKey | null,
   WS_PORT: parseInt(process.env.WS_PORT as string),
   JWT_SECRET: process.env.JWT_SECRET as string,
   CONNECTIONS_SECRET: process.env.CONNECTIONS_SECRET as string,

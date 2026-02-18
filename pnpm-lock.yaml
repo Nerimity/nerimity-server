@@ -101,6 +101,9 @@ importers:
       vitest:
         specifier: ^4.0.18
         version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@22.19.11)(jiti@2.6.1)
+      web-bot-auth:
+        specifier: ^0.1.2
+        version: 0.1.2
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.3
@@ -1846,6 +1849,9 @@ packages:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
 
+  http-message-sig@0.2.0:
+    resolution: {integrity: sha512-9fXSmxsdWDuMgk6Rd5Jc8Fa/wEblmRXZyO89KPkRrGsdeAwYlUkvS5oSOw6aOKKK/qKHNTq3jCHHTRCEid6RaQ==}
+
   http-parser-js@0.5.10:
     resolution: {integrity: sha512-Pysuw9XpUq5dVc/2SMHpuTY01RFl8fttgcyunjL7eEMhGM3cI4eOmiCycJDVCo/7O7ClfQD3SaI6ftDzqOXYMA==}
 
@@ -1946,6 +1952,9 @@ packages:
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
+
+  jsonwebkey-thumbprint@0.1.0:
+    resolution: {integrity: sha512-4m/gJEUQH8N2NfvZFjCL8/E+vlt0FlrmHoR4T93CEXQRkC64qwRi6oQri4/eqLVXqEqXYCss0+Q7pLx6vJBqzw==}
 
   jsonwebtoken@9.0.3:
     resolution: {integrity: sha512-MT/xP0CrubFRNLNKvxJ2BYfy53Zkm++5bX9dtuPbqAeQpTVe0MQTFhao8+Cp//EmJp244xt6Drw/GVEGCUj40g==}
@@ -2677,6 +2686,10 @@ packages:
   strnum@2.1.2:
     resolution: {integrity: sha512-l63NF9y/cLROq/yqKXSLtcMeeyOfnSQlfMSlzFt/K73oIaD8DGaQWd7Z34X9GPiKqP5rbSh84Hl4bOlLcjiSrQ==}
 
+  structured-headers@2.0.2:
+    resolution: {integrity: sha512-IUul56vVHuMg2UxWhwDj9zVJE6ztYEQQkynr1FQ/NydPhivtk5+Qb2N1RS36owEFk2fNUriTguJ2R7htRObcdA==}
+    engines: {node: '>=18', npm: '>=6'}
+
   stubs@3.0.0:
     resolution: {integrity: sha512-PdHt7hHUJKxvTCgbKX9C1V/ftOcjJQgz8BZwNfV5c4B6dcGqlpelTbJ999jBGZ2jYiPAwcX5dP6oBwVlBlUbxw==}
 
@@ -2931,6 +2944,9 @@ packages:
         optional: true
       jsdom:
         optional: true
+
+  web-bot-auth@0.1.2:
+    resolution: {integrity: sha512-6hIt4smUw2MtWt23frAMta1+wwan4+pZVDbWLkfrSAjMAqltr4Ahu7wY9OXVmIheg/IE+BzGL7Di89j6OZcPbw==}
 
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
@@ -4841,6 +4857,10 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
+  http-message-sig@0.2.0:
+    dependencies:
+      structured-headers: 2.0.2
+
   http-parser-js@0.5.10: {}
 
   http-proxy-agent@5.0.0:
@@ -4931,6 +4951,8 @@ snapshots:
   json-schema-traverse@0.4.1: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
+
+  jsonwebkey-thumbprint@0.1.0: {}
 
   jsonwebtoken@9.0.3:
     dependencies:
@@ -5702,6 +5724,8 @@ snapshots:
   strnum@2.1.2:
     optional: true
 
+  structured-headers@2.0.2: {}
+
   stubs@3.0.0:
     optional: true
 
@@ -5922,6 +5946,11 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  web-bot-auth@0.1.2:
+    dependencies:
+      http-message-sig: 0.2.0
+      jsonwebkey-thumbprint: 0.1.0
 
   web-streams-polyfill@3.3.3: {}
 

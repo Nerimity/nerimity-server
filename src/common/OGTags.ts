@@ -1,5 +1,11 @@
 import { HTMLElement, parse } from 'node-html-parser';
 import { proxyUrlImageDimensions } from './nerimityCDN';
+import env from './env';
+import { signatureHeaders } from 'web-bot-auth';
+import { signerFromJWK } from 'web-bot-auth/crypto';
+
+const PRIVATE_KEY = env.NERIMITY_EMBED_BOT_PRIVATE_KEY;
+const USER_AGENT = 'NerimityBot/1.0 (+https://nerimity.com/bot)';
 
 const mapper = new Map(
   Object.entries({
@@ -18,13 +24,41 @@ type GetOGTagsReturn = Promise<false | Record<string, string | number | boolean>
 
 const youtubeLinkRegex = /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
 
+async function getSignedRequest(url: string): Promise<Request> {
+  const request = new Request(url, {
+    headers: { 'User-Agent': USER_AGENT },
+  });
+
+  if (!PRIVATE_KEY) return request;
+
+  const now = new Date();
+
+  const sigHeaders = await signatureHeaders(request, await signerFromJWK(PRIVATE_KEY), {
+    created: now,
+    expires: new Date(now.getTime() + 300_000),
+  }).catch((err) => {
+    console.error('Signing failed:', err);
+    return null;
+  });
+
+  if (!sigHeaders) return request;
+
+  return new Request(url, {
+    headers: {
+      'User-Agent': USER_AGENT,
+      Signature: sigHeaders['Signature'],
+      'Signature-Input': sigHeaders['Signature-Input'],
+    },
+  });
+}
+
 export async function getOGTags(url: string): GetOGTagsReturn {
   const youtubeWatchCode = url.match(youtubeLinkRegex)?.[3];
   const updatedUrl = youtubeWatchCode ? `https://www.youtube.com/watch?v=${youtubeWatchCode}&hl=en&persist_hl=1` : url;
 
-  const res = await fetch(updatedUrl, {
-    headers: { 'User-Agent': 'Mozilla/5.0 NerimityBot' },
-  }).catch(() => {});
+  const signedReq = await getSignedRequest(updatedUrl);
+
+  const res = await fetch(signedReq).catch(() => {});
   if (!res) return false;
 
   const isImage = res.headers.get('content-type')?.startsWith('image/');
@@ -87,7 +121,10 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   }
 
   if (object.imageUrl && (object.imageUrl.startsWith('http://') || object.imageUrl.startsWith('https://'))) {
-    object.imageMime = (await fetch(object.imageUrl).catch(() => {}))?.headers.get('content-type');
+    const signedImgReq = await getSignedRequest(object.imageUrl);
+    const imgRes = await fetch(signedImgReq).catch(() => {});
+
+    object.imageMime = imgRes?.headers.get('content-type');
     if (!object.imageMime) return false;
   }
 
@@ -128,8 +165,11 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
 
   if (err) return false;
 
-  const resForSure = res || (await fetch(url).catch(() => {}));
-  if (!resForSure) return false;
+  let resForSure = res;
+  if (!resForSure) {
+    const signedReq = await getSignedRequest(url);
+    resForSure = (await fetch(signedReq).catch(() => {})) as Response;
+  }
 
   return {
     type: 'image',
