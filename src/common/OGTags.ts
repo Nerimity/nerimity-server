@@ -25,12 +25,13 @@ type GetOGTagsReturn = Promise<false | Record<string, string | number | boolean>
 const youtubeLinkRegex = /(youtu.*be.*)\/(watch\?v=|embed\/|v|shorts|)(.*?((?=[&#?])|$))/;
 
 async function getSignedRequest(url: string): Promise<Request> {
-  const request = new Request(url, {
-    headers: { 'User-Agent': USER_AGENT },
-  });
+  const baseHeaders = { 'User-Agent': USER_AGENT };
 
-  if (!PRIVATE_KEY) return request;
+  if (!PRIVATE_KEY) {
+    return new Request(url, { headers: baseHeaders });
+  }
 
+  const request = new Request(url, { headers: baseHeaders });
   const now = new Date();
 
   const sigHeaders = await signatureHeaders(request, await signerFromJWK(PRIVATE_KEY), {
@@ -41,11 +42,13 @@ async function getSignedRequest(url: string): Promise<Request> {
     return null;
   });
 
-  if (!sigHeaders) return request;
+  if (!sigHeaders) {
+    return new Request(url, { headers: baseHeaders });
+  }
 
   return new Request(url, {
     headers: {
-      'User-Agent': USER_AGENT,
+      ...baseHeaders,
       Signature: sigHeaders['Signature'],
       'Signature-Input': sigHeaders['Signature-Input'],
     },
