@@ -135,7 +135,9 @@ export const emitServerMessageCreated = (opts: EmitServerMessageCreatedOpts) => 
   const payload = { socketId: opts.socketId, message: opts.message, member: opts.member, serverId: opts.serverId };
 
   if (opts.socketId) {
-    io.in(channelId).except(opts.socketId).emit(MESSAGE_CREATED, { message: opts.message });
+    io.in(channelId)
+      .except(opts.socketId)
+      .emit(MESSAGE_CREATED, { ...payload, socketId: undefined });
     io.in(opts.socketId).emit(MESSAGE_CREATED, payload);
     return;
   }
