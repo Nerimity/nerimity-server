@@ -279,7 +279,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     messageMentions,
     presences,
     friends: updatedFriends,
-    channels: payload.partial ? inboxChannels : serverChannels,
+    channels: payload.partial ? inboxChannels : channels,
     inbox: inboxResponse,
     pid: process.pid,
   });
