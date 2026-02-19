@@ -321,6 +321,7 @@ async function route(req: Request, res: Response) {
     userId: req.userCache.id,
     channel: req.channelCache,
     serverId: req.channelCache?.server?.id,
+    member: req.serverMemberCache,
     replyToMessageIds: body.replyToMessageIds,
     mentionReplies: body.mentionReplies,
     server: req.serverCache,

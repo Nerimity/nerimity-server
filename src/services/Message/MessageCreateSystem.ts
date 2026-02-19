@@ -10,12 +10,14 @@ import { sendDmPushNotification, sendServerPushMessageNotification } from '../..
 import { generateId } from '../../common/flakeId';
 import { emitDMMessageCreated } from '../../emits/Channel';
 import { prepareMessageForDatabase } from './prepareMessageForDatabase';
+import { getServerMemberCache, ServerMemberCache } from '@src/cache/ServerMemberCache';
 
 export interface SendMessageOptions {
   userId?: string;
   channelId: string;
   channel?: ChannelCache | null;
   server?: ServerCache | null;
+  member?: ServerMemberCache | null;
   serverId?: string;
   type: MessageType;
 }
@@ -25,6 +27,7 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
 
   let channel = opts.channel;
   let server = opts.server;
+  let member = opts.member;
 
   if (!channel) {
     [channel] = await getChannelForUserCache(opts.channelId);
@@ -42,11 +45,17 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
     }
   }
 
+  if (isServerChannel && !member && opts.userId) {
+    const [fetchedMember] = await getServerMemberCache(server!.id, opts.userId);
+    member = fetchedMember;
+  }
+
   const data = {
     messageCreatedAt,
     server,
     channel,
     isServerChannel,
+    member,
   };
   return [data, null] as const;
 };
@@ -119,7 +128,17 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
 
   // emit
   if (validatedResult.server?.id && isServerChannel) {
-    emitServerMessageCreated(message);
+    emitServerMessageCreated({
+      message,
+      serverId: validatedResult.server.id,
+      member: validatedResult.member
+        ? {
+            id: validatedResult.member.id,
+            permissions: validatedResult.member.permissions,
+            nickname: validatedResult.member.nickname,
+          }
+        : null,
+    });
     sendServerPushMessageNotification(validatedResult.server?.id, message, channel!, server!);
   }
 

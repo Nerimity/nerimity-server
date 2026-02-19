@@ -10,6 +10,7 @@ export interface ServerMemberCache {
   permissions: number;
   topRoleOrder: number;
   muteExpireAt?: number;
+  nickname?: string | null;
 }
 
 export const getServerMemberCache = async (serverId: string, userId: string): Promise<CustomResult<ServerMemberCache, string>> => {
@@ -53,6 +54,7 @@ export const getServerMemberCache = async (serverId: string, userId: string): Pr
     permissions,
     topRoleOrder: roles[0].order,
     muteExpireAt: serverMember.muteExpireAt as unknown as number,
+    nickname: serverMember.nickname,
   } as ServerMemberCache);
   await redisClient.hSet(key, userId, stringifiedMember);
   return [JSON.parse(stringifiedMember), null];

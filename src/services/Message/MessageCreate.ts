@@ -16,6 +16,7 @@ import { emitDMMessageCreated } from '../../emits/Channel';
 import { replaceBadWords } from '../../common/badWords';
 import { zip } from '../../common/zip';
 import { prepareMessageForDatabase } from './prepareMessageForDatabase';
+import { getServerMemberCache, ServerMemberCache } from '@src/cache/ServerMemberCache';
 
 export interface SendMessageOptions {
   userId?: string;
@@ -23,6 +24,8 @@ export interface SendMessageOptions {
   channelId: string;
   channel?: ChannelCache | null;
   server?: ServerCache | null;
+  member?: ServerMemberCache | null;
+
   serverId?: string;
   socketId?: string;
   content?: string;
@@ -52,6 +55,7 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
 
   let channel = opts.channel;
   let server = opts.server;
+  let member = opts.member;
 
   if (!channel) {
     [channel] = await getChannelForUserCache(opts.channelId, opts.userId);
@@ -87,10 +91,16 @@ const validateMessageOptions = async (opts: SendMessageOptions) => {
     }
   }
 
+  if (isServerChannel && !member && opts.userId) {
+    const [fetchedMember] = await getServerMemberCache(server!.id, opts.userId);
+    member = fetchedMember;
+  }
+
   const data = {
     messageCreatedAt,
     server,
     channel,
+    member,
     isServerChannel,
     isServerTextOrDMTextChannel,
     htmlEmbed,
@@ -300,7 +310,18 @@ const handleMessageSideEffects = async (message: TransformedMessage, opts: SendM
 
   // emit
   if (validatedResult.server?.id && isServerChannel) {
-    emitServerMessageCreated(message, opts.socketId);
+    emitServerMessageCreated({
+      message,
+      socketId: opts.socketId,
+      serverId: validatedResult.server.id,
+      member: validatedResult.member
+        ? {
+            id: validatedResult.member.id,
+            permissions: validatedResult.member.permissions,
+            nickname: validatedResult.member.nickname,
+          }
+        : null,
+    });
     sendServerPushMessageNotification(validatedResult.server?.id, message, channel!, server!);
   }
 

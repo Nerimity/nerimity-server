@@ -122,18 +122,25 @@ export const emitServerLeft = (opts: { userId?: string; serverId: string; server
   });
 };
 
-export const emitServerMessageCreated = (message: Message & { createdBy?: null | Partial<UserCache | User> }, socketId?: string) => {
+interface EmitServerMessageCreatedOpts {
+  message: Message & { createdBy?: null | Partial<UserCache | User> };
+  socketId?: string;
+  serverId: string;
+  member: any;
+}
+export const emitServerMessageCreated = (opts: EmitServerMessageCreatedOpts) => {
   const io = getIO();
 
-  const channelId = message.channelId;
+  const channelId = opts.message.channelId;
+  const payload = { socketId: opts.socketId, message: opts.message, member: opts.member, serverId: opts.serverId };
 
-  if (socketId) {
-    io.in(channelId).except(socketId).emit(MESSAGE_CREATED, { message });
-    io.in(socketId).emit(MESSAGE_CREATED, { socketId, message });
+  if (opts.socketId) {
+    io.in(channelId).except(opts.socketId).emit(MESSAGE_CREATED, { message: opts.message });
+    io.in(opts.socketId).emit(MESSAGE_CREATED, payload);
     return;
   }
 
-  io.in(channelId).emit(MESSAGE_CREATED, { socketId, message });
+  io.in(channelId).emit(MESSAGE_CREATED, payload);
 };
 
 export const emitServerMessageUpdated = (channelId: string, messageId: string, updated: Partial<Message>) => {
