@@ -23,7 +23,7 @@ import env from '../../common/env';
 
 interface Payload {
   token: string;
-  includeCurrentUserServerMembersOnly?: boolean;
+  partial?: boolean;
 }
 
 export const authQueue = createQueue({
@@ -117,7 +117,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id, payload.includeCurrentUserServerMembersOnly);
+  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id);
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(userCache.id);
 
@@ -233,6 +233,23 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { account, ...userCacheWithoutAccount } = userCache;
 
+  const serverRolesToEmit = () => {
+    if (!payload.partial) return serverRoles;
+    const memberMap = new Map(serverMembers.map((m) => [`${m.userId}-${m.serverId}`, m]));
+    const serverMap = new Map(servers.map((s) => [s.id, s]));
+    return serverRoles.filter((role) => {
+      const member = memberMap.get(`${userCache.id}-${role.serverId}`);
+      if (!member) return false;
+      const defaultRoleId = serverMap.get(role.serverId)?.defaultRoleId;
+      return member.roleIds.includes(role.id) || role.id === defaultRoleId;
+    });
+  };
+
+  const serverMembersToEmit = () => {
+    if (!payload.partial) return serverMembers;
+    return serverMembers.filter((member) => member.user.id === userCache.id);
+  };
+
   socket.emit(AUTHENTICATED, {
     user: {
       ...userCacheWithoutAccount,
@@ -256,13 +273,13 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     voiceChannelUsers,
     servers,
     serverSettings: [], // Safe to remove. Only here for backwards compatibility.
-    serverMembers,
-    serverRoles,
+    serverMembers: serverMembersToEmit(),
+    serverRoles: serverRolesToEmit(),
     lastSeenServerChannelIds,
     messageMentions,
     presences,
     friends: updatedFriends,
-    channels,
+    channels: payload.partial ? inboxChannels : serverChannels,
     inbox: inboxResponse,
     pid: process.pid,
   });

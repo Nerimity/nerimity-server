@@ -148,7 +148,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   return [server, null];
 };
 
-export const getServers = async (userId: string, includeCurrentUserServerMembersOnly = false) => {
+export const getServers = async (userId: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -165,7 +165,6 @@ export const getServers = async (userId: string, includeCurrentUserServerMembers
             include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
           },
           serverMembers: {
-            ...(includeCurrentUserServerMembersOnly ? { where: { userId } } : {}),
             include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } }, lastOnlineAt: true, lastOnlineStatus: true } } },
           },
           roles: true,
