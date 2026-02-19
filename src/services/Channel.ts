@@ -217,6 +217,7 @@ export const updateServerChannelPermissions = async (opts: UpdateServerChannelPe
     },
   });
   await removeServerMemberPermissionsCache([opts.channelId]);
+  await deleteServerChannelCaches([opts.channelId]);
 
   channel.permissions = channel.permissions.map((p) => (p.roleId === opts.roleId ? { ...p, permissions: opts.permissions } : p));
 
