@@ -249,7 +249,23 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
 
   const serverMembersToEmit = () => {
     if (!payload.partial) return serverMembers;
-    return serverMembers.filter((member) => member.user.id === userCache.id);
+    return serverMembers.filter((member) => {
+      if (presences.find((presence) => presence.userId === member.user.id)) {
+        return true;
+      }
+      return member.user.id === userCache.id;
+    });
+  };
+
+  const channelsToEmit = () => {
+    if (!payload.partial) return channels;
+
+    const partialServerChannels = serverChannels.filter((channel) => {
+      const serverSettings = user.notificationSettings.find((setting) => setting.serverId === channel.serverId && !setting.channelId);
+      if (!serverSettings) return true;
+      return !serverSettings.notificationPingMode && !serverSettings.notificationSoundMode;
+    });
+    return [...partialServerChannels, ...inboxChannels];
   };
 
   const data = {
@@ -281,7 +297,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     messageMentions,
     presences,
     friends: updatedFriends,
-    channels: payload.partial ? inboxChannels : channels,
+    channels: channelsToEmit(),
     inbox: inboxResponse,
     pid: process.pid,
   };
