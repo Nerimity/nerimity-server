@@ -263,7 +263,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     const partialServerChannels = serverChannels.filter((channel) => {
       const serverSettings = user.notificationSettings.find((setting) => setting.serverId === channel.serverId && !setting.channelId);
       if (!serverSettings) return true;
-      return !serverSettings.notificationPingMode && !serverSettings.notificationSoundMode;
+      return !serverSettings.notificationPingMode || !serverSettings.notificationSoundMode;
     });
     return [...partialServerChannels, ...inboxChannels];
   };
