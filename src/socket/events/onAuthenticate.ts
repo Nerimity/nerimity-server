@@ -20,10 +20,12 @@ import { createQueue } from '@nerimity/mimiqueue';
 import { redisClient } from '../../common/redis';
 import { ReminderSelect, transformReminder } from '../../services/Reminder';
 import env from '../../common/env';
+import { compressObject } from '@src/common/zstd';
 
 interface Payload {
   token: string;
   partial?: boolean;
+  compression?: 'zstd';
 }
 
 export const authQueue = createQueue({
@@ -250,7 +252,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     return serverMembers.filter((member) => member.user.id === userCache.id);
   };
 
-  socket.emit(AUTHENTICATED, {
+  const data = {
     user: {
       ...userCacheWithoutAccount,
       profile: user.profile,
@@ -282,5 +284,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     channels: payload.partial ? inboxChannels : channels,
     inbox: inboxResponse,
     pid: process.pid,
-  });
+  };
+
+  socket.emit(AUTHENTICATED, payload.compression === 'zstd' ? await compressObject(data) : data);
 };
