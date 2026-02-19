@@ -138,6 +138,10 @@ export const APPLICATION_SCOPES = {
     name: 'User Email',
     bit: 2,
   },
+  USER_SERVERS: {
+    name: 'User Servers',
+    bit: 4,
+  },
 };
 
 export const hasBit = (permissions: number, bit: number) => {
