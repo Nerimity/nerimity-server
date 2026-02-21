@@ -20,8 +20,8 @@ interface UpdateUserProps {
   tag?: string;
   password?: string;
   newPassword?: string;
-  avatar?: string;
-  banner?: string;
+  avatar?: string | null;
+  banner?: string | null;
   dmStatus?: DmStatus;
   lastOnlineStatus?: LastOnlineStatus;
   friendRequestStatus?: FriendRequestStatus;
@@ -70,6 +70,20 @@ export const updateUser = async (opts: UpdateUserProps) => {
     });
     if (accountExists) {
       return [null, generateError('This email is already used by someone else.')] as const;
+    }
+  }
+
+  if (opts.avatar == null || opts.banner == null) {
+    if (account.user.avatar || account.user.banner) {
+      const pathsToDelete = [];
+      if (opts.avatar === null && account.user.avatar) {
+        pathsToDelete.push(account.user.avatar);
+      }
+
+      if (opts.banner === null && account.user.banner) {
+        pathsToDelete.push(account.user.banner);
+      }
+      await nerimityCDN.deleteImageBatch(pathsToDelete);
     }
   }
 

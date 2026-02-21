@@ -17,6 +17,7 @@ import { ShadowBan } from '@src/generated/prisma/client';
 import { encrypt } from '../../common/encryption';
 import path from 'path';
 import { emitServerFolderCreated, emitServerFolderUpdated, emitServerOrderUpdated } from '../../emits/Server';
+import { deleteImageBatch } from '@src/common/nerimityCDN';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -197,6 +198,8 @@ export async function deleteAccount(userId: string, opts?: DeleteAccountOptions)
     where: { id: userId },
     select: {
       shadowBan: true,
+      avatar: true,
+      banner: true,
       account: {
         select: { id: true, email: true, _count: { select: { applications: true } } },
       },
@@ -220,6 +223,10 @@ export async function deleteAccount(userId: string, opts?: DeleteAccountOptions)
     if (user?.account?._count.applications) {
       return [null, generateError('You must delete all applications before deleting your account.')] as const;
     }
+  }
+
+  if (user.avatar || user.banner) {
+    await deleteImageBatch([user.avatar, user.banner].filter(Boolean) as string[]);
   }
 
   await deleteAccountFromDatabase(userId, { ...opts, shadowBan: user?.shadowBan, email: user?.account?.email });

@@ -10,6 +10,7 @@ import { generateToken } from '../common/JWT';
 import { deleteAccount, disconnectSockets } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
 import { generateOauth2Token } from './Oauth2';
+import * as nerimityCDN from '../common/nerimityCDN';
 
 export async function createApplication(requesterAccountId: string) {
   const count = await prisma.application.count({
@@ -46,7 +47,7 @@ export async function updateApplication(
   update: {
     name?: string;
     redirectUris?: string[];
-  }
+  },
 ) {
   const app = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id },
@@ -230,9 +231,9 @@ interface UpdateBotProps {
   userId: string;
   username?: string;
   tag?: string;
-  avatar?: string;
+  avatar?: string | null;
   avatarPoints?: number[];
-  banner?: string;
+  banner?: string | null;
 
   profile?: {
     bio?: string | null;
@@ -263,6 +264,20 @@ export const updateBot = async (opts: UpdateBotProps) => {
       newTag: opts.tag,
     });
     if (usernameOrTagCheckResults) return [null, usernameOrTagCheckResults] as const;
+  }
+
+  if (opts.avatar == null || opts.banner == null) {
+    if (user.avatar || user.banner) {
+      const pathsToDelete = [];
+      if (opts.avatar === null && user.avatar) {
+        pathsToDelete.push(user.avatar);
+      }
+
+      if (opts.banner === null && user.banner) {
+        pathsToDelete.push(user.banner);
+      }
+      await nerimityCDN.deleteImageBatch(pathsToDelete);
+    }
   }
 
   const updateResult = await updateBotInDatabase(opts);

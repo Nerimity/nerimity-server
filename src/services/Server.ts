@@ -25,6 +25,7 @@ import { LastOnlineStatus } from './User/User';
 import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpdate, logServerUserBanned, logServerUserKicked, logServerUserMuted, logServerUserUnbanned, logServerUserUnmuted } from './AuditLog';
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 import { createSystemMessage } from './Message/MessageCreateSystem';
+import * as nerimityCDN from '../common/nerimityCDN';
 
 const ServerMemberWithLastOnlineDetails = {
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -722,8 +723,8 @@ export interface UpdateServerOptions {
   name?: string;
   defaultChannelId?: string;
   systemChannelId?: string | null;
-  avatar?: string;
-  banner?: string;
+  avatar?: string | null;
+  banner?: string | null;
   verified?: boolean;
   createdById?: string;
 }
@@ -752,6 +753,20 @@ export const updateServer = async (serverId: string, update: UpdateServerOptions
     });
     if (!systemChannel || systemChannel.serverId !== serverId) {
       return [null, generateError('Invalid systemChannelId')];
+    }
+  }
+
+  if (update.avatar == null || update.banner == null) {
+    if (server.avatar || server.banner) {
+      const pathsToDelete = [];
+      if (update.avatar === null && server.avatar) {
+        pathsToDelete.push(server.avatar);
+      }
+
+      if (update.banner === null && server.banner) {
+        pathsToDelete.push(server.banner);
+      }
+      await nerimityCDN.deleteImageBatch(pathsToDelete);
     }
   }
 

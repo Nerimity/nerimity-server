@@ -51,8 +51,8 @@ interface Body {
   tag?: string;
   password?: string;
   newPassword?: string;
-  avatarId?: string;
-  bannerId?: string;
+  avatarId?: string | null;
+  bannerId?: string | null;
   socketId?: string;
   dmStatus?: number;
   friendRequestStatus?: number;
@@ -96,8 +96,8 @@ async function route(req: Request, res: Response) {
     ...(body.font !== undefined ? { font: body.font } : {}),
   };
 
-  let avatar: string | undefined;
-  let banner: string | undefined;
+  let avatar: string | null | undefined;
+  let banner: string | null | undefined;
 
   if (body.avatarId) {
     const [uploadedFile, err] = await verifyUpload({
@@ -111,6 +111,8 @@ async function route(req: Request, res: Response) {
     }
 
     avatar = uploadedFile!.path;
+  } else if (req.body.avatarId === null) {
+    avatar = null;
   }
 
   if (body.bannerId) {
@@ -125,6 +127,8 @@ async function route(req: Request, res: Response) {
     }
 
     banner = uploadedFile!.path;
+  } else if (req.body.bannerId === null) {
+    banner = null;
   }
 
   if (req.userCache.bot) {

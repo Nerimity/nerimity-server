@@ -33,8 +33,8 @@ export function serverUpdate(Router: Router) {
 interface Body {
   name?: string;
   defaultChannelId?: string;
-  avatarId?: string;
-  bannerId?: string;
+  avatarId?: string | null;
+  bannerId?: string | null;
 }
 
 async function route(req: Request, res: Response) {
@@ -61,8 +61,8 @@ async function route(req: Request, res: Response) {
     }
   }
 
-  let avatar: string | undefined;
-  let banner: string | undefined;
+  let avatar: string | null | undefined;
+  let banner: string | null | undefined;
 
   if (avatarId) {
     const [uploadedFile, err] = await verifyUpload({
@@ -76,6 +76,8 @@ async function route(req: Request, res: Response) {
     }
 
     avatar = uploadedFile!.path;
+  } else if (req.body.avatarId === null) {
+    avatar = null;
   }
 
   if (bannerId) {
@@ -90,6 +92,8 @@ async function route(req: Request, res: Response) {
     }
 
     banner = uploadedFile!.path;
+  } else if (req.body.bannerId === null) {
+    banner = null;
   }
 
   const [updated, error] = await updateServer(
