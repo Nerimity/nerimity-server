@@ -73,6 +73,20 @@ export const updateUser = async (opts: UpdateUserProps) => {
     }
   }
 
+  if (opts.avatar == null || opts.banner == null) {
+    if (account.user.avatar || account.user.banner) {
+      const pathsToDelete = [];
+      if (opts.avatar === null && account.user.avatar) {
+        pathsToDelete.push(account.user.avatar);
+      }
+
+      if (opts.banner === null && account.user.banner) {
+        pathsToDelete.push(account.user.banner);
+      }
+      await nerimityCDN.deleteImageBatch(pathsToDelete);
+    }
+  }
+
   const updateResult = await updateAccountInDatabase(account.email, opts);
 
   if (opts.dmStatus !== undefined) {
