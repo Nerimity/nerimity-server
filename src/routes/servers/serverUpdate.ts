@@ -76,7 +76,7 @@ async function route(req: Request, res: Response) {
     }
 
     avatar = uploadedFile!.path;
-  } else if (avatarId === null) {
+  } else if (req.body.avatarId === null) {
     avatar = null;
   }
 
@@ -92,7 +92,7 @@ async function route(req: Request, res: Response) {
     }
 
     banner = uploadedFile!.path;
-  } else if (bannerId === null) {
+  } else if (req.body.bannerId === null) {
     banner = null;
   }
 
