@@ -20,8 +20,8 @@ interface UpdateUserProps {
   tag?: string;
   password?: string;
   newPassword?: string;
-  avatar?: string;
-  banner?: string;
+  avatar?: string | null;
+  banner?: string | null;
   dmStatus?: DmStatus;
   lastOnlineStatus?: LastOnlineStatus;
   friendRequestStatus?: FriendRequestStatus;

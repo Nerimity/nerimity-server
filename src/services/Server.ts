@@ -607,8 +607,8 @@ export interface UpdateServerOptions {
   name?: string;
   defaultChannelId?: string;
   systemChannelId?: string | null;
-  avatar?: string;
-  banner?: string;
+  avatar?: string | null;
+  banner?: string | null;
   verified?: boolean;
   createdById?: string;
 }

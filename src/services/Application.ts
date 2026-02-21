@@ -230,9 +230,9 @@ interface UpdateBotProps {
   userId: string;
   username?: string;
   tag?: string;
-  avatar?: string;
+  avatar?: string | null;
   avatarPoints?: number[];
-  banner?: string;
+  banner?: string | null;
 
   profile?: {
     bio?: string | null;
