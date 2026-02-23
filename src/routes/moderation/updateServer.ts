@@ -11,7 +11,7 @@ import { ModAuditLogType } from '../../common/ModAuditLog';
 import { checkUserPassword } from '../../services/UserAuthentication';
 
 export function updateServer(Router: Router) {
-  Router.post('/moderation/servers/:serverId', authenticate(), isModMiddleware(), body('name').isString().withMessage('Password must be a string!').optional(), body('verified').isBoolean().withMessage('Verified must be a boolean!').optional(), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
+  Router.post('/moderation/servers/:serverId', authenticate(), isModMiddleware(), body('name').isString().withMessage('Name must be a string!').optional(), body('verified').isBoolean().withMessage('Verified must be a boolean!').optional(), body('password').isLength({ min: 4, max: 72 }).withMessage('Password must be between 4 and 72 characters long.').isString().withMessage('Password must be a string!').not().isEmpty().withMessage('Password is required'), route);
 }
 
 async function route(req: Request, res: Response) {

@@ -6,7 +6,7 @@ import { createServer } from '../../services/Server';
 import { hasBadWord } from '../../common/badWords';
 
 export function serverCreate(Router: Router) {
-  Router.post('/servers', authenticate(), body('name').not().isEmpty().withMessage('Name is required.').isString().withMessage('Name must be a string.').isLength({ min: 4, max: 35 }).withMessage('Name must be between 4 and 35 characters long.'), route);
+  Router.post('/servers', authenticate(), body('name').not().isEmpty().withMessage('Name is required.').isString().withMessage('Name must be a string.').isLength({ min: 2, max: 35 }).withMessage('Name must be between 223 and 35 characters long.'), route);
 }
 
 interface Body {

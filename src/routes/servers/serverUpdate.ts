@@ -16,7 +16,7 @@ export function serverUpdate(Router: Router) {
     authenticate(),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
-    body('name').isString().withMessage('Name must be a string.').isLength({ min: 4, max: 35 }).withMessage('Name must be between 4 and 35 characters long.').optional({ nullable: true }),
+    body('name').isString().withMessage('Name must be a string.').isLength({ min: 2, max: 35 }).withMessage('Name must be between 2 and 35 characters long.').optional({ nullable: true }),
     body('defaultChannelId').isString().withMessage('defaultChannelId must be a string.').isLength({ min: 4, max: 100 }).withMessage('defaultChannelId must be between 4 and 100 characters long.').optional({ nullable: true }),
     body('systemChannelId').isString().withMessage('systemChannelId must be a string.').isLength({ min: 4, max: 100 }).withMessage('systemChannelId must be between 4 and 100 characters long.').optional({ nullable: true }),
     body('avatarId').isString().withMessage('avatarId must be a string.').isLength({ min: 4, max: 100 }).withMessage('avatarId must be between 4 and 100 characters long.').optional({ nullable: true }),
@@ -26,7 +26,7 @@ export function serverUpdate(Router: Router) {
       restrictMS: 10000,
       requests: 10,
     }),
-    route
+    route,
   );
 }
 
@@ -104,7 +104,7 @@ async function route(req: Request, res: Response) {
       avatar,
       ...(req.body.systemChannelId === null ? { systemChannelId: null } : undefined),
     },
-    req.userCache.id
+    req.userCache.id,
   );
   if (error) {
     return res.status(400).json(error);

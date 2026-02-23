@@ -14,7 +14,7 @@ export function serverChannelUpdate(Router: Router) {
     authenticate({ allowBot: true }),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_CHANNELS),
-    body('name').isString().withMessage('Name must be a string.').isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').not().contains('#').withMessage('Channel cannot contain the # symbol').optional({ nullable: true }),
+    body('name').isString().withMessage('Name must be a string.').isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters long.').not().contains('#').withMessage('Channel cannot contain the # symbol').optional({ nullable: true }),
 
     body('slowModeSeconds')
       .isNumeric()
