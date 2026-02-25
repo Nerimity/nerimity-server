@@ -28,7 +28,6 @@ export async function turnstileVerify(token: string, remoteIp?: string): Promise
     }
 
     const json = (await res.json()) as TurnstileResponse;
-    console.log('debug', json);
 
     if (json.hostname !== 'nerimity.com') {
       return false;
