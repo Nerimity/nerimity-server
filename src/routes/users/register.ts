@@ -21,7 +21,7 @@ export function register(Router: Router) {
       restrictMS: 30000,
       requests: 5,
     }),
-    route
+    route,
   );
 }
 
@@ -45,7 +45,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('Username cannot contain bad words.', 'username'));
   }
 
-  const validToken = await turnstileVerify(body.token);
+  const validToken = await turnstileVerify(body.token, req.userIP);
 
   if (!validToken) {
     return res.status(401).json(generateError('Invalid captcha! Please try again.', 'token'));
