@@ -95,7 +95,7 @@ export async function verifyUpload(opts: VerifyUploadOpts) {
   })
     .then(async (res) => {
       if (res.status == 200) return [(await res.json()) as VerifyResponse, null] as const;
-      return [null, (await res.json()).error as string] as const;
+      return [null, (await res.json()).message as string] as const;
     })
     .catch(() => [null, 'Could not connect to the CDN.'] as const);
 }
@@ -122,7 +122,7 @@ export async function generateToken(opts: GenerateTokenOps) {
   })
     .then(async (res) => {
       if (res.status == 200) return [(await res.json()) as GenerateTokenResponse, null] as const;
-      return [null, (await res.json()).error as string] as const;
+      return [null, (await res.json()).message as string] as const;
     })
     .catch(() => [null, 'Could not connect to the CDN.'] as const);
 }
