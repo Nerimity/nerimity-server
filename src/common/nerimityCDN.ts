@@ -6,7 +6,7 @@ export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ wid
     fetch(env.LOCAL_NERIMITY_CDN + `proxy-dimensions?url=${encodeURIComponent(url)}`, {
       method: 'GET',
       headers: {
-        secret: env.NERIMITY_CDN_SECRET,
+        Authorization: env.NERIMITY_CDN_SECRET,
       },
     })
       .then(async (res) => {
@@ -18,11 +18,11 @@ export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ wid
 }
 
 export async function deleteFile(path: string) {
-  return await fetch(env.LOCAL_NERIMITY_CDN, {
+  return await fetch(env.LOCAL_NERIMITY_CDN + 'internal', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      secret: env.NERIMITY_CDN_SECRET,
+      Authorization: env.NERIMITY_CDN_SECRET,
     },
     body: JSON.stringify({ path }),
   }).catch((err) => {
@@ -33,10 +33,10 @@ export async function deleteFile(path: string) {
 // deletes 1000 images from a channel.
 export async function deleteChannelAttachmentBatch(channelId: string): Promise<CustomResult<{ count?: number; status: boolean }, { type: string; error?: string }>> {
   return new Promise((resolve) => {
-    fetch(env.LOCAL_NERIMITY_CDN + `attachments/${channelId}/batch`, {
+    fetch(env.LOCAL_NERIMITY_CDN + `internal/attachments/${channelId}/batch`, {
       method: 'DELETE',
       headers: {
-        secret: env.NERIMITY_CDN_SECRET,
+        Authorization: env.NERIMITY_CDN_SECRET,
       },
     })
       .then(async (res) => {
@@ -48,11 +48,11 @@ export async function deleteChannelAttachmentBatch(channelId: string): Promise<C
 }
 
 export async function deleteImageBatch(paths: string[]) {
-  return await fetch(env.LOCAL_NERIMITY_CDN + 'batch', {
+  return await fetch(env.LOCAL_NERIMITY_CDN + 'internal/batch', {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      secret: env.NERIMITY_CDN_SECRET,
+      Authorization: env.NERIMITY_CDN_SECRET,
     },
     body: JSON.stringify({ paths }),
   }).catch((e) => {});
@@ -60,10 +60,9 @@ export async function deleteImageBatch(paths: string[]) {
 
 // /verify/:groupId?/:fileId
 interface VerifyUploadOpts {
+  userId: string;
   fileId: string;
   groupId?: string;
-  type: 'ATTACHMENT' | 'AVATAR' | 'BANNER' | 'EMOJI';
-  imageOnly?: boolean;
 }
 
 export interface VerifyResponse {
@@ -80,19 +79,49 @@ export interface VerifyResponse {
 }
 export async function verifyUpload(opts: VerifyUploadOpts) {
   const url = new URL(env.LOCAL_NERIMITY_CDN);
-  url.pathname = `verify/${opts.fileId}`;
-  if (opts.groupId) url.pathname = `verify/${opts.groupId}/${opts.fileId}`;
-  url.searchParams.set('type', opts.type);
-  if (opts.imageOnly) url.searchParams.set('imageOnly', 'true');
+  url.pathname = `/internal/verify-file`;
 
   return await fetch(url, {
     method: 'POST',
     headers: {
-      secret: env.NERIMITY_CDN_SECRET,
+      Authorization: env.NERIMITY_CDN_SECRET,
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      userId: opts.userId,
+      fileId: opts.fileId,
+      groupId: opts.groupId,
+    }),
   })
     .then(async (res) => {
       if (res.status == 200) return [(await res.json()) as VerifyResponse, null] as const;
+      return [null, (await res.json()).error as string] as const;
+    })
+    .catch(() => [null, 'Could not connect to the CDN.'] as const);
+}
+
+interface GenerateTokenOps {
+  userId: string;
+}
+export interface GenerateTokenResponse {
+  token: string;
+}
+export async function generateToken(opts: GenerateTokenOps) {
+  const url = new URL(env.LOCAL_NERIMITY_CDN);
+  url.pathname = `/internal/generate-token`;
+
+  return await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: env.NERIMITY_CDN_SECRET,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId: opts.userId,
+    }),
+  })
+    .then(async (res) => {
+      if (res.status == 200) return [(await res.json()) as GenerateTokenResponse, null] as const;
       return [null, (await res.json()).error as string] as const;
     })
     .catch(() => [null, 'Could not connect to the CDN.'] as const);

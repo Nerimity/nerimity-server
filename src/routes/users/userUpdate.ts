@@ -41,7 +41,7 @@ export function userUpdate(Router: Router) {
 
     body('hideFollowing').isBoolean().withMessage('hideFollowing must be a boolean.').optional({ nullable: true }),
     body('hideFollowers').isBoolean().withMessage('hideFollowers must be a boolean.').optional({ nullable: true }),
-    route
+    route,
   );
 }
 
@@ -102,8 +102,8 @@ async function route(req: Request, res: Response) {
   if (body.avatarId) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: body.avatarId,
-      type: 'AVATAR',
       groupId: req.userCache.id,
+      userId: req.userCache.id,
     });
 
     if (err) {
@@ -118,8 +118,8 @@ async function route(req: Request, res: Response) {
   if (body.bannerId) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: body.bannerId,
-      type: 'BANNER',
       groupId: req.userCache.id,
+      userId: req.userCache.id,
     });
 
     if (err) {

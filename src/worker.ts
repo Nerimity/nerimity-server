@@ -26,6 +26,7 @@ import helmet from 'helmet';
 import { RemindersRouter } from './routes/reminders/Router';
 import { WebhooksRouter } from './routes/webhooks/Router';
 import { Oauth2Router } from './routes/oauth2/Router';
+import { CdnRouter } from './routes/cdn/Router';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -113,4 +114,5 @@ if (env.TYPE === 'api') {
   app.use('/api', RemindersRouter);
   app.use('/api', WebhooksRouter);
   app.use('/api', Oauth2Router);
+  app.use('/api', CdnRouter);
 }

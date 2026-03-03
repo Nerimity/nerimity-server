@@ -67,8 +67,8 @@ async function route(req: Request, res: Response) {
   if (avatarId) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: avatarId,
-      type: 'AVATAR',
       groupId: req.serverCache.id,
+      userId: req.userCache.id,
     });
 
     if (err) {
@@ -83,8 +83,8 @@ async function route(req: Request, res: Response) {
   if (bannerId) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: bannerId,
-      type: 'BANNER',
       groupId: req.serverCache.id,
+      userId: req.userCache.id,
     });
 
     if (err) {

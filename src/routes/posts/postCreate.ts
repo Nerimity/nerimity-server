@@ -25,7 +25,7 @@ export function postCreate(Router: Router) {
     body('nerimityCdnFileId').optional(true).isString().withMessage('nerimityCdnFileId id must be a string!').isLength({ min: 1, max: 255 }).withMessage('nerimityCdnFileId length must be between 1 and 255 characters.'),
 
     body('poll.choices.*').isString().withMessage('Poll choices must be an array of strings').isLength({ min: 0, max: 56 }).withMessage('Poll choices length must be between 1 and 50 characters').optional(true),
-    route
+    route,
   );
 }
 
@@ -69,8 +69,7 @@ async function route(req: Request, res: Response) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: body.nerimityCdnFileId,
       groupId: req.userCache.id,
-      type: 'ATTACHMENT',
-      imageOnly: true,
+      userId: req.userCache.id,
     });
 
     if (err) {

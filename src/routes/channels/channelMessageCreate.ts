@@ -265,7 +265,7 @@ async function route(req: Request, res: Response) {
     const [uploadedFile, err] = await verifyUpload({
       fileId: body.nerimityCdnFileId,
       groupId: req.channelCache.id,
-      type: 'ATTACHMENT',
+      userId: req.userCache.id,
     });
 
     if (err) {

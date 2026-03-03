@@ -12,31 +12,17 @@ import { verifyUpload } from '../../common/nerimityCDN';
 export function serverEmojiAdd(Router: Router) {
   Router.post(
     '/servers/:serverId/emojis',
-    authenticate({allowBot: true}),
+    authenticate({ allowBot: true }),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.ADMIN),
-    body('name')
-      .not()
-      .isEmpty()
-      .withMessage('Name is required')
-      .isString()
-      .withMessage('Name must be a string.')
-      .isLength({ min: 2, max: 15 })
-      .withMessage('Name must be between 2 and 15 characters long.'),
-    body('fileId')
-      .not()
-      .isEmpty()
-      .withMessage('fileId is required')
-      .isString()
-      .withMessage('fileId must be a string.')
-      .isLength({ min: 2, max: 255 })
-      .withMessage('fileId must be between 2 and 255 characters long.'),
+    body('name').not().isEmpty().withMessage('Name is required').isString().withMessage('Name must be a string.').isLength({ min: 2, max: 15 }).withMessage('Name must be between 2 and 15 characters long.'),
+    body('fileId').not().isEmpty().withMessage('fileId is required').isString().withMessage('fileId must be a string.').isLength({ min: 2, max: 255 }).withMessage('fileId must be between 2 and 255 characters long.'),
     rateLimit({
       name: 'server_add_emojis',
       restrictMS: 10000,
       requests: 10,
     }),
-    route
+    route,
   );
 }
 
@@ -56,7 +42,7 @@ async function route(req: Request, res: Response) {
 
   const [uploadedFile, err] = await verifyUpload({
     fileId: body.fileId,
-    type: 'EMOJI',
+    userId: req.userCache.id,
   });
 
   if (err) {
