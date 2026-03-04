@@ -40,7 +40,7 @@ export async function sendServerPushMessageNotification(
     }[];
   },
   channel: BaseChannelCache & ServerChannelCache,
-  server: ServerCache
+  server: ServerCache,
 ) {
   if (message.silent) return;
   if (!credentials) return;
@@ -136,22 +136,26 @@ export async function sendServerPushMessageNotification(
     if (content.length > 200) content = content.substring(0, 200) + '…';
   }
 
-  const batchResponse = await admin.messaging().sendEachForMulticast({
-    tokens,
-    android: { priority: 'high' },
-    data: {
-      ...(content ? { content } : undefined),
-      type: message.type.toString(),
-      channelName: channel.name!,
-      serverName: server.name,
-      channelId: message.channelId,
-      serverId,
-      cUserId: message.createdBy!.id,
-      cName: message.createdBy!.username,
-      ...(server.avatar ? { sAvatar: server.avatar } : undefined),
-      ...(server.hexColor ? { sHexColor: server.hexColor } : undefined),
-    },
-  });
+  const batchResponse = await admin
+    .messaging()
+    .sendEachForMulticast({
+      tokens,
+      android: { priority: 'high' },
+      data: {
+        ...(content ? { content } : undefined),
+        type: message.type.toString(),
+        channelName: channel.name!,
+        serverName: server.name,
+        channelId: message.channelId,
+        serverId,
+        cUserId: message.createdBy!.id,
+        cName: message.createdBy!.username,
+        ...(server.avatar ? { sAvatar: server.avatar } : undefined),
+        ...(server.hexColor ? { sHexColor: server.hexColor } : undefined),
+      },
+    })
+    .catch(() => {});
+  if (!batchResponse) return;
 
   const failedTokens = batchResponse.responses.map((sendResponse, index) => sendResponse.error && tokens[index]).filter((token) => token) as string[];
 
@@ -168,7 +172,7 @@ export async function sendDmPushNotification(
       hexColor: string | null;
     };
   },
-  channel: BaseChannelCache & DMChannelCache
+  channel: BaseChannelCache & DMChannelCache,
 ) {
   if (message.silent) return;
   if (!credentials) return;
@@ -187,19 +191,26 @@ export async function sendDmPushNotification(
     content = formatMessage(message as any)!;
     if (content.length > 200) content = content.substring(0, 200) + '…';
   }
-  const batchResponse = await admin.messaging().sendEachForMulticast({
-    tokens,
-    android: { priority: 'high' },
-    data: {
-      ...(content ? { content } : undefined),
-      type: message.type.toString(),
-      channelId: message.channelId,
-      cUserId: message.createdBy!.id,
-      cName: message.createdBy!.username,
-      ...(message.createdBy!.avatar ? { uAvatar: message.createdBy!.avatar } : undefined),
-      ...(message.createdBy!.hexColor ? { uHexColor: message.createdBy!.hexColor } : undefined),
-    },
-  });
+  const batchResponse = await admin
+    .messaging()
+    .sendEachForMulticast({
+      tokens,
+      android: { priority: 'high' },
+      data: {
+        ...(content ? { content } : undefined),
+        type: message.type.toString(),
+        channelId: message.channelId,
+        cUserId: message.createdBy!.id,
+        cName: message.createdBy!.username,
+        ...(message.createdBy!.avatar ? { uAvatar: message.createdBy!.avatar } : undefined),
+        ...(message.createdBy!.hexColor ? { uHexColor: message.createdBy!.hexColor } : undefined),
+      },
+    })
+    .catch(() => {});
+
+  if (!batchResponse) {
+    return;
+  }
 
   const failedTokens = batchResponse.responses.map((sendResponse, index) => sendResponse.error && tokens[index]).filter((token) => token) as string[];
 
