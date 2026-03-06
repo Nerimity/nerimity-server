@@ -39,7 +39,7 @@ export async function sendEmailConfirmCode(userId: string) {
   const result = await sendConfirmCodeMail(code, account.email).catch(() => false);
 
   if (!result) {
-    return [null, generateError('Failed to send email. Daily limit exceeded.')] as const;
+    return [null, generateError('Failed to send email. Try again later.')] as const;
   }
 
   return [{ message: 'Email confirmation code sent.' }, null] as const;
@@ -73,7 +73,7 @@ export async function sendResetPasswordCode(email: string) {
   const result = await sendResetPasswordMail(url, account.email).catch((err) => console.log('Failed to send reset password email', err));
 
   if (!result) {
-    return [null, generateError('Failed to send email. Daily limit exceeded.')] as const;
+    return [null, generateError('Failed to send email. Try again later.')] as const;
   }
 
   return [{ message: 'Password reset link sent to your email.' }, null] as const;
