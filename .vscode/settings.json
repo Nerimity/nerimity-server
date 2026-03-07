@@ -27,7 +27,7 @@
     "source.fixAll.eslint": "explicit"
   },
   "rpc.enabled": true,
-  "cSpell.words": ["filesize", "ITTER", "NERIMITY", "repost", "Reposted", "reposts", "tsup", "unfollow"],
+  "cSpell.words": ["filesize", "ITTER", "NERIMITY", "repost", "Reposted", "reposts", "tsdown", "unfollow"],
 
   // ArkType
   // allow autocomplete for ArkType expressions like "string | num"
