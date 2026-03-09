@@ -22,6 +22,7 @@ import { channelMessagePinAdd } from './channelMessagePinAdd';
 import { channelMessagePinRemove } from './channelMessagePinRemove';
 import { channelMessagePinsGet } from './channelMessagePinsGet';
 import { channelMessagesSearch } from './channelMessagesSearch';
+import { ChannelCdnGenerateToken } from './ChannelCdnGenerateToken';
 
 const ChannelsRouter = Router();
 
@@ -45,6 +46,7 @@ channelVoiceLeave(ChannelsRouter);
 channelAttachments(ChannelsRouter);
 
 channelMessageCreate(ChannelsRouter);
+ChannelCdnGenerateToken(ChannelsRouter);
 channelMessageUpdate(ChannelsRouter);
 channelMessageDelete(ChannelsRouter);
 channelTypingIndicator(ChannelsRouter);
