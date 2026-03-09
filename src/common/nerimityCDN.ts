@@ -102,6 +102,7 @@ export async function verifyUpload(opts: VerifyUploadOpts) {
 
 interface GenerateTokenOps {
   userId: string;
+  channelId?: string;
 }
 export interface GenerateTokenResponse {
   token: string;
@@ -118,6 +119,7 @@ export async function generateToken(opts: GenerateTokenOps) {
     },
     body: JSON.stringify({
       userId: opts.userId,
+      channelId: opts.channelId,
     }),
   })
     .then(async (res) => {
