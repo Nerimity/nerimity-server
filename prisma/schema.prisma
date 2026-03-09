@@ -433,6 +433,7 @@ model Server {
   verified               Boolean                @default(false)
 
   publicServer           Explore?
+  public                 Boolean                @default(false)
 
   attachments Attachment[]
 

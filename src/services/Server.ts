@@ -726,6 +726,7 @@ export interface UpdateServerOptions {
   avatar?: string | null;
   banner?: string | null;
   verified?: boolean;
+  public?: boolean;
   createdById?: string;
 }
 

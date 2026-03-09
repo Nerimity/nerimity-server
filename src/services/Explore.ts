@@ -11,6 +11,7 @@ import { ExploreOrderByWithRelationInput, ExploreWhereInput } from '@src/generat
 import { getUserPresences } from '@src/cache/UserCache';
 import { getHourStart } from '@src/common/utils';
 import { createSystemMessage } from './Message/MessageCreateSystem';
+import { emitServerUpdated } from '@src/emits/Server';
 
 export enum ExploreType {
   SERVER = 0,
@@ -326,25 +327,29 @@ export const upsertExploreItem = async (opts: UpsertExploreItemOpts): Promise<Cu
     return [null, generateError('Cannot specify both serverId and botPermissions.')] as const;
   }
 
-  const exploreItem = await prisma.explore.upsert({
-    where: {
-      ...(opts.serverId ? { serverId: opts.serverId } : { botApplicationId: opts.botApplicationId }),
-    },
-    create: {
-      id: generateId(),
-      ...(opts.serverId ? { serverId: opts.serverId } : { botApplicationId: opts.botApplicationId }),
-      description: opts.description,
-      bumpCount: 1,
-      type: opts.serverId ? ExploreType.SERVER : ExploreType.BOT,
-      ...(opts.botPermissions !== undefined ? { botPermissions: opts.botPermissions } : undefined),
-    },
-    update: {
-      description: opts.description,
-      ...(opts.botPermissions !== undefined ? { botPermissions: opts.botPermissions } : undefined),
-    },
-  });
+  const [exploreItem] = await prisma.$transaction([
+    prisma.explore.upsert({
+      where: {
+        ...(opts.serverId ? { serverId: opts.serverId } : { botApplicationId: opts.botApplicationId }),
+      },
+      create: {
+        id: generateId(),
+        ...(opts.serverId ? { serverId: opts.serverId } : { botApplicationId: opts.botApplicationId }),
+        description: opts.description,
+        bumpCount: 1,
+        type: opts.serverId ? ExploreType.SERVER : ExploreType.BOT,
+        ...(opts.botPermissions !== undefined ? { botPermissions: opts.botPermissions } : undefined),
+      },
+      update: {
+        description: opts.description,
+        ...(opts.botPermissions !== undefined ? { botPermissions: opts.botPermissions } : undefined),
+      },
+    }),
+    ...(opts.serverId ? [prisma.server.update({ where: { id: opts.serverId }, data: { public: true } })] : []),
+  ]);
   if (opts.serverId) {
     await updateServerCache(opts.serverId, { public: true });
+    emitServerUpdated(opts.serverId, { public: true });
   }
 
   return [exploreItem, null] as const;
@@ -372,11 +377,15 @@ export const deleteExploreItem = async (opts: DeleteExploreItemOpts) => {
     return [null, generateError('You do not have permission to delete this explore item.')] as const;
   }
 
-  await prisma.explore.delete({
-    where: { id: opts.exploreId },
-  });
+  await prisma.$transaction([
+    prisma.explore.delete({
+      where: { id: opts.exploreId },
+    }),
+    ...(exploreItem.server?.id ? [prisma.server.update({ where: { id: exploreItem.server.id }, data: { public: false } })] : []),
+  ]);
 
   if (exploreItem.server?.id) {
+    emitServerUpdated(exploreItem.server.id, { public: false });
     await updateServerCache(exploreItem.server.id, { public: false });
   }
 
