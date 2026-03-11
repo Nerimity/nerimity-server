@@ -75,7 +75,7 @@ export async function sendResetPasswordMail(link: string, to: string) {
     <html lang="en" style="overflow:hidden">
       <meta content="width=device-width,initial-scale=1" name="viewport"/>
       <body style="color:#fff;font-family:Arial">
-        <div style="background:#232629;border-radius:8px;padding:5px;width:100%;display:inline-block">
+        <div style="background:#000;border-radius:8px;padding:5px;width:100%;display:inline-block">
           <a href="https://nerimity.com" style="text-decoration:none;color:#fff">
             <center>
               <img src="https://nerimity.com/assets/logo.png" alt="Nerimity Logo" style="width:80px;margin-top:20px;margin-bottom:10px" />
