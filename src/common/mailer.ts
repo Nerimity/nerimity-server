@@ -37,7 +37,7 @@ export async function sendConfirmCodeMail(code: string, to: string) {
   for (let i = 0; i < code.length; i++) {
     const marginLeft = i !== 0 ? 'margin-left:5px;' : '';
     const htmlDigit = `
-      <div style="${marginLeft}text-align:center;display:inline-block;line-height:1.6;width:40px;height:40px;background-color:#ffffff15;border-radius:8px;font-size:24px">
+      <div style="${marginLeft}text-align:center;display:inline-block;line-height:1.6;width:40px;height:40px;background-color:#1c1c1c;border-radius:8px;font-size:24px">
         ${code[i]}
       </div>`;
 
