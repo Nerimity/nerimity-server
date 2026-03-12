@@ -753,59 +753,6 @@ export const InventoryItemType = {
   BADGE: 'badge',
 };
 
-// RUN ONCE, TEMP MIGRATION
-async function syncUserBadges(userId: string, badgeBits: number) {
-  const acquiredBadges = UserBadgesArray.filter((b) => hasBit(badgeBits, b.bit));
-
-  if (acquiredBadges.length) {
-    const items = acquiredBadges.map((i) =>
-      prisma.inventoryItem.upsert({
-        where: {
-          userId_itemType_itemId: {
-            userId,
-            itemType: InventoryItemType.BADGE,
-            itemId: i.bit.toString(),
-          },
-        },
-        create: {
-          id: generateId(),
-          userId,
-          itemType: InventoryItemType.BADGE,
-          itemId: i.bit.toString(),
-        },
-        update: {},
-      }),
-    );
-    await prisma.$transaction(items);
-  }
-}
-// RUN ONCE, TEMP MIGRATION
-export async function migrateExistingBadges() {
-  const batchSize = 100;
-  let cursor: string | undefined = undefined;
-  let count = 0;
-
-  while (true) {
-    const users: Pick<User, 'id' | 'badges'>[] = await prisma.user.findMany({
-      where: { badges: { not: 0 } },
-      select: { id: true, badges: true },
-      take: batchSize,
-      skip: cursor ? 1 : 0,
-      cursor: cursor ? { id: cursor } : undefined,
-    });
-
-    if (users.length === 0) break;
-
-    for (const user of users) {
-      await syncUserBadges(user.id, user.badges);
-    }
-    count += users.length;
-
-    cursor = users[users.length - 1]?.id;
-  }
-  console.log('Migrated', count, 'badges.');
-}
-
 export async function getUserInventory(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
