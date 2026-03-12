@@ -236,6 +236,7 @@ model User {
   modSuggestActions ModeratorSuggestAction[] @relation(name: "modSuggestActions")
  
   moderationActions ModeratorSuggestAction?
+  inventory InventoryItem[]
 
 
   @@unique([username, tag])
@@ -244,7 +245,19 @@ model User {
   @@index([tag])
 }
 
+model InventoryItem {
+  @@map("inventory_items")
+  id String @id
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  itemId String
+  itemType String
+
+  acquiredAt DateTime @default(now())
+
+  @@unique([userId, itemType, itemId])
+}
 
 
 

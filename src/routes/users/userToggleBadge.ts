@@ -1,10 +1,9 @@
 import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { verifyEmailConfirmCode } from '../../services/User/UserManagement';
 import { body } from 'express-validator';
 import { customExpressValidatorResult } from '../../common/errorHandler';
-import { toggleFreeBadge } from '../../services/User/User';
+import { toggleBadge } from '../../services/User/User';
 
 export function userToggleBadge(Router: Router) {
   Router.post(
@@ -16,7 +15,7 @@ export function userToggleBadge(Router: Router) {
       restrictMS: 20000, // 20 seconds
       requests: 15,
     }),
-    route
+    route,
   );
 }
 
@@ -28,7 +27,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).end();
   }
 
-  const [result, error] = await toggleFreeBadge(req.userCache.id, bit);
+  const [result, error] = await toggleBadge(req.userCache.id, bit);
 
   if (error) {
     return res.status(400).json(error);

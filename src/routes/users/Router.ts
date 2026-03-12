@@ -29,8 +29,11 @@ import { userExternalEmbedCreate } from './userExternalEmbedCreate';
 import { userExternalEmbedDelete } from './userExternalEmbedDelete';
 import { userExternalEmbedGet } from './userExternalEmbedGet';
 import { userExternalEmbedRawGet } from './userExternalEmbedRawGet';
+import { userInventoryGet } from './userInventoryGet';
 
 const UsersRouter = Router();
+
+userInventoryGet(UsersRouter);
 
 userExternalEmbedCreate(UsersRouter);
 userExternalEmbedDelete(UsersRouter);

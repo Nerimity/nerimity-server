@@ -17,6 +17,7 @@ import { createQueueProcessor } from '@nerimity/mimiqueue';
 import { deleteServer } from './services/Server';
 import { Prisma } from '@src/generated/prisma/client';
 import { getHourStart, isString } from './common/utils';
+import { migrateExistingBadges } from './services/User/User';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -50,6 +51,7 @@ if (cluster.isPrimary) {
     prismaConnected = true;
 
     if (env.TYPE === 'api') {
+      migrateExistingBadges();
       scheduleBumpReset();
       vacuumSchedule();
       scheduleDeleteMessages();

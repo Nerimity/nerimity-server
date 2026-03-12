@@ -12,8 +12,8 @@ import { createPostNotification, fetchLatestPost, fetchPinnedPost, fetchPinnedPo
 import { leaveVoiceChannel } from '../Voice';
 import { MessageInclude, transformMessage } from '../Message/Message';
 import { removeDuplicates } from '../../common/utils';
-import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES } from '../../common/Bitwise';
-import { Prisma } from '@src/generated/prisma/client';
+import { addBit, hasBit, isUserAdmin, removeBit, USER_BADGES, UserBadgeIdArray, UserBadgesArray } from '../../common/Bitwise';
+import { Prisma, User } from '@src/generated/prisma/client';
 import { UserStatus } from '../../types/User';
 import { createHash } from 'node:crypto';
 import { checkUserPassword } from '../UserAuthentication';
@@ -592,44 +592,6 @@ export async function removeFCMTokens(tokens: string[]) {
   });
 }
 
-export async function toggleFreeBadge(userId: string, badgeBit: number) {
-  const badge = Object.values(USER_BADGES).find((b) => b.bit === badgeBit);
-  if (!badge) {
-    return [null, generateError('Invalid badge bit')] as const;
-  }
-  const isBadgeFree = 'free' in badge && badge.free;
-
-  if (!isBadgeFree) {
-    return [null, generateError('This badge is not free')] as const;
-  }
-
-  const account = await prisma.account.findUnique({
-    where: { userId },
-    select: { user: { select: { badges: true } } },
-  });
-
-  if (!account) {
-    return [null, generateError('Invalid userId')] as const;
-  }
-
-  let newBadges = account.user.badges;
-  const hasBadge = hasBit(newBadges, badgeBit);
-
-  if (hasBadge) {
-    newBadges = removeBit(newBadges, badgeBit);
-  } else {
-    newBadges = addBit(newBadges, badgeBit);
-  }
-
-  await prisma.account.update({
-    where: { userId },
-    data: { user: { update: { badges: newBadges } } },
-  });
-  await removeUserCacheByUserIds([userId]);
-
-  return [{ badges: newBadges }, null] as const;
-}
-
 export async function getUserNotifications(userId: string) {
   const notifications = await prisma.messageNotification.findMany({
     where: {
@@ -785,4 +747,145 @@ export async function searchUsers(requesterUserId: string, query: string) {
   });
 
   return filtered;
+}
+
+export const InventoryItemType = {
+  BADGE: 'badge',
+};
+
+// RUN ONCE, TEMP MIGRATION
+async function syncUserBadges(userId: string, badgeBits: number) {
+  const acquiredBadges = UserBadgesArray.filter((b) => hasBit(badgeBits, b.bit));
+
+  if (acquiredBadges.length) {
+    const items = acquiredBadges.map((i) =>
+      prisma.inventoryItem.upsert({
+        where: {
+          userId_itemType_itemId: {
+            userId,
+            itemType: InventoryItemType.BADGE,
+            itemId: i.bit.toString(),
+          },
+        },
+        create: {
+          id: generateId(),
+          userId,
+          itemType: InventoryItemType.BADGE,
+          itemId: i.bit.toString(),
+        },
+        update: {},
+      }),
+    );
+    await prisma.$transaction(items);
+  }
+}
+// RUN ONCE, TEMP MIGRATION
+export async function migrateExistingBadges() {
+  const batchSize = 100;
+  let cursor: string | undefined = undefined;
+  let count = 0;
+
+  while (true) {
+    const users: Pick<User, 'id' | 'badges'>[] = await prisma.user.findMany({
+      where: { badges: { not: 0 } },
+      select: { id: true, badges: true },
+      take: batchSize,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+    });
+
+    if (users.length === 0) break;
+
+    for (const user of users) {
+      await syncUserBadges(user.id, user.badges);
+    }
+    count += users.length;
+
+    cursor = users[users.length - 1]?.id;
+  }
+  console.log('Migrated', count, 'badges.');
+}
+
+export async function getUserInventory(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      badges: true,
+    },
+  });
+  if (!user) {
+    return [null, generateError('User not found')] as const;
+  }
+
+  const inventoryItems = await prisma.inventoryItem.findMany({
+    where: {
+      userId,
+    },
+  });
+
+  return [inventoryItems, null] as const;
+}
+
+export async function toggleBadge(userId: string, badgeBit: number) {
+  const badge = Object.values(USER_BADGES).find((b) => b.bit === badgeBit);
+  if (!badge) {
+    return [null, generateError('Invalid badge bit')] as const;
+  }
+
+  const palestine = badgeBit === USER_BADGES.PALESTINE.bit;
+
+  if ('removable' in badge) {
+    if (!badge.removable) {
+      return [null, generateError('This badge is not modifiable.')] as const;
+    }
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { badges: true, inventory: { where: { itemType: InventoryItemType.BADGE, itemId: badgeBit.toString() } } },
+  });
+  if (!user) {
+    return [null, generateError('User not found')] as const;
+  }
+  let newBadges;
+
+  const badgeEquipped = hasBit(user.badges, badgeBit);
+
+  if (badgeEquipped) {
+    newBadges = removeBit(user.badges, badgeBit);
+  } else {
+    if (!palestine && !user.inventory.length) {
+      return [null, generateError('You do not own this badge.')] as const;
+    }
+    newBadges = addBit(user.badges, badgeBit);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(palestine
+        ? {
+            inventory: {
+              upsert: {
+                where: {
+                  userId_itemType_itemId: {
+                    userId,
+                    itemType: InventoryItemType.BADGE,
+                    itemId: badgeBit.toString(),
+                  },
+                },
+                create: {
+                  id: generateId(),
+                  itemType: InventoryItemType.BADGE,
+                  itemId: badgeBit.toString(),
+                },
+                update: {},
+              },
+            },
+          }
+        : {}),
+      badges: newBadges,
+    },
+  });
+  await removeUserCacheByUserIds([userId!]);
+  return [{ badges: newBadges }, null] as const;
 }

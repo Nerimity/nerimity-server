@@ -14,6 +14,7 @@ async function route(req: Request, res: Response) {
   const user = await prisma.user.findFirst({
     where: { id: userId },
     include: {
+      inventory: true,
       suspension: {
         include: {
           suspendBy: true,

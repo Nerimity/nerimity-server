@@ -4,7 +4,7 @@ import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
-import { USER_BADGES, hasBit } from '../../common/Bitwise';
+import { USER_BADGES, addBit, hasBit, removeBit } from '../../common/Bitwise';
 import bcrypt from 'bcrypt';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
@@ -13,6 +13,7 @@ import { ModAuditLogType } from '../../common/ModAuditLog';
 import { generateId } from '../../common/flakeId';
 import { checkUserPassword } from '../../services/UserAuthentication';
 import { Prisma } from '@src/generated/prisma/client';
+import { InventoryItemType } from '@src/services/User/User';
 
 export function updateUser(Router: Router) {
   Router.post('/moderation/users/:userId', authenticate(), isModMiddleware(), route);
@@ -22,11 +23,12 @@ interface Body {
   email?: string;
   username?: string;
   tag?: string;
-  badges?: number;
   newPassword?: string;
   password?: string;
 
   emailConfirmed?: boolean;
+  addedInventoryItems?: { itemType: string; itemId: string }[];
+  removedInventoryIds?: string[];
 }
 
 async function route(req: Request, res: Response) {
@@ -55,19 +57,41 @@ async function route(req: Request, res: Response) {
       username: true,
       tag: true,
       badges: true,
+      inventory: true,
     },
   });
 
   if (!user?.account && !user?.application) return res.status(404).json(generateError('User does not exist.'));
 
-  if (body.badges !== undefined) {
-    const alreadyIsFounder = hasBit(user.badges, USER_BADGES.FOUNDER.bit);
-    const updatedIsFounder = hasBit(body.badges, USER_BADGES.FOUNDER.bit);
+  let newBadges = user.badges;
+  let modifiedFounder = false;
 
-    if (alreadyIsFounder !== updatedIsFounder) {
-      return res.status(403).json(generateError(`Cannot modify the ${USER_BADGES.FOUNDER.name} badge`));
-    }
+  if (body.addedInventoryItems?.length) {
+    body.addedInventoryItems.forEach((i) => {
+      if (i.itemType === InventoryItemType.BADGE) {
+        const bit = parseInt(i.itemId);
+        const valid = Object.values(USER_BADGES).find((b) => b.bit === bit);
+        if (!valid) return;
+        if (bit === USER_BADGES.FOUNDER.bit) modifiedFounder = true;
+        newBadges = addBit(newBadges, bit);
+      }
+    });
   }
+  if (body.removedInventoryIds?.length) {
+    body.removedInventoryIds.forEach((id) => {
+      const inventory = user.inventory.find((i) => i.id === id);
+      if (inventory?.itemType === InventoryItemType.BADGE) {
+        const bit = parseInt(inventory.itemId);
+        if (bit === USER_BADGES.FOUNDER.bit) modifiedFounder = true;
+        newBadges = removeBit(newBadges, bit);
+      }
+    });
+  }
+
+  if (modifiedFounder) {
+    return res.status(403).json(generateError('You cannot modify the Founder badge.'));
+  }
+
   if (body.tag || body.username) {
     const exists = await prisma.user.findFirst({
       where: {
@@ -99,6 +123,28 @@ async function route(req: Request, res: Response) {
   const newUser = await prisma.user.update({
     where: { id: userId },
     data: {
+      ...(body.addedInventoryItems?.length
+        ? {
+            inventory: {
+              upsert: body.addedInventoryItems.map((i) => ({
+                create: {
+                  id: generateId(),
+                  itemType: i.itemType,
+                  itemId: i.itemId,
+                },
+                update: {},
+                where: { userId_itemType_itemId: { userId: userId!, itemType: i.itemType, itemId: i.itemId } },
+              })),
+            },
+          }
+        : {}),
+      ...(body.removedInventoryIds?.length
+        ? {
+            inventory: {
+              deleteMany: { userId: userId!, id: { in: body.removedInventoryIds } },
+            },
+          }
+        : {}),
       ...(Object.keys(updateAccount).length
         ? {
             account: { update: updateAccount },
@@ -107,7 +153,7 @@ async function route(req: Request, res: Response) {
 
       ...addToObjectIfExists('username', body.username),
       ...addToObjectIfExists('tag', body.tag),
-      ...addToObjectIfExists('badges', body.badges),
+      ...addToObjectIfExists('badges', newBadges),
     },
     include: {
       account: {
