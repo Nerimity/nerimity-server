@@ -10,7 +10,7 @@ export function listSuggestModActions(Router: Router) {
     authenticate(),
     isModMiddleware({ allowModBadge: true }),
 
-    route
+    route,
   );
 }
 
@@ -43,6 +43,16 @@ async function route(req: Request, res: Response) {
           createdBy: {
             select: { id: true, username: true, tag: true, badges: true },
           },
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          username: true,
+          tag: true,
+          avatar: true,
+          hexColor: true,
+          badges: true,
         },
       },
       server: {
