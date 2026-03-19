@@ -3,6 +3,7 @@ import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
+import { hasBit, USER_BADGES } from '@src/common/Bitwise';
 
 export function getUsersWithSameIPAddress(Router: Router) {
   Router.get('/moderation/users/:userId/users-with-same-ip', authenticate(), isModMiddleware({ allowModBadge: true }), route);
@@ -46,6 +47,7 @@ async function route(req: Request, res: Response) {
       avatar: true,
       suspension: true,
       bot: true,
+      badges: true,
     },
   });
 
@@ -55,6 +57,14 @@ async function route(req: Request, res: Response) {
     }
     return user;
   });
+
+  if (!req.hasAdminOrCreatorBadge) {
+    // is mod
+    users = users.filter((user) => {
+      const founderOrAdmin = hasBit(user.badges, USER_BADGES.FOUNDER.bit) || hasBit(user.badges, USER_BADGES.ADMIN.bit);
+      return !founderOrAdmin;
+    });
+  }
 
   res.json(users);
 }

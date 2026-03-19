@@ -3,6 +3,8 @@ import { prisma } from '../../common/database';
 import { authenticate } from '../../middleware/authenticate';
 import { isModMiddleware } from './isModMiddleware';
 import { isExpired } from '../../services/User/User';
+import { hasBit, USER_BADGES } from '@src/common/Bitwise';
+import { generateError } from '@src/common/errorHandler';
 
 export function getUser(Router: Router) {
   Router.get('/moderation/users/:userId', authenticate(), isModMiddleware({ allowModBadge: true }), route);
@@ -11,7 +13,7 @@ export function getUser(Router: Router) {
 async function route(req: Request, res: Response) {
   const userId = req.params.userId;
 
-  const user = await prisma.user.findFirst({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       inventory: true,
@@ -70,6 +72,13 @@ async function route(req: Request, res: Response) {
   });
 
   if (!user) return null;
+  if (!req.hasAdminOrCreatorBadge) {
+    // is mod
+    const requestedUserFounderOrAdmin = hasBit(user.badges, USER_BADGES.FOUNDER.bit) || hasBit(user.badges, USER_BADGES.ADMIN.bit);
+    if (requestedUserFounderOrAdmin) {
+      return res.status(403).json(generateError('No Access!'));
+    }
+  }
 
   if (user.suspension?.expireAt && isExpired(user.suspension.expireAt)) {
     user.suspension = null;
