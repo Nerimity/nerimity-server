@@ -7,7 +7,7 @@ import { generateError } from '@src/common/errorHandler';
 export function cdnGenerateToken(Router: Router) {
   Router.post(
     '/cdn/token',
-    authenticate(),
+    authenticate({ allowBot: true }),
     rateLimit({
       name: 'cdn_token',
       restrictMS: 30000,
