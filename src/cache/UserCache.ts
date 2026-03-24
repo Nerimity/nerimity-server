@@ -8,7 +8,6 @@ import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
-import { addToObjectIfExists } from '../common/addToObjectIfExists';
 
 export interface ActivityStatus {
   socketId: string;
@@ -23,12 +22,14 @@ export interface ActivityStatus {
   subtitle?: string;
   link?: string;
 }
+export type ActivityStatusWithoutSocketId = Omit<ActivityStatus, 'socketId'> & { socketId?: undefined };
 export interface Presence {
   userId: string;
   status: number;
   custom?: string | null;
-  activity?: ActivityStatus | null;
+  activities?: ActivityStatus[] | null;
 }
+export type PresenceWithoutActivityStatusSocketId = Omit<Presence, 'activities'> & { activities?: ActivityStatusWithoutSocketId[] | null };
 
 export async function getUserPresences(userIds: string[], includeSocketId = false, hideOffline = true): Promise<Presence[]> {
   const multi = redisClient.multi();
@@ -44,40 +45,55 @@ export async function getUserPresences(userIds: string[], includeSocketId = fals
   for (let i = 0; i < results.length; i++) {
     const result = results[i] as string;
     if (!result) continue;
-    const presence = JSON.parse(result);
+    const presence = JSON.parse(result) as Presence;
     if (hideOffline && presence.status === UserStatus.OFFLINE) continue;
-    if (!includeSocketId && presence.activity) {
-      delete presence.activity.socketId;
+    if (!includeSocketId) {
+      presence.activities = presence.activities?.map((a) => ({ ...a, socketId: undefined })) as ActivityStatus[] | undefined;
     }
     presences.push(presence);
   }
 
   return presences;
 }
-
-export async function updateCachePresence(
-  userId: string,
+interface UpdateCachePresenceOpts {
+  userId: string;
+  socketId?: string;
   presence: Partial<Presence> & {
     userId: string;
-  },
-): Promise<boolean | Presence> {
+  };
+}
+export async function updateCachePresence({ userId, socketId, presence }: UpdateCachePresenceOpts) {
   const key = USER_PRESENCE_KEY_STRING(userId);
   const socketIdsKey = CONNECTED_SOCKET_ID_KEY_SET(userId);
 
   const connectedCount = await redisClient.sCard(socketIdsKey);
 
-  if (connectedCount === 0) return false;
+  if (connectedCount === 0) return { shouldEmit: false } as const;
 
   const currentStatus = await getUserPresences([userId], true, false);
 
   const isOffline = !currentStatus?.[0]?.status && !presence.status;
 
   if (presence.custom === null) presence.custom = undefined;
-  if (presence.activity === null) presence.activity = undefined;
 
-  await redisClient.set(key, JSON.stringify({ ...currentStatus[0], ...presence }));
+  if (presence.activities || presence.activities === null) {
+    presence.activities = currentStatus[0]?.activities
+      ?.filter((activity) => {
+        if (activity.socketId !== socketId) return true;
+        const exists = presence.activities?.find((a) => a.name === activity.name);
+        return exists;
+      })
+      .map((activity) => {
+        if (activity.socketId !== socketId) return activity;
+        return { ...activity, ...presence.activities?.find((a) => a.name === activity.name) };
+      });
+  }
 
-  return !isOffline;
+  const newPresence = { ...currentStatus[0], ...presence };
+
+  await redisClient.set(key, JSON.stringify(newPresence));
+
+  return { shouldEmit: !isOffline, presence: newPresence } as const;
 }
 
 // returns true if the first user is connected.

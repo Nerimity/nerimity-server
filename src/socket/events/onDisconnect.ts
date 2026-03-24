@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { getUserIdBySocketId, getUserPresences, socketDisconnect, updateCachePresence } from '../../cache/UserCache';
+import { ActivityStatusWithoutSocketId, getUserIdBySocketId, getUserPresences, socketDisconnect, updateCachePresence } from '../../cache/UserCache';
 import { dateToDateTime, prisma } from '../../common/database';
 import { emitUserPresenceUpdate } from '../../emits/User';
 import { UserStatus } from '../../types/User';
@@ -14,7 +14,7 @@ export async function onDisconnect(socket: Socket) {
     async () => {
       await handleDisconnect(socket);
     },
-    { groupName: ip }
+    { groupName: ip },
   );
 }
 
@@ -24,9 +24,19 @@ const handleDisconnect = async (socket: Socket) => {
   const presence = await getUserPresences([userId], true);
   const isLastDisconnect = await socketDisconnect(socket.id, userId);
 
-  if (!isLastDisconnect && presence[0]?.activity?.socketId === socket.id) {
-    const shouldEmit = await updateCachePresence(userId, { activity: null, userId });
-    emitUserPresenceUpdate(userId, { activity: null, userId }, !shouldEmit);
+  const hasActivity = presence[0]?.activities?.find((a) => a.socketId === socket.id);
+
+  if (!isLastDisconnect && hasActivity) {
+    const { shouldEmit, presence } = await updateCachePresence({
+      userId,
+      socketId: socket.id,
+      presence: {
+        activities: null,
+        userId,
+      },
+    });
+
+    emitUserPresenceUpdate(userId, { activities: presence?.activities, userId }, !shouldEmit);
   }
 
   const user = await prisma.user.findFirst({

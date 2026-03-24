@@ -224,11 +224,12 @@ export const openDMChannel = async (userId: string, friendId: string) => {
   return [newInbox, null] as const;
 };
 
-type PresencePayload = Partial<Omit<Omit<Presence, 'custom'>, 'userId'>> & {
-  custom?: null | string;
-};
+interface UpdatePresencePayload {
+  status?: UserStatus;
+  custom?: string;
+}
 
-export const updateUserPresence = async (userId: string, presence: PresencePayload) => {
+export const updateUserPresence = async (userId: string, presence: UpdatePresencePayload) => {
   const user = await prisma.user.findFirst({ where: { id: userId } });
   if (!user) {
     return [null, generateError('User not found.', 'user')];
@@ -237,7 +238,7 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
   const changedToOffline = user.status !== UserStatus.OFFLINE && presence.status === UserStatus.OFFLINE;
   const lastOnlineStatusHidden = user.lastOnlineStatus === LastOnlineStatus.HIDDEN;
 
-  const newUser = await prisma.user.update({
+  await prisma.user.update({
     where: { id: userId },
     data: {
       status: presence.status,
@@ -247,12 +248,12 @@ export const updateUserPresence = async (userId: string, presence: PresencePaylo
     select: { customStatus: true, status: true },
   });
 
-  const shouldEmit = await updateCachePresence(userId, {
-    ...presence,
+  const { shouldEmit } = await updateCachePresence({
     userId,
+    presence: { ...presence, userId },
   });
 
-  let emitPayload: (PresencePayload & { userId: string }) | undefined;
+  let emitPayload: (Partial<Presence> & { userId: string }) | undefined;
 
   const currentPresence = await getUserPresences([user.id], false, false).then((result) => result[0]!);
 

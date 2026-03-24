@@ -9,16 +9,20 @@ export const emitUserPresenceUpdate = (
   presence: Partial<Presence> & {
     userId: string;
   },
-  selfOnly = false
+  selfOnly = false,
 ) => {
+  const acts = presence.activities === null ? null : presence.activities?.map((a) => ({ ...a, socketId: undefined }));
   if (selfOnly) {
-    getIO().to(userId).emit(USER_PRESENCE_UPDATE, presence);
+    getIO().to(userId).emit(USER_PRESENCE_UPDATE, acts);
     return;
   }
   emitToAll({
     event: USER_PRESENCE_UPDATE,
     userId,
-    payload: presence,
+    payload: {
+      ...presence,
+      activities: acts,
+    },
   });
 };
 
