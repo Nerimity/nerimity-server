@@ -23,7 +23,9 @@ export async function onChangeActivity(socket: Socket, payload: Activity[] | nul
   const userId = await getUserIdBySocketId(socket.id);
   if (!userId) return;
 
-  if (payload && !Array.isArray(payload)) return;
+  if (payload && !Array.isArray(payload)) {
+    payload = [payload];
+  }
   if (!payload) {
     updateAndEmitActivity(userId, socket.id, null);
     return;
