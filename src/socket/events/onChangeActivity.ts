@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { ActivityStatus, ActivityStatusWithoutSocketId, getUserIdBySocketId, updateCachePresence } from '../../cache/UserCache';
+import { ActivityStatus, ActivityStatusWithoutSocketId, getUserIdBySocketId, getUserPresences, updateCachePresence } from '../../cache/UserCache';
 import { emitUserPresenceUpdate } from '../../emits/User';
 import { type } from 'arktype';
 
@@ -80,7 +80,10 @@ export async function onChangeActivity(socket: Socket, payload: Activity[] | nul
 async function updateAndEmitActivity(userId: string, socketId: string, activities: ActivityStatus[] | null) {
   const { shouldEmit } = await updateCachePresence({ socketId, presence: { userId, activities }, userId });
 
-  emitUserPresenceUpdate(userId, { activities, userId }, !shouldEmit);
+  const presences = await getUserPresences({ userIds: [userId], includeSocketId: false, limitActivities: false });
+  const allActivities = presences[0]?.activities;
+
+  emitUserPresenceUpdate(userId, { activities: allActivities, userId }, !shouldEmit);
 }
 
 function truncate(value: string, maxLength: number, ellipsis = true) {

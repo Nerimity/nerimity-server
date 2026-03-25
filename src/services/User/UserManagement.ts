@@ -472,7 +472,7 @@ export const getExternalEmbed = async (opts: { serverId?: string; userId?: strin
   }
 
   if (externalEmbed.server) {
-    const presence = await getUserPresences(externalEmbed.server.serverMembers.map((member) => member.user.id));
+    const presence = await getUserPresences({ userIds: externalEmbed.server.serverMembers.map((member) => member.user.id) });
     const data = {
       ...externalEmbed,
       onlineMembersCount: presence.length,

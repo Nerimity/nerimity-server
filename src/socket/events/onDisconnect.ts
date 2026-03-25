@@ -21,7 +21,7 @@ export async function onDisconnect(socket: Socket) {
 const handleDisconnect = async (socket: Socket) => {
   const userId = await getUserIdBySocketId(socket.id);
   if (!userId) return;
-  const presence = await getUserPresences([userId], true);
+  const presence = await getUserPresences({ userIds: [userId], includeSocketId: true });
   const isLastDisconnect = await socketDisconnect(socket.id, userId);
 
   const hasActivity = presence[0]?.activities?.find((a) => a.socketId === socket.id);
@@ -35,6 +35,9 @@ const handleDisconnect = async (socket: Socket) => {
         userId,
       },
     });
+    if (presence?.activities) {
+      presence.activities = presence?.activities?.slice(0, 5);
+    }
 
     emitUserPresenceUpdate(userId, { activities: presence?.activities, userId }, !shouldEmit);
   }

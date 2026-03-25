@@ -255,7 +255,7 @@ export const updateUserPresence = async (userId: string, presence: UpdatePresenc
 
   let emitPayload: (Partial<Presence> & { userId: string }) | undefined;
 
-  const currentPresence = await getUserPresences([user.id], false, false).then((result) => result[0]!);
+  const currentPresence = await getUserPresences({ userIds: [user.id], includeSocketId: false, hideOffline: false }).then((result) => result[0]!);
 
   if (!user.status && presence.status) {
     // emit everything when going from offline to online

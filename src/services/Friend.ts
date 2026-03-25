@@ -158,7 +158,7 @@ export const acceptFriend = async (userId: string, friendId: string) => {
   deleteAllInboxCache(userId);
   emitFriendRequestAccept(userId, friendId);
 
-  const [userPresence, friendPresence] = await getUserPresences([userId, friendId]);
+  const [userPresence, friendPresence] = await getUserPresences({ userIds: [userId, friendId] });
   userPresence && emitUserPresenceUpdateTo(userId, friendPresence);
   friendPresence && emitUserPresenceUpdateTo(friendId, userPresence);
 

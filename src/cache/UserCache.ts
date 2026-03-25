@@ -31,7 +31,19 @@ export interface Presence {
 }
 export type PresenceWithoutActivityStatusSocketId = Omit<Presence, 'activities'> & { activities?: ActivityStatusWithoutSocketId[] | null };
 
-export async function getUserPresences(userIds: string[], includeSocketId = false, hideOffline = true): Promise<Presence[]> {
+interface GetUserPresencesOpts {
+  userIds: string[];
+  includeSocketId?: boolean; // default false
+  hideOffline?: boolean; // default true
+  limitActivities?: boolean;
+}
+
+export async function getUserPresences(opts: GetUserPresencesOpts): Promise<Presence[]> {
+  const userIds = opts.userIds;
+  const includeSocketId = opts.includeSocketId === undefined ? false : opts.includeSocketId;
+  const hideOffline = opts.hideOffline === undefined ? true : opts.hideOffline;
+  const limitActivities = opts.limitActivities === undefined ? true : opts.limitActivities;
+
   const multi = redisClient.multi();
   for (let i = 0; i < userIds.length; i++) {
     const userId = userIds[i]!;
@@ -50,6 +62,7 @@ export async function getUserPresences(userIds: string[], includeSocketId = fals
     if (!includeSocketId) {
       presence.activities = presence.activities?.map((a) => ({ ...a, socketId: undefined })) as ActivityStatus[] | undefined;
     }
+    presence.activities = limitActivities ? presence.activities?.slice(0, 5) : presence.activities;
     presences.push(presence);
   }
 
@@ -70,18 +83,19 @@ export async function updateCachePresence({ userId, socketId, presence }: Update
 
   if (connectedCount === 0) return { shouldEmit: false } as const;
 
-  const currentStatus = await getUserPresences([userId], true, false);
+  const currentStatus = await getUserPresences({ userIds: [userId], includeSocketId: true, hideOffline: false, limitActivities: false });
 
   const isOffline = !currentStatus?.[0]?.status && !presence.status;
 
   if (presence.custom === null) presence.custom = undefined;
 
   if (presence.activities || presence.activities === null) {
+    const newActivities = [...(presence.activities || [])];
     presence.activities =
       currentStatus[0]?.activities?.filter((activity) => {
         return activity.socketId !== socketId;
       }) || [];
-    presence.activities.push(...(presence.activities || []));
+    presence.activities.push(...(newActivities || []));
   }
 
   const newPresence = { ...currentStatus[0], ...presence };
