@@ -129,7 +129,7 @@ export const getExploreBots = async (opts: getExploreItemsOpts, accumulatedItems
 
   // 2. Fetch Presences and Create a Lookup Map for performance
   const botIds = publicServers.map((s) => s.botApplication?.botUser?.id).filter(Boolean) as string[];
-  const onlineBots = await getUserPresences(botIds, true, true);
+  const onlineBots = await getUserPresences({ userIds: botIds, includeSocketId: true, hideOffline: true, limitActivities: false });
   const onlineSet = new Set(onlineBots.map((b) => b.userId));
 
   // 3. Filter and Format
@@ -264,7 +264,7 @@ export const bumpExploreItem = async (opts: BumpExploreItemOpts) => {
     if (!botUser?.botUserId) {
       return [null, generateError(`Bot not found.`)] as const;
     }
-    const presences = await getUserPresences([botUser.botUserId], true, true);
+    const presences = await getUserPresences({ userIds: [botUser.botUserId], includeSocketId: true, hideOffline: true });
     if (!presences.length) {
       return [null, generateError(`Bot is offline.`)] as const;
     }

@@ -315,7 +315,7 @@ export const joinServer = async (
   const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(serverMembers, userId);
 
   const memberIds = serverMembers.map((sm) => sm.user.id);
-  const memberPresences = await getUserPresences(memberIds);
+  const memberPresences = await getUserPresences({ userIds: memberIds });
 
   const channelIds = await serverChannels.map((channel) => channel.id);
   const voiceChannelUsers = await getVoiceUsersByChannelId(channelIds);
@@ -331,7 +331,7 @@ export const joinServer = async (
   });
 
   deleteAllInboxCache(userId);
-  const [userPresence] = await getUserPresences([userId]);
+  const [userPresence] = await getUserPresences({ userIds: [userId] });
   userPresence && emitUserPresenceUpdateTo(serverId, userPresence);
 
   if (server.systemChannelId) {

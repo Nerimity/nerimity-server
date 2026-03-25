@@ -212,7 +212,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
 
   const userIds = removeDuplicates([...serverMembers.map((member) => member.user.id), ...friendUserIds, userCache.id]);
 
-  const presences = await getUserPresences(userIds);
+  const presences = await getUserPresences({ userIds });
 
   if (isFirstConnect && user.status !== UserStatus.OFFLINE) {
     emitUserPresenceUpdate(userCache.id, {
