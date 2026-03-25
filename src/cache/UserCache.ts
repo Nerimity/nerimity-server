@@ -77,16 +77,11 @@ export async function updateCachePresence({ userId, socketId, presence }: Update
   if (presence.custom === null) presence.custom = undefined;
 
   if (presence.activities || presence.activities === null) {
-    presence.activities = currentStatus[0]?.activities
-      ?.filter((activity) => {
-        if (activity.socketId !== socketId) return true;
-        const exists = presence.activities?.find((a) => a.name === activity.name);
-        return exists;
-      })
-      .map((activity) => {
-        if (activity.socketId !== socketId) return activity;
-        return { ...activity, ...presence.activities?.find((a) => a.name === activity.name) };
-      });
+    presence.activities =
+      currentStatus[0]?.activities?.filter((activity) => {
+        return activity.socketId !== socketId;
+      }) || [];
+    presence.activities.push(...(presence.activities || []));
   }
 
   const newPresence = { ...currentStatus[0], ...presence };
