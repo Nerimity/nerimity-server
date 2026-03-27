@@ -24,6 +24,7 @@ import { checkAndUpdateRateLimit } from '../../cache/RateLimitCache';
 import { ServerMemberCache } from '../../cache/ServerMemberCache';
 import env from '../../common/env';
 import { generateId } from '../../common/flakeId';
+import { nerimitySupporterCdnMessage } from '@src/common/nerimitySupporterCdnMessage';
 
 export function channelMessageCreate(Router: Router) {
   Router.post(
@@ -187,17 +188,19 @@ async function route(req: Request, res: Response) {
       return res.status(400).json(generateError('You must confirm your email to send attachment messages.'));
     }
 
-    const isMod = hasBit(req.userCache.badges, USER_BADGES.MOD.bit);
+    if (body.nerimityCdnFileId) {
+      const isMod = hasBit(req.userCache.badges, USER_BADGES.MOD.bit);
 
-    const isServerNotPublicAndNotSupporter = req.serverCache && !isServerPublic(req.serverCache) && !isSupporterOrModerator(req.userCache);
+      const isServerNotPublicAndNotSupporter = req.serverCache && !isServerPublic(req.serverCache) && !isSupporterOrModerator(req.userCache);
 
-    if (!isMod && isServerNotPublicAndNotSupporter) {
-      return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private server.'));
-    }
-    const isPrivateChannelAndNotSupporter = req.channelCache.type === ChannelType.SERVER_TEXT && !req.channelCache.canBePublic && !isSupporterOrModerator(req.userCache);
+      if (!isMod && isServerNotPublicAndNotSupporter) {
+        return res.status(400).json(generateError(nerimitySupporterCdnMessage));
+      }
+      const isPrivateChannelAndNotSupporter = req.channelCache.type === ChannelType.SERVER_TEXT && !req.channelCache.canBePublic && !isSupporterOrModerator(req.userCache);
 
-    if (!isMod && isPrivateChannelAndNotSupporter) {
-      return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private channel.'));
+      if (!isMod && isPrivateChannelAndNotSupporter) {
+        return res.status(400).json(generateError(nerimitySupporterCdnMessage));
+      }
     }
   }
 

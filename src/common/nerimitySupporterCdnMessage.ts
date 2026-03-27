@@ -1,0 +1,1 @@
+export const nerimitySupporterCdnMessage = 'To ensure a safe and verified environment, sending attachments in private channels requires a [Nerimity supporter badge](https://nerimity.com/app/settings/badges).';

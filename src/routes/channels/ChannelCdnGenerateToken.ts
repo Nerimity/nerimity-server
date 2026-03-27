@@ -7,6 +7,7 @@ import { channelVerification } from '@src/middleware/channelVerification';
 import { hasBit, USER_BADGES } from '@src/common/Bitwise';
 import { ServerCache } from '@src/cache/ServerCache';
 import { ChannelType } from '@src/types/Channel';
+import { nerimitySupporterCdnMessage } from '@src/common/nerimitySupporterCdnMessage';
 
 export function ChannelCdnGenerateToken(Router: Router) {
   Router.post(
@@ -28,12 +29,12 @@ async function route(req: Request, res: Response) {
   const isServerNotPublicAndNotSupporter = req.serverCache && !isServerPublic(req.serverCache) && !isSupporterOrModerator(req.userCache);
 
   if (!isMod && isServerNotPublicAndNotSupporter) {
-    return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private server.'));
+    return res.status(400).json(generateError(nerimitySupporterCdnMessage));
   }
   const isPrivateChannelAndNotSupporter = req.channelCache.type === ChannelType.SERVER_TEXT && !req.channelCache.canBePublic && !isSupporterOrModerator(req.userCache);
 
   if (!isMod && isPrivateChannelAndNotSupporter) {
-    return res.status(400).json(generateError('You must be a Nerimity supporter to send attachment messages to a private channel.'));
+    return res.status(400).json(generateError(nerimitySupporterCdnMessage));
   }
 
   const [genRes, error] = await generateToken({
