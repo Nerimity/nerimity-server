@@ -20,8 +20,8 @@ export function serverInviteCustomCreate(Router: Router) {
       .withMessage('Code is require')
       .isString()
       .withMessage('Invalid code.')
-      .isLength({ min: 3, max: 32 })
-      .withMessage('Code must be between 3 and 32 characters long.'),
+      .isLength({ min: 2, max: 32 })
+      .withMessage('Code must be between 2 and 32 characters long.'),
     rateLimit({
       name: 'create_server_invite',
       restrictMS: 20000,
