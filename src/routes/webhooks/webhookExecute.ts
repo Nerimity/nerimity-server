@@ -16,7 +16,7 @@ export function webhookkExecute(Router: Router) {
     body('avatarUrl').optional(true).isString().withMessage('Avatar URL must be a string!').isLength({ min: 1, max: 255 }).withMessage('Avatar URL length must be between 1 and 255 characters.'),
     body('username').optional(true).isString().withMessage('Invalid username.').not().contains('@').withMessage('Username cannot contain the @ symbol').not().contains(':').withMessage('Username cannot contain the : symbol').isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.'),
 
-    route
+    route,
   );
 }
 
@@ -84,17 +84,10 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
   res.json(result);
 }
 
-const VALID_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const validateAvatarUrl = (rawUrl: string) => {
   try {
     const url = new URL(rawUrl);
-
-    const extension = url.pathname.split('.').pop()?.toLowerCase();
-    if (!extension || !VALID_EXTENSIONS.includes(extension.toLowerCase())) {
-      return false;
-    }
-
-    return true;
+    return !!url;
   } catch {
     return false;
   }
