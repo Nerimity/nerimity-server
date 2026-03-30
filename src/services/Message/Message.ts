@@ -137,7 +137,7 @@ export function transformMessage(message: TransformMessage) {
       newMessage.createdBy.username = message.creatorOverride.username;
     }
     if (message.creatorOverride?.avatarUrl) {
-      newMessage.createdBy.avatarUrl = message.creatorOverride.animatedAvatar ? 'a' : '' + message.creatorOverride.avatarUrl;
+      newMessage.createdBy.avatarUrl = (message.creatorOverride.animatedAvatar ? 'a' : '') + message.creatorOverride.avatarUrl;
     }
   }
 
