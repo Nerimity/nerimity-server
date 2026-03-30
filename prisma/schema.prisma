@@ -803,6 +803,7 @@ model MessageCreatorOverride {
 
   username String?
   avatarUrl String?
+  animatedAvatar Boolean?
 
   messages   Message[]
 

@@ -17,6 +17,8 @@ import { replaceBadWords } from '../../common/badWords';
 import { zip } from '../../common/zip';
 import { prepareMessageForDatabase } from './prepareMessageForDatabase';
 import { getServerMemberCache, ServerMemberCache } from '@src/cache/ServerMemberCache';
+import { proxyUrlImageDimensions } from '@src/common/nerimityCDN';
+import { error } from 'console';
 
 export interface SendMessageOptions {
   userId?: string;
@@ -137,13 +139,31 @@ const createMessageAndChannelUpdate = async (opts: SendMessageOptions, validated
     const avatarUrl = opts.avatar_url_override?.trim() || null;
     let override = await prisma.messageCreatorOverride.findFirst({
       where: { username, avatarUrl },
-      select: { id: true },
+      select: { id: true, animatedAvatar: true },
     });
-    if (!override) {
-      override = await prisma.messageCreatorOverride.create({
-        data: { username, avatarUrl },
-        select: { id: true },
-      });
+    if (!override || override.animatedAvatar === null) {
+      let animatedAvatar: undefined | boolean;
+      if (avatarUrl) {
+        const [imageDims, error] = await proxyUrlImageDimensions(avatarUrl);
+        if (error) {
+          return [null, generateError('Failed to fetch avatar dimensions. Please check the URL and try again.', 'avatar_url_override')] as const;
+        }
+        animatedAvatar = imageDims?.animated;
+      }
+
+      if (avatarUrl && override && override.animatedAvatar === null) {
+        override = await prisma.messageCreatorOverride.update({
+          where: { id: override.id },
+          data: { animatedAvatar },
+          select: { id: true, animatedAvatar: true },
+        });
+      }
+      if (!override) {
+        override = await prisma.messageCreatorOverride.create({
+          data: { username, avatarUrl, animatedAvatar },
+          select: { id: true, animatedAvatar: true },
+        });
+      }
     }
     overrideId = override.id;
   }
