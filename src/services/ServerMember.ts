@@ -66,7 +66,6 @@ export const updateServerMember = async (serverId: string, userId: string, updat
       return [null, generateError('Cannot apply default role.')];
     }
 
-    // check if roles are inside the server.
     const newRoles = await prisma.serverRole.findMany({
       where: {
         id: { in: update.roleIds, not: server.defaultRoleId },
@@ -74,9 +73,7 @@ export const updateServerMember = async (serverId: string, userId: string, updat
       },
       orderBy: { order: 'desc' },
     });
-    if (newRoles.length !== update.roleIds.length) {
-      return [null, generateError('One or more roles do not exist or cannot be applied to this member.', 'roleIds')];
-    }
+    update.roleIds = newRoles.map((role) => role.id);
 
     const oldRoles = await prisma.serverRole.findMany({
       where: {
