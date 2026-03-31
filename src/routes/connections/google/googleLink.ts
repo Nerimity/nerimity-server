@@ -45,9 +45,7 @@ async function route(req: Request, res: Response) {
 
   const client = googleOAuth2Client();
 
-  const getTokenRes = await client.getToken({ redirect_uri: `${env.CLIENT_URL}/connections/google-redirect`, code: body.code }).catch((e) => {
-    console.log(e);
-  });
+  const getTokenRes = await client.getToken({ redirect_uri: `${env.CLIENT_URL}/connections/google-redirect`, code: body.code }).catch((e) => {});
   if (!getTokenRes) {
     return res.status(400).json(generateError('Invalid code.'));
   }
