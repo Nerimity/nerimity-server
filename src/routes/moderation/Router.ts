@@ -36,6 +36,7 @@ import { getServersActive } from './getServersActive';
 import { deleteSuggestModActions } from './suggestDeleteModActions';
 import { listSuggestModActions } from './suggestListModActions';
 import { suggestModAction } from './suggestModAction';
+import { ticketMute } from './muteTicket';
 
 const ModerationRouter = Router();
 
@@ -78,6 +79,7 @@ getServers(ModerationRouter);
 getTicket(ModerationRouter);
 getTickets(ModerationRouter);
 ticketUpdate(ModerationRouter);
+ticketMute(ModerationRouter);
 
 announcementPostCreate(ModerationRouter);
 announcementPostRemove(ModerationRouter);

@@ -238,6 +238,8 @@ model User {
   moderationActions ModeratorSuggestAction?
   inventory InventoryItem[]
 
+  ignoredTickets IgnoredTicket[]
+
 
   @@unique([username, tag])
   @@index([joinedAt])
@@ -877,7 +879,25 @@ model Ticket {
   openedBy    User     @relation(fields: [openedById], references: [id])
   openedAt    DateTime @default(now())
   seen        Boolean? @default(true)
+
+  ignoredByUsers IgnoredTicket[]
 }
+
+// currently only used for moderators
+model IgnoredTicket {
+  @@map("ignored_tickets")
+  id String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ticketId Int
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+
+  @@unique([userId, ticketId])
+}
+
 
 model Inbox {
   @@map("inboxes")

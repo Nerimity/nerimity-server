@@ -14,6 +14,8 @@ async function route(req: Request, res: Response) {
     status = parseInt(req.query.status) as TicketStatus;
   }
 
+  const includeIgnored = req.query.includeIgnored === 'true';
+
   const after = req.query.after ? parseInt(req.query.after as string) : undefined;
   let limit = parseInt((req.query.limit || '30') as string);
 
@@ -22,6 +24,7 @@ async function route(req: Request, res: Response) {
   }
 
   const tickets = await prisma.ticket.findMany({
+    ...(includeIgnored ? { where: { ignoredByUsers: { none: { userId: req.userCache.id } } } } : {}),
     orderBy: {
       lastUpdatedAt: 'desc',
     },
