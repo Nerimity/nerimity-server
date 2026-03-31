@@ -40,7 +40,7 @@ async function route(req: Request, res: Response) {
       category: true,
       title: true,
       openedAt: true,
-      ignoredByUsers: { where: { userId: req.userCache.id }, select: { id: true } },
+      ignoredByUsers: { select: { userId: true } },
       channelId: true,
       lastUpdatedAt: true,
       openedBy: true,
