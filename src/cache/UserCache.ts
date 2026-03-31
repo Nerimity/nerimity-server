@@ -3,7 +3,7 @@ import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
-import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
+import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
@@ -347,21 +347,21 @@ export async function isIPAllowedCache(ipAddress: string) {
   return exists;
 }
 
-export async function addGoogleAccessTokenCache(userId: string, accessToken: string) {
-  const key = GOOGLE_ACCESS_TOKEN(userId);
+export async function addGoogleDriveAccessTokenCache(userId: string, accessToken: string) {
+  const key = GOOGLE_DRIVE_ACCESS_TOKEN(userId);
   const multi = redisClient.multi();
   multi.set(key, accessToken);
   multi.expire(key, 3000);
   return await multi.exec();
 }
 
-export async function removeGoogleAccessTokenCache(userId: string) {
-  const key = GOOGLE_ACCESS_TOKEN(userId);
+export async function removeGoogleDriveAccessTokenCache(userId: string) {
+  const key = GOOGLE_DRIVE_ACCESS_TOKEN(userId);
   await redisClient.del(key);
 }
 
-export async function getGoogleAccessTokenCache(userId: string) {
-  const key = GOOGLE_ACCESS_TOKEN(userId);
+export async function getGoogleDriveAccessTokenCache(userId: string) {
+  const key = GOOGLE_DRIVE_ACCESS_TOKEN(userId);
   const result = await redisClient.get(key);
   if (!result) return null;
   return result;

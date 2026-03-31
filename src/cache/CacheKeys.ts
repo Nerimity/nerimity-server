@@ -16,7 +16,7 @@ export const USER_CACHE_KEY_STRING = (userId: string) => `${PREFIX}USER:${userId
 
 export const WEBHOOK_CACHE_KEY_STRING = (id: string) => `${PREFIX}WEBHOOK:${id}` as const;
 
-export const GOOGLE_ACCESS_TOKEN = (userId: string) => `${PREFIX}GOOGLE_ACCESS_TOKEN:${userId}` as const;
+export const GOOGLE_DRIVE_ACCESS_TOKEN = (userId: string) => `${PREFIX}GOOGLE_DRIVE_ACCESS_TOKEN:${userId}` as const;
 
 export const SERVER_KEY_STRING = (serverId: string) => `${PREFIX}SERVER:${serverId}` as const;
 

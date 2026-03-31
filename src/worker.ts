@@ -16,7 +16,7 @@ import { rateLimit } from './middleware/rateLimit';
 import { ModerationRouter } from './routes/moderation/Router';
 import { ExploreRouter } from './routes/explore/Router';
 import { PostsRouter } from './routes/posts/Router';
-import { GoogleRouter } from './routes/google/Router';
+import { ConnectionsRouter } from './routes/connections/Router';
 import { TicketsRouter } from './routes/tickets/Router';
 import { EmojisRouter } from './routes/emojis/Router';
 import { TenorRouter } from './routes/tenor/Router';
@@ -106,7 +106,7 @@ if (env.TYPE === 'api') {
   app.use('/api', FriendsRouter);
   app.use('/api', ExploreRouter);
   app.use('/api', PostsRouter);
-  app.use('/api', GoogleRouter);
+  app.use('/api', ConnectionsRouter);
   app.use('/api', TicketsRouter);
   app.use('/api', EmojisRouter);
   app.use('/api', TenorRouter);

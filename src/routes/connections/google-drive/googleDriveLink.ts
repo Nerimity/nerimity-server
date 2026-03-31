@@ -1,35 +1,25 @@
 import { Request, Response, Router } from 'express';
-import { rateLimit } from '../../middleware/rateLimit';
+import { rateLimit } from '../../../middleware/rateLimit';
 import { body } from 'express-validator';
 
-import { generateError } from '../../common/errorHandler';
+import { generateError } from '../../../common/errorHandler';
 import jwt from 'jsonwebtoken';
-import env from '../../common/env';
-import { addGoogleConnection } from '../../services/UserConnection';
-import { googleOAuth2Client } from '../../common/GoogleOAuth2Client';
+import env from '../../../common/env';
+import { addGoogleDriveConnection as addGoogleDriveConnection } from '../../../services/UserConnection';
+import { googleOAuth2Client } from '../../../common/GoogleOAuth2Client';
 
-export function googleLink(Router: Router) {
+export function googleDriveLink(Router: Router) {
   Router.post(
-    '/google/link-account',
-    body('nerimityToken')
-      .not()
-      .isEmpty()
-      .withMessage('nerimityToken is required.')
-      .isString()
-      .withMessage('nerimityToken must be a string!'),
-    body('code')
-      .not()
-      .isEmpty()
-      .withMessage('code is required.')
-      .isString()
-      .withMessage('code must be a string!'),
+    '/connections/google-drive/link-account',
+    body('nerimityToken').not().isEmpty().withMessage('nerimityToken is required.').isString().withMessage('nerimityToken must be a string!'),
+    body('code').not().isEmpty().withMessage('code is required.').isString().withMessage('code must be a string!'),
     rateLimit({
-      name: 'google-link-account',
+      name: 'google-d-link-account',
       restrictMS: 60000,
       requests: 10,
       useIP: true,
     }),
-    route
+    route,
   );
 }
 
@@ -41,12 +31,10 @@ interface Body {
 async function route(req: Request, res: Response) {
   const body: Body = req.body;
 
-  const token = await verifyAsync(body.nerimityToken).catch(() => { });
+  const token = await verifyAsync(body.nerimityToken).catch(() => {});
 
   if (!token) {
-    return res
-      .status(400)
-      .json(generateError('Token expired. Please try again.'));
+    return res.status(400).json(generateError('Token expired. Please try again.'));
   }
 
   const { c, uId } = token as { c: 'google'; uId: string };
@@ -57,7 +45,9 @@ async function route(req: Request, res: Response) {
 
   const client = googleOAuth2Client();
 
-  const getTokenRes = await client.getToken(body.code).catch(() => { });
+  const getTokenRes = await client.getToken({ redirect_uri: `${env.CLIENT_URL}/connections/google-drive-redirect`, code: body.code }).catch((e) => {
+    console.log(e);
+  });
   if (!getTokenRes) {
     return res.status(400).json(generateError('Invalid code.'));
   }
@@ -68,7 +58,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('Invalid code.'));
   }
 
-  const [connection, error] = await addGoogleConnection(uId, refreshToken);
+  const [connection, error] = await addGoogleDriveConnection(uId, refreshToken);
 
   if (error) {
     return res.status(400).json(error);

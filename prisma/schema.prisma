@@ -287,6 +287,7 @@ model UserConnection {
   id String @id
   userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerUserId String? // used for logging in with oauth
 
   public Boolean
   provider String

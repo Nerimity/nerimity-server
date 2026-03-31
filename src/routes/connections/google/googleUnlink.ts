@@ -1,12 +1,12 @@
 import { Request, Response, Router } from 'express';
-import { rateLimit } from '../../middleware/rateLimit';
+import { rateLimit } from '../../../middleware/rateLimit';
 
-import { removeGoogleConnection } from '../../services/UserConnection';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate } from '../../../middleware/authenticate';
+import { removeGoogleConnection } from '@src/services/UserConnection';
 
 export function googleUnlink(Router: Router) {
   Router.post(
-    '/google/unlink-account',
+    '/connections/google/unlink-account',
     authenticate(),
 
     rateLimit({
@@ -14,7 +14,7 @@ export function googleUnlink(Router: Router) {
       restrictMS: 60000,
       requests: 3,
     }),
-    route
+    route,
   );
 }
 
