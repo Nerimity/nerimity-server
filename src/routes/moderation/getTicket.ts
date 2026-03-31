@@ -20,6 +20,7 @@ async function route(req: Request, res: Response) {
       channelId: true,
       lastUpdatedAt: true,
       openedBy: true,
+      ignoredByUsers: { select: { userId: true } },
     },
   });
 
