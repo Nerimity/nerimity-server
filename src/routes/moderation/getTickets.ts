@@ -24,11 +24,13 @@ async function route(req: Request, res: Response) {
   }
 
   const tickets = await prisma.ticket.findMany({
-    ...(!includeIgnored ? { where: { ignoredByUsers: { none: { userId: req.userCache.id } } } } : {}),
+    where: {
+      ...(!includeIgnored ? { ignoredByUsers: { none: { userId: req.userCache.id } } } : {}),
+      ...(status !== undefined ? { status } : undefined),
+    },
     orderBy: {
       lastUpdatedAt: 'desc',
     },
-    ...(status !== undefined ? { where: { status } } : undefined),
     ...(after ? { skip: 1 } : undefined),
     take: limit,
     ...(after ? { cursor: { id: after } } : undefined),
