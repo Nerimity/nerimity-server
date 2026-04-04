@@ -3,22 +3,20 @@ import { body } from 'express-validator';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { authenticate } from '../../middleware/authenticate';
 import { rateLimit } from '../../middleware/rateLimit';
-import { serverMemberVerification } from '../../middleware/serverMemberVerification';
 import { upsertExploreItem } from '../../services/Explore';
 
 export function exploreBotAppUpdate(Router: Router) {
   Router.post(
     '/explore/bots/:appId',
     authenticate(),
-    serverMemberVerification(),
     rateLimit({
-      name: 'explore_update_server',
+      name: 'explore_update_bot',
       restrictMS: 10000,
       requests: 15,
     }),
     body('description').isString().withMessage('Description must be a string!').isLength({ min: 1, max: 150 }).withMessage('Description length must be between 1 and 150 characters.'),
     body('permissions').isNumeric().withMessage('Permissions must be a number.').isInt({ min: 0, max: 900 }).withMessage('Permissions must be between 0 and 900.').isLength({ min: 0, max: 100 }).withMessage('Permissions must be between 0 and 100 characters long.').optional({ nullable: true }),
-    route
+    route,
   );
 }
 
