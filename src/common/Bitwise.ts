@@ -198,52 +198,52 @@ export const ROLE_PERMISSIONS = {
   ADMIN: {
     name: 'Admin',
     description: 'Enables all permissions.',
-    bit: 1,
+    bit: 1 << 0,
     // icon: 'mail'
   },
   SEND_MESSAGE: {
     name: 'Send Message',
     description: 'Enable sending messages in this server. Server admins can still send messages.',
-    bit: 2,
+    bit: 1 << 1,
     icon: 'mail',
   },
   MANAGE_ROLES: {
     name: 'Manage Roles',
     description: 'Permission for updating or deleting roles.',
     // icon: 'mail',
-    bit: 4,
+    bit: 1 << 2,
   },
   MANAGE_CHANNELS: {
     name: 'Manage Channels',
     description: 'Permission for updating or deleting channels.',
     // icon: 'mail',
-    bit: 8,
+    bit: 1 << 3,
   },
   KICK: {
     name: 'Kick',
     description: 'Permission to kick users',
-    bit: 16,
+    bit: 1 << 4,
     // icon: 'mail'
   },
   BAN: {
     name: 'Ban',
     description: 'Permission to ban users.',
-    bit: 32,
+    bit: 1 << 5,
     // icon: 'mail'
   },
   MENTION_EVERYONE: {
     name: 'Mention Everyone',
     description: 'mentionEveryoneDescription',
-    bit: 64,
+    bit: 1 << 6,
   },
   NICKNAME_MEMBER: {
     name: 'Nickname Member',
     description: 'mentionEveryoneDescription',
-    bit: 128,
+    bit: 1 << 7,
   },
   MENTION_ROLES: {
     name: 'Mention Roles',
-    bit: 256,
+    bit: 1 << 8,
   },
 };
 
