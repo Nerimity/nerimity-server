@@ -29,16 +29,17 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
 
   const [res, ttl] = (await mainMulti.exec()) as [RateLimitCache, number];
 
-  if (ttl === -1) {
-    console.error(`Rate limit key has no TTL: key=${key} res=${JSON.stringify(res)}`);
-    return false;
-  }
+  // if (ttl === -1) {
+  //   console.error(`Rate limit key has no TTL: key=${key} res=${JSON.stringify(res)}`);
+  //   return false;
+  // }
 
   if (!res || Object.keys(res).length === 0) {
     const multi = redisClient.multi();
-    multi.hSetNX(key, 'requests', '1');
-
-    multi.pExpire(key, opts.perMS, 'NX');
+    multi.hSet(key, {
+      requests: 1,
+    });
+    multi.pExpire(key, opts.perMS);
     await multi.exec();
     return false as const;
   }
@@ -69,7 +70,7 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
     multi.hSet(key, {
       status: RateLimitStatus.REACHED,
     });
-    multi.pExpire(key, opts.restrictMS, 'NX');
+    multi.pExpire(key, opts.restrictMS);
     await multi.exec();
     return ttl;
   }
