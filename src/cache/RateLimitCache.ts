@@ -2,7 +2,7 @@ import { redisClient } from '../common/redis';
 import { RATE_LIMIT_ITTER_KEY_STRING, RATE_LIMIT_KEY_STRING } from './CacheKeys';
 
 interface CheckAndUpdateRateLimitOptions {
-  id: string,
+  id: string;
   requests: number;
   perMS: number;
   restrictMS: number;
@@ -12,13 +12,12 @@ interface CheckAndUpdateRateLimitOptions {
 }
 
 enum RateLimitStatus {
-  REACHED = "1"
+  REACHED = '1',
 }
 
 interface RateLimitCache {
   requests: string;
   status?: RateLimitStatus;
-
 }
 
 export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptions) {
@@ -28,12 +27,17 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
   mainMulti.hGetAll(key);
   mainMulti.pTTL(key);
 
-  const [res, ttl] = await mainMulti.exec() as [RateLimitCache, number];
+  const [res, ttl] = (await mainMulti.exec()) as [RateLimitCache, number];
+
+  if (ttl === -1) {
+    console.error(`Rate limit key has no TTL: key=${key} res=${JSON.stringify(res)}`);
+    return false;
+  }
 
   if (!res || Object.keys(res).length === 0) {
     const multi = redisClient.multi();
     multi.hSet(key, {
-      requests: 1
+      requests: 1,
     });
     multi.pExpire(key, opts.perMS);
     await multi.exec();
@@ -48,16 +52,15 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
   }
 
   if (requests >= opts.requests) {
-    
     if (opts.onThreeIterations) {
       const itterKey = RATE_LIMIT_ITTER_KEY_STRING(opts.id + opts.itterId?.());
       const itterMulti = redisClient.multi();
 
       itterMulti.incr(itterKey);
       const threeMinutesToMilliseconds = 3 * 60 * 1000;
-      itterMulti.pExpire(itterKey, threeMinutesToMilliseconds, "NX")
+      itterMulti.pExpire(itterKey, threeMinutesToMilliseconds, 'NX');
       const [itterRes] = await itterMulti.exec();
-      if (itterRes as number >= 3) {
+      if ((itterRes as number) >= 3) {
         opts.onThreeIterations();
         await redisClient.del(itterKey);
       }
@@ -65,15 +68,13 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
 
     const multi = redisClient.multi();
     multi.hSet(key, {
-      status: RateLimitStatus.REACHED
+      status: RateLimitStatus.REACHED,
     });
     multi.pExpire(key, opts.restrictMS);
     await multi.exec();
     return ttl;
   }
 
-  await redisClient.HINCRBY(key, "requests", 1);
+  await redisClient.HINCRBY(key, 'requests', 1);
   return false as const;
-
 }
-
