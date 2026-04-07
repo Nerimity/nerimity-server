@@ -36,10 +36,9 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
 
   if (!res || Object.keys(res).length === 0) {
     const multi = redisClient.multi();
-    multi.hSet(key, {
-      requests: 1,
-    });
-    multi.pExpire(key, opts.perMS);
+    multi.hSetNX(key, 'requests', '1');
+
+    multi.pExpire(key, opts.perMS, 'NX');
     await multi.exec();
     return false as const;
   }
@@ -70,7 +69,7 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
     multi.hSet(key, {
       status: RateLimitStatus.REACHED,
     });
-    multi.pExpire(key, opts.restrictMS);
+    multi.pExpire(key, opts.restrictMS, 'NX');
     await multi.exec();
     return ttl;
   }
