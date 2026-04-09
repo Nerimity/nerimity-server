@@ -3,7 +3,6 @@
   "compilerOptions": {
     "rootDir": "..",
     "types": ["node", "vitest/globals"]
-    // Remove typeRoots for a moment to see if it resolves
   },
   "include": [
     "./**/*.ts", 

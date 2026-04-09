@@ -17,11 +17,10 @@
     "module": "ESNext",
     "noEmit": true,
 
-    "lib": ["es2022", "esnext.asynciterable"], // Added for better promise support
+    "lib": ["es2022", "esnext.asynciterable"],
     "paths": {
       "@src/*": ["./src/*"]
     }
   },
   "include": ["src"]
-  // Remove "exclude": ["tests"] here so sub-configs can override it cleanly
 }
