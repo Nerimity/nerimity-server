@@ -27,7 +27,13 @@ export function rateLimit(opts: Options) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const t1 = performance.now();
     if (env.DEV_MODE) {
-      return next();
+      if (!req.body.test_enable_rate_limit) {
+        return next();
+      }
+      if (req.body.test_enable_rate_limit_restrict_ms) {
+        opts.perMS = opts.restrictMS;
+        opts.restrictMS = req.body.test_enable_rate_limit_restrict_ms;
+      }
     }
 
     const ip = req.userIP.replace(/:/g, '=');

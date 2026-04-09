@@ -1,11 +1,9 @@
 {
   "compilerOptions": {
     /* Base Options: */
-    "rootDir": "src",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",
-    "verbatimModuleSyntax": false, // temporary
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
@@ -14,16 +12,16 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
 
+    /* Modern Resolution */
     "moduleResolution": "Bundler",
     "module": "ESNext",
     "noEmit": true,
 
-    "lib": ["es2022"],
-    "baseUrl": ".",
+    "lib": ["es2022", "esnext.asynciterable"], // Added for better promise support
     "paths": {
-      "@src/*": ["src/*"]
+      "@src/*": ["./src/*"]
     }
   },
-  "include": ["src"],
-  "exclude": ["tests"]
+  "include": ["src"]
+  // Remove "exclude": ["tests"] here so sub-configs can override it cleanly
 }

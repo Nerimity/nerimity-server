@@ -8,7 +8,13 @@ type RegisterPayload = {
 
 type RegisterResponse = {
   token: string;
-} | ApiError;
+}
 
 export const registerUser = (payload: RegisterPayload) =>
-  postJson<RegisterResponse>('/users/register', payload);
+  postJson<RegisterResponse>('/users/register', {body: payload});
+
+export const sendEmailConfirmCode = (token: string) =>
+  postJson<{message: string}>('/users/emails/verify/send-code', {token: token});
+
+export const emailConfirmCode = (code: string, token: string) =>
+  postJson<{status: boolean}>('/users/emails/verify', {token: token, query: {code}});

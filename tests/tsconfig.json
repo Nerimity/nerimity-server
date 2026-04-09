@@ -2,7 +2,11 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "rootDir": "..",
-    "types": ["vitest/globals"]
+    "types": ["node", "vitest/globals"]
+    // Remove typeRoots for a moment to see if it resolves
   },
-  "include": ["./**/*.ts", "../src/**/*.ts"]
+  "include": [
+    "./**/*.ts", 
+    "../src/**/*.ts" 
+  ]
 }

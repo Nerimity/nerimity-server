@@ -29,25 +29,34 @@ export const registerUser = async (opts: RegisterOpts) => {
 
   const hashedPassword = await bcrypt.hash(opts.password.trim(), 10);
 
-  const newAccount = await prisma.account.create({
-    data: {
-      id: generateId(),
-      email: opts.email,
-      password: hashedPassword,
-      passwordVersion: 0,
-      user: {
-        create: {
-          id: generateId(),
-          username: opts.username.trim(),
-          tag,
-          status: UserStatus.ONLINE,
-          hexColor: generateHexColor(),
+  const newAccount = await prisma.account
+    .create({
+      data: {
+        id: generateId(),
+        email: opts.email,
+        password: hashedPassword,
+        passwordVersion: 0,
+        user: {
+          create: {
+            id: generateId(),
+            username: opts.username.trim(),
+            tag,
+            status: UserStatus.ONLINE,
+            hexColor: generateHexColor(),
+          },
         },
       },
-    },
 
-    include: { user: true },
-  });
+      include: { user: true },
+    })
+    .catch((err) => {
+      console.error(err);
+      return null;
+    });
+
+  if (!newAccount) {
+    return [null, generateError('Could not create account. Try again later.')] as const;
+  }
 
   const userId = newAccount?.user?.id;
 

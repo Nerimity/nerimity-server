@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { registerUser } from '../helpers/users';
+import { genId } from '../helpers/generateId';
 
 
 
 describe('registerUser', () => {
   it('registers a new user', async () => {
-    const suffix = Date.now().toString(36);
+    const suffix = genId();
 
     const result = await registerUser({
       email: `test_${suffix}@example.com`,
@@ -14,11 +15,11 @@ describe('registerUser', () => {
     });
 
     expect(result).toHaveProperty('token');
-    expect(typeof (result as { token?: string }).token).toBe('string');
+    expect(typeof result.token).toBe('string');
   });
 
   it('rejects duplicate emails', async () => {
-    const suffix = Date.now().toString(36);
+    const suffix = genId();
     const email = `dup_${suffix}@example.com`;
 
     await registerUser({
