@@ -97,11 +97,11 @@ export function channelMessageCreate(Router: Router) {
   );
 }
 
-const queue = createQueue({
-  name: 'create_message',
-  prefix: env.TYPE,
-  redisClient,
-});
+// const queue = createQueue({
+//   name: 'create_message',
+//   prefix: env.TYPE,
+//   redisClient,
+// });
 
 const queueRoute = async (req: Request, res: Response) => {
   // const t1 = performance.now();

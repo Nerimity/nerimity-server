@@ -20,61 +20,69 @@ interface RateLimitCache {
   status?: RateLimitStatus;
 }
 
+const RATE_LIMIT_SCRIPT = `
+local res = redis.call('HGETALL', KEYS[1])
+local ttl = redis.call('PTTL', KEYS[1])
+
+if #res == 0 then
+  redis.call('HSET', KEYS[1], 'requests', 1)
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+  return -1
+end
+
+
+local data = {}
+for i = 1, #res, 2 do
+  data[res[i]] = res[i+1]
+end
+
+if data.status == 'REACHED' then
+  return ttl
+end
+
+if tonumber(data.requests) >= tonumber(ARGV[2]) then
+  local trigger = 0
+  if ARGV[5] == '1' then
+    local count = redis.call('INCR', KEYS[2])
+    if count == 1 then
+      redis.call('PEXPIRE', KEYS[2], ARGV[4])
+    end
+    if count >= 3 then
+      trigger = 1
+      redis.call('DEL', KEYS[2])
+    end
+  end
+
+  redis.call('HSET', KEYS[1], 'status', 'REACHED')
+  redis.call('PEXPIRE', KEYS[1], ARGV[3])
+
+  if trigger == 1 then
+    return -2
+  end
+  return ttl
+end
+
+redis.call('HINCRBY', KEYS[1], 'requests', 1)
+return -1
+`;
+
 export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptions) {
   const key = RATE_LIMIT_KEY_STRING(opts.id);
+  const itterKey = opts.onThreeIterations ? RATE_LIMIT_ITTER_KEY_STRING(opts.id + (opts.itterId?.() ?? '')) : 'noop';
 
-  const mainMulti = redisClient.multi();
-  mainMulti.hGetAll(key);
-  mainMulti.pTTL(key);
+  const result = (await redisClient.eval(RATE_LIMIT_SCRIPT, {
+    keys: [key, itterKey],
+    arguments: [opts.perMS.toString(), opts.requests.toString(), opts.restrictMS.toString(), (3 * 60 * 1000).toString(), opts.onThreeIterations ? '1' : '0'],
+  })) as number;
 
-  const [res, ttl] = (await mainMulti.exec()) as [RateLimitCache, number];
-
-  // if (ttl === -1) {
-  //   console.error(`Rate limit key has no TTL: key=${key} res=${JSON.stringify(res)}`);
-  //   return false;
-  // }
-
-  if (!res || Object.keys(res).length === 0) {
-    const multi = redisClient.multi();
-    multi.hSet(key, {
-      requests: 1,
-    });
-    multi.pExpire(key, opts.perMS);
-    await multi.exec();
+  if (result === -1) {
     return false as const;
   }
 
-  const requests = parseInt(res.requests);
-  const status = res.status;
-
-  if (status === RateLimitStatus.REACHED) {
-    return ttl;
+  if (result === -2) {
+    opts.onThreeIterations?.();
+    return await redisClient.pTTL(key);
   }
 
-  if (requests >= opts.requests) {
-    if (opts.onThreeIterations) {
-      const itterKey = RATE_LIMIT_ITTER_KEY_STRING(opts.id + opts.itterId?.());
-      const itterMulti = redisClient.multi();
-
-      itterMulti.incr(itterKey);
-      const threeMinutesToMilliseconds = 3 * 60 * 1000;
-      itterMulti.pExpire(itterKey, threeMinutesToMilliseconds, 'NX');
-      const [itterRes] = await itterMulti.exec();
-      if ((itterRes as number) >= 3) {
-        opts.onThreeIterations();
-        await redisClient.del(itterKey);
-      }
-    }
-
-    const multi = redisClient.multi();
-    multi.hSet(key, {
-      status: RateLimitStatus.REACHED,
-    });
-    multi.pExpire(key, opts.restrictMS);
-    await multi.exec();
-    return ttl;
-  }
-
-  await redisClient.HINCRBY(key, 'requests', 1);
-  return false as const;
+  return result;
 }

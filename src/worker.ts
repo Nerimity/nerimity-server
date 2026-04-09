@@ -95,6 +95,7 @@ if (env.TYPE === 'api') {
       name: 'global_limit',
       useIP: true,
       restrictMS: 30000,
+      perMS: 15000,
       requests: 100,
     }),
   );
