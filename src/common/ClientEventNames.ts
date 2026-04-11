@@ -17,6 +17,8 @@ export const USER_PRESENCE_UPDATE = 'user:presence_update';
 export const USER_BLOCKED = 'user:blocked';
 export const USER_UNBLOCKED = 'user:unblocked';
 
+export const USER_UPDATED_CLAN = 'user:updated_clan';
+
 export const INBOX_OPENED = 'inbox:opened';
 export const INBOX_CLOSED = 'inbox:closed';
 export const NOTIFICATION_DISMISSED = 'notification:dismissed';
@@ -49,6 +51,8 @@ export const SERVER_CHANNEL_DELETED = 'server:channel_deleted';
 export const SERVER_CHANNEL_PERMISSIONS_UPDATED = 'server:channel_permissions_updated';
 export const SERVER_SCHEDULE_DELETE = 'server:schedule_delete';
 export const SERVER_REMOVE_SCHEDULE_DELETE = 'server:remove_schedule_delete';
+
+export const SERVER_CLAN_UPDATE = 'server:server_clan_update';
 
 export const POST_MENTION = 'post:mention';
 

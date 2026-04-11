@@ -240,6 +240,8 @@ model User {
 
   ignoredTickets IgnoredTicket[]
 
+  serverClan ServerMemberClan?
+
 
   @@unique([username, tag])
   @@index([joinedAt])
@@ -475,12 +477,43 @@ model Server {
 
 
   moderationAction ModeratorSuggestAction?
+  clan ServerClan?
+
 
   @@index([createdAt])
 
 
 
 
+}
+
+model ServerMemberClan {
+  @@map("server_member_clans")
+  serverMemberId String @id
+
+  serverMember ServerMember @relation(fields: [serverMemberId], references: [id], onDelete: Cascade)
+
+  userId String @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  serverId String
+  clan   ServerClan @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
+
+
+  @@unique([serverMemberId, serverId, userId])
+}
+
+
+model ServerClan {
+  @@map("server_clans")
+  serverId String @id
+
+  server Server?        @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  members ServerMemberClan[]
+
+  tag   String @db.Char(4)
+  icon String
 }
 
 
@@ -697,6 +730,11 @@ model ServerMember {
   muteExpireAt DateTime?
 
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
+
+
+  clan ServerMemberClan?
+
+
 
   @@unique([userId, serverId])
   @@index([serverId])

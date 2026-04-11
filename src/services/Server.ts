@@ -7,7 +7,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
-import { emitServerChannelOrderUpdated, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerMemberUpdated, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
+import { emitServerChannelOrderUpdated, emitServerClanUpdate, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerMemberUpdated, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
 import { createMessage, deleteRecentUserServerMessages } from './Message/Message';
 import { MessageType } from '../types/Message';
@@ -1314,4 +1314,44 @@ export const transferServerOwnership = async (opts: TransferServerOwnershipOpts)
   logServerOwnershipUpdate({ serverId: opts.serverId, newOwnerUserId: opts.newOwnerUserId, oldOwnerUserId: server.createdById });
 
   return [true, null] as const;
+};
+
+interface CreateClanOpts {
+  serverId: string;
+  userId: string;
+  icon: string;
+  tag: string;
+}
+
+export const updateClan = async (opts: CreateClanOpts) => {
+  const server = await prisma.server.findUnique({
+    where: { id: opts.serverId, createdById: opts.userId },
+  });
+  if (!server) return [null, 'Server not found'] as const;
+
+  const clan = await prisma.serverClan.upsert({
+    where: { serverId: server.id },
+    create: { icon: opts.icon, tag: opts.tag },
+    update: { icon: opts.icon, tag: opts.tag },
+  });
+
+  emitServerClanUpdate(opts.serverId, { tag: clan.tag, icon: clan.icon, serverId: clan.serverId });
+};
+
+interface DeleteClanOpts {
+  serverId: string;
+  userId: string;
+}
+
+export const deleteClan = async (opts: DeleteClanOpts) => {
+  const server = await prisma.server.findUnique({
+    where: { id: opts.serverId, createdById: opts.userId },
+    include: { clan: true },
+  });
+  if (!server) return [null, 'Server not found'] as const;
+  if (!server.clan) return [null, 'Clan not found'] as const;
+
+  await prisma.serverClan.delete({ where: { serverId: server.id } });
+
+  emitServerClanUpdate(opts.serverId, null);
 };
