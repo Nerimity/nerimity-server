@@ -29,6 +29,7 @@ export function userUpdate(Router: Router) {
     body('bgColorOne').isString().withMessage('bgColorOne must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
     body('bgColorTwo').isString().withMessage('bgColorTwo must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
     body('primaryColor').isString().withMessage('primaryColor must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
+    body('clanServerId').isString().withMessage('clanServerId must be a string.').isLength({ min: 4, max: 100 }).optional({ nullable: true }),
 
     body('font').isNumeric().withMessage('Font must be a number.').isInt({ min: 0, max: 10 }).withMessage('Font must be between 0 and 10.').optional({ nullable: true }),
 
@@ -64,6 +65,7 @@ interface Body {
   bgColorTwo?: string | null;
   primaryColor?: string | null;
   font?: number | null;
+  clanServerId?: string | null;
 
   hideFollowing?: boolean;
   hideFollowers?: boolean;
@@ -94,6 +96,7 @@ async function route(req: Request, res: Response) {
     ...(body.bgColorTwo !== undefined ? { bgColorTwo: body.bgColorTwo } : {}),
     ...(body.primaryColor !== undefined ? { primaryColor: body.primaryColor } : {}),
     ...(body.font !== undefined ? { font: body.font } : {}),
+    ...(body.clanServerId !== undefined ? { clanServerId: body.clanServerId } : {}),
   };
 
   let avatar: string | null | undefined;

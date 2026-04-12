@@ -1,6 +1,6 @@
 import { CustomError, generateError } from '../../common/errorHandler';
 import { CustomResult } from '../../common/CustomResult';
-import { emitInboxClosed, emitInboxOpened, emitUserPresenceUpdate, emitUserNotificationSettingsUpdate, emitUserUpdateClan } from '../../emits/User';
+import { emitInboxClosed, emitInboxOpened, emitUserPresenceUpdate, emitUserNotificationSettingsUpdate } from '../../emits/User';
 import { ChannelType } from '../../types/Channel';
 import { getUserPresences, Presence, removeUserCacheByUserIds, updateCachePresence } from '../../cache/UserCache';
 import { FriendStatus } from '../../types/Friend';
@@ -304,7 +304,7 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
         where: { followedById: requesterId },
         select: { followedToId: true },
       },
-      profile: { select: { font: true, bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } },
+      profile: { select: { font: true, bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
       _count: {
         select: {
           followers: true,
@@ -837,32 +837,3 @@ export async function toggleBadge(userId: string, badgeBit: number) {
   await removeUserCacheByUserIds([userId!]);
   return [{ badges: newBadges }, null] as const;
 }
-
-export const updateUserClan = async (opts: { userId: string; serverId: string | null }) => {
-  if (opts.serverId === null) {
-    await prisma.serverMemberClan.delete({ where: { userId: opts.userId } });
-    emitUserUpdateClan(opts.userId, null);
-    return;
-  }
-
-  const member = await prisma.serverMember.findUnique({ where: { userId_serverId: { userId: opts.userId, serverId: opts.serverId } }, include: { server: { include: { clan: true } } } });
-
-  if (!member) {
-    return [null, generateError('Member is not in this server.')] as const;
-  }
-  if (!member.server.clan) {
-    return [null, generateError('Server does not have a clan.')] as const;
-  }
-
-  prisma.$transaction([
-    prisma.serverMemberClan.delete({ where: { userId: member.userId } }),
-    prisma.serverMemberClan.create({
-      data: {
-        serverMemberId: member.id,
-        serverId: opts.serverId,
-        userId: opts.userId,
-      },
-    }),
-  ]);
-  emitUserUpdateClan(opts.userId, { tag: member.server.clan.tag, icon: member.server.clan.icon, serverId: opts.serverId });
-};

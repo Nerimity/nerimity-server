@@ -1,6 +1,6 @@
 import { Inbox, UserNotificationSettings, User, Prisma } from '@src/generated/prisma/client';
 import { Presence } from '../cache/UserCache';
-import { INBOX_CLOSED, INBOX_OPENED, USER_CONNECTION_ADDED, USER_CONNECTION_REMOVED, USER_PRESENCE_UPDATE, USER_NOTIFICATION_SETTINGS_UPDATE, USER_UPDATED, USER_NOTICE_CREATED, USER_UPDATED_SELF, USER_UPDATED_CLAN } from '../common/ClientEventNames';
+import { INBOX_CLOSED, INBOX_OPENED, USER_CONNECTION_ADDED, USER_CONNECTION_REMOVED, USER_PRESENCE_UPDATE, USER_NOTIFICATION_SETTINGS_UPDATE, USER_UPDATED, USER_NOTICE_CREATED, USER_UPDATED_SELF } from '../common/ClientEventNames';
 import { NOTIFICATION_DISMISSED } from '../common/ClientEventNames';
 import { emitToAll, getIO } from '../socket/socket';
 
@@ -24,10 +24,6 @@ export const emitUserPresenceUpdate = (
       activities: acts,
     },
   });
-};
-
-export const emitUserUpdateClan = (userId: string, clan: null | { tag: string; icon: string; serverId: string }) => {
-  getIO().to(userId).emit(USER_UPDATED_CLAN, { clan });
 };
 
 export const emitUserPresenceUpdateTo = (to: string | string[], presence: Presence) => {

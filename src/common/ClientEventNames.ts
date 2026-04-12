@@ -52,7 +52,7 @@ export const SERVER_CHANNEL_PERMISSIONS_UPDATED = 'server:channel_permissions_up
 export const SERVER_SCHEDULE_DELETE = 'server:schedule_delete';
 export const SERVER_REMOVE_SCHEDULE_DELETE = 'server:remove_schedule_delete';
 
-export const SERVER_CLAN_UPDATE = 'server:server_clan_update';
+export const SERVER_CLAN_UPDATED = 'server:clan_updated';
 
 export const POST_MENTION = 'post:mention';
 

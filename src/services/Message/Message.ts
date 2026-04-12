@@ -61,7 +61,7 @@ export type TransformedMessage = ReturnType<typeof transformMessage>;
 export function transformMessage(message: TransformMessage) {
   const newMessage = {
     ...message,
-    createdBy: { ...message.createdBy } as typeof message.createdBy & { avatarUrl?: string },
+    createdBy: message.createdBy,
     reactions: message.reactions.map((reaction) => ({
       ...reaction,
       reacted: !!reaction.reactedUsers?.length,
@@ -113,35 +113,30 @@ export function transformMessage(message: TransformMessage) {
     creatorOverride: undefined,
   };
 
-  if (message.htmlEmbed) {
-    newMessage.htmlEmbed = Buffer.from(message.htmlEmbed).toString('base64');
-  }
+  const htmlEmbed = message.htmlEmbed ? Buffer.from(message.htmlEmbed).toString('base64') : undefined;
 
-  if (message.webhook) {
-    newMessage.createdBy = {
-      id: message.webhookId!,
-      badges: 0,
-      bot: true,
-      tag: '0000',
-      username: message.webhook.name,
-      avatar: message.webhook.avatar,
-      hexColor: message.webhook.hexColor,
-    };
-  }
+  const createdBy = (() => {
+    if (message.webhook) {
+      const createdBy = {
+        id: message.webhookId!,
+        badges: 0,
+        bot: true,
+        tag: '0000',
+        username: message.webhook.name,
+        avatar: message.webhook.avatar,
+        hexColor: message.webhook.hexColor,
+        ...(message.creatorOverride && { username: message.creatorOverride.username }),
+        ...(message.creatorOverrideId && { id: message.webhookId! + '-' + message.creatorOverrideId }),
+        ...(message.creatorOverride?.avatarUrl && { avatarUrl: (message.creatorOverride.animatedAvatar ? 'a' : '') + message.creatorOverride.avatarUrl }),
+      };
 
-  if (newMessage.createdBy) {
-    if (message.creatorOverrideId) {
-      newMessage.createdBy.id += '-' + message.creatorOverrideId;
+      return createdBy;
     }
-    if (message.creatorOverride?.username) {
-      newMessage.createdBy.username = message.creatorOverride.username;
-    }
-    if (message.creatorOverride?.avatarUrl) {
-      newMessage.createdBy.avatarUrl = (message.creatorOverride.animatedAvatar ? 'a' : '') + message.creatorOverride.avatarUrl;
-    }
-  }
 
-  return newMessage;
+    return { ...newMessage.createdBy };
+  })();
+
+  return { ...newMessage, htmlEmbed, createdBy };
 }
 
 export const getMessagesByChannelId = async (channelId: string, opts?: GetMessageByChannelIdOpts) => {
@@ -375,6 +370,7 @@ export const MessageValidator = {
         bot: true,
         profile: {
           select: {
+            clan: { select: { tag: true, icon: true, serverId: true } },
             font: true,
           },
         },

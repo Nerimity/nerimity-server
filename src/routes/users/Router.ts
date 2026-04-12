@@ -30,8 +30,13 @@ import { userExternalEmbedDelete } from './userExternalEmbedDelete';
 import { userExternalEmbedGet } from './userExternalEmbedGet';
 import { userExternalEmbedRawGet } from './userExternalEmbedRawGet';
 import { userInventoryGet } from './userInventoryGet';
+import { userClanDelete } from './userclanDelete';
+import { userClanUpdate } from './userClanUpdate';
 
 const UsersRouter = Router();
+
+userClanUpdate(UsersRouter);
+userClanDelete(UsersRouter);
 
 userInventoryGet(UsersRouter);
 

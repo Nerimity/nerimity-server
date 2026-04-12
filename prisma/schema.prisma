@@ -240,7 +240,8 @@ model User {
 
   ignoredTickets IgnoredTicket[]
 
-  serverClan ServerMemberClan?
+
+
 
 
   @@unique([username, tag])
@@ -371,6 +372,10 @@ model UserProfile {
   bgColorTwo String? // used for gradient background color
   primaryColor String?
   font                   Int?
+  
+
+  clan ServerClan? @relation(fields: [clanServerId], references: [serverId], onDelete: SetNull)
+  clanServerId String? 
 
 
 }
@@ -487,21 +492,6 @@ model Server {
 
 }
 
-model ServerMemberClan {
-  @@map("server_member_clans")
-  serverMemberId String @id
-
-  serverMember ServerMember @relation(fields: [serverMemberId], references: [id], onDelete: Cascade)
-
-  userId String @unique
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  serverId String
-  clan   ServerClan @relation(fields: [serverId], references: [serverId], onDelete: Cascade)
-
-
-  @@unique([serverMemberId, serverId, userId])
-}
 
 
 model ServerClan {
@@ -510,9 +500,10 @@ model ServerClan {
 
   server Server?        @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
-  members ServerMemberClan[]
+  userProfiles UserProfile[]
 
-  tag   String @db.Char(4)
+
+  tag   String
   icon String
 }
 
@@ -732,7 +723,6 @@ model ServerMember {
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
 
 
-  clan ServerMemberClan?
 
 
 

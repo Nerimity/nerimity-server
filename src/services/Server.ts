@@ -26,6 +26,7 @@ import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpd
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 import { createSystemMessage } from './Message/MessageCreateSystem';
 import * as nerimityCDN from '../common/nerimityCDN';
+import { profile } from 'node:console';
 
 const ServerMemberWithLastOnlineDetails = {
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -155,6 +156,7 @@ export const getServers = async (userId: string) => {
     include: {
       servers: {
         include: {
+          clan: { select: { tag: true, icon: true } },
           scheduledForDeletion: {
             select: {
               scheduledAt: true,
@@ -166,7 +168,7 @@ export const getServers = async (userId: string) => {
             include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
           },
           serverMembers: {
-            include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } }, lastOnlineAt: true, lastOnlineStatus: true } } },
+            include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } }, lastOnlineAt: true, lastOnlineStatus: true } } },
           },
           roles: true,
           customEmojis: {
@@ -229,6 +231,7 @@ export const joinServer = async (
   const server = await prisma.server.findUnique({
     where: { id: serverId },
     include: {
+      clan: { select: { tag: true, icon: true } },
       scheduledForDeletion: true,
       _count: { select: { welcomeQuestions: true } },
       customEmojis: {
@@ -293,7 +296,7 @@ export const joinServer = async (
           muteExpireAt: muted?.expireAt || null,
           roleIds: botRoleId ? [botRoleId, ...applyOnJoinRoleIds] : applyOnJoinRoleIds,
         },
-        include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } } } } },
+        include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } } } } },
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
@@ -301,7 +304,7 @@ export const joinServer = async (
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },
-        include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true } }, lastOnlineAt: true, lastOnlineStatus: true } } },
+        include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } }, lastOnlineAt: true, lastOnlineStatus: true } } },
       }),
     ])
     .catch(() => []);
@@ -450,6 +453,10 @@ export const leaveServer = async (opts: LeaveServerOptions): Promise<CustomResul
   }
 
   const transactions: any[] = [
+    prisma.userProfile.update({
+      where: { userId: opts.userId, clanServerId: opts.serverId },
+      data: { clanServerId: null },
+    }),
     prisma.user.update({
       where: { id: opts.userId },
       data: { servers: { disconnect: { id: opts.serverId } } },
@@ -1327,15 +1334,22 @@ export const updateClan = async (opts: CreateClanOpts) => {
   const server = await prisma.server.findUnique({
     where: { id: opts.serverId, createdById: opts.userId },
   });
-  if (!server) return [null, 'Server not found'] as const;
+  if (!server) return [null, generateError('Server not found')] as const;
+
+  if (!server.verified) {
+    return [null, generateError('Server is not verified')] as const;
+  }
 
   const clan = await prisma.serverClan.upsert({
     where: { serverId: server.id },
-    create: { icon: opts.icon, tag: opts.tag },
+    create: { icon: opts.icon, tag: opts.tag, serverId: server.id },
     update: { icon: opts.icon, tag: opts.tag },
+    select: { icon: true, tag: true, serverId: true },
   });
 
   emitServerClanUpdate(opts.serverId, { tag: clan.tag, icon: clan.icon, serverId: clan.serverId });
+
+  return [clan, null] as const;
 };
 
 interface DeleteClanOpts {
@@ -1348,10 +1362,12 @@ export const deleteClan = async (opts: DeleteClanOpts) => {
     where: { id: opts.serverId, createdById: opts.userId },
     include: { clan: true },
   });
-  if (!server) return [null, 'Server not found'] as const;
-  if (!server.clan) return [null, 'Clan not found'] as const;
+  if (!server) return [null, generateError('Server not found')] as const;
+  if (!server.clan) return [null, generateError('Clan not found')] as const;
 
   await prisma.serverClan.delete({ where: { serverId: server.id } });
 
   emitServerClanUpdate(opts.serverId, null);
+
+  return [true, null] as const;
 };
