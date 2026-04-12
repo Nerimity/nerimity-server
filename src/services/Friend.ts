@@ -91,11 +91,11 @@ export const addFriend = async (userId: string, friendId: string) => {
     .$transaction([
       prisma.friend.create({
         data: requesterObj,
-        include: { recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true } } } } },
+        include: { recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } } } } },
       }),
       prisma.friend.create({
         data: recipientObj,
-        include: { recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true } } } } },
+        include: { recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } } } } },
       }),
     ])
     .catch(() => null);

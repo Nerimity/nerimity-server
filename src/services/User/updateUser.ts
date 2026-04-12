@@ -34,6 +34,7 @@ interface UpdateUserProps {
     bgColorOne?: string | null; // used for gradient background color
     bgColorTwo?: string | null; // used for gradient background color
     primaryColor?: string | null;
+    clanServerId?: string | null;
   };
 }
 
@@ -84,6 +85,17 @@ export const updateUser = async (opts: UpdateUserProps) => {
         pathsToDelete.push(account.user.banner);
       }
       await nerimityCDN.deleteImageBatch(pathsToDelete);
+    }
+  }
+
+  if (opts.profile?.clanServerId) {
+    const member = await prisma.serverMember.findUnique({ where: { userId_serverId: { userId: opts.userId, serverId: opts.profile.clanServerId } }, include: { server: { include: { clan: { select: { tag: true, icon: true, serverId: true } } } } } });
+
+    if (!member) {
+      return [null, generateError('Member is not in this server.')] as const;
+    }
+    if (!member.server.clan) {
+      return [null, generateError('Server does not have a clan.')] as const;
     }
   }
 
@@ -220,6 +232,6 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
         },
       },
     },
-    include: { user: { include: { profile: { select: { font: true, bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true } } } } },
+    include: { user: { include: { profile: { select: { font: true, bio: true, bgColorOne: true, bgColorTwo: true, primaryColor: true, clan: { select: { tag: true, icon: true, serverId: true } } } } } } },
   });
 };

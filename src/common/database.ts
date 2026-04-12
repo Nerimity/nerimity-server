@@ -86,7 +86,7 @@ export function removeRoleIdFromServerMembers(roleId: string) {
     UPDATE "server_members"
       SET "roleIds"=(array_remove("roleIds", ${roleId})) 
       WHERE ${roleId} = ANY("roleIds");
-      `
+      `,
   );
 }
 
@@ -97,7 +97,7 @@ export function removeServerIdFromAccountOrder(accountId: string, serverId: stri
     UPDATE "accounts"
       SET "serverOrderIds"=(array_remove("serverOrderIds", ${serverId})) 
       WHERE ${serverId} = ANY("serverOrderIds") AND "id" = ${accountId};
-      `
+      `,
     ),
     removeServerIdFromFolders(accountId, serverId),
   ]);
@@ -109,7 +109,7 @@ export function removeServerIdFromFolders(accountId: string, serverId: string) {
     UPDATE "server_folders"
       SET "serverIds"=(array_remove("serverIds", ${serverId})) 
       WHERE ${serverId} = ANY("serverIds") AND "accountId" = ${accountId};
-      `
+      `,
   );
 }
 
@@ -129,7 +129,7 @@ export const getPostLikesFromDeletedUsers = () => {
       )
     ORDER BY "id" ASC
     LIMIT 300;
-  `
+  `,
   );
 };
 

@@ -241,6 +241,9 @@ model User {
   ignoredTickets IgnoredTicket[]
 
 
+
+
+
   @@unique([username, tag])
   @@index([joinedAt])
 
@@ -369,6 +372,10 @@ model UserProfile {
   bgColorTwo String? // used for gradient background color
   primaryColor String?
   font                   Int?
+  
+
+  clan ServerClan? @relation(fields: [clanServerId], references: [serverId], onDelete: SetNull)
+  clanServerId String? 
 
 
 }
@@ -475,12 +482,29 @@ model Server {
 
 
   moderationAction ModeratorSuggestAction?
+  clan ServerClan?
+
 
   @@index([createdAt])
 
 
 
 
+}
+
+
+
+model ServerClan {
+  @@map("server_clans")
+  serverId String @id
+
+  server Server?        @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  userProfiles UserProfile[]
+
+
+  tag   String
+  icon String
 }
 
 
@@ -697,6 +721,10 @@ model ServerMember {
   muteExpireAt DateTime?
 
   answeredWelcomeQuestions AnsweredServerWelcomeQuestion[]
+
+
+
+
 
   @@unique([userId, serverId])
   @@index([serverId])

@@ -56,8 +56,13 @@ import { serverChannelWebhookGetSingle } from './serverChannelWebhookGetSingle';
 import { serverChannelWebhookUpdate } from './serverChannelWebhookUpdate';
 import { serverMemberMute } from './serverMemberMute';
 import { serverMemberMuteRemove } from './serverMemberMuteRemove';
+import { serverClanUpdate } from './serverClanUpdate';
+import { serverClanDelete } from './serverClanDelete';
 
 const ServersRouter = Router();
+
+serverClanUpdate(ServersRouter);
+serverClanDelete(ServersRouter);
 
 serverChannelWebhookUpdate(ServersRouter);
 serverChannelWebhookGetSingle(ServersRouter);

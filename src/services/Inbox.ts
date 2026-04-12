@@ -5,7 +5,7 @@ export const getInbox = async (userId: string) => {
     where: { createdById: userId, closed: false },
     include: {
       channel: { include: { _count: { select: { attachments: true } } } },
-      recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true } } } },
+      recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } } } },
     },
   });
 };
