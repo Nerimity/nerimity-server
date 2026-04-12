@@ -57,7 +57,7 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
       },
     },
     include: {
-      server: { include: { createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
+      server: { include: { clan: { select: { tag: true, icon: true, serverId: true } }, createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
     },
   });
 
@@ -74,7 +74,7 @@ const mostActivePublicServers = async (opts: { limit: number; skip: number; sear
 
 interface getExploreItemsOpts {
   sort?: 'pinned_at' | 'most_bumps' | 'most_members' | 'recently_added' | 'recently_bumped' | 'most_active';
-  filter?: 'pinned' | 'all' | 'verified' | 'offline_bots' | 'online_bots';
+  filter?: 'pinned' | 'all' | 'verified' | 'offline_bots' | 'online_bots' | 'clans';
   limit: number;
   afterId?: string;
   search?: string;
@@ -169,6 +169,7 @@ export const getExploreServers = async (opts: getExploreItemsOpts): Promise<Expl
     let where: ExploreWhereInput = {};
     if (filter === 'verified') where = { server: { verified: true } };
     if (filter === 'pinned') where = { pinnedAt: { not: null } };
+    if (filter === 'clans') where = { server: { clan: { isNot: null } } };
     else where.type = ExploreType.SERVER;
     return where;
   };
@@ -196,7 +197,7 @@ export const getExploreServers = async (opts: getExploreItemsOpts): Promise<Expl
     orderBy: orderBy(),
     ...(opts.afterId ? { cursor: { id: opts.afterId }, skip: 1 } : {}),
     include: {
-      server: { include: { createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
+      server: { include: { clan: { select: { icon: true, tag: true, serverId: true } }, createdBy: { select: { id: true, username: true, tag: true } }, _count: { select: { serverMembers: true } } } },
     },
     ...(limit ? { take: limit } : {}),
   });
@@ -213,7 +214,7 @@ export const getExploreItem = async (opts: GetExploreItemOpts) => {
   const publicItem = await prisma.explore.findUnique({
     where: opts.serverId ? { serverId: opts.serverId } : { botApplicationId: opts.botApplicationId },
     include: {
-      server: { include: { _count: { select: { serverMembers: true } } } },
+      server: { include: { clan: { select: { icon: true, tag: true, serverId: true } }, _count: { select: { serverMembers: true } } } },
       botApplication: {
         select: {
           botUser: { select: { _count: { select: { servers: true } }, banner: true, id: true, username: true, tag: true, avatar: true, hexColor: true, badges: true } },
