@@ -1332,9 +1332,11 @@ interface CreateClanOpts {
 
 export const updateClan = async (opts: CreateClanOpts) => {
   const server = await prisma.server.findUnique({
-    where: { id: opts.serverId, createdById: opts.userId },
+    where: { id: opts.serverId },
   });
   if (!server) return [null, generateError('Server not found')] as const;
+
+  if (server.createdById !== opts.userId) return [null, generateError('You are not the server owner')] as const;
 
   if (!server.verified) {
     return [null, generateError('Server is not verified')] as const;
@@ -1359,10 +1361,11 @@ interface DeleteClanOpts {
 
 export const deleteClan = async (opts: DeleteClanOpts) => {
   const server = await prisma.server.findUnique({
-    where: { id: opts.serverId, createdById: opts.userId },
+    where: { id: opts.serverId },
     include: { clan: true },
   });
   if (!server) return [null, generateError('Server not found')] as const;
+  if (server.createdById !== opts.userId) return [null, generateError('You are not the server owner')] as const;
   if (!server.clan) return [null, generateError('Clan not found')] as const;
 
   await prisma.serverClan.delete({ where: { serverId: server.id } });
