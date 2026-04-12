@@ -453,7 +453,7 @@ export const leaveServer = async (opts: LeaveServerOptions): Promise<CustomResul
   }
 
   const transactions: any[] = [
-    prisma.userProfile.update({
+    prisma.userProfile.updateMany({
       where: { userId: opts.userId, clanServerId: opts.serverId },
       data: { clanServerId: null },
     }),
