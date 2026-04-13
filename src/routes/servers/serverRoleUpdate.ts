@@ -15,7 +15,7 @@ export function serverRoleUpdate(Router: Router) {
     authenticate({ allowBot: true }),
     serverMemberVerification(),
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.MANAGE_ROLES),
-    body('name').isString().withMessage('Name must be a string.').isLength({ min: 4, max: 100 }).withMessage('Name must be between 4 and 100 characters long.').optional({ nullable: true }),
+    body('name').isString().withMessage('Name must be a string.').isLength({ min: 1, max: 100 }).withMessage('Name must be between 1 and 100 characters long.').optional({ nullable: true }),
     body('hexColor').isString().withMessage('hexColor must be a string.').isLength({ min: 4, max: 100 }).withMessage('hexColor must be between 4 and 100 characters long.').optional({ nullable: true }),
     body('hideRole').isBoolean().withMessage('hideRole must be a boolean.').optional({ nullable: true }),
     body('applyOnJoin').isBoolean().withMessage('applyOnJoin must be a boolean.').optional({ nullable: true }),
@@ -28,7 +28,7 @@ export function serverRoleUpdate(Router: Router) {
       restrictMS: 10000,
       requests: 10,
     }),
-    route
+    route,
   );
 }
 
