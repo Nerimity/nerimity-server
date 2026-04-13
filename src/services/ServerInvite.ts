@@ -6,6 +6,7 @@ import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
 import { generateServerInviteCode } from '../common/random';
 import { joinServer } from './Server';
+import { joinPublicServer } from './Explore';
 
 export const createServerInvite = async (serverId: string, creatorId: string): Promise<CustomResult<ServerInvite, CustomError>> => {
   // check how many invite codes already created by the user
@@ -117,6 +118,10 @@ export const createServerCustomInvite = async (code: string, serverId: string, c
 };
 
 export const joinServerByInviteCode = async (userId: string, inviteCode: string): Promise<CustomResult<Server, CustomError>> => {
+  const [res, err] = await joinPublicServer(userId, inviteCode);
+  if (!err) {
+    return [res, null];
+  }
   const invite = await prisma.serverInvite.findFirst({
     where: { OR: [{ code: { mode: 'insensitive', equals: inviteCode }, isCustom: true }, { code: inviteCode }] },
   });
@@ -142,20 +147,38 @@ export const joinServerByInviteCode = async (userId: string, inviteCode: string)
 
 type ServerWithMemberCount = Server & { memberCount: number };
 
-export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
+export const getServerFromInviteCode = async (inviteCode: string) => {
   const invite = await prisma.serverInvite.findFirst({
     where: { OR: [{ code: { mode: 'insensitive', equals: inviteCode }, isCustom: true }, { code: inviteCode }] },
     include: { server: true },
   });
   if (!invite) {
+    return null;
+  }
+  return invite.server;
+};
+
+export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
+  let server = await prisma.server.findUnique({
+    where: {
+      id: inviteCode,
+      public: true,
+    },
+  });
+
+  if (!server) {
+    server = await getServerFromInviteCode(inviteCode);
+  }
+
+  if (!server) {
     return [null, generateError('Invalid invite code.')];
   }
 
   const memberCount = await prisma.serverMember.count({
-    where: { serverId: invite.serverId },
+    where: { serverId: server.id },
   });
 
-  return [{ ...invite.server, memberCount }, null];
+  return [{ ...server, memberCount }, null];
 };
 
 export const getServerInvitesByServerId = async (serverId: string, creatorId?: string): Promise<ServerInvite[]> => {
