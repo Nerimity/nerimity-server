@@ -62,7 +62,7 @@ async function route(req: Request, res: Response) {
   }
 
   const [userToken, errors] = await registerUser({
-    email: body.email,
+    email: body.email.toLowerCase(),
     username: body.username,
     password: body.password,
   });
