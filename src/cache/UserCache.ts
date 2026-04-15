@@ -208,7 +208,7 @@ export async function getUserCacheBySessionId(sessionId: string, beforeCache?: (
   const device = await prisma.userDevice.findFirst({ where: { sessionId }, select: { userId: true } });
   if (!device) return [null, null] as const;
 
-  await redisClient.set(sessionToUserIdKey, device.userId);
+  await redisClient.set(sessionToUserIdKey, device.userId, { EX: 3600 });
 
   return storeUserCache(device.userId, beforeCache);
 }
