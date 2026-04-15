@@ -31,8 +31,13 @@ import { userExternalEmbedGet } from './userExternalEmbedGet';
 import { userExternalEmbedRawGet } from './userExternalEmbedRawGet';
 import { userInventoryGet } from './userInventoryGet';
 import { userLogout } from './userLogout';
+import { userSessionsGet } from './userSessionsGet';
+import { userSessionsDelete } from './userSessionsDelete';
 
 const UsersRouter = Router();
+
+userSessionsDelete(UsersRouter);
+userSessionsGet(UsersRouter);
 
 userLogout(UsersRouter);
 

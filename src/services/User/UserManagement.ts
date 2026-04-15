@@ -18,8 +18,8 @@ import { encrypt } from '../../common/encryption';
 import path from 'path';
 import { emitServerFolderCreated, emitServerFolderUpdated, emitServerOrderUpdated } from '../../emits/Server';
 import { deleteImageBatch } from '@src/common/nerimityCDN';
-import { SESSION_ID_TO_USER_ID } from '@src/cache/CacheKeys';
-import { redisClient } from '@src/common/redis';
+import geoip from 'geoip-lite';
+import { checkUserPassword } from '../UserAuthentication';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -654,4 +654,41 @@ export const updateServerFolder = async (folderId: string, opts: UpdateServerFol
   emitServerFolderUpdated(userId, updatedFolder);
 
   return [updatedFolder, null] as const;
+};
+
+export const getSessions = async (userId: string) => {
+  const devices = await prisma.userDevice.findMany({
+    where: { userId, sessionId: { not: null } },
+    select: {
+      sessionId: true,
+      ipAddress: true,
+      lastSeenAt: true,
+    },
+  });
+
+  return devices.map((device) => {
+    const geo = geoip.lookup(device.ipAddress);
+    return {
+      sessionId: device.sessionId,
+      location: [geo?.city, geo?.country, geo?.region, geo?.timezone].join(', '),
+      lastSeenAt: device.lastSeenAt,
+    };
+  });
+};
+
+export const destroySession = async (userId: string, password: string, sessionId: string) => {
+  const account = await prisma.account.findUnique({ where: { userId }, select: { password: true } });
+  if (!account) {
+    return [null, generateError('Invalid userId.')] as const;
+  }
+
+  const passwordCheckResult = await checkUserPassword(account.password, password);
+  if (!passwordCheckResult) {
+    return [null, generateError('Invalid password.')] as const;
+  }
+
+  await prisma.userDevice.deleteMany({ where: { sessionId, userId } });
+  await removeSessions([sessionId]);
+  disconnectSockets('ses:' + sessionId);
+  return [true, null] as const;
 };
