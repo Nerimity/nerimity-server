@@ -8,14 +8,7 @@ export function userPasswordReset(Router: Router) {
   Router.post(
     '/users/reset-password',
 
-    body('newPassword')
-    .not()
-    .isEmpty()
-    .withMessage('newPassword is required.')
-    .isString()
-    .withMessage('New password must be a string.')
-    .isLength({ min: 4, max: 64 })
-    .withMessage('New password must be between 4 and 64 characters long.'),
+    body('newPassword').not().isEmpty().withMessage('newPassword is required.').isString().withMessage('New password must be a string.').isLength({ min: 4, max: 64 }).withMessage('New password must be between 4 and 64 characters long.'),
 
     rateLimit({
       name: 'reset_password',
@@ -23,13 +16,12 @@ export function userPasswordReset(Router: Router) {
       requests: 8,
       useIP: true,
     }),
-    
-    route
+
+    route,
   );
 }
 
 async function route(req: Request, res: Response) {
-
   const validateError = customExpressValidatorResult(req);
 
   if (validateError) {
@@ -43,8 +35,9 @@ async function route(req: Request, res: Response) {
   const [newToken, error] = await resetPassword({
     code,
     newPassword,
-    userId
-  })
+    userId,
+    ipAddress: req.userIP,
+  });
 
   if (error) {
     return res.status(400).json(error);

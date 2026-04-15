@@ -16,6 +16,7 @@ import { addToObjectIfExists } from './common/addToObjectIfExists';
 import { createQueueProcessor } from '@nerimity/mimiqueue';
 import { deleteServer } from './services/Server';
 import { getHourStart, isString } from './common/utils';
+import { SESSION_ID_TO_USER_ID } from './cache/CacheKeys';
 
 (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
   return this.getTime();
@@ -275,22 +276,36 @@ async function vacuumSchedule() {
   });
 }
 
-// remove ip addresses that are last seen more than 7 days ago.
+// remove ip addresses that are last seen more than 30 days ago.
 async function removeIPAddressSchedule() {
-  // Schedule the task to run everyday at 0:00 UTC
-  const rule = new schedule.RecurrenceRule();
-  rule.hour = 0;
-  rule.minute = 0;
-
-  schedule.scheduleJob(rule, async () => {
-    await prisma.userDevice.deleteMany({
-      where: {
-        lastSeenAt: {
-          lte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+  prisma
+    .$transaction(async (tx) => {
+      const devices = await tx.userDevice.findMany({
+        select: { id: true, sessionId: true },
+        take: 100,
+        where: {
+          lastSeenAt: {
+            lte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          },
         },
-      },
+      });
+      if (devices.length === 0) return;
+      const sessionIds = [...new Set(devices.filter((d) => d.sessionId).map((d) => SESSION_ID_TO_USER_ID(d.sessionId!)))];
+
+      if (sessionIds.length) {
+        await redisClient.del(sessionIds);
+      }
+
+      await tx.userDevice.deleteMany({
+        where: {
+          id: { in: devices.map((d) => d.id) },
+        },
+      });
+    })
+    .catch((err) => console.error(err))
+    .finally(() => {
+      setTimeout(removeIPAddressSchedule, 1000 * 60 * 60);
     });
-  });
 }
 
 async function removeExpiredSuspensions() {

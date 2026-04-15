@@ -92,7 +92,7 @@ export const getUserWithAccount = async (userId: string) => {
         select: excludeFields('Account', ['password']),
       },
       application: {
-        select: { id: true, botTokenVersion: true },
+        select: { id: true },
       },
     },
   });

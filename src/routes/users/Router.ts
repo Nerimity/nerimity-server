@@ -30,8 +30,11 @@ import { userExternalEmbedDelete } from './userExternalEmbedDelete';
 import { userExternalEmbedGet } from './userExternalEmbedGet';
 import { userExternalEmbedRawGet } from './userExternalEmbedRawGet';
 import { userInventoryGet } from './userInventoryGet';
+import { userLogout } from './userLogout';
 
 const UsersRouter = Router();
+
+userLogout(UsersRouter);
 
 userInventoryGet(UsersRouter);
 

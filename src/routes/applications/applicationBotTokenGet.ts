@@ -13,7 +13,7 @@ export function applicationBotTokenGet(Router: Router) {
       restrictMS: 60000,
       requests: 10,
     }),
-    route
+    route,
   );
 }
 
@@ -23,7 +23,7 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('Missing application id!'));
   }
 
-  const [token, error] = await getBotToken(req.userCache.account!.id, id);
+  const [token, error] = await getBotToken(req.userCache.account!.id, id, req.userIP);
 
   if (error) {
     return res.status(404).json(error);

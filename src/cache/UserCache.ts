@@ -1,13 +1,14 @@
 import { CustomResult } from '../common/CustomResult';
-import { decryptToken } from '../common/JWT';
+import { decryptToken, generateToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
-import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING } from './CacheKeys';
+import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING, SESSION_ID_TO_USER_ID, SESSION_IP_KEY_SET } from './CacheKeys';
 import { dateToDateTime, prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
+import { addDeviceWithSession } from '@src/services/User/UserManagement';
 
 export interface ActivityStatus {
   socketId: string;
@@ -164,11 +165,9 @@ export interface UserCache {
 export interface AccountCache {
   id: string;
   emailConfirmed?: boolean;
-  passwordVersion: number;
 }
 export interface ApplicationCache {
   id: string;
-  botTokenVersion: number;
 }
 
 export async function getUserIdBySocketId(socketId: string) {
@@ -183,32 +182,67 @@ export async function getUserIdsBySocketIds(socketIds: string[]): Promise<string
   return removeDuplicates(userIds.filter((id) => id) as string[]);
 }
 
-export async function getUserCache(userId: string, beforeCache?: (user: UserCache) => Promise<any | undefined>): Promise<CustomResult<UserCache, { type?: string; message: string; data?: any } | null>> {
+const LUA_SESSION_FETCH = `
+    local userId = redis.call("GET", KEYS[1])
+    if userId then
+      local userCacheKey = ARGV[1] .. userId
+      return redis.call("GET", userCacheKey)
+    end
+    return nil
+  `;
+
+export async function getUserCacheBySessionId(sessionId: string, beforeCache?: (user: UserCache) => Promise<{ type?: string; message: string; data?: any } | undefined>) {
+  const sessionToUserIdKey = SESSION_ID_TO_USER_ID(sessionId);
+  const userCachePrefix = USER_CACHE_KEY_STRING('');
+
+  const cacheUser = await redisClient.eval(LUA_SESSION_FETCH, {
+    keys: [sessionToUserIdKey],
+    arguments: [userCachePrefix],
+  });
+
+  if (typeof cacheUser === 'string') {
+    return [JSON.parse(cacheUser) as UserCache, null] as const;
+  }
+  // If not in cache, fetch from database
+
+  const device = await prisma.userDevice.findFirst({ where: { sessionId }, select: { userId: true } });
+  if (!device) return [null, null] as const;
+
+  await redisClient.set(sessionToUserIdKey, device.userId);
+
+  return storeUserCache(device.userId, beforeCache);
+}
+
+export async function getUserCache(userId: string, beforeCache?: (user: UserCache) => Promise<{ type?: string; message: string; data?: any } | undefined>) {
   // First, check in cache
   const cacheKey = USER_CACHE_KEY_STRING(userId);
   const cacheUser = await redisClient.get(cacheKey);
   if (cacheUser) {
-    return [JSON.parse(cacheUser), null];
+    return [JSON.parse(cacheUser) as UserCache, null] as const;
   }
   // If not in cache, fetch from database
-  const user = await getUserWithAccount(userId);
-  if (!user) return [null, null];
+  return storeUserCache(userId, beforeCache);
+}
 
-  if (!user.application && !user.account) return [null, null];
+async function storeUserCache(userId: string, beforeCache?: (user: UserCache) => Promise<{ type?: string; message: string; data?: any } | undefined>) {
+  const cacheKey = USER_CACHE_KEY_STRING(userId);
+
+  const user = await getUserWithAccount(userId);
+  if (!user) return [null, null] as const;
+
+  if (!user.application && !user.account) return [null, null] as const;
 
   const userCache: UserCache = {
     ...(user.account
       ? {
           account: {
             id: user.account!.id,
-            passwordVersion: user.account!.passwordVersion,
             emailConfirmed: user.account!.emailConfirmed,
           },
         }
       : {
           application: {
             id: user.application!.id,
-            botTokenVersion: user.application!.botTokenVersion,
           },
         }),
     ...(user.shadowBan ? { shadowBanned: true } : {}),
@@ -224,14 +258,15 @@ export async function getUserCache(userId: string, beforeCache?: (user: UserCach
 
   if (beforeCache) {
     const error = await beforeCache(userCache);
-    if (error) return [null, error];
+    if (error) return [null, error] as const;
   }
 
   // Save to cache
   await redisClient.set(cacheKey, JSON.stringify(userCache));
 
-  return [userCache, null];
+  return [userCache, null] as const;
 }
+
 export async function updateUserCache(userId: string, update: Partial<UserCache>) {
   const cacheKey = USER_CACHE_KEY_STRING(userId);
   const [user, error] = await getUserCache(userId);
@@ -261,25 +296,42 @@ const beforeAuthenticateCache = async (user: UserCache): Promise<{ type?: string
     };
 };
 
-export async function authenticateUser(token: string, ipAddress: string): Promise<CustomResult<UserCache, { type?: string; message: string; data?: any }>> {
+export async function authenticateUser(token: string, ipAddress: string) {
   const decryptedToken = decryptToken(token);
   if (!decryptedToken) {
-    return [null, { message: 'Invalid token.' }];
+    return [null, { message: 'Invalid token.' }, null] as const;
   }
 
-  const [userCache, error] = await getUserCache(decryptedToken.userId!, beforeAuthenticateCache);
+  const sessionIdOrUserId = decryptedToken.userId;
+
+  let [userCache, error] = await getUserCacheBySessionId(sessionIdOrUserId!, beforeAuthenticateCache);
+  let newToken: string | null = null;
+
+  // remove this code after 30 days.
+  // only used for migration.
+  if (!userCache && !error) {
+    const secondRes = await getUserCache(sessionIdOrUserId, beforeAuthenticateCache);
+    userCache = secondRes[0];
+    error = secondRes[1];
+
+    if (userCache) {
+      if (userCache.bot) {
+        return [null, { message: 'Token system has been updated. Please Regenerate new bot token.' }, null] as const;
+      }
+
+      const sessionId = generateId();
+      await addDeviceWithSession(userCache.id, sessionId, ipAddress);
+      newToken = generateToken(sessionId, 1);
+    }
+  }
+  //
 
   if (error) {
-    return [null, error];
+    return [null, error, null] as const;
   }
 
   if (!userCache) {
-    return [null, { message: 'Invalid token.' }];
-  }
-  // compare password version
-  const tokenVersion = userCache.account?.passwordVersion ?? userCache.application?.botTokenVersion;
-  if (tokenVersion !== decryptedToken.passwordVersion) {
-    return [null, { message: 'Invalid token.' }];
+    return [null, { message: 'Invalid token.' }, null] as const;
   }
 
   const isIpAllowed = await isIPAllowedCache(ipAddress);
@@ -288,7 +340,9 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
 
   if (!isIpAllowed || userCache.ip !== ipAddress) {
     const ipBanned = await isIpBanned(ipAddress);
-    await addDevice(userCache.id, ipAddress);
+    if (!newToken) {
+      await addDeviceWithSession(userCache.id, sessionIdOrUserId, ipAddress);
+    }
 
     if (ipBanned && !isFounder) {
       return [
@@ -300,22 +354,14 @@ export async function authenticateUser(token: string, ipAddress: string): Promis
             expire: ipBanned.expireAt,
           },
         },
-      ];
+        null,
+      ] as const;
     }
     await addAllowedIPCache(ipAddress);
     await updateUserCache(userCache.id, { ip: ipAddress });
   }
 
-  return [userCache, null];
-}
-
-async function addDevice(userId: string, ipAddress: string) {
-  // cache this request as well to reduce database calls
-  await prisma.userDevice.upsert({
-    where: { userId_ipAddress: { userId, ipAddress } },
-    update: { lastSeenAt: dateToDateTime() },
-    create: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime() },
-  });
+  return [userCache, null, newToken] as const;
 }
 
 // Moderators Only
@@ -365,4 +411,8 @@ export async function getGoogleDriveAccessTokenCache(userId: string) {
   const result = await redisClient.get(key);
   if (!result) return null;
   return result;
+}
+
+export async function removeSessions(sessionIds: string[]) {
+  await redisClient.del(sessionIds.map((id) => SESSION_ID_TO_USER_ID(id)));
 }

@@ -55,6 +55,7 @@ async function route(req: Request, res: Response) {
 
     const [userToken, error] = await loginWithGoogleUserId({
       googleUserId,
+      ipAddress: req.userIP,
     });
     if (error) {
       return res.status(400).json(error);
@@ -90,6 +91,7 @@ async function route(req: Request, res: Response) {
     const [userToken, error] = await loginUserWithEmail({
       email: body.email,
       password: body.password,
+      ipAddress: req.userIP,
     });
     if (error) {
       return res.status(400).json(error);
@@ -102,6 +104,7 @@ async function route(req: Request, res: Response) {
       username,
       tag,
       password: body.password,
+      ipAddress: req.userIP,
     });
     if (error) {
       return res.status(400).json(error);

@@ -21,6 +21,7 @@ import { redisClient } from '../../common/redis';
 import { ReminderSelect, transformReminder } from '../../services/Reminder';
 import env from '../../common/env';
 import { compressObject } from '@src/common/zstd';
+import { decryptToken } from '@src/common/JWT';
 
 interface Payload {
   token: string;
@@ -72,10 +73,22 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     return;
   }
 
-  const [userCache, error] = await authenticateUser(payload.token, ip);
+  const [userCache, error, newToken] = await authenticateUser(payload.token, ip);
+
+  const decryptedToken = decryptToken(newToken || payload.token);
+  if (!decryptedToken) {
+    emitError(socket, { message: 'Invalid token.', disconnect: true });
+    return;
+  }
+  const sessionId = decryptedToken.userId;
+  socket.join('ses:' + sessionId);
 
   if (error !== null) {
     emitError(socket, { ...error, disconnect: true });
+    return;
+  }
+  if (!userCache) {
+    emitError(socket, { message: 'User not found', disconnect: true });
     return;
   }
   socket.join(userCache.id);
@@ -301,6 +314,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     channels: channelsToEmit(),
     inbox: inboxResponse,
     pid: process.pid,
+    ...(newToken ? { newToken } : {}),
   };
 
   socket.emit(AUTHENTICATED, payload.compression === 'zstd' ? await compressObject(data) : data);

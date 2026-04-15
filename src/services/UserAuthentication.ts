@@ -6,11 +6,13 @@ import { generateHexColor, generateTag } from '../common/random';
 import { generateToken } from '../common/JWT';
 import { UserStatus } from '../types/User';
 import { ConnectionProviders } from './UserConnection';
+import { addDeviceWithSession } from './User/UserManagement';
 
 interface RegisterOpts {
   email: string;
   username: string;
   password: string;
+  ipAddress: string;
 }
 
 export const registerUser = async (opts: RegisterOpts) => {
@@ -35,7 +37,6 @@ export const registerUser = async (opts: RegisterOpts) => {
         id: generateId(),
         email: opts.email,
         password: hashedPassword,
-        passwordVersion: 0,
         user: {
           create: {
             id: generateId(),
@@ -60,7 +61,10 @@ export const registerUser = async (opts: RegisterOpts) => {
 
   const userId = newAccount?.user?.id;
 
-  const token = generateToken(userId, newAccount.passwordVersion);
+  const sessionId = generateId();
+  await addDeviceWithSession(userId, sessionId, opts.ipAddress);
+
+  const token = generateToken(sessionId, 1);
 
   return [token, null] as const;
 };
@@ -79,6 +83,7 @@ const getUserByUsernameAndTag = (username: string, tag: string) =>
 interface LoginWithEmailOpts {
   email: string;
   password: string;
+  ipAddress: string;
 }
 export const loginUserWithEmail = async (opts: LoginWithEmailOpts) => {
   const account = await prisma.account.findFirst({
@@ -90,9 +95,9 @@ export const loginUserWithEmail = async (opts: LoginWithEmailOpts) => {
   }
   return await loginUser({
     userId: account.user.id,
-    passwordVersion: account.passwordVersion,
     inputPassword: opts.password,
     hashedPassword: account.password,
+    ipAddress: opts.ipAddress,
   });
 };
 
@@ -100,6 +105,7 @@ interface LoginWithUsernameAndTagOpts {
   username: string;
   tag: string;
   password: string;
+  ipAddress: string;
 }
 export const loginWithUsernameAndTag = async (opts: LoginWithUsernameAndTagOpts) => {
   const account = await prisma.account.findFirst({
@@ -111,14 +117,15 @@ export const loginWithUsernameAndTag = async (opts: LoginWithUsernameAndTagOpts)
   }
   return await loginUser({
     userId: account.user.id,
-    passwordVersion: account.passwordVersion,
     inputPassword: opts.password,
     hashedPassword: account.password,
+    ipAddress: opts.ipAddress,
   });
 };
 
 interface LoginGoogleUserIdOpts {
   googleUserId: string;
+  ipAddress: string;
 }
 export const loginWithGoogleUserId = async (opts: LoginGoogleUserIdOpts) => {
   const account = await prisma.account.findFirst({
@@ -128,23 +135,29 @@ export const loginWithGoogleUserId = async (opts: LoginGoogleUserIdOpts) => {
   if (!account) {
     return [null, generateError('Account not found.', 'email')] as const;
   }
-  const token = generateToken(account.userId, account.passwordVersion);
+
+  const sessionId = generateId();
+  await addDeviceWithSession(account.user.id, sessionId, opts.ipAddress);
+
+  const token = generateToken(sessionId, 1);
   return [token, null] as const;
 };
 
 interface LoginUserOpts {
   userId: string;
-  passwordVersion: number;
   inputPassword: string;
   hashedPassword: string;
+  ipAddress: string;
 }
 const loginUser = async (opts: LoginUserOpts) => {
   const isPasswordValid = await checkUserPassword(opts.hashedPassword, opts.inputPassword);
   if (!isPasswordValid) {
     return [null, generateError('Invalid password.', 'password')] as const;
   }
+  const sessionId = generateId();
+  await addDeviceWithSession(opts.userId, sessionId, opts.ipAddress);
 
-  const token = generateToken(opts.userId, opts.passwordVersion);
+  const token = generateToken(sessionId, 1);
 
   return [token, null] as const;
 };

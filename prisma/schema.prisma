@@ -14,7 +14,6 @@ model Account {
   id              String  @id
   email           String  @unique
   password        String
-  passwordVersion Int     @default(1)
   userId          String  @unique
   user            User    @relation(fields: [userId], references: [id])
   suspendCount    Int     @default(0) // How many times the user has been suspended.
@@ -69,7 +68,6 @@ model Application {
 
   botUserId   String?  @unique
   botUser     User?    @relation(fields: [botUserId], references: [id], onDelete: Cascade)
-  botTokenVersion Int  @default(1)
 
 
   publicApplication Explore?
@@ -306,13 +304,18 @@ model UserDevice {
   @@map("user_devices")
   id          String    @id
   userId      String
+
+  sessionId   String?
+
   ipAddress   String
+
 
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   lastSeenAt  DateTime @default(now())
 
-  @@unique([userId, ipAddress])
+
+  @@unique([userId, ipAddress, sessionId])
   @@index([ipAddress])
 
 }

@@ -7,7 +7,7 @@ import { checkUsernameOrTag, checkUsernameOrTagUpdated } from './User/updateUser
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { emitUserUpdated } from '../emits/User';
 import { generateToken } from '../common/JWT';
-import { deleteAccount, disconnectSockets } from './User/UserManagement';
+import { addDeviceWithSession, deleteAccount, disconnectSockets, removeSessionsByUserId } from './User/UserManagement';
 import { removeUserCacheByUserIds } from '../cache/UserCache';
 import { generateOauth2Token } from './Oauth2';
 import * as nerimityCDN from '../common/nerimityCDN';
@@ -141,10 +141,10 @@ export async function deleteApplication(accountId: string, appId: string) {
   return [true, null] as const;
 }
 
-export async function getBotToken(requesterAccountId: string, appId: string) {
+export async function getBotToken(requesterAccountId: string, appId: string, requesterIpAddress: string) {
   const application = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id: appId },
-    select: { botTokenVersion: true, botUserId: true },
+    select: { botUserId: true },
   });
 
   if (!application) {
@@ -154,7 +154,18 @@ export async function getBotToken(requesterAccountId: string, appId: string) {
     return [null, generateError('Application does not have a bot!')] as const;
   }
 
-  const token = generateToken(application.botUserId, application.botTokenVersion);
+  let sessionId;
+
+  const device = await prisma.userDevice.findFirst({ where: { userId: application.botUserId, sessionId: { not: null } }, select: { sessionId: true } });
+
+  if (device?.sessionId) {
+    sessionId = device.sessionId;
+  } else {
+    sessionId = generateId();
+    await addDeviceWithSession(application.botUserId, sessionId, requesterIpAddress);
+  }
+
+  const token = generateToken(sessionId, 1);
 
   return [token, null] as const;
 }
@@ -322,7 +333,7 @@ const updateBotInDatabase = async (opts: UpdateBotProps) => {
 export async function refreshBotToken(requesterAccountId: string, appId: string) {
   const application = await prisma.application.findUnique({
     where: { creatorAccountId: requesterAccountId, id: appId },
-    select: { botTokenVersion: true, botUserId: true },
+    select: { botUserId: true },
   });
 
   if (!application) {
@@ -332,10 +343,7 @@ export async function refreshBotToken(requesterAccountId: string, appId: string)
     return [null, generateError('Application does not have a bot!')] as const;
   }
 
-  await prisma.application.update({
-    where: { id: appId },
-    data: { botTokenVersion: { increment: 1 } },
-  });
+  await removeSessionsByUserId(application.botUserId);
 
   await removeUserCacheByUserIds([application.botUserId]);
   disconnectSockets(application.botUserId);

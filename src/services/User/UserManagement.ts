@@ -2,7 +2,7 @@ import { dateToDateTime, prisma, removeServerIdFromFolders } from '../../common/
 import { generateError } from '../../common/errorHandler';
 import { sendConfirmCodeMail, sendResetPasswordMail } from '../../common/mailer';
 import { generateEmailConfirmCode, generateHexColor, generateSecureCode, generateTag } from '../../common/random';
-import { getUserPresences, removeUserCacheByUserIds } from '../../cache/UserCache';
+import { getUserPresences, removeSessions, removeUserCacheByUserIds } from '../../cache/UserCache';
 import { getIO } from '../../socket/socket';
 import { AUTHENTICATE_ERROR } from '../../common/ClientEventNames';
 import bcrypt from 'bcrypt';
@@ -18,6 +18,8 @@ import { encrypt } from '../../common/encryption';
 import path from 'path';
 import { emitServerFolderCreated, emitServerFolderUpdated, emitServerOrderUpdated } from '../../emits/Server';
 import { deleteImageBatch } from '@src/common/nerimityCDN';
+import { SESSION_ID_TO_USER_ID } from '@src/cache/CacheKeys';
+import { redisClient } from '@src/common/redis';
 
 export async function sendEmailConfirmCode(userId: string) {
   const account = await getAccountByUserId(userId);
@@ -126,7 +128,6 @@ const getAccountByUserId = async (userId: string) => {
       emailConfirmCode: true,
       user: true,
       password: true,
-      passwordVersion: true,
     },
   });
 };
@@ -292,16 +293,44 @@ const deleteAccountFromDatabase = async (userId: string, opts?: DeleteAccountOpt
   ]);
 };
 
-export const disconnectSockets = (userId: string, excludeSocketId?: string) => {
+export async function logout(userId: string, sessionId: string) {
+  await prisma.userDevice.deleteMany({ where: { sessionId } });
+  removeSessions([sessionId]);
+  disconnectSockets('ses:' + sessionId);
+}
+
+export async function addDeviceWithSession(userId: string, sessionId: string, ipAddress: string) {
+  await prisma.userDevice.upsert({
+    where: { userId_ipAddress_sessionId: { userId, ipAddress, sessionId } },
+    update: { lastSeenAt: dateToDateTime(), sessionId },
+    create: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime(), sessionId },
+  });
+}
+
+export async function removeSessionsByUserId(userId: string) {
+  await prisma.$transaction(async (tx) => {
+    const devices = await tx.userDevice.findMany({ where: { userId } });
+    if (devices.length) {
+      const sessionIds = [...new Set(devices.filter((d) => d.sessionId).map((d) => d.sessionId!))];
+      if (sessionIds.length) {
+        await removeSessions(sessionIds);
+      }
+
+      await tx.userDevice.deleteMany({ where: { userId } });
+    }
+  });
+}
+
+export const disconnectSockets = (userId: string, excludeSocketId?: string, message?: string) => {
   let broadcaster = getIO().in(userId);
   if (excludeSocketId) {
     broadcaster = broadcaster.except(excludeSocketId);
   }
-  broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
+  broadcaster.emit(AUTHENTICATE_ERROR, { message: message || 'Invalid Token' });
   broadcaster.disconnectSockets(true);
 };
 
-export const resetPassword = async (opts: { userId: string; code: string; newPassword: string }) => {
+export const resetPassword = async (opts: { userId: string; code: string; newPassword: string; ipAddress: string }) => {
   if (!opts.code) {
     return [null, generateError('Invalid code.')] as const;
   }
@@ -328,14 +357,18 @@ export const resetPassword = async (opts: { userId: string; code: string; newPas
     where: { userId: opts.userId },
     data: {
       password: await bcrypt.hash(opts.newPassword.trim(), 10),
-      passwordVersion: { increment: 1 },
       resetPasswordCode: null,
       resetPasswordCodeExpiresAt: null,
     },
   });
   await removeUserCacheByUserIds([opts.userId]);
 
-  const newToken = generateToken(account.userId, updateResult.passwordVersion);
+  removeSessionsByUserId(opts.userId);
+
+  const sessionId = generateId();
+  await addDeviceWithSession(opts.userId, sessionId, opts.ipAddress);
+
+  const newToken = generateToken(sessionId, 1);
 
   if (newToken) {
     disconnectSockets(opts.userId);

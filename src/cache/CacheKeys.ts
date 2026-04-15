@@ -12,6 +12,8 @@ export const WS_KEYS = ['socket.io', CONNECTED_SOCKET_ID_KEY_SET(''), CONNECTED_
 
 // API KEYS
 
+export const SESSION_ID_TO_USER_ID = (sessionId: string) => `${PREFIX}SESSION_USER_ID:${sessionId}` as const;
+
 export const USER_CACHE_KEY_STRING = (userId: string) => `${PREFIX}USER:${userId}` as const;
 
 export const WEBHOOK_CACHE_KEY_STRING = (id: string) => `${PREFIX}WEBHOOK:${id}` as const;

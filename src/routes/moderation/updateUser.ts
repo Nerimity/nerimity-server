@@ -14,6 +14,7 @@ import { generateId } from '../../common/flakeId';
 import { checkUserPassword } from '../../services/UserAuthentication';
 import { Prisma } from '@src/generated/prisma/client';
 import { InventoryItemType } from '@src/services/User/User';
+import { removeSessionsByUserId } from '@src/services/User/UserManagement';
 
 export function updateUser(Router: Router) {
   Router.post('/moderation/users/:userId', authenticate(), isModMiddleware(), route);
@@ -115,7 +116,6 @@ async function route(req: Request, res: Response) {
     ...(body.newPassword?.trim?.()
       ? {
           password: await bcrypt.hash(body.newPassword.trim(), 10),
-          passwordVersion: { increment: 1 },
         }
       : undefined),
   };
@@ -167,6 +167,7 @@ async function route(req: Request, res: Response) {
   await removeUserCacheByUserIds([userId!]);
 
   if (body.newPassword?.trim()) {
+    removeSessionsByUserId(userId!);
     const broadcaster = getIO().in(userId!);
     broadcaster.emit(AUTHENTICATE_ERROR, { message: 'Invalid Token' });
     broadcaster.disconnectSockets(true);

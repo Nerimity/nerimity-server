@@ -9,8 +9,9 @@ import { generateToken } from '../../common/JWT';
 import { prisma } from '../../common/database';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { generateError } from '../../common/errorHandler';
-import { disconnectSockets } from './UserManagement';
+import { addDeviceWithSession, disconnectSockets, removeSessionsByUserId } from './UserManagement';
 import { emitToAll } from '../../socket/socket';
+import { generateId } from '@src/common/flakeId';
 
 interface UpdateUserProps {
   userId: string;
@@ -36,6 +37,7 @@ interface UpdateUserProps {
     primaryColor?: string | null;
     clanServerId?: string | null;
   };
+  ipAddress?: string;
 }
 
 export const updateUser = async (opts: UpdateUserProps) => {
@@ -99,6 +101,9 @@ export const updateUser = async (opts: UpdateUserProps) => {
     }
   }
 
+  if (opts.newPassword?.trim() && !opts.ipAddress) {
+    return [null, generateError('Something went wrong. Please try again.')] as const;
+  }
   const updateResult = await updateAccountInDatabase(account.email, opts);
 
   if (opts.dmStatus !== undefined) {
@@ -129,10 +134,17 @@ export const updateUser = async (opts: UpdateUserProps) => {
     ...addToObjectIfExists('lastOnlineStatus', opts.lastOnlineStatus),
   });
 
-  const newToken = opts.newPassword?.trim() ? generateToken(account.user.id, updateResult.passwordVersion) : undefined;
+  let newToken: string | undefined = undefined;
+
+  if (opts.newPassword?.trim()) {
+    await removeSessionsByUserId(opts.userId);
+    const sessionId = generateId();
+    await addDeviceWithSession(opts.userId, sessionId, opts.ipAddress!);
+    newToken = generateToken(sessionId, 1);
+  }
 
   if (newToken) {
-    disconnectSockets(opts.userId, opts.socketId);
+    disconnectSockets(opts.userId, undefined, 'Password updated. Reload.');
   }
 
   return [{ user: updateResult.user, newToken }, null] as const;
@@ -147,7 +159,6 @@ const getAccountByUserId = async (userId: string) => {
       emailConfirmCode: true,
       user: true,
       password: true,
-      passwordVersion: true,
     },
   });
 };
@@ -204,7 +215,6 @@ const updateAccountInDatabase = async (email: string, opts: UpdateUserProps) => 
       ...(opts.newPassword?.trim()
         ? {
             password: await bcrypt.hash(opts.newPassword!.trim(), 10),
-            passwordVersion: { increment: 1 },
           }
         : undefined),
 
