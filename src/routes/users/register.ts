@@ -65,6 +65,7 @@ async function route(req: Request, res: Response) {
     email: body.email.toLowerCase(),
     username: body.username,
     password: body.password,
+    ipAddress: req.userIP,
   });
   if (errors) {
     return res.status(400).json(errors);
