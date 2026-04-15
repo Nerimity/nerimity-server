@@ -309,7 +309,7 @@ export async function authenticateUser(token: string, ipAddress: string) {
 
   // remove this code after 30 days.
   // only used for migration.
-  if (!userCache && !error) {
+  if (!userCache) {
     const secondRes = await getUserCache(sessionIdOrUserId, beforeAuthenticateCache);
     userCache = secondRes[0];
     error = secondRes[1];
