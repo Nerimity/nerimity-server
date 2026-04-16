@@ -670,7 +670,7 @@ export const getSessions = async (userId: string) => {
     const geo = geoip.lookup(device.ipAddress);
     return {
       sessionId: device.sessionId,
-      location: [geo?.city, geo?.country, geo?.region, geo?.timezone].join(', '),
+      location: [geo?.city, geo?.country, geo?.region, geo?.timezone].filter((e) => e?.trim()).join(', '),
       lastSeenAt: device.lastSeenAt,
     };
   });
