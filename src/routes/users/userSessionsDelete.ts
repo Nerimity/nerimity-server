@@ -29,7 +29,7 @@ async function route(req: Request, res: Response) {
   const sessionId = req.params.sessionId;
   const password = req.body.password;
 
-  const [result, err] = await destroySession(req.userCache.id, sessionId!, password);
+  const [result, err] = await destroySession(req.userCache.id, password, sessionId!);
 
   if (err) {
     return res.status(400).json(err);
