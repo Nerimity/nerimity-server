@@ -7,7 +7,7 @@ import { customExpressValidatorResult } from '@src/common/errorHandler';
 
 export function userSessionsDelete(Router: Router) {
   Router.delete(
-    '/users/sessions/:sessionId',
+    '/users/sessions/:sessionId?',
     authenticate(),
     rateLimit({
       name: 'account_sessions_delete',

@@ -693,7 +693,7 @@ export const getSessions = async (userId: string) => {
   });
 };
 
-export const destroySession = async (userId: string, password: string, sessionId: string) => {
+export const destroySession = async (userId: string, password: string, sessionId?: string) => {
   const account = await prisma.account.findUnique({ where: { userId }, select: { password: true } });
   if (!account) {
     return [null, generateError('Invalid userId.')] as const;
@@ -702,6 +702,11 @@ export const destroySession = async (userId: string, password: string, sessionId
   const passwordCheckResult = await checkUserPassword(account.password, password);
   if (!passwordCheckResult) {
     return [null, generateError('Invalid password.')] as const;
+  }
+
+  if (!sessionId) {
+    await removeSessionsByUserId(userId);
+    return [true, null] as const;
   }
 
   await prisma.userDevice.deleteMany({ where: { sessionId, userId } });

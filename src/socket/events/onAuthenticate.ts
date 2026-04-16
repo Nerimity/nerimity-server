@@ -318,6 +318,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     channels: channelsToEmit(),
     inbox: inboxResponse,
     pid: process.pid,
+    sessionId,
     ...(newToken ? { newToken } : {}),
   };
 
