@@ -18,13 +18,18 @@ export function authenticate(opts?: Options) {
       return res.status(401).json(generateError('No token provided.'));
     }
 
-    const [cachedUser, error] = await authenticateUser(token, req.userIP);
+    const [cachedUser, error] = await authenticateUser(token, req.userIP, req.deviceType);
     if (error !== null) {
       return res.status(401).json(generateError(error.message));
     }
     if (!opts?.allowBot && cachedUser.bot) {
       return res.status(401).json(generateError('Bots are not allowed to use this route.'));
     }
+
+    if (cachedUser?.id === '1289157673362825217') {
+      console.log('api', req.get('User-Agent'));
+    }
+
     req.userCache = cachedUser;
     res.setHeader('T-auth-took', (performance.now() - t1).toFixed(2) + 'ms');
     next();
