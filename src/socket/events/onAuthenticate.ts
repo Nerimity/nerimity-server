@@ -79,10 +79,6 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
 
   const [userCache, error, newToken] = await authenticateUser(payload.token, ip, deviceType);
 
-  if (userCache?.id === '1289157673362825217') {
-    console.log('ws', ua);
-  }
-
   const decryptedToken = decryptToken(newToken || payload.token);
   if (!decryptedToken) {
     emitError(socket, { message: 'Invalid token.', disconnect: true });
