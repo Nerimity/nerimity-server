@@ -1,4 +1,4 @@
-import { dateToDateTime, prisma, removeServerIdFromFolders } from '../../common/database';
+import { dateToDateTime, prisma } from '../../common/database';
 import { generateError } from '../../common/errorHandler';
 import { sendConfirmCodeMail, sendResetPasswordMail } from '../../common/mailer';
 import { generateEmailConfirmCode, generateHexColor, generateSecureCode, generateTag } from '../../common/random';
@@ -299,11 +299,26 @@ export async function logout(userId: string, sessionId: string) {
   disconnectSockets('ses:' + sessionId);
 }
 
-export async function addDeviceWithSession(userId: string, sessionId: string, ipAddress: string) {
+export const DeviceType = {
+  Browser: 0,
+  Desktop: 1,
+  Mobile: 2,
+} as const;
+
+export type DeviceTypeId = (typeof DeviceType)[keyof typeof DeviceType];
+
+export function userAgentToDeviceType(ua?: string | null) {
+  const isMobile = !ua ? false : /mobile/i.test(ua);
+  const isElectron = !ua ? false : /electron/i.test(ua);
+
+  return isMobile ? DeviceType.Mobile : isElectron ? DeviceType.Desktop : DeviceType.Browser;
+}
+
+export async function addDeviceWithSession(userId: string, sessionId: string, ipAddress: string, deviceType: DeviceTypeId = DeviceType.Browser) {
   await prisma.userDevice.upsert({
     where: { userId_ipAddress_sessionId: { userId, ipAddress, sessionId } },
-    update: { lastSeenAt: dateToDateTime(), sessionId },
-    create: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime(), sessionId },
+    update: { lastSeenAt: dateToDateTime(), sessionId, deviceType },
+    create: { id: generateId(), userId, ipAddress, lastSeenAt: dateToDateTime(), sessionId, deviceType },
   });
 }
 
@@ -662,6 +677,7 @@ export const getSessions = async (userId: string) => {
     select: {
       sessionId: true,
       ipAddress: true,
+      deviceType: true,
       lastSeenAt: true,
     },
   });
@@ -669,6 +685,7 @@ export const getSessions = async (userId: string) => {
   return devices.map((device) => {
     const geo = geoip.lookup(device.ipAddress);
     return {
+      deviceType: device.deviceType,
       sessionId: device.sessionId,
       location: [geo?.city, geo?.country, geo?.region, geo?.timezone].filter((e) => e?.trim()).join(', '),
       lastSeenAt: device.lastSeenAt,

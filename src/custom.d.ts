@@ -4,6 +4,7 @@ import { ServerCache } from './cache/ServerCache';
 import { ServerMemberCache } from './cache/ServerMemberCache';
 import { UserCache } from './cache/UserCache';
 import { OAuth2GrantCache } from './middleware/oAuth2Authenticate';
+import { DeviceTypeId } from './services/User/UserManagement';
 
 declare global {
   namespace Express {
@@ -19,6 +20,7 @@ declare global {
       serverCache: ServerCache;
       rateLimited?: number;
       userIP: string;
+      deviceType: DeviceTypeId;
       errorMessage?: string;
       // GoogleOAuth2Client?: Auth.OAuth2Client;
 

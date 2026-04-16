@@ -22,6 +22,7 @@ import { ReminderSelect, transformReminder } from '../../services/Reminder';
 import env from '../../common/env';
 import { compressObject } from '@src/common/zstd';
 import { decryptToken } from '@src/common/JWT';
+import { userAgentToDeviceType } from '@src/services/User/UserManagement';
 
 interface Payload {
   token: string;
@@ -68,12 +69,15 @@ export async function onAuthenticate(socket: Socket, payload: Payload) {
 }
 
 const handleAuthenticate = async (socket: Socket, payload: Payload) => {
+  const ua = socket.handshake.headers['user-agent'];
+  const deviceType = userAgentToDeviceType(ua);
+
   const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
   if (!socket.connected) {
     return;
   }
 
-  const [userCache, error, newToken] = await authenticateUser(payload.token, ip);
+  const [userCache, error, newToken] = await authenticateUser(payload.token, ip, deviceType);
 
   const decryptedToken = decryptToken(newToken || payload.token);
   if (!decryptedToken) {

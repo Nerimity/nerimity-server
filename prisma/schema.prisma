@@ -308,6 +308,7 @@ model UserDevice {
   sessionId   String?
 
   ipAddress   String
+  deviceType  Int?
 
 
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)

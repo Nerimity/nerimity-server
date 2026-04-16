@@ -1,14 +1,13 @@
-import { CustomResult } from '../common/CustomResult';
 import { decryptToken, generateToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
-import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING, SESSION_ID_TO_USER_ID, SESSION_IP_KEY_SET } from './CacheKeys';
-import { dateToDateTime, prisma } from '../common/database';
+import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING, SESSION_ID_TO_USER_ID } from './CacheKeys';
+import { prisma } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
-import { addDeviceWithSession } from '@src/services/User/UserManagement';
+import { addDeviceWithSession, DeviceTypeId } from '@src/services/User/UserManagement';
 
 export interface ActivityStatus {
   socketId: string;
@@ -296,7 +295,7 @@ const beforeAuthenticateCache = async (user: UserCache): Promise<{ type?: string
     };
 };
 
-export async function authenticateUser(token: string, ipAddress: string) {
+export async function authenticateUser(token: string, ipAddress: string, deviceType: DeviceTypeId) {
   const decryptedToken = decryptToken(token);
   if (!decryptedToken) {
     return [null, { message: 'Invalid token.' }, null] as const;
@@ -320,7 +319,7 @@ export async function authenticateUser(token: string, ipAddress: string) {
       }
 
       const sessionId = generateId();
-      await addDeviceWithSession(userCache.id, sessionId, ipAddress);
+      await addDeviceWithSession(userCache.id, sessionId, ipAddress, deviceType);
       newToken = generateToken(sessionId, 1);
     }
   }
@@ -341,7 +340,7 @@ export async function authenticateUser(token: string, ipAddress: string) {
   if (!isIpAllowed || userCache.ip !== ipAddress) {
     const ipBanned = await isIpBanned(ipAddress);
     if (!newToken) {
-      await addDeviceWithSession(userCache.id, sessionIdOrUserId, ipAddress);
+      await addDeviceWithSession(userCache.id, sessionIdOrUserId, ipAddress, deviceType);
     }
 
     if (ipBanned && !isFounder) {
