@@ -706,11 +706,12 @@ export const destroySession = async (userId: string, password: string, sessionId
 
   if (!sessionId) {
     await removeSessionsByUserId(userId);
+    disconnectSockets(userId, undefined, 'Session Destroyed.');
     return [true, null] as const;
   }
 
   await prisma.userDevice.deleteMany({ where: { sessionId, userId } });
   await removeSessions([sessionId]);
-  disconnectSockets('ses:' + sessionId);
+  disconnectSockets('ses:' + sessionId, undefined, 'Session Destroyed.');
   return [true, null] as const;
 };
