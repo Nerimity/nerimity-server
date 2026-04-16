@@ -300,9 +300,6 @@ export async function logout(userId: string, sessionId: string) {
 }
 
 export async function addDeviceWithSession(userId: string, sessionId: string, ipAddress: string) {
-  if (userId === '1289157673362825217') {
-    console.trace('addDeviceWithSession', userId, sessionId, ipAddress);
-  }
   await prisma.userDevice.upsert({
     where: { userId_ipAddress_sessionId: { userId, ipAddress, sessionId } },
     update: { lastSeenAt: dateToDateTime(), sessionId },
