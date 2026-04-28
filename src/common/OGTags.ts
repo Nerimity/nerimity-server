@@ -55,6 +55,18 @@ async function getSignedRequest(url: string): Promise<Request> {
   });
 }
 
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
+
+function looksLikeImageUrl(url: string): boolean {
+  try {
+    const pathname = new URL(url).pathname;
+    const ext = pathname.split('.').pop()?.toLowerCase();
+    return !!ext && IMAGE_EXTENSIONS.has(ext);
+  } catch {
+    return false;
+  }
+}
+
 export async function getOGTags(url: string): GetOGTagsReturn {
   const youtubeWatchCode = url.match(youtubeLinkRegex)?.[3];
   const updatedUrl = youtubeWatchCode ? `https://www.youtube.com/watch?v=${youtubeWatchCode}&hl=en&persist_hl=1` : url;
@@ -64,9 +76,11 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const res = await fetch(signedReq).catch(() => {});
   if (!res) return false;
 
-  const isImage = res.headers.get('content-type')?.startsWith('image/');
+  const contentType = res.headers.get('content-type');
+  const isImage = contentType?.startsWith('image/') || (!contentType && looksLikeImageUrl(url));
   if (isImage) {
-    return await getImageEmbed(url, res);
+    const imageRes = await getImageEmbed(url, res);
+    if (imageRes) return imageRes;
   }
 
   const isHtml = res.headers.get('content-type')?.startsWith('text/html');
