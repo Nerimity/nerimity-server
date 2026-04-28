@@ -6,7 +6,6 @@ import { dateToDateTime, prisma, publicUserExcludeFields } from '../../common/da
 import { generateId } from '../../common/flakeId';
 import { generateError } from '../../common/errorHandler';
 import { Message, Prisma } from '@src/generated/prisma/client';
-import { isString, removeDuplicates } from '../../common/utils';
 import { addToObjectIfExists } from '../../common/addToObjectIfExists';
 import { deleteFile } from '../../common/nerimityCDN';
 import { getOGTags } from '../../common/OGTags';
@@ -15,7 +14,7 @@ import { NotificationPingMode } from '../User/User';
 import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../../common/Bitwise';
 import { ChannelType } from '../../types/Channel';
 import { FriendStatus } from '../../types/Friend';
-import { createMessageV2, SendMessageOptions } from './MessageCreate';
+import { createMessageV2 } from './MessageCreate';
 import { editMessageV2 } from './MessageEdit';
 import { ButtonCallback } from '@src/routes/channels/channelMessageButtonClickCallback';
 import { createSystemMessage } from './MessageCreateSystem';
@@ -125,7 +124,7 @@ export function transformMessage(message: TransformMessage) {
         username: message.webhook.name,
         avatar: message.webhook.avatar,
         hexColor: message.webhook.hexColor,
-        ...(message.creatorOverride && { username: message.creatorOverride.username }),
+        ...(message.creatorOverride?.username && { username: message.creatorOverride.username }),
         ...(message.creatorOverrideId && { id: message.webhookId! + '-' + message.creatorOverrideId }),
         ...(message.creatorOverride?.avatarUrl && { avatarUrl: (message.creatorOverride.animatedAvatar ? 'a' : '') + message.creatorOverride.avatarUrl }),
       };
