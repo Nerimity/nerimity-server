@@ -79,15 +79,9 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const contentType = res.headers.get('content-type');
   const isImage = contentType?.startsWith('image/') || (!contentType && looksLikeImageUrl(url));
 
-  if (url.includes('files.catbox.moe/dpr5yn.png')) {
-    console.log(contentType, isImage);
-  }
-
   if (isImage) {
     const imageRes = await getImageEmbed(url, res);
-    if (url.includes('files.catbox.moe/dpr5yn.png')) {
-      console.log(imageRes);
-    }
+
     if (imageRes) return imageRes;
   }
 
@@ -187,6 +181,10 @@ const addProtocolToUrl = (unsafeUrl: string) => {
 
 async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
   const [dimensions, err] = await proxyUrlImageDimensions(url);
+
+  if (url.includes('files.catbox.moe/dpr5yn.png')) {
+    console.log(dimensions, err);
+  }
 
   if (err) return false;
 
