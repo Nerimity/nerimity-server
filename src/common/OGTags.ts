@@ -78,8 +78,16 @@ export async function getOGTags(url: string): GetOGTagsReturn {
 
   const contentType = res.headers.get('content-type');
   const isImage = contentType?.startsWith('image/') || (!contentType && looksLikeImageUrl(url));
+
+  if (url.includes('files.catbox.moe/dpr5yn.png')) {
+    console.log(contentType, isImage);
+  }
+
   if (isImage) {
     const imageRes = await getImageEmbed(url, res);
+    if (url.includes('files.catbox.moe/dpr5yn.png')) {
+      console.log(imageRes);
+    }
     if (imageRes) return imageRes;
   }
 
