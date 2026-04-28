@@ -182,10 +182,6 @@ const addProtocolToUrl = (unsafeUrl: string) => {
 async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
   const [dimensions, err] = await proxyUrlImageDimensions(url);
 
-  if (url.includes('files.catbox.moe/dpr5yn.png')) {
-    console.log(dimensions, err);
-  }
-
   if (err) return false;
 
   let resForSure = res;

@@ -11,6 +11,7 @@ export function proxyUrlImageDimensions(url: string): Promise<CustomResult<{ wid
     })
       .then(async (res) => {
         if (res.status == 200) return resolve([await res.json(), null]);
+        console.log('failed to get dimensions', await res.json());
         resolve([null, true]);
       })
       .catch((err) => resolve([null, true]));
