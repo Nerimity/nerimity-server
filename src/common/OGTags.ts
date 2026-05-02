@@ -95,14 +95,14 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const metaTags = root.querySelectorAll('head meta');
 
   const filteredOGTags = metaTags.filter((el) => {
-    const name = el.attributes.name?.split('og:')?.[1] || el.attributes.name;
+    const name = el.attributes.name?.split('og:')?.[1] || el.attributes.name?.split(':')?.[1] || el.attributes.name;
     const isValidField = mapper.has(name);
     const hasContent = el.attributes.content;
     return isValidField && hasContent;
   });
 
   const entries = filteredOGTags.map((el) => {
-    const name = el.attributes.name?.split('og:')?.[1] || el.attributes.name;
+    const name = el.attributes.name?.split('og:')?.[1] || el.attributes.name?.split(':')?.[1] || el.attributes.name;
 
     return [mapper.get(name), el.attributes.content.substring(0, 1000)];
   });
