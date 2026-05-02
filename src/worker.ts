@@ -1,119 +1,123 @@
-import express from 'express';
-import http from 'http';
-import env from './common/env';
-import { Log } from './common/Log';
-import { connectRedis } from './common/redis';
-import cors from 'cors';
+import { getOGTags } from './common/OGTags';
 
-import { createIO } from './socket/socket';
-import { UsersRouter } from './routes/users/Router';
-import { ServersRouter } from './routes/servers/Router';
-import { ChannelsRouter } from './routes/channels/Router';
-import { FriendsRouter } from './routes/friends/Router';
-import { prisma } from './common/database';
-import { userIP } from './middleware/userIP';
-import { rateLimit } from './middleware/rateLimit';
-import { ModerationRouter } from './routes/moderation/Router';
-import { ExploreRouter } from './routes/explore/Router';
-import { PostsRouter } from './routes/posts/Router';
-import { ConnectionsRouter } from './routes/connections/Router';
-import { TicketsRouter } from './routes/tickets/Router';
-import { EmojisRouter } from './routes/emojis/Router';
-import { TenorRouter } from './routes/tenor/Router';
-import { ApplicationsRouter } from './routes/applications/Router';
-import { OpenGraphRouter } from './routes/open-graph/Router';
-import helmet from 'helmet';
-import { RemindersRouter } from './routes/reminders/Router';
-import { WebhooksRouter } from './routes/webhooks/Router';
-import { Oauth2Router } from './routes/oauth2/Router';
-import { CdnRouter } from './routes/cdn/Router';
+getOGTags('https://nerimity.com').then(console.log);
 
-(Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
-  return this.getTime();
-};
+// import express from 'express';
+// import http from 'http';
+// import env from './common/env';
+// import { Log } from './common/Log';
+// import { connectRedis } from './common/redis';
+// import cors from 'cors';
 
-const app = express();
-const server = http.createServer(app);
+// import { createIO } from './socket/socket';
+// import { UsersRouter } from './routes/users/Router';
+// import { ServersRouter } from './routes/servers/Router';
+// import { ChannelsRouter } from './routes/channels/Router';
+// import { FriendsRouter } from './routes/friends/Router';
+// import { prisma } from './common/database';
+// import { userIP } from './middleware/userIP';
+// import { rateLimit } from './middleware/rateLimit';
+// import { ModerationRouter } from './routes/moderation/Router';
+// import { ExploreRouter } from './routes/explore/Router';
+// import { PostsRouter } from './routes/posts/Router';
+// import { ConnectionsRouter } from './routes/connections/Router';
+// import { TicketsRouter } from './routes/tickets/Router';
+// import { EmojisRouter } from './routes/emojis/Router';
+// import { TenorRouter } from './routes/tenor/Router';
+// import { ApplicationsRouter } from './routes/applications/Router';
+// import { OpenGraphRouter } from './routes/open-graph/Router';
+// import helmet from 'helmet';
+// import { RemindersRouter } from './routes/reminders/Router';
+// import { WebhooksRouter } from './routes/webhooks/Router';
+// import { Oauth2Router } from './routes/oauth2/Router';
+// import { CdnRouter } from './routes/cdn/Router';
 
-// Middleware to log request duration
-// app.use((req, res, next) => {
-//   const start = process.hrtime(); // High-resolution time
+// (Date.prototype.toJSON as unknown as (this: Date) => number) = function () {
+//   return this.getTime();
+// };
 
-//   res.on('finish', () => {
-//     const end = process.hrtime(start);
-//     const durationInMilliseconds = end[0] * 1000 + end[1] / 1e6;
-//     logger.info(`${req.method} ${req.originalUrl} - ${durationInMilliseconds.toFixed(3)}ms`);
+// const app = express();
+// const server = http.createServer(app);
+
+// // Middleware to log request duration
+// // app.use((req, res, next) => {
+// //   const start = process.hrtime(); // High-resolution time
+
+// //   res.on('finish', () => {
+// //     const end = process.hrtime(start);
+// //     const durationInMilliseconds = end[0] * 1000 + end[1] / 1e6;
+// //     logger.info(`${req.method} ${req.originalUrl} - ${durationInMilliseconds.toFixed(3)}ms`);
+// //   });
+
+// //   next();
+// // });
+
+// const main = async () => {
+//   await connectRedis();
+//   Log.info('Connected to Redis');
+//   createIO(server);
+
+//   prisma.$connect().then(() => {
+//     Log.info('Connected to PostgreSQL');
+
+//     if (server.listening) return;
+
+//     const port = env.TYPE === 'ws' ? env.WS_PORT : env.API_PORT;
+
+//     server.listen(port, () => {
+//       Log.info('listening on *:' + port);
+//     });
 //   });
+// };
+// main();
 
-//   next();
-// });
+// app.use(
+//   helmet({
+//     strictTransportSecurity: {
+//       maxAge: 31536000,
+//       includeSubDomains: false,
+//     },
+//   }),
+// );
 
-const main = async () => {
-  await connectRedis();
-  Log.info('Connected to Redis');
-  createIO(server);
+// app.use(
+//   cors({
+//     origin: env.ORIGIN,
+//   }),
+// );
 
-  prisma.$connect().then(() => {
-    Log.info('Connected to PostgreSQL');
+// if (env.TYPE === 'api') {
+//   app.use(express.json({ limit: '20MB' }));
+//   app.use(express.urlencoded({ extended: false, limit: '20MB' }));
 
-    if (server.listening) return;
+//   app.use(userIP);
 
-    const port = env.TYPE === 'ws' ? env.WS_PORT : env.API_PORT;
+//   app.use('/api', OpenGraphRouter);
 
-    server.listen(port, () => {
-      Log.info('listening on *:' + port);
-    });
-  });
-};
-main();
+//   app.use(
+//     rateLimit({
+//       name: 'global_limit',
+//       useIP: true,
+//       restrictMS: 30000,
+//       perMS: 15000,
+//       requests: 100,
+//     }),
+//   );
 
-app.use(
-  helmet({
-    strictTransportSecurity: {
-      maxAge: 31536000,
-      includeSubDomains: false,
-    },
-  }),
-);
-
-app.use(
-  cors({
-    origin: env.ORIGIN,
-  }),
-);
-
-if (env.TYPE === 'api') {
-  app.use(express.json({ limit: '20MB' }));
-  app.use(express.urlencoded({ extended: false, limit: '20MB' }));
-
-  app.use(userIP);
-
-  app.use('/api', OpenGraphRouter);
-
-  app.use(
-    rateLimit({
-      name: 'global_limit',
-      useIP: true,
-      restrictMS: 30000,
-      perMS: 15000,
-      requests: 100,
-    }),
-  );
-
-  app.use('/api', ModerationRouter);
-  app.use('/api', UsersRouter);
-  app.use('/api', ServersRouter);
-  app.use('/api', ChannelsRouter);
-  app.use('/api', FriendsRouter);
-  app.use('/api', ExploreRouter);
-  app.use('/api', PostsRouter);
-  app.use('/api', ConnectionsRouter);
-  app.use('/api', TicketsRouter);
-  app.use('/api', EmojisRouter);
-  app.use('/api', TenorRouter);
-  app.use('/api', ApplicationsRouter);
-  app.use('/api', RemindersRouter);
-  app.use('/api', WebhooksRouter);
-  app.use('/api', Oauth2Router);
-  app.use('/api', CdnRouter);
-}
+//   app.use('/api', ModerationRouter);
+//   app.use('/api', UsersRouter);
+//   app.use('/api', ServersRouter);
+//   app.use('/api', ChannelsRouter);
+//   app.use('/api', FriendsRouter);
+//   app.use('/api', ExploreRouter);
+//   app.use('/api', PostsRouter);
+//   app.use('/api', ConnectionsRouter);
+//   app.use('/api', TicketsRouter);
+//   app.use('/api', EmojisRouter);
+//   app.use('/api', TenorRouter);
+//   app.use('/api', ApplicationsRouter);
+//   app.use('/api', RemindersRouter);
+//   app.use('/api', WebhooksRouter);
+//   app.use('/api', Oauth2Router);
+//   app.use('/api', CdnRouter);
+// }

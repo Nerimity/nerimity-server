@@ -95,12 +95,13 @@ export async function getOGTags(url: string): GetOGTagsReturn {
   const metaTags = root.querySelectorAll('head meta');
 
   const filteredOGTags = metaTags.filter((el) => {
-    const isValidField = mapper.has(el.attributes.property) || mapper.has(el.attributes.property?.split('og:')?.[1]);
+    const isOG = el.attributes.name?.startsWith('og:');
+    const isValidField = mapper.has(el.attributes.name?.split('og:')?.[1]);
     const hasContent = el.attributes.content;
-    return isValidField && hasContent;
+    return isOG && isValidField && hasContent;
   });
 
-  const entries = filteredOGTags.map((el) => [mapper.get(el.attributes.property) || mapper.get(el.attributes.property?.split('og:')?.[1]), el.attributes.content?.substring(0, 1000)]);
+  const entries = filteredOGTags.map((el) => [mapper.get(el.attributes.name.split('og:')[1]), el.attributes.content.substring(0, 1000)]);
   if (!youtubeWatchCode && !entries.length) return false;
   let object = Object.fromEntries(entries || []);
 
