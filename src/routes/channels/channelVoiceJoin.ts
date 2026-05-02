@@ -38,7 +38,7 @@ async function route(req: Request, res: Response) {
     return;
   }
 
-  if (!req.userCache.account?.emailConfirmed) {
+  if (!req.userCache.bot && !req.userCache.account?.emailConfirmed) {
     return res.status(400).json(generateError('You must confirm your email to join voice.'));
   }
 
