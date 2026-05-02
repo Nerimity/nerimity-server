@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { channelVerification } from '../../middleware/channelVerification';
 import { rateLimit } from '../../middleware/rateLimit';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { body } from 'express-validator';
 import { joinVoiceChannel } from '../../services/Voice';
 import { CHANNEL_PERMISSIONS } from '../../common/Bitwise';
@@ -36,6 +36,10 @@ async function route(req: Request, res: Response) {
   if (req.userCache.shadowBanned) {
     res.json({ success: true });
     return;
+  }
+
+  if (!req.userCache.account?.emailConfirmed) {
+    return res.status(400).json(generateError('You must confirm your email to join voice.'));
   }
 
   const socketId = req.body.socketId as string;
