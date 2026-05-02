@@ -1,23 +1,22 @@
-import { Channel, Prisma, Server, ServerMember, ServerRole } from '@src/generated/prisma/client';
+import { Channel, Prisma, Server, ServerRole } from '@src/generated/prisma/client';
 import { getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { dateToDateTime, exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
-import env from '../common/env';
 import { CustomError, generateError } from '../common/errorHandler';
 import { generateId } from '../common/flakeId';
-import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit, hasBit } from '../common/Bitwise';
+import { CHANNEL_PERMISSIONS, ROLE_PERMISSIONS, addBit } from '../common/Bitwise';
 import { generateHexColor } from '../common/random';
 import { emitServerChannelOrderUpdated, emitServerClanUpdate, emitServerEmojiAdd, emitServerEmojiRemove, emitServerEmojiUpdate, emitServerJoined, emitServerLeft, emitServerMemberUpdated, emitServerOrderUpdated, emitServerUpdated } from '../emits/Server';
 import { ChannelType } from '../types/Channel';
-import { createMessage, deleteRecentUserServerMessages } from './Message/Message';
+import { deleteRecentUserServerMessages } from './Message/Message';
 import { MessageType } from '../types/Message';
 import { emitUserPresenceUpdateTo } from '../emits/User';
 import { deleteAllInboxCache, deleteAllInboxCacheInServer, deleteServerChannelCaches, removeServerMemberPermissionsCache } from '../cache/ChannelCache';
 import { getVoiceUsersByChannelId } from '../cache/VoiceCache';
-import { deleteAllServerMemberCache, deleteServerMemberCache } from '../cache/ServerMemberCache';
+import { deleteServerMemberCache } from '../cache/ServerMemberCache';
 import { Log } from '../common/Log';
 import { deleteServerCache, updateServerCache } from '../cache/ServerCache';
-import { getExploreItem, getPublicServer } from './Explore';
+import { getExploreItem } from './Explore';
 import { createServerRole, deleteServerRole } from './ServerRole';
 import { addToObjectIfExists } from '../common/addToObjectIfExists';
 import { removeDuplicates } from '../common/utils';
@@ -26,7 +25,7 @@ import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpd
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 import { createSystemMessage } from './Message/MessageCreateSystem';
 import * as nerimityCDN from '../common/nerimityCDN';
-import { profile } from 'node:console';
+import { leaveVoiceChannel } from './Voice';
 
 const ServerMemberWithLastOnlineDetails = {
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -451,6 +450,7 @@ export const leaveServer = async (opts: LeaveServerOptions): Promise<CustomResul
     deleteAllInboxCache(opts.userId);
     return [true, null];
   }
+  leaveVoiceChannel(opts.userId);
 
   const transactions: any[] = [
     prisma.userProfile.updateMany({
