@@ -23,6 +23,7 @@ import env from '../../common/env';
 import { compressObject } from '@src/common/zstd';
 import { decryptToken } from '@src/common/JWT';
 import { userAgentToDeviceType } from '@src/services/User/UserManagement';
+import { markMembersFetched } from '../socket';
 
 interface Payload {
   token: string;
@@ -256,7 +257,10 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   const serverMembersToEmit = () => {
     if (!payload.partial) return serverMembers;
     return serverMembers.filter((member) => {
-      if (payload.currentServerId === member.serverId) return true;
+      if (payload.currentServerId === member.serverId) {
+        markMembersFetched(socket.id, member.serverId);
+        return true;
+      }
       if (presences.find((presence) => presence.userId === member.user.id)) {
         return true;
       }
