@@ -4,6 +4,7 @@ import { prisma, publicUserExcludeFields } from '@src/common/database';
 import { hasFetchedMembers, markMembersFetched } from '../socket';
 import { filterLastOnlineDetailsFromServerMembers } from '@src/services/Server';
 import { SERVER_MEMBERS_FETCHED } from '@src/common/ClientEventNames';
+import { compressObject } from '@src/common/zstd';
 
 interface Payload {
   serverId: string;
@@ -28,5 +29,5 @@ export async function onRequestServerMembers(socket: Socket, payload: Payload) {
 
   const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(members, userId);
 
-  socket.emit(SERVER_MEMBERS_FETCHED, { serverId: payload.serverId, members: updatedServerMembers });
+  socket.emit(SERVER_MEMBERS_FETCHED, await compressObject({ serverId: payload.serverId, members: updatedServerMembers }));
 }
