@@ -1,0 +1,9 @@
+allowBuilds:
+  '@firebase/util': true
+  '@prisma/engines': true
+  bcrypt: true
+  bufferutil: true
+  esbuild: true
+  prisma: true
+  protobufjs: true
+  utf-8-validate: true
