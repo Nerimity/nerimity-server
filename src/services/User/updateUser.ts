@@ -10,7 +10,6 @@ import { prisma } from '../../common/database';
 import { removeUserCacheByUserIds } from '../../cache/UserCache';
 import { generateError } from '../../common/errorHandler';
 import { addDeviceWithSession, disconnectSockets, removeSessionsByUserId } from './UserManagement';
-import { emitToAll } from '../../socket/socket';
 import { generateId } from '@src/common/flakeId';
 
 interface UpdateUserProps {
@@ -69,7 +68,7 @@ export const updateUser = async (opts: UpdateUserProps) => {
 
   if (opts.email) {
     const accountExists = await prisma.account.findFirst({
-      where: { email: opts.email.trim(), NOT: { userId: opts.userId } },
+      where: { email: { mode: 'insensitive', equals: opts.email.trim() }, NOT: { userId: opts.userId } },
     });
     if (accountExists) {
       return [null, generateError('This email is already used by someone else.')] as const;

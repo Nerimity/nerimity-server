@@ -25,6 +25,7 @@ import { addServerAuditLog, AuditLogType, logServerDelete, logServerOwnershipUpd
 import { removeManyWebhookCache } from '../cache/WebhookCache';
 import { createSystemMessage } from './Message/MessageCreateSystem';
 import * as nerimityCDN from '../common/nerimityCDN';
+import { leaveVoiceChannel } from './Voice';
 
 const ServerMemberWithLastOnlineDetails = {
   include: { user: { select: { ...publicUserExcludeFields, lastOnlineAt: true, lastOnlineStatus: true } } },
@@ -449,6 +450,7 @@ export const leaveServer = async (opts: LeaveServerOptions): Promise<CustomResul
     deleteAllInboxCache(opts.userId);
     return [true, null];
   }
+  leaveVoiceChannel(opts.userId);
 
   const transactions: any[] = [
     prisma.userProfile.updateMany({
