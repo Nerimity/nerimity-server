@@ -254,11 +254,13 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { account, ...userCacheWithoutAccount } = userCache;
 
+  let validCurrentServerId = false;
   const serverMembersToEmit = () => {
     if (!payload.partial) return serverMembers;
     return serverMembers.filter((member) => {
       if (payload.currentServerId === member.serverId) {
         markMembersFetched(socket.id, member.serverId);
+        validCurrentServerId = true;
         return true;
       }
       if (presences.find((presence) => presence.userId === member.user.id)) {
@@ -303,6 +305,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     pid: process.pid,
     sessionId,
     ...(newToken ? { newToken } : {}),
+    ...(validCurrentServerId ? { currentServerId: payload.currentServerId } : {}),
   };
 
   socket.emit(AUTHENTICATED, payload.compression === 'zstd' ? await compressObject(data) : data);
