@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { ActivityStatusWithoutSocketId, getUserIdBySocketId, getUserPresences, socketDisconnect, updateCachePresence } from '../../cache/UserCache';
+import { getUserIdBySocketId, getUserPresences, socketDisconnect, updateCachePresence } from '../../cache/UserCache';
 import { dateToDateTime, prisma } from '../../common/database';
 import { emitUserPresenceUpdate } from '../../emits/User';
 import { UserStatus } from '../../types/User';
@@ -7,6 +7,7 @@ import { getVoiceUserByUserId } from '../../cache/VoiceCache';
 import { leaveVoiceChannel } from '../../services/Voice';
 import { LastOnlineStatus } from '../../services/User/User';
 import { authQueue } from './onAuthenticate';
+import { clearMembersFetched } from '../socket';
 
 export async function onDisconnect(socket: Socket) {
   const ip = (socket.handshake.headers['cf-connecting-ip'] || socket.handshake.headers['x-forwarded-for'] || socket.handshake.address)?.toString();
@@ -19,6 +20,7 @@ export async function onDisconnect(socket: Socket) {
 }
 
 const handleDisconnect = async (socket: Socket) => {
+  clearMembersFetched(socket.id);
   const userId = await getUserIdBySocketId(socket.id);
   if (!userId) return;
   const presence = await getUserPresences({ userIds: [userId], includeSocketId: true, hideOffline: false });

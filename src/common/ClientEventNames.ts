@@ -51,6 +51,7 @@ export const SERVER_CHANNEL_DELETED = 'server:channel_deleted';
 export const SERVER_CHANNEL_PERMISSIONS_UPDATED = 'server:channel_permissions_updated';
 export const SERVER_SCHEDULE_DELETE = 'server:schedule_delete';
 export const SERVER_REMOVE_SCHEDULE_DELETE = 'server:remove_schedule_delete';
+export const SERVER_MEMBERS_FETCHED = 'server:members_fetched';
 
 export const SERVER_CLAN_UPDATED = 'server:clan_updated';
 

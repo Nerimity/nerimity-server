@@ -28,6 +28,7 @@ interface Payload {
   token: string;
   partial?: boolean;
   compression?: 'zstd';
+  currentServerId?: string;
 }
 
 export const authQueue = createQueue({
@@ -252,37 +253,15 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { account, ...userCacheWithoutAccount } = userCache;
 
-  const serverRolesToEmit = () => {
-    if (!payload.partial) return serverRoles;
-    const memberMap = new Map(serverMembers.map((m) => [`${m.userId}-${m.serverId}`, m]));
-    const serverMap = new Map(servers.map((s) => [s.id, s]));
-    return serverRoles.filter((role) => {
-      const member = memberMap.get(`${userCache.id}-${role.serverId}`);
-      if (!member) return false;
-      const defaultRoleId = serverMap.get(role.serverId)?.defaultRoleId;
-      return member.roleIds.includes(role.id) || role.id === defaultRoleId;
-    });
-  };
-
   const serverMembersToEmit = () => {
     if (!payload.partial) return serverMembers;
     return serverMembers.filter((member) => {
+      if (payload.currentServerId === member.serverId) return true;
       if (presences.find((presence) => presence.userId === member.user.id)) {
         return true;
       }
       return member.user.id === userCache.id;
     });
-  };
-
-  const channelsToEmit = () => {
-    if (!payload.partial) return channels;
-
-    const partialServerChannels = serverChannels.filter((channel) => {
-      const serverSettings = user.notificationSettings.find((setting) => setting.serverId === channel.serverId && !setting.channelId);
-      if (!serverSettings) return true;
-      return !serverSettings.notificationPingMode || !serverSettings.notificationSoundMode;
-    });
-    return [...partialServerChannels, ...inboxChannels];
   };
 
   const data = {
@@ -310,12 +289,12 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     servers,
     serverSettings: [], // Safe to remove. Only here for backwards compatibility.
     serverMembers: serverMembersToEmit(),
-    serverRoles: serverRolesToEmit(),
+    serverRoles,
     lastSeenServerChannelIds,
     messageMentions,
     presences,
     friends: updatedFriends,
-    channels: channelsToEmit(),
+    channels,
     inbox: inboxResponse,
     pid: process.pid,
     sessionId,

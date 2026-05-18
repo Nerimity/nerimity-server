@@ -9,6 +9,17 @@ import { getFriendIds } from '../services/Friend';
 
 let io: socketIO.Server;
 
+const membersFetched: Record<string, Set<string>> = {};
+export const hasFetchedMembers = (socketId: string, serverId: string) => membersFetched[socketId]?.has(serverId);
+export const markMembersFetched = (socketId: string, serverId: string) => {
+  const set = (membersFetched[socketId] ??= new Set());
+  set.add(serverId);
+  if (set.size > 10) {
+    set.delete(set.values().next().value!);
+  }
+};
+export const clearMembersFetched = (socketId: string) => delete membersFetched[socketId];
+
 export async function createIO(server?: http.Server) {
   io = new socketIO.Server(server, {
     transports: ['websocket'],
