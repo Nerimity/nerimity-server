@@ -296,6 +296,7 @@ model UserConnection {
   provider String
   refreshToken String
   connectedAt DateTime @default(now())
+  @@index([userId])
 }
 
 // Used for ip banning.
@@ -356,14 +357,13 @@ model UserNotice {
   userId         String
   user           User     @relation(fields: [userId], references: [id])
 
-
-
   createdById      String?
 
   createdBy        User? @relation(fields: [createdById], references: [id], name: "created_notices")
 
-
   createdAt               DateTime                @default(now())
+
+  @@index([userId])
 }
 
 model UserProfile {
