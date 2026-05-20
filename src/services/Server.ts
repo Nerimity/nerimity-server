@@ -1,5 +1,5 @@
 import { Channel, Prisma, Server, ServerRole } from '@src/generated/prisma/client';
-import { getUserPresences } from '../cache/UserCache';
+import { getServerMembersOnline, getUserPresences } from '../cache/UserCache';
 import { CustomResult } from '../common/CustomResult';
 import { dateToDateTime, exists, prisma, publicUserExcludeFields, removeServerIdFromAccountOrder } from '../common/database';
 import { CustomError, generateError } from '../common/errorHandler';
@@ -149,7 +149,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
   return [server, null];
 };
 
-export const getServers = async (userId: string) => {
+export const getServers = async (userId: string, partial?: boolean, currentServerId?: string) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -166,9 +166,20 @@ export const getServers = async (userId: string) => {
             where: { deleting: null },
             include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
           },
-          serverMembers: {
-            include: { user: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } }, lastOnlineAt: true, lastOnlineStatus: true } } },
-          },
+          serverMembers: partial
+            ? false
+            : {
+                include: {
+                  user: {
+                    select: {
+                      ...publicUserExcludeFields,
+                      profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
+                      lastOnlineAt: true,
+                      lastOnlineStatus: true,
+                    },
+                  },
+                },
+              },
           roles: true,
           customEmojis: {
             select: {
@@ -183,6 +194,7 @@ export const getServers = async (userId: string) => {
     },
   });
   const servers = user?.servers || [];
+  const serverIds = servers.map((s) => s.id);
   let serverChannels: Channel[] = [];
   let serverMembers: ServerMemberWithLastOnlineDetails[] = [];
 
@@ -190,12 +202,31 @@ export const getServers = async (userId: string) => {
 
   for (let i = 0; i < servers.length; i++) {
     const server = servers[i]!;
-    const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(server.serverMembers, userId);
-    server.serverMembers = updatedServerMembers;
-
     serverChannels = [...serverChannels, ...server.channels];
-    serverMembers = [...serverMembers, ...server.serverMembers];
     serverRoles = [...serverRoles, ...server.roles];
+  }
+
+  if (!serverIds.includes(currentServerId!)) {
+    currentServerId = undefined;
+  }
+
+  if (partial) {
+    serverMembers = await getServerMembersOnline(userId, serverIds, currentServerId);
+
+    for (let i = 0; i < servers.length; i++) {
+      const server = servers[i]!;
+      server.serverMembers = serverMembers.filter((m) => m.serverId === server.id);
+    }
+  } else {
+    for (let i = 0; i < servers.length; i++) {
+      const server = servers[i]!;
+
+      if (server.serverMembers) {
+        const updatedServerMembers = filterLastOnlineDetailsFromServerMembers(server.serverMembers as any, userId);
+        server.serverMembers = updatedServerMembers;
+        serverMembers = [...serverMembers, ...(server.serverMembers as any[])];
+      }
+    }
   }
 
   return {

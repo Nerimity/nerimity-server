@@ -3,7 +3,7 @@ import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
 import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING, SESSION_ID_TO_USER_ID } from './CacheKeys';
-import { prisma } from '../common/database';
+import { prisma, publicUserExcludeFields } from '../common/database';
 import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
@@ -37,6 +37,100 @@ interface GetUserPresencesOpts {
   hideOffline?: boolean; // default true
   limitActivities?: boolean;
 }
+
+export const getServerMembersOnline = async (userId: string, serverIds: string[], currentServerId?: string) => {
+  const selfMembers = await prisma.serverMember.findMany({
+    where: {
+      serverId: { in: serverIds },
+      userId,
+    },
+    include: {
+      user: {
+        select: {
+          ...publicUserExcludeFields,
+          profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
+          lastOnlineAt: true,
+          lastOnlineStatus: true,
+        },
+      },
+    },
+  });
+
+  const processedUserIds = new Set<string>();
+  const membersList = [];
+
+  if (currentServerId) {
+    const currentServerMembers = await prisma.serverMember.findMany({
+      where: {
+        serverId: currentServerId,
+        userId: { not: userId },
+      },
+      include: {
+        user: {
+          select: {
+            ...publicUserExcludeFields,
+            profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
+            lastOnlineAt: true,
+            lastOnlineStatus: true,
+          },
+        },
+      },
+    });
+
+    membersList.push(...currentServerMembers);
+
+    for (const member of currentServerMembers) {
+      processedUserIds.add(member.userId);
+    }
+  }
+
+  const backgroundServerIds = currentServerId ? serverIds.filter((id) => id !== currentServerId) : serverIds;
+
+  if (!backgroundServerIds.length) {
+    return [...selfMembers, ...membersList];
+  }
+
+  let cursor = 0;
+
+  do {
+    const { cursor: nextCursor, keys } = await redisClient.scan(cursor, {
+      MATCH: USER_PRESENCE_KEY_STRING('*'),
+      COUNT: 500,
+    });
+    cursor = Number(nextCursor);
+
+    if (!keys.length) continue;
+
+    const onlineUserIds = keys.map((key) => key.replace('user:presence:', '')).filter((id) => id !== userId && !processedUserIds.has(id));
+
+    if (!onlineUserIds.length) continue;
+
+    for (const id of onlineUserIds) {
+      processedUserIds.add(id);
+    }
+
+    const batch = await prisma.serverMember.findMany({
+      where: {
+        serverId: { in: backgroundServerIds },
+        userId: { in: onlineUserIds },
+      },
+      include: {
+        user: {
+          select: {
+            ...publicUserExcludeFields,
+            profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
+            lastOnlineAt: true,
+            lastOnlineStatus: true,
+          },
+        },
+      },
+    });
+
+    membersList.push(...batch);
+  } while (cursor !== 0);
+
+  return [...selfMembers, ...membersList];
+};
 
 export async function getUserPresences(opts: GetUserPresencesOpts): Promise<Presence[]> {
   const userIds = opts.userIds;

@@ -138,7 +138,12 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     emitError(socket, { message: 'User not found.', disconnect: true });
     return;
   }
-  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id);
+
+  const t1 = performance.now();
+  const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id, payload.partial, payload.currentServerId);
+  if (user.id === '1289157673362825217') {
+    console.log('getServers took', performance.now() - t1, 'ms');
+  }
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(userCache.id);
 
@@ -257,17 +262,12 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   let validCurrentServerId = false;
   const serverMembersToEmit = () => {
     if (!payload.partial) return serverMembers;
-    return serverMembers.filter((member) => {
-      if (payload.currentServerId === member.serverId) {
-        markMembersFetched(socket.id, member.serverId);
-        validCurrentServerId = true;
-        return true;
-      }
-      if (presences.find((presence) => presence.userId === member.user.id)) {
-        return true;
-      }
-      return member.user.id === userCache.id;
-    });
+    if (payload.currentServerId) {
+      markMembersFetched(socket.id, payload.currentServerId);
+      validCurrentServerId = true;
+      return true;
+    }
+    return serverMembers;
   };
 
   const data = {
