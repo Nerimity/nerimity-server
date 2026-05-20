@@ -265,7 +265,6 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
     if (payload.currentServerId) {
       markMembersFetched(socket.id, payload.currentServerId);
       validCurrentServerId = true;
-      return true;
     }
     return serverMembers;
   };
