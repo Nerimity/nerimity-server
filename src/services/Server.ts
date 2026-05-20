@@ -150,6 +150,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
 };
 
 export const getServers = async (userId: string, partial?: boolean, currentServerId?: string) => {
+  const t1 = performance.now();
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -193,6 +194,12 @@ export const getServers = async (userId: string, partial?: boolean, currentServe
       },
     },
   });
+  if (userId === '1289157673362825217') {
+    console.log('getServers user', performance.now() - t1, 'ms');
+  }
+
+  const t11 = performance.now();
+
   const servers = user?.servers || [];
   const serverIds = servers.map((s) => s.id);
   let serverChannels: Channel[] = [];
@@ -227,6 +234,10 @@ export const getServers = async (userId: string, partial?: boolean, currentServe
         serverMembers = [...serverMembers, ...(server.serverMembers as any[])];
       }
     }
+  }
+
+  if (userId === '1289157673362825217') {
+    console.log('getServers members', performance.now() - t11, 'ms');
   }
 
   return {

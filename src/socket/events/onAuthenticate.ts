@@ -142,7 +142,7 @@ const handleAuthenticate = async (socket: Socket, payload: Payload) => {
   const t1 = performance.now();
   const { servers, serverChannels, serverMembers, serverRoles } = await getServers(userCache.id, payload.partial, payload.currentServerId);
   if (user.id === '1289157673362825217') {
-    console.log('getServers took', performance.now() - t1, 'ms');
+    console.log('getServers total', performance.now() - t1, 'ms');
   }
 
   const lastSeenServerChannelIds = await getLastSeenServerChannelIdsByUserId(userCache.id);
