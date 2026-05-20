@@ -57,6 +57,9 @@ model ServerFolder {
 
 
   createdAt DateTime @default(now())
+
+  @@index([accountId])  
+
 }
 
 model Application {
