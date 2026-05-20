@@ -218,7 +218,7 @@ export const getServers = async (userId: string, partial?: boolean, currentServe
   }
 
   if (partial) {
-    serverMembers = await getServerMembersOnline(userId, serverIds, currentServerId);
+    serverMembers = filterLastOnlineDetailsFromServerMembers(await getServerMembersOnline(userId, serverIds, currentServerId), userId);
 
     for (let i = 0; i < servers.length; i++) {
       const server = servers[i]!;

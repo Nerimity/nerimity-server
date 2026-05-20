@@ -101,13 +101,35 @@ export const getServerMembersOnline = async (userId: string, serverIds: string[]
 
     if (!keys.length) continue;
 
-    const onlineUserIds = keys.map((key) => key.replace('user:presence:', '')).filter((id) => id !== userId && !processedUserIds.has(id));
+    const multi = redisClient.multi();
+    for (const key of keys) {
+      multi.get(key);
+    }
+    const results = await multi.exec();
+
+    const onlineUserIds: string[] = [];
+
+    for (let i = 0; i < keys.length; i++) {
+      const result = results[i] as string;
+      if (!result) continue;
+
+      try {
+        const presence = JSON.parse(result) as Presence;
+        if (presence.status === UserStatus.OFFLINE) continue;
+
+        const parts = keys[i]!.split(':');
+        const scannedUserId = parts[parts.length - 1]!;
+
+        if (scannedUserId !== userId && !processedUserIds.has(scannedUserId)) {
+          onlineUserIds.push(scannedUserId);
+          processedUserIds.add(scannedUserId);
+        }
+      } catch {
+        continue;
+      }
+    }
 
     if (!onlineUserIds.length) continue;
-
-    for (const id of onlineUserIds) {
-      processedUserIds.add(id);
-    }
 
     const batch = await prisma.serverMember.findMany({
       where: {
