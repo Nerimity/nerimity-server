@@ -21,7 +21,7 @@ async function route(req: Request, res: Response) {
 
   const totalCreatedServers = await prisma.server.count();
   const totalCreatedMessages = await prisma.message.count();
-  const weeklyCreatedMessages = prisma.message.count({
+  const weeklyCreatedMessages = await prisma.message.count({
     where: {
       createdAt: {
         gte: dateToDateTime(firstDayOfWeek),
