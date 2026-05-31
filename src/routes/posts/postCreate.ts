@@ -70,6 +70,7 @@ async function route(req: Request, res: Response) {
       fileId: body.nerimityCdnFileId,
       groupId: req.userCache.id,
       userId: req.userCache.id,
+      imageOnly: true,
     });
 
     if (err) {
