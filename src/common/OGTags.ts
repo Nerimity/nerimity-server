@@ -209,24 +209,19 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
 function rateLimitedYoutube(root: HTMLElement) {
   const ytInitialDataStartWith = `var ytInitialData = `;
 
-  const script = root.getElementsByTagName('script').find((el) => {
-    return el.innerText.startsWith(ytInitialDataStartWith);
-  });
+  const script = Array.from(root.getElementsByTagName('script')).find((el) => el.rawText.includes(ytInitialDataStartWith));
   if (!script) return;
 
-  const rawYtInitialData = script.innerText.substring(ytInitialDataStartWith.length, script.innerText.length - 1);
-  const ytInitialData = JSON.parse(rawYtInitialData);
+  const text = script.rawText;
+  const q = `["']`;
 
-  const videoPrimaryInfoRenderer = ytInitialData.contents?.twoColumnWatchNextResults?.results?.results?.contents?.[0]?.videoPrimaryInfoRenderer;
-  const videoSecondaryInfoRenderer = ytInitialData.contents?.twoColumnWatchNextResults?.results?.results?.contents?.[1]?.videoSecondaryInfoRenderer;
+  const title = text.match(new RegExp(`title: \\{\\s*runs: \\[\\s*\\{ text: ${q}([^"']+)${q}`))?.[1];
+  const channelName = text.match(new RegExp(`videoOwnerRenderer: \\{[\\s\\S]*?title: \\{\\s*runs: \\[\\s*\\{\\s*text: ${q}([^"']+)${q}`))?.[1];
+  const uploadedAt = text.match(new RegExp(`relativeDateText: \\{[^}]*accessibility[^}]*\\}[^}]*\\},\\s*simpleText: ${q}([^"']+)${q}`))?.[1];
+  const viewCount = text.match(new RegExp(`videoViewCountRenderer: \\{\\s*viewCount: \\{\\s*simpleText: ${q}([^"']+)${q}`))?.[1];
+  const description = text.match(new RegExp(`attributedDescription: \\{\\s*content:\\s*${q}([\\s\\S]*?)${q},\\s*\n`))?.[1]?.slice(0, 200);
 
-  const channelName = videoSecondaryInfoRenderer?.owner?.videoOwnerRenderer?.title?.runs?.[0]?.text;
-  const title = videoPrimaryInfoRenderer?.title?.runs?.[0]?.text;
-  const viewCount = videoPrimaryInfoRenderer?.viewCount?.videoViewCountRenderer?.originalViewCount;
-  const uploadedAt = videoPrimaryInfoRenderer?.relativeDateText?.simpleText;
-  const description = videoSecondaryInfoRenderer?.attributedDescription?.content?.slice?.(0, 200);
-
-  if (!videoPrimaryInfoRenderer || !videoSecondaryInfoRenderer) return false;
+  if (!title || !channelName) return false;
 
   return {
     title,
