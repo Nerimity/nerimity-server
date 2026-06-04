@@ -63,6 +63,7 @@ interface VerifyUploadOpts {
   userId: string;
   fileId: string;
   groupId?: string;
+  imageOnly?: boolean;
 }
 
 export interface VerifyResponse {
@@ -91,6 +92,7 @@ export async function verifyUpload(opts: VerifyUploadOpts) {
       userId: opts.userId,
       fileId: opts.fileId,
       groupId: opts.groupId,
+      ...(opts.imageOnly ? { imageOnly: true } : {}),
     }),
   })
     .then(async (res) => {
