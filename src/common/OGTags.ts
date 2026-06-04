@@ -209,6 +209,7 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
 function rateLimitedYoutube(root: HTMLElement) {
   const ytInitialDataStartWith = `var ytInitialData = `;
   const script = Array.from(root.getElementsByTagName('script')).find((el) => el.rawText.includes(ytInitialDataStartWith));
+  console.log('yay');
   if (!script) return;
   const text = script.rawText;
 
@@ -220,6 +221,13 @@ function rateLimitedYoutube(root: HTMLElement) {
   const uploadedAt = text.match(new RegExp(`${kv}relativeDateText${kv}:\\s*\\{[^}]*${kv}accessibility${kv}[^}]*\\}[^}]*\\},?\\s*${kv}simpleText${kv}:\\s*${q}([^"']+)${q}`))?.[1] ?? text.match(new RegExp(`${kv}dateText${kv}:\\s*\\{\\s*${kv}simpleText${kv}:\\s*${q}([^"']+)${q}`))?.[1];
   const viewCount = text.match(new RegExp(`${kv}videoViewCountRenderer${kv}:\\s*\\{\\s*${kv}viewCount${kv}:\\s*\\{\\s*${kv}simpleText${kv}:\\s*${q}([^"']+)${q}`))?.[1];
   const description = text.match(new RegExp(`${kv}attributedDescription${kv}:\\s*\\{\\s*${kv}content${kv}:\\s*${q}([\\s\\S]*?)${q},`))?.[1]?.slice(0, 200);
+  console.log({
+    title,
+    channelName,
+    description,
+    uploadedAt,
+    viewCount,
+  });
 
   if (!title || !channelName) return false;
   return { title, channelName, description, uploadDate: uploadedAt, viewCount };
