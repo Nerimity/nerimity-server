@@ -208,26 +208,19 @@ async function getImageEmbed(url: string, res?: Response): GetOGTagsReturn {
 
 function rateLimitedYoutube(root: HTMLElement) {
   const ytInitialDataStartWith = `var ytInitialData = `;
-
   const script = Array.from(root.getElementsByTagName('script')).find((el) => el.rawText.includes(ytInitialDataStartWith));
   if (!script) return;
-
   const text = script.rawText;
-  const q = `["']`;
 
-  const title = text.match(new RegExp(`title: \\{\\s*runs: \\[\\s*\\{ text: ${q}([^"']+)${q}`))?.[1];
-  const channelName = text.match(new RegExp(`videoOwnerRenderer: \\{[\\s\\S]*?title: \\{\\s*runs: \\[\\s*\\{\\s*text: ${q}([^"']+)${q}`))?.[1];
-  const uploadedAt = text.match(new RegExp(`relativeDateText: \\{[^}]*accessibility[^}]*\\}[^}]*\\},\\s*simpleText: ${q}([^"']+)${q}`))?.[1];
-  const viewCount = text.match(new RegExp(`videoViewCountRenderer: \\{\\s*viewCount: \\{\\s*simpleText: ${q}([^"']+)${q}`))?.[1];
-  const description = text.match(new RegExp(`attributedDescription: \\{\\s*content:\\s*${q}([\\s\\S]*?)${q},\\s*\n`))?.[1]?.slice(0, 200);
+  const q = `["']`;
+  const kv = `["']?`;
+
+  const title = text.match(new RegExp(`${kv}title${kv}:\\s*\\{\\s*${kv}runs${kv}:\\s*\\[\\s*\\{\\s*${kv}text${kv}:\\s*${q}([^"']+)${q}`))?.[1];
+  const channelName = text.match(new RegExp(`${kv}videoOwnerRenderer${kv}:\\s*\\{[\\s\\S]*?${kv}title${kv}:\\s*\\{\\s*${kv}runs${kv}:\\s*\\[\\s*\\{\\s*${kv}text${kv}:\\s*${q}([^"']+)${q}`))?.[1];
+  const uploadedAt = text.match(new RegExp(`${kv}relativeDateText${kv}:\\s*\\{[^}]*${kv}accessibility${kv}[^}]*\\}[^}]*\\},?\\s*${kv}simpleText${kv}:\\s*${q}([^"']+)${q}`))?.[1] ?? text.match(new RegExp(`${kv}dateText${kv}:\\s*\\{\\s*${kv}simpleText${kv}:\\s*${q}([^"']+)${q}`))?.[1];
+  const viewCount = text.match(new RegExp(`${kv}videoViewCountRenderer${kv}:\\s*\\{\\s*${kv}viewCount${kv}:\\s*\\{\\s*${kv}simpleText${kv}:\\s*${q}([^"']+)${q}`))?.[1];
+  const description = text.match(new RegExp(`${kv}attributedDescription${kv}:\\s*\\{\\s*${kv}content${kv}:\\s*${q}([\\s\\S]*?)${q},`))?.[1]?.slice(0, 200);
 
   if (!title || !channelName) return false;
-
-  return {
-    title,
-    channelName,
-    description,
-    uploadDate: uploadedAt,
-    viewCount,
-  };
+  return { title, channelName, description, uploadDate: uploadedAt, viewCount };
 }
