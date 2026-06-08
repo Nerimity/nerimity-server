@@ -1,10 +1,9 @@
-import { decryptToken, generateToken } from '../common/JWT';
+import { decryptToken } from '../common/JWT';
 import { redisClient } from '../common/redis';
 import { UserStatus } from '../types/User';
 import { getSuspensionDetails, getUserWithAccount, isIpBanned } from '../services/User/User';
 import { USER_CACHE_KEY_STRING, ALLOWED_IP_KEY_SET, CONNECTED_SOCKET_ID_KEY_SET, CONNECTED_USER_ID_KEY_STRING, GOOGLE_DRIVE_ACCESS_TOKEN, USER_PRESENCE_KEY_STRING, SESSION_ID_TO_USER_ID } from './CacheKeys';
 import { prisma, publicUserExcludeFields } from '../common/database';
-import { generateId } from '../common/flakeId';
 import { removeDuplicates } from '../common/utils';
 import { hasBit, USER_BADGES } from '../common/Bitwise';
 import { addDeviceWithSession, DeviceTypeId } from '@src/services/User/UserManagement';
@@ -419,27 +418,8 @@ export async function authenticateUser(token: string, ipAddress: string, deviceT
 
   const sessionIdOrUserId = decryptedToken.userId;
 
-  let [userCache, error] = await getUserCacheBySessionId(sessionIdOrUserId!, beforeAuthenticateCache);
-  let newToken: string | null = null;
-
-  // remove this code after 30 days.
-  // only used for migration.
-  if (!userCache) {
-    const secondRes = await getUserCache(sessionIdOrUserId, beforeAuthenticateCache);
-    userCache = secondRes[0];
-    error = secondRes[1];
-
-    if (userCache) {
-      if (userCache.bot) {
-        return [null, { message: 'Token system has been updated. Please Regenerate new bot token.' }, null] as const;
-      }
-
-      const sessionId = generateId();
-      await addDeviceWithSession(userCache.id, sessionId, ipAddress, deviceType);
-      newToken = generateToken(sessionId, 1);
-    }
-  }
-  //
+  const [userCache, error] = await getUserCacheBySessionId(sessionIdOrUserId!, beforeAuthenticateCache);
+  const newToken: string | null = null;
 
   if (error) {
     return [null, error, null] as const;
