@@ -6,6 +6,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import { isEmailSuspended, isIpBanned } from '../../services/User/User';
 import { registerUser } from '../../services/UserAuthentication';
 import { hasBadWord } from '../../common/badWords';
+import { isEmailBlackListed } from '@src/common/emailBlacklist';
 
 export function register(Router: Router) {
   Router.post(
@@ -59,6 +60,10 @@ async function route(req: Request, res: Response) {
   const emailSuspended = await isEmailSuspended(body.email);
   if (emailSuspended) {
     return res.status(401).json(generateError('This email is suspended.', 'email'));
+  }
+
+  if (isEmailBlackListed(body.email)) {
+    return res.status(401).json(generateError('This email is not allowed.', 'email'));
   }
 
   const [userToken, errors] = await registerUser({

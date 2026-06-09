@@ -131,3 +131,4 @@ dist/
 src/fcm-credentials.json
 src/generated
 testing.ts
+src/email-blacklist.json
