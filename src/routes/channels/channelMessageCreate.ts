@@ -38,6 +38,8 @@ export function channelMessageCreate(Router: Router) {
     memberHasRolePermissionMiddleware(ROLE_PERMISSIONS.SEND_MESSAGE),
     body('content').optional(true).isString().withMessage('Content must be a string!').isLength({ min: 1, max: 2000 }).withMessage('Content length must be between 1 and 2000 characters.'),
     body('socketId').optional(true).isString().withMessage('SocketId must be a string!').isLength({ min: 1, max: 255 }).withMessage('SocketId length must be between 1 and 255 characters.'),
+    body('avatar_url_override').optional(true).isString().withMessage('Avatar URL must be a string!').isLength({ min: 1, max: 255 }).withMessage('Avatar URL length must be between 1 and 255 characters.'),
+    body('username_override').optional(true).isString().withMessage('Invalid username.').not().contains('@').withMessage('Username cannot contain the @ symbol').not().contains(':').withMessage('Username cannot contain the : symbol').isLength({ min: 3, max: 35 }).withMessage('Username must be between 3 and 35 characters long.'),
 
     body('replyToMessageIds')
       .optional(true)
@@ -123,6 +125,8 @@ interface Body {
   mentionReplies?: boolean;
   silent?: boolean;
   nerimityCdnFileId?: string;
+  avatar_url_override?: string;
+  username_override?: string;
   googleDriveAttachment?: {
     id: string;
     mime: string;
@@ -262,6 +266,17 @@ async function route(req: Request, res: Response) {
 
   const [canMentionRoles] = memberHasRolePermission(req, ROLE_PERMISSIONS.MENTION_ROLES);
 
+  const [canMasquerade] = memberHasRolePermission(req, ROLE_PERMISSIONS.MASQUERADE);
+  
+  if (body.avatar_url_override?.trim() || body.username_override?.trim()) {
+  if (!canMasquerade) {
+    return res.status(403).json(generateError('You do not have permission to masquerade yourself.'));
+  }
+  if (req.channelCache.type === ChannelType.DM_TEXT) {
+    return res.status(403).json(generateError('You cannot use masquerade in DM channels.'));
+  }
+}
+
   let attachment: Partial<Attachment> | undefined = undefined;
 
   if (body.nerimityCdnFileId) {
@@ -325,6 +340,8 @@ async function route(req: Request, res: Response) {
     channel: req.channelCache,
     serverId: req.channelCache?.server?.id,
     member: req.serverMemberCache,
+    avatar_url_override: body.avatar_url_override,
+    username_override: body.username_override,
     replyToMessageIds: body.replyToMessageIds,
     mentionReplies: body.mentionReplies,
     server: req.serverCache,

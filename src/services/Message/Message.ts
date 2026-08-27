@@ -128,15 +128,17 @@ export function transformMessage(message: TransformMessage) {
         username: message.webhook.name,
         avatar: message.webhook.avatar,
         hexColor: message.webhook.hexColor,
-        ...(message.creatorOverride?.username && { username: message.creatorOverride.username }),
         ...(message.creatorOverrideId && { id: message.webhookId! + '-' + message.creatorOverrideId }),
-        ...(message.creatorOverride?.avatarUrl && { avatarUrl: (message.creatorOverride.animatedAvatar ? 'a' : '') + message.creatorOverride.avatarUrl }),
       };
 
       return createdBy;
     }
 
-    return { ...newMessage.createdBy };
+    return { 
+      ...newMessage.createdBy,
+      ...(message.creatorOverride?.username && { username: message.creatorOverride.username }),
+      ...(message.creatorOverride?.avatarUrl && { avatarUrl: (message.creatorOverride.animatedAvatar ? 'a' : '') + message.creatorOverride.avatarUrl }),
+     };
   })();
 
   return { ...newMessage, htmlEmbed, createdBy };
