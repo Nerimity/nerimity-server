@@ -167,6 +167,7 @@ export const updateServerRole = async (serverId: string, roleId: string, update:
       actionById: actionById,
       serverId: serverId,
       data: {
+        roleId,
         ...addToObjectIfExists('name', update.name),
         ...addToObjectIfExists('permissions', update.permissions),
         ...addToObjectIfExists('hideRole', update.hideRole),

@@ -70,6 +70,13 @@ interface ServerUserMuteAuditLog {
     mutedUserId: string;
   };
 }
+interface ServerUserUpdateAuditLog {
+  actionType: AuditLogType.SERVER_USER_UPDATE;
+  serverId: string;
+  data: {
+    userId?: string
+  };
+}
 
 interface ServerUserUnmuteAuditLog {
   actionType: AuditLogType.SERVER_USER_UNMUTE;
@@ -78,7 +85,7 @@ interface ServerUserUnmuteAuditLog {
     unmutedUserId: string;
   };
 }
-type TypedAuditLog = Omit<AuditLog, 'data'> & (ServerOwnershipUpdateAuditLog | ServerDeleteAuditLog | ServerUserBanAuditLog | ServerUserUnbanAuditLog | ServerUserKickAuditLog | ServerUserMuteAuditLog | ServerUserUnmuteAuditLog);
+type TypedAuditLog = Omit<AuditLog, 'data'> & (ServerUserUpdateAuditLog | ServerOwnershipUpdateAuditLog | ServerDeleteAuditLog | ServerUserBanAuditLog | ServerUserUnbanAuditLog | ServerUserKickAuditLog | ServerUserMuteAuditLog | ServerUserUnmuteAuditLog);
 
 interface ServerOwnershipUpdateOpts {
   serverId: string;
@@ -261,6 +268,9 @@ export const getAuditLogs = async (serverId?: string, limit?: number, afterId?: 
     userIdSet.add(auditLog.actionById);
     serverIdSet.add(auditLog.serverId);
     switch (auditLog.actionType) {
+      case AuditLogType.SERVER_USER_UPDATE:
+        userIdSet.add(auditLog.data.userId);
+        break;
       case AuditLogType.SERVER_OWNERSHIP_UPDATE:
         userIdSet.add(auditLog.data.newOwnerUserId);
         userIdSet.add(auditLog.data.oldOwnerUserId);

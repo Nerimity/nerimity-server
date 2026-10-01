@@ -135,6 +135,7 @@ export const updateServerMember = async (serverId: string, userId: string, updat
     actionById: updatedByUserId,
     serverId: serverId,
     data: {
+      userId,
       ...(addedRoles.length ? { addedRoles: addedRoles.map((role) => role.name) } : {}),
       ...(removedRoles.length ? { removedRoles: removedRoles.map((role) => role.name) } : {}),
       ...addToObjectIfExists('nickname', update.nickname),
@@ -185,6 +186,7 @@ export const updateServerMemberProfile = async (serverId: string, userId: string
     actionById: updatedByUserId,
     serverId: serverId,
     data: {
+      userId,
       ...addToObjectIfExists('nickname', update.nickname),
     },
   });

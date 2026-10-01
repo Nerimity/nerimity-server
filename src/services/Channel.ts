@@ -71,7 +71,7 @@ export const dismissChannelNotification = async (userId: string, channelId: stri
     );
   }
 
-  await prisma.$transaction(transactions).catch(() => {});
+  await prisma.$transaction(transactions).catch(() => { });
 
   emit && emitNotificationDismissed(userId, channelId);
 };
@@ -121,7 +121,7 @@ interface CreateServerChannelOpts {
 
 export const createServerChannel = async (opts: CreateServerChannelOpts): Promise<CustomResult<Channel, CustomError>> => {
   const channelCount = await prisma.channel.count({
-    where: { serverId: opts.serverId, deleting: null  },
+    where: { serverId: opts.serverId, deleting: null },
   });
   if (channelCount >= env.MAX_CHANNELS_PER_SERVER) {
     return [null, generateError('You already created the maximum amount of channels for this server.')];
@@ -266,6 +266,7 @@ export const updateServerChannel = async (serverId: string, channelId: string, u
       actionById: actionById,
       serverId: serverId,
       data: {
+        channelId,
         ...addToObjectIfExists('name', update.name),
         ...addToObjectIfExists('icon', update.icon, !!update.icon),
         ...addToObjectIfExists('slowModeSeconds', update.slowModeSeconds),
@@ -446,11 +447,11 @@ export const deleteServerChannel = async (serverId: string, channelId: string, a
     }),
     ...(server.systemChannelId === channel.id
       ? [
-          prisma.server.update({
-            where: { id: server.id },
-            data: { systemChannelId: null },
-          }),
-        ]
+        prisma.server.update({
+          where: { id: server.id },
+          data: { systemChannelId: null },
+        }),
+      ]
       : []),
   ]);
   deleteServerChannelCaches([channelId]);
@@ -507,7 +508,7 @@ export const deleteChannelNotice = async (where: { channelId?: string; userId?: 
       where: where as { userId: string } | { channelId: string },
       select: { id: true },
     })
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
   return [true, null] as const;
 };
@@ -526,7 +527,7 @@ export const getChannelNotice = async (where: { channelId?: string; userId?: str
       where: where as { userId: string } | { channelId: string },
       select: { content: true, updatedAt: true, channelId: true, userId: true },
     })
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return [null, generateError('Channel notice does not exist.' as const)] as const;
   return [res, null] as const;
 };
