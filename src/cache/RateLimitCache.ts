@@ -9,6 +9,7 @@ interface CheckAndUpdateRateLimitOptions {
 
   onThreeIterations?: () => void; // Event triggered when user has been rate limited 3 times in the last 3 minutes.
   itterId?: () => string;
+  resetTTLOnLimit?: boolean;
 }
 
 enum RateLimitStatus {
@@ -54,7 +55,9 @@ if tonumber(data.requests) >= tonumber(ARGV[2]) then
   end
 
   redis.call('HSET', KEYS[1], 'status', 'REACHED')
-  redis.call('PEXPIRE', KEYS[1], ARGV[3])
+  if ARGV[6] == '1' then
+    redis.call('PEXPIRE', KEYS[1], ARGV[3])
+  end
 
   if trigger == 1 then
     return -2
@@ -72,7 +75,14 @@ export async function checkAndUpdateRateLimit(opts: CheckAndUpdateRateLimitOptio
 
   const result = (await redisClient.eval(RATE_LIMIT_SCRIPT, {
     keys: [key, itterKey],
-    arguments: [opts.perMS.toString(), opts.requests.toString(), opts.restrictMS.toString(), (3 * 60 * 1000).toString(), opts.onThreeIterations ? '1' : '0'],
+    arguments: [
+      opts.perMS.toString(),
+      opts.requests.toString(),
+      opts.restrictMS.toString(),
+      (3 * 60 * 1000).toString(),
+      opts.onThreeIterations ? '1' : '0',
+      opts.resetTTLOnLimit === false ? '0' : '1',
+    ],
   })) as number;
 
   if (result === -1) {

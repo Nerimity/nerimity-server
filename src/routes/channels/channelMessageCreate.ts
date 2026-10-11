@@ -145,6 +145,7 @@ async function route(req: Request, res: Response) {
       perMS: req.channelCache.slowModeSeconds * 1000,
       restrictMS: req.channelCache.slowModeSeconds * 1000,
       requests: 1,
+      resetTTLOnLimit: false,
     });
 
     if (ttl) {
