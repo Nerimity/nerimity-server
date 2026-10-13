@@ -12,7 +12,7 @@ import { nerimitySupporterCdnMessage } from '@src/common/nerimitySupporterCdnMes
 export function ChannelCdnGenerateToken(Router: Router) {
   Router.post(
     '/channels/:channelId/cdn/token',
-    authenticate(),
+    authenticate({ allowBot: true }),
     channelVerification(),
     rateLimit({
       name: 'cdn_token',
