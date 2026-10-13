@@ -60,6 +60,17 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
       }
     }
   }
+  if (body.name === 'issues' && 'issue' in body.payload && 'action' in body.payload) {
+    const payload = body.payload;
+    if (!('pull_request' in payload.issue)) {
+      if (payload.action === 'opened') {
+        content = `[${repo}] ${user} opened an **issue** titled: "${payload.issue.title}\n${payload.issue.html_url}"`;
+      }
+      if (payload.action === 'closed') {
+        content = `[${repo}] ${user} closed an **issue** titled: "${payload.issue.title}\n${payload.issue.html_url}"`;
+      }
+    }
+  }
   if (body.name === 'push') {
     const payload = body.payload;
 
@@ -67,14 +78,14 @@ async function route(req: Request<{ webhookId: string; token: string }, unknown,
       const tagName = payload.ref.split('/').pop();
       content = `[${repo}] ${user} just pushed a new tag: **${tagName}**`;
     } else {
-      content = `[${repo}] ${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[🔗](${commit.url}) ${commit.message}`).join('\n')}`;
+      content = `[${repo}] ${user} just pushed to **${payload.ref.split('/').pop()}** branch.\n${payload.commits.map((commit) => `[${commit.message}](${commit.url})`).join('\n')}`;
     }
   }
 
   if (body.name === 'release') {
     if ('action' in body.payload && body.payload.action === 'published') {
       const payload = body.payload;
-      content = `[${repo}] ${user} just published a new release: **${payload.release.tag_name}**! 🚀 [🔗](${payload.release.url})`;
+      content = `[${repo}] ${user} just published a new release: **[${payload.release.tag_name}](${payload.release.url})**! 🚀 `;
     }
   }
 
