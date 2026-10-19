@@ -691,6 +691,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
         toId: toId,
         type: opts.type,
         postId: opts.postId,
+        createdAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
       },
     });
     if (alreadyExists) return;
