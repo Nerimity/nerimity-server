@@ -58,8 +58,12 @@ import { serverMemberMute } from './serverMemberMute';
 import { serverMemberMuteRemove } from './serverMemberMuteRemove';
 import { serverClanUpdate } from './serverClanUpdate';
 import { serverClanDelete } from './serverClanDelete';
+import { serverSearchMessages } from './serverSearchMessages';
 
 const ServersRouter = Router();
+
+
+serverSearchMessages(ServersRouter);
 
 serverClanUpdate(ServersRouter);
 serverClanDelete(ServersRouter);
