@@ -1242,6 +1242,8 @@ export const searchMessagesByChannelId = (channelId: string, opts?: SearchMessag
   return searchMessages({ channelId }, opts);
 };
 
-export const searchMessagesByServerId = (serverId: string, opts?: SearchMessagesOpts) => {
-  return searchMessages({ channel: { serverId } }, opts);
+export const searchMessagesByServerId = async (serverId: string, channelIds: string[], opts?: SearchMessagesOpts) => {
+  if (!channelIds.length) return [];
+
+  return searchMessages({ channel: { serverId }, channelId: { in: channelIds } }, opts);
 };

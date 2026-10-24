@@ -4,8 +4,12 @@ import { serverMemberVerification } from '../../middleware/serverMemberVerificat
 import { rateLimit } from '../../middleware/rateLimit';
 import { searchMessagesByServerId } from '../../services/Message/Message';
 import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
+import { addBit, CHANNEL_PERMISSIONS, hasBit, ROLE_PERMISSIONS } from '../../common/Bitwise';
+import { prisma } from '../../common/database';
 import { query } from 'express-validator';
 import { ensureArray } from '@src/common/utils';
+import { ChannelType } from '../../types/Channel';
+import { serverMemberHasPermission } from '../../common/serverMembeHasPermission';
 
 export function serverSearchMessages(Router: Router) {
   Router.get(
@@ -50,8 +54,73 @@ async function route(req: Request, res: Response) {
     return res.status(400).json(generateError('Invalid order.'));
   }
 
+  const isCreator = req.serverCache.createdById === req.userCache.id;
+
+  const [channels, member, roles] = await Promise.all([
+    prisma.channel.findMany({
+      where: {
+        serverId: req.serverCache.id,
+        type: ChannelType.SERVER_TEXT,
+      },
+      select: {
+        id: true,
+        permissions: {
+          select: {
+            roleId: true,
+            permissions: true,
+          },
+        },
+      },
+    }),
+    isCreator
+      ? Promise.resolve(null)
+      : prisma.serverMember.findUnique({
+        where: {
+          userId_serverId: {
+            serverId: req.serverCache.id,
+            userId: req.userCache.id,
+          },
+        },
+        select: { roleIds: true },
+      }),
+    isCreator
+      ? Promise.resolve([])
+      : prisma.serverRole.findMany({
+        where: { serverId: req.serverCache.id },
+        select: { id: true, permissions: true },
+      }),
+  ]);
+
+  if (!isCreator && !member) {
+    return res.status(403).json(generateError('Server member is not in this server.'));
+  }
+
+  const hasAdminPermission = member
+    ? serverMemberHasPermission({
+      permission: ROLE_PERMISSIONS.ADMIN,
+      member,
+      serverRoles: roles,
+      defaultRoleId: req.serverCache.defaultRoleId,
+    })
+    : false;
+  const canAccessAllChannels = isCreator || hasAdminPermission;
+
+  const roleIds = new Set([...(member?.roleIds ?? []), req.serverCache.defaultRoleId]);
+  const accessibleChannelIds = channels
+    .filter((channel) => {
+      if (canAccessAllChannels) return true;
+
+      const permissions = channel.permissions.reduce((total, permission) => {
+        if (!roleIds.has(permission.roleId)) return total;
+        return addBit(total, permission.permissions || 0);
+      }, 0);
+
+      return hasBit(permissions, CHANNEL_PERMISSIONS.PUBLIC_CHANNEL.bit);
+    })
+    .map((channel) => channel.id);
+
   const t1 = performance.now();
-  const messages = await searchMessagesByServerId(req.serverCache.id, {
+  const messages = await searchMessagesByServerId(req.serverCache.id, accessibleChannelIds, {
     query,
     order,
     limit,
