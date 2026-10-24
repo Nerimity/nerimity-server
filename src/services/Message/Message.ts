@@ -171,13 +171,13 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
       channelId,
       ...(opts?.beforeMessageId
         ? {
-            id: { lt: opts.beforeMessageId },
-          }
+          id: { lt: opts.beforeMessageId },
+        }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-            id: { gt: opts.afterMessageId },
-          }
+          id: { gt: opts.afterMessageId },
+        }
         : undefined),
     },
     include: {
@@ -199,8 +199,8 @@ export const getMessagesByChannelId = async (channelId: string, opts?: GetMessag
     orderBy: { createdAt: 'desc' },
     ...(opts?.afterMessageId
       ? {
-          orderBy: { createdAt: 'asc' },
-        }
+        orderBy: { createdAt: 'asc' },
+      }
       : undefined),
   });
 
@@ -553,7 +553,7 @@ export const addMessageEmbed = async (message: Message, opts: { serverId?: strin
       data: { embed: OGTags },
     })
 
-    .catch(() => {});
+    .catch(() => { });
   if (!res) return;
   // emit
   if (opts.serverId) {
@@ -580,7 +580,7 @@ export const deleteMessage = async (opts: MessageDeletedOptions) => {
   });
   if (!message) return [false, 'Message not found!'] as const;
 
-  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => {});
+  const deleteRes = await prisma.message.delete({ where: { id: opts.messageId } }).catch(() => { });
 
   if (!deleteRes) {
     return [false, 'Something went wrong, try again later.'];
@@ -946,19 +946,19 @@ export async function addMention(opts: AddMentionOpts) {
         where: {
           ...(requesterId
             ? {
-                mentionedById_mentionedToId_channelId: {
-                  channelId: channelId,
-                  mentionedById: requesterId,
-                  mentionedToId: user.id,
-                },
-              }
+              mentionedById_mentionedToId_channelId: {
+                channelId: channelId,
+                mentionedById: requesterId,
+                mentionedToId: user.id,
+              },
+            }
             : {
-                mentionedByWebhookId_mentionedToId_channelId: {
-                  channelId: channelId,
-                  mentionedToId: user.id,
-                  mentionedByWebhookId: webhookId!,
-                },
-              }),
+              mentionedByWebhookId_mentionedToId_channelId: {
+                channelId: channelId,
+                mentionedToId: user.id,
+                mentionedByWebhookId: webhookId!,
+              },
+            }),
         },
         update: {
           count: { increment: 1 },
@@ -1170,7 +1170,7 @@ export async function markMessageUnread(opts: { channelId: string; messageId: st
   return [true, null] as const;
 }
 
-interface SearchMessageByChannelIdOpts {
+interface SearchMessagesOpts {
   query: string;
   order?: 'asc' | 'desc';
   limit?: number;
@@ -1180,7 +1180,7 @@ interface SearchMessageByChannelIdOpts {
   userIds?: string[];
 }
 
-export const searchMessagesByChannelId = async (channelId: string, opts?: SearchMessageByChannelIdOpts) => {
+const searchMessages = async (scope: Prisma.MessageWhereInput, opts?: SearchMessagesOpts) => {
   const limit = opts?.limit || 50;
   if (limit > 100) return [];
   if (limit <= 0) return [];
@@ -1189,24 +1189,24 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
 
   const messages = await prisma.message.findMany({
     where: {
+      ...scope,
       ...(opts?.query?.trim()
         ? {
-            content: {
-              mode: 'insensitive',
-              contains: opts.query.trim(),
-            },
-          }
+          content: {
+            mode: 'insensitive',
+            contains: opts.query.trim(),
+          },
+        }
         : {}),
-      channelId,
       ...(opts?.beforeMessageId
         ? {
-            id: { lt: opts.beforeMessageId },
-          }
+          id: { lt: opts.beforeMessageId },
+        }
         : undefined),
       ...(opts?.afterMessageId
         ? {
-            id: { gt: opts.afterMessageId },
-          }
+          id: { gt: opts.afterMessageId },
+        }
         : undefined),
       ...(opts?.userIds?.length ? { createdById: { in: opts.userIds } } : undefined),
     },
@@ -1233,11 +1233,15 @@ export const searchMessagesByChannelId = async (channelId: string, opts?: Search
 
   const modifiedMessages = messages.map(transformMessage);
 
-  if (opts?.afterMessageId) return modifiedMessages;
-
-  if (opts?.afterMessageId || order === 'asc') {
-    return modifiedMessages;
-  }
+  if (opts?.afterMessageId || order === 'asc') return modifiedMessages;
 
   return modifiedMessages.reverse();
+};
+
+export const searchMessagesByChannelId = (channelId: string, opts?: SearchMessagesOpts) => {
+  return searchMessages({ channelId }, opts);
+};
+
+export const searchMessagesByServerId = (serverId: string, opts?: SearchMessagesOpts) => {
+  return searchMessages({ channel: { serverId } }, opts);
 };
