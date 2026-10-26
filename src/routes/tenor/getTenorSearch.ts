@@ -4,16 +4,7 @@ import { rateLimit } from '../../middleware/rateLimit';
 import env from '../../common/env';
 
 export function getTenorSearch(Router: Router) {
-  Router.get(
-    '/tenor/search',
-    authenticate(),
-    rateLimit({
-      name: 'tenor-search',
-      restrictMS: 60000,
-      requests: 20,
-    }),
-    route,
-  );
+
   Router.get(
     '/v2/tenor/search',
     authenticate(),
@@ -67,13 +58,13 @@ async function route(req: Request, res: Response) {
 
   url.searchParams.append('key', env.KLIPY_API_KEY);
 
-  const fetchRes = await fetch(url.href).catch(() => {});
+  const fetchRes = await fetch(url.href).catch(() => { });
   if (!fetchRes) {
     res.status(403).send();
     return;
   }
 
-  const json = (await fetchRes.json().catch(() => {})) as TenorResponse;
+  const json = (await fetchRes.json().catch(() => { })) as TenorResponse;
 
   if (!json) {
     res.status(403).send();
@@ -97,13 +88,10 @@ async function route(req: Request, res: Response) {
     return;
   }
 
-  if (req.path.startsWith('/v2')) {
-    res.json({
-      next: json.next,
-      results: transformedResults,
-    });
-    return;
-  }
+  res.json({
+    next: json.next,
+    results: transformedResults,
+  });
 
-  res.json(transformedResults);
+
 }

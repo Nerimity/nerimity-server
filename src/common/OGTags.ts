@@ -3,6 +3,7 @@ import { proxyUrlImageDimensions } from './nerimityCDN';
 import env from './env';
 import { signatureHeaders } from 'web-bot-auth';
 import { signerFromJWK } from 'web-bot-auth/crypto';
+import { getKlipyGif } from './klipy';
 
 const PRIVATE_KEY = env.NERIMITY_EMBED_BOT_PRIVATE_KEY;
 const USER_AGENT = 'NerimityBot/1.0 (+https://nerimity.com/bot)';
@@ -69,6 +70,20 @@ function looksLikeImageUrl(url: string): boolean {
 }
 
 export async function getOGTags(url: string): GetOGTagsReturn {
+  if (url.startsWith('https://klipy.com/gifs/')) {
+    const gif = await getKlipyGif(url);
+    if (gif) {
+      return {
+        type: 'image',
+        imageUrl: gif.url,
+        imageWidth: gif.width,
+        imageHeight: gif.height,
+        animated: true,
+        imageMime: 'image/gif',
+      };
+    }
+  }
+
   const youtubeWatchCode = url.match(youtubeLinkRegex)?.[3];
   const updatedUrl = youtubeWatchCode ? `https://www.youtube.com/watch?v=${youtubeWatchCode}&hl=en&persist_hl=1` : url;
 
