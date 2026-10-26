@@ -52,6 +52,7 @@ async function route(req: Request, res: Response) {
 
   url.searchParams.set('q', query);
   url.searchParams.set('contentfilter', 'medium');
+  url.searchParams.set('format_filter', 'gif');
   if (pos) {
     url.searchParams.set('pos', pos);
   }

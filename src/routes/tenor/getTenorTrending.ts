@@ -41,31 +41,18 @@ interface KlipyTrendingResponse {
   };
 }
 
-function getPositiveInteger(value: unknown, fallback: number, max?: number) {
-  if (value === undefined) return fallback;
-  if (typeof value !== 'string' || !/^\d+$/.test(value)) return null;
 
-  const number = Number(value);
-  if (!Number.isSafeInteger(number) || number < 1 || (max !== undefined && number > max)) {
-    return null;
-  }
-
-  return number;
-}
 
 async function route(req: Request, res: Response) {
-  const page = getPositiveInteger(req.query.page, 1);
-  const perPage = getPositiveInteger(req.query.per_page, 24, 50);
+  const pos = req.query.pos as string;
 
-  if (page === null || perPage === null) {
-    res.status(400).send();
-    return;
-  }
+
 
   const url = new URL(`https://api.klipy.com/api/v1/${encodeURIComponent(env.KLIPY_API_KEY)}/gifs/trending`);
-  url.searchParams.set('page', String(page));
-  url.searchParams.set('per_page', String(perPage));
-  url.searchParams.set('content_filter', 'medium');
+  if (pos) {
+    url.searchParams.set('pos', pos);
+  }
+  url.searchParams.set('contentfilter', 'medium');
   url.searchParams.set('format_filter', 'gif');
 
   let fetchRes: globalThis.Response;
