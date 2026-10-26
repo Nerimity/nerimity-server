@@ -88,7 +88,7 @@ async function route(req: Request, res: Response) {
 
   const results = json.data.data.map((item) => {
     const gif = item.file.md?.gif || item.file.sm?.gif || item.file.hd?.gif || item.file.xs?.gif;
-    const preview = item.file.xs?.gif || item.file.sm?.gif || gif;
+    const preview = item.file.sm?.gif || item.file.xs?.gif || gif;
 
     if (!gif || !preview) {
       return null;
