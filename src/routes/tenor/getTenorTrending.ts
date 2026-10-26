@@ -50,7 +50,7 @@ async function route(req: Request, res: Response) {
 
   const url = new URL(`https://api.klipy.com/api/v1/${encodeURIComponent(env.KLIPY_API_KEY)}/gifs/trending`);
   if (pos) {
-    url.searchParams.set('pos', pos);
+    url.searchParams.set('page', pos);
   }
   url.searchParams.set('contentfilter', 'medium');
   url.searchParams.set('format_filter', 'gif');
