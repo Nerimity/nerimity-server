@@ -47,6 +47,7 @@ const formatContent = async (content: string) => {
 
 export function constructPostInclude(requesterUserId: string, continueIter = true): Prisma.PostInclude | null | undefined {
   return {
+    pinned: { where: { pinnedById: requesterUserId } },
     poll: {
       select: {
         id: true,
@@ -92,10 +93,10 @@ export function constructPostInclude(requesterUserId: string, continueIter = tru
     },
     ...(continueIter
       ? {
-          repost: {
-            include: constructPostInclude(requesterUserId, false),
-          },
-        }
+        repost: {
+          include: constructPostInclude(requesterUserId, false),
+        },
+      }
       : {}),
   };
 }
@@ -126,7 +127,7 @@ export async function createPost(opts: CreatePostOpts) {
   const formattedContent = await formatContent(opts.content?.trim() || '');
 
   const url = opts.content?.match(urlRegex)?.[0].trim();
-  const OGTags = url ? await getOGTags(url).catch(() => {}) : undefined;
+  const OGTags = url ? await getOGTags(url).catch(() => { }) : undefined;
 
   const post = await prisma.post.create({
     data: {
@@ -138,28 +139,28 @@ export async function createPost(opts: CreatePostOpts) {
       ...(opts.commentToId ? { commentToId: opts.commentToId } : undefined),
       ...(opts.attachment
         ? {
-            attachments: {
-              create: {
-                id: generateId(),
-                height: opts.attachment.height,
-                width: opts.attachment.width,
-                path: opts.attachment.path,
-              },
+          attachments: {
+            create: {
+              id: generateId(),
+              height: opts.attachment.height,
+              width: opts.attachment.width,
+              path: opts.attachment.path,
             },
-          }
+          },
+        }
         : undefined),
 
       ...(opts.poll?.choices.length
         ? {
-            poll: {
-              create: {
-                id: generateId(),
-                choices: {
-                  createMany: { data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice })) },
-                },
+          poll: {
+            create: {
+              id: generateId(),
+              choices: {
+                createMany: { data: opts.poll.choices.map((choice) => ({ id: generateId(), content: choice })) },
               },
             },
-          }
+          },
+        }
         : {}),
     },
     include: constructPostInclude(opts.userId),
@@ -208,7 +209,7 @@ export async function editPost(opts: { editById: string; postId: string; content
   const formattedContent = await formatContent(opts.content?.trim() || '');
 
   const url = opts.content?.match(urlRegex)?.[0].trim();
-  const OGTags = url ? (await getOGTags(url).catch(() => {})) || Prisma.JsonNull : Prisma.JsonNull;
+  const OGTags = url ? (await getOGTags(url).catch(() => { })) || Prisma.JsonNull : Prisma.JsonNull;
 
   const newPost = await prisma.post
     .update({
@@ -222,7 +223,7 @@ export async function editPost(opts: { editById: string; postId: string; content
       },
       include: constructPostInclude(opts.editById),
     })
-    .catch(() => {});
+    .catch(() => { });
 
   if (!newPost) return [null, generateError('Something went wrong. Try again later.')] as const;
 
@@ -288,8 +289,8 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     ...opts.where,
     ...(opts.hidePins
       ? {
-          OR: [{ pinned: { isNot: null }, commentToId: { not: null } }, { pinned: null }],
-        }
+        OR: [{ pinned: { isNot: null }, commentToId: { not: null } }, { pinned: null }],
+      }
       : {}),
     ...(opts.afterId ? { id: { lt: opts.afterId } } : {}),
     ...(opts.beforeId ? { id: { gt: opts.beforeId } } : {}),
@@ -299,25 +300,25 @@ export async function fetchPosts(opts: FetchPostsOpts) {
     ...(opts.postId ? { commentToId: opts.postId } : undefined),
     ...(!opts.bypassBlocked
       ? {
-          createdBy: {
-            ...(opts.hideIfBlockedByMe
-              ? {
-                  recipientFriends: {
-                    none: {
-                      status: FriendStatus.BLOCKED,
-                      userId: opts.requesterUserId,
-                    },
-                  },
-                }
-              : {}),
-            friends: {
-              none: {
-                status: FriendStatus.BLOCKED,
-                recipientId: opts.requesterUserId,
+        createdBy: {
+          ...(opts.hideIfBlockedByMe
+            ? {
+              recipientFriends: {
+                none: {
+                  status: FriendStatus.BLOCKED,
+                  userId: opts.requesterUserId,
+                },
               },
+            }
+            : {}),
+          friends: {
+            none: {
+              status: FriendStatus.BLOCKED,
+              recipientId: opts.requesterUserId,
             },
           },
-        }
+        },
+      }
       : undefined),
     deleted: false,
   } as Prisma.PostWhereUniqueInput;
@@ -355,15 +356,15 @@ export async function fetchLikedPosts(opts: fetchLinkedPostsOpts) {
       post: {
         ...(!opts.bypassBlocked
           ? {
-              createdBy: {
-                friends: {
-                  none: {
-                    status: FriendStatus.BLOCKED,
-                    recipientId: opts.requesterUserId,
-                  },
+            createdBy: {
+              friends: {
+                none: {
+                  status: FriendStatus.BLOCKED,
+                  recipientId: opts.requesterUserId,
                 },
               },
-            }
+            },
+          }
           : undefined),
       },
     },
@@ -395,15 +396,15 @@ export async function fetchLatestPost(opts: fetchLatestPostOpts) {
       createdById: opts.userId,
       ...(!opts.bypassBlocked
         ? {
-            createdBy: {
-              friends: {
-                none: {
-                  status: FriendStatus.BLOCKED,
-                  recipientId: opts.requesterUserId,
-                },
+          createdBy: {
+            friends: {
+              none: {
+                status: FriendStatus.BLOCKED,
+                recipientId: opts.requesterUserId,
               },
             },
-          }
+          },
+        }
         : undefined),
     },
     include: constructPostInclude(opts.requesterUserId),
@@ -515,7 +516,7 @@ export async function likePost(userId: string, postId: string): Promise<CustomRe
         postId,
       },
     })
-    .catch(() => {});
+    .catch(() => { });
   if (!newPostLike) return [null, generateError('Something went wrong! Try again later.')];
 
   const newPost = (await fetchPost({
@@ -727,7 +728,7 @@ export async function createPostNotification(opts: CreatePostNotificationProps) 
       }),
     ])
 
-    .catch(() => {});
+    .catch(() => { });
 
   // // delete if more than 10 notifications exist
   // const tenthLatestRecord = await prisma.postNotification.findFirst({
@@ -926,15 +927,15 @@ export async function fetchPinnedPosts(opts: fetchPinnedPostsOpts) {
       },
       ...(!opts.bypassBlocked
         ? {
-            createdBy: {
-              friends: {
-                none: {
-                  status: FriendStatus.BLOCKED,
-                  recipientId: opts.requesterUserId,
-                },
+          createdBy: {
+            friends: {
+              none: {
+                status: FriendStatus.BLOCKED,
+                recipientId: opts.requesterUserId,
               },
             },
-          }
+          },
+        }
         : undefined),
     },
     include: constructPostInclude(opts.requesterUserId),
