@@ -60,7 +60,7 @@ export const deleteServerInvite = async (serverId: string, inviteCode: string, r
         id: invite.id,
       },
     })
-    .catch(() => {});
+    .catch(() => { });
   return [true, null] as const;
 };
 
@@ -145,7 +145,7 @@ export const joinServerByInviteCode = async (userId: string, inviteCode: string)
   });
 };
 
-type ServerWithMemberCount = Server & { memberCount: number };
+type ServerInviteDetails = Server & { memberCount: number, isJoined: boolean | null };
 
 export const getServerFromInviteCode = async (inviteCode: string) => {
   const invite = await prisma.serverInvite.findFirst({
@@ -158,7 +158,7 @@ export const getServerFromInviteCode = async (inviteCode: string) => {
   return invite.server;
 };
 
-export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<CustomResult<ServerWithMemberCount, CustomError>> => {
+export const getServerDetailsByInviteCode = async (inviteCode: string, requesterUserId?: string): Promise<CustomResult<ServerInviteDetails, CustomError>> => {
   let server = await prisma.server.findUnique({
     where: {
       id: inviteCode,
@@ -178,7 +178,16 @@ export const getServerDetailsByInviteCode = async (inviteCode: string): Promise<
     where: { serverId: server.id },
   });
 
-  return [{ ...server, memberCount }, null];
+
+  const requesterMember = requesterUserId ? await prisma.serverMember.findUnique({
+    where: { userId_serverId: { userId: requesterUserId, serverId: server.id } },
+  }) : null;
+
+  const isJoined = !requesterUserId ? null : !!requesterMember;
+
+
+
+  return [{ ...server, memberCount, isJoined }, null];
 };
 
 export const getServerInvitesByServerId = async (serverId: string, creatorId?: string): Promise<ServerInvite[]> => {
