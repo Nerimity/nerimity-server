@@ -1,8 +1,10 @@
 import { Request, Response, Router } from 'express';
 import { getServerDetailsByInviteCode } from '../../services/ServerInvite';
+import { authenticate } from '@src/middleware/authenticate';
 
 export function serverInviteDetails(Router: Router) {
   Router.get('/servers/invites/:inviteCode',
+    authenticate({ allowNoToken: true }),
     route
   );
 }
