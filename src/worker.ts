@@ -33,6 +33,7 @@ import { CdnRouter } from './routes/cdn/Router';
 };
 
 const app = express();
+app.set('query parser', 'simple');
 const server = http.createServer(app);
 
 // Middleware to log request duration
