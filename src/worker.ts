@@ -101,6 +101,9 @@ if (env.TYPE === 'api') {
     }),
   );
 
+  app.use('/api/status', (req, res) => {
+    res.json({ status: "Online!" })
+  });
   app.use('/api', ModerationRouter);
   app.use('/api', UsersRouter);
   app.use('/api', ServersRouter);
