@@ -119,7 +119,7 @@ export const createServer = async (opts: CreateServerOptions): Promise<CustomRes
         createdById: opts.creatorId,
         order: 1,
       },
-      include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+      include: { permissions: { select: { permissions: true, roleId: true } } },
     }),
     prisma.user.update({
       where: { id: opts.creatorId },
@@ -164,22 +164,22 @@ export const getServers = async (userId: string, partial?: boolean, currentServe
           _count: { select: { welcomeQuestions: true } },
           channels: {
             where: { deleting: null },
-            include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+            include: { permissions: { select: { permissions: true, roleId: true } } },
           },
           serverMembers: partial
             ? false
             : {
-                include: {
-                  user: {
-                    select: {
-                      ...publicUserExcludeFields,
-                      profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
-                      lastOnlineAt: true,
-                      lastOnlineStatus: true,
-                    },
+              include: {
+                user: {
+                  select: {
+                    ...publicUserExcludeFields,
+                    profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } },
+                    lastOnlineAt: true,
+                    lastOnlineStatus: true,
                   },
                 },
               },
+            },
           roles: true,
           customEmojis: {
             select: {
@@ -331,7 +331,7 @@ export const joinServer = async (
       }),
       prisma.channel.findMany({
         where: { serverId: server.id, deleting: null },
-        include: { _count: { select: { attachments: true } }, permissions: { select: { permissions: true, roleId: true } } },
+        include: { permissions: { select: { permissions: true, roleId: true } } },
       }),
       prisma.serverMember.findMany({
         where: { serverId: server.id },
@@ -1013,14 +1013,14 @@ export async function updateServerChannelOrder(opts: UpdateServerChannelOrderOpt
           // update or add categoryId
           ...(opts.categoryId && opts.categoryId !== channel.categoryId && opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: opts.categoryId,
-              }
+              categoryId: opts.categoryId,
+            }
             : undefined),
           // remove categoryId
           ...(!opts.categoryId && channel.categoryId && opts.orderedChannelIds.includes(channel.id)
             ? {
-                categoryId: null,
-              }
+              categoryId: null,
+            }
             : undefined),
         },
       }),
@@ -1179,10 +1179,10 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
   await prisma.$transaction([
     ...(opts.answers.length && removedAnswerIds.length
       ? [
-          prisma.serverWelcomeAnswer.deleteMany({
-            where: { id: { in: removedAnswerIds }, questionId: opts.id },
-          }),
-        ]
+        prisma.serverWelcomeAnswer.deleteMany({
+          where: { id: { in: removedAnswerIds }, questionId: opts.id },
+        }),
+      ]
       : []),
     prisma.serverWelcomeQuestion.update({
       where: { id: opts.id },
@@ -1207,10 +1207,10 @@ export const updateServerWelcomeQuestion = async (opts: UpdateServerWelcomeQuest
           ...addToObjectIfExists('order', answer.order),
           ...(answer.roleIds
             ? {
-                roleIds: {
-                  set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
-                },
-              }
+              roleIds: {
+                set: removeDuplicates(answer.roleIds.filter((roleId) => validRoleIds.includes(roleId)) || []),
+              },
+            }
             : {}),
         },
       }),

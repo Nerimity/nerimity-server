@@ -54,7 +54,7 @@ export const isIpBanned = async (ipAddress: string) => {
   if (!isExpired(ban.expireAt)) {
     return ban;
   }
-  await prisma.bannedIp.delete({ where: { ipAddress } }).catch(() => {});
+  await prisma.bannedIp.delete({ where: { ipAddress } }).catch(() => { });
   return false;
 };
 
@@ -171,12 +171,12 @@ export const openDMChannel = async (userId: string, friendId: string) => {
       const newChannel = inbox
         ? { id: inbox?.channelId }
         : await tx.channel.create({
-            data: {
-              id: generateId(),
-              type: ChannelType.DM_TEXT,
-              createdById: userId,
-            },
-          });
+          data: {
+            id: generateId(),
+            type: ChannelType.DM_TEXT,
+            createdById: userId,
+          },
+        });
 
       const newInbox = await tx.inbox.create({
         data: {
@@ -187,7 +187,7 @@ export const openDMChannel = async (userId: string, friendId: string) => {
           closed: false,
         },
         include: {
-          channel: { include: { _count: { select: { attachments: true } } } },
+          channel: true,
           recipient: { select: publicUserExcludeFields },
         },
       });
@@ -373,11 +373,11 @@ export const getUserDetails = async (requesterId: string, recipientId: string, r
   });
   const pinnedPosts = includePinnedPosts
     ? await fetchPinnedPosts({
-        userId: recipientId,
-        requesterUserId: requesterId,
-        bypassBlocked: isAdmin,
-        requesterIpAddress,
-      })
+      userId: recipientId,
+      requesterUserId: requesterId,
+      bypassBlocked: isAdmin,
+      requesterIpAddress,
+    })
     : [];
 
   const isBlocked = await isUserBlocked(requesterId, recipientId);
@@ -557,11 +557,11 @@ export async function updateUserNotificationSettings(userId: string, update: Upd
       ...(channelId
         ? { userId, channelId }
         : {
-            userId,
-            serverId: serverId!,
-            notificationPingMode: NotificationPingMode.ALL,
-            notificationSoundMode: NotificationSoundMode.ALL,
-          }),
+          userId,
+          serverId: serverId!,
+          notificationPingMode: NotificationPingMode.ALL,
+          notificationSoundMode: NotificationSoundMode.ALL,
+        }),
       ...update,
     },
     update,
@@ -635,7 +635,7 @@ export async function getUserNotifications(userId: string) {
           userId,
         },
       })
-      .then(() => {});
+      .then(() => { });
   }
 
   const mappedNotifications = notifications.map((n) => ({
@@ -812,24 +812,24 @@ export async function toggleBadge(userId: string, badgeBit: number) {
     data: {
       ...(palestine
         ? {
-            inventory: {
-              upsert: {
-                where: {
-                  userId_itemType_itemId: {
-                    userId,
-                    itemType: InventoryItemType.BADGE,
-                    itemId: badgeBit.toString(),
-                  },
-                },
-                create: {
-                  id: generateId(),
+          inventory: {
+            upsert: {
+              where: {
+                userId_itemType_itemId: {
+                  userId,
                   itemType: InventoryItemType.BADGE,
                   itemId: badgeBit.toString(),
                 },
-                update: {},
               },
+              create: {
+                id: generateId(),
+                itemType: InventoryItemType.BADGE,
+                itemId: badgeBit.toString(),
+              },
+              update: {},
             },
-          }
+          },
+        }
         : {}),
       badges: newBadges,
     },

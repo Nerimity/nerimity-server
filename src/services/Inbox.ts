@@ -4,7 +4,7 @@ export const getInbox = async (userId: string) => {
   return prisma.inbox.findMany({
     where: { createdById: userId, closed: false },
     include: {
-      channel: { include: { _count: { select: { attachments: true } } } },
+      channel: true,
       recipient: { select: { ...publicUserExcludeFields, profile: { select: { font: true, clan: { select: { tag: true, icon: true, serverId: true } } } } } },
     },
   });

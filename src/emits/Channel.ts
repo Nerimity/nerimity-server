@@ -56,7 +56,7 @@ export const emitDMMessageReactionRemoved = (channel: BaseChannelCache & DMChann
   io.in(userIds).emit(MESSAGE_REACTION_REMOVED, reaction);
 };
 
-export const emitDMMessageDeleted = (channel: BaseChannelCache & DMChannelCache, data: { channelId: string; messageId: string; deletedAttachmentCount: number }) => {
+export const emitDMMessageDeleted = (channel: BaseChannelCache & DMChannelCache, data: { channelId: string; messageId: string; }) => {
   const io = getIO();
 
   const userIds = [channel.inbox?.recipientId as string, channel.inbox?.createdById as unknown as string];
