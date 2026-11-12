@@ -245,6 +245,12 @@ export const ROLE_PERMISSIONS = {
     name: 'Mention Roles',
     bit: 1 << 8,
   },
+  MASQUERADE: {
+    name: 'Masquerade',
+    description: 'Allow members to change name and avatar per-message',
+    bit: 1 << 9,
+    icon: 'person',
+  },
 };
 
 export const APPLICATION_SCOPES = {
