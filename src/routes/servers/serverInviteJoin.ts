@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { joinServerByInviteCode } from '../../services/ServerInvite';
 import { rateLimit } from '../../middleware/rateLimit';
+import { generateError } from '@src/common/errorHandler';
 
 export function serverInviteJoin(Router: Router) {
   Router.post(
@@ -17,6 +18,11 @@ export function serverInviteJoin(Router: Router) {
 }
 
 async function route(req: Request, res: Response) {
+
+  if (!req.userCache.account?.emailConfirmed) {
+    return res.status(400).json(generateError("Verify your email in settings to join servers."))
+  }
+
   const { inviteCode } = req.params;
   const [server, error] = await joinServerByInviteCode(
     req.userCache.id,

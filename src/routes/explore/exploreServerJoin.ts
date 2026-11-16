@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { joinPublicServer } from '../../services/Explore';
 import { param } from 'express-validator';
-import { customExpressValidatorResult } from '../../common/errorHandler';
+import { customExpressValidatorResult, generateError } from '../../common/errorHandler';
 import { rateLimit } from '../../middleware/rateLimit';
 
 export function exploreServerJoin(Router: Router) {
@@ -31,6 +31,11 @@ async function route(req: Request, res: Response) {
   if (validateError) {
     return res.status(400).json(validateError);
   }
+
+  if (!req.userCache.account?.emailConfirmed) {
+    return res.status(400).json(generateError("Verify your email in settings to join servers."))
+  }
+
 
   const { serverId } = req.params;
   const [server, error] = await joinPublicServer(req.userCache.id, serverId);
