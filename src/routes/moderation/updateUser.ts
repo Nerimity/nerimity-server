@@ -15,6 +15,7 @@ import { checkUserPassword } from '../../services/UserAuthentication';
 import { Prisma } from '@src/generated/prisma/client';
 import { InventoryItemType } from '@src/services/User/User';
 import { removeSessionsByUserId } from '@src/services/User/UserManagement';
+import { deleteImageBatch } from '../../common/nerimityCDN';
 
 export function updateUser(Router: Router) {
   Router.post('/moderation/users/:userId', authenticate(), isModMiddleware(), route);
@@ -30,6 +31,8 @@ interface Body {
   emailConfirmed?: boolean;
   addedInventoryItems?: { itemType: string; itemId: string }[];
   removedInventoryIds?: string[];
+  avatar?: null;
+  banner?: null;
 }
 
 async function route(req: Request, res: Response) {
@@ -59,6 +62,8 @@ async function route(req: Request, res: Response) {
       tag: true,
       badges: true,
       inventory: true,
+      avatar: true,
+      banner: true,
     },
   });
 
@@ -154,6 +159,8 @@ async function route(req: Request, res: Response) {
       ...addToObjectIfExists('username', body.username),
       ...addToObjectIfExists('tag', body.tag),
       ...addToObjectIfExists('badges', newBadges),
+      ...(body.avatar === null ? { avatar: null } : {}),
+      ...(body.banner === null ? { banner: null } : {}),
     },
     include: {
       account: {
@@ -164,6 +171,15 @@ async function route(req: Request, res: Response) {
       profile: true,
     },
   });
+
+  const imagePathsToDelete = [
+    ...(body.avatar === null && user.avatar ? [user.avatar] : []),
+    ...(body.banner === null && user.banner ? [user.banner] : []),
+  ];
+  if (imagePathsToDelete.length) {
+    await deleteImageBatch(imagePathsToDelete);
+  }
+
   await removeUserCacheByUserIds([userId!]);
 
   if (body.newPassword?.trim()) {
